@@ -84,7 +84,15 @@ jobs:
         with:
           bun-version: "1.3.5"
 
+      # `bun run check` runs pre-commit through uv. No cache: this job produces the release
+      # artifact, so it restores nothing a pull request could have written.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with:
+          enable-cache: false
+
       - run: bun install --frozen-lockfile
+
+      - run: uv sync --locked --no-build
 
       - name: Read tag metadata
         id: meta
@@ -92,8 +100,9 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: GITHUB_REF_NAME="$RELEASE_TAG" bun scripts/release-metadata.ts
 
-      # Build must pass the same gate as CI before we cut an artifact.
-      - name: Build
+      # Build must pass the same gate as CI before we cut an artifact: build, every pre-commit
+      # hook on every file (formatting, lint, tsc, dead code, audit), and the test suite.
+      - name: Build and check
         run: bun run check
 
       # Pack into a tarball and verify the ship set.
