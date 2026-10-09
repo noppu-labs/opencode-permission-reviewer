@@ -1,23 +1,5 @@
 [
   {
-    "path": "tests/compatibility/conftest.py",
-    "file_name": "conftest.py",
-    "functions": [
-      {
-        "name": "activate_host",
-        "complexity": 16
-      },
-      {
-        "name": "model_server",
-        "complexity": 18
-      },
-      {
-        "name": "launch_host",
-        "complexity": 70
-      }
-    ]
-  },
-  {
     "path": "tests/compatibility/test_evidence_recovery.py",
     "file_name": "test_evidence_recovery.py",
     "functions": [
