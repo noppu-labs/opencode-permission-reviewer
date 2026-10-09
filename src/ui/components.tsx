@@ -1,29 +1,30 @@
 /** @jsxImportSource @opentui/solid */
-import { Show } from "solid-js"
-import type { ColorInput } from "@opentui/core"
-import type { ReviewUiStatus } from "../ui-protocol.ts"
+
+import type { ColorInput } from "@opentui/core";
+import { Show } from "solid-js";
+import type { ReviewUiStatus } from "../ui-protocol.ts";
 
 export interface ReviewTheme {
-  backgroundPanel: ColorInput
-  text: ColorInput
-  textMuted: ColorInput
-  info: ColorInput
-  success: ColorInput
-  error: ColorInput
+  backgroundPanel: ColorInput;
+  text: ColorInput;
+  textMuted: ColorInput;
+  info: ColorInput;
+  success: ColorInput;
+  error: ColorInput;
 }
-export const SPINNER = ["◐", "◓", "◑", "◒"] as const
+export const SPINNER = ["◐", "◓", "◑", "◒"] as const;
 
 /** Compact, non-modal progress strip for hosts with an editable composer. */
 export function ReviewProgress(props: {
-  theme: () => ReviewTheme
-  status: ReviewUiStatus
-  frame: () => number
+  theme: () => ReviewTheme;
+  status: ReviewUiStatus;
+  frame: () => number;
 }) {
-  const singleLine = (value: string) => value.replace(/[\r\n\t]+/g, " ")
+  const singleLine = (value: string) => value.replace(/[\r\n\t]+/g, " ");
   const elapsed = () => {
-    props.frame()
-    return `${(Math.max(0, Date.now() - props.status.emittedAt) / 1_000).toFixed(1)}s`
-  }
+    props.frame();
+    return `${(Math.max(0, Date.now() - props.status.emittedAt) / 1_000).toFixed(1)}s`;
+  };
   return (
     <box
       height={2}
@@ -43,10 +44,12 @@ export function ReviewProgress(props: {
           wrapMode="none"
           truncate
         >
-          {SPINNER[props.frame() % SPINNER.length] ?? "◐"} Reviewing this permission
+          {SPINNER[props.frame() % SPINNER.length] ?? "◐"} Reviewing this
+          permission
           <span style={{ fg: props.theme().textMuted }}>
             {" "}
-            · {singleLine(props.status.model)} · {singleLine(props.status.variant)}
+            · {singleLine(props.status.model)} ·{" "}
+            {singleLine(props.status.variant)}
           </span>
         </text>
         <text fg={props.theme().textMuted} flexShrink={0} wrapMode="none">
@@ -54,7 +57,9 @@ export function ReviewProgress(props: {
         </text>
       </box>
       <text fg={props.theme().text} wrapMode="none" truncate>
-        <span style={{ fg: props.theme().textMuted }}>{props.status.permission} · </span>
+        <span style={{ fg: props.theme().textMuted }}>
+          {props.status.permission} ·{" "}
+        </span>
         {singleLine(props.status.action)}
         <Show when={props.status.actorName}>
           <span style={{ fg: props.theme().textMuted }}>
@@ -64,24 +69,24 @@ export function ReviewProgress(props: {
         </Show>
       </text>
     </box>
-  )
+  );
 }
 
 export function ReviewOverlay(props: {
-  theme: () => ReviewTheme
-  status: ReviewUiStatus
+  theme: () => ReviewTheme;
+  status: ReviewUiStatus;
   /** Spinner signal, read inside text children so only those update per tick. */
-  frame: () => number
+  frame: () => number;
 }) {
-  const theme = props.theme
+  const theme = props.theme;
   const elapsed = () => {
     // Reading the tick signal inside the text child is what re-renders it every
     // 250ms: Date.now() and status.emittedAt are plain values, so a text that
     // reads no signal is evaluated once at mount and freezes.
-    props.frame()
-    const elapsedMs = Math.max(0, Date.now() - props.status.emittedAt)
-    return `${(elapsedMs / 1_000).toFixed(1)}s`
-  }
+    props.frame();
+    const elapsedMs = Math.max(0, Date.now() - props.status.emittedAt);
+    return `${(elapsedMs / 1_000).toFixed(1)}s`;
+  };
 
   return (
     <box
@@ -97,12 +102,12 @@ export function ReviewOverlay(props: {
       borderColor={theme().info}
       flexDirection="column"
       onMouseDown={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
+        event.preventDefault();
+        event.stopPropagation();
       }}
       onMouseUp={(event) => {
-        event.preventDefault()
-        event.stopPropagation()
+        event.preventDefault();
+        event.stopPropagation();
       }}
     >
       <box
@@ -114,7 +119,9 @@ export function ReviewOverlay(props: {
         paddingRight={3}
       >
         <box flexDirection="row" gap={1}>
-          <text fg={theme().info}>{SPINNER[props.frame() % SPINNER.length] ?? "◐"}</text>
+          <text fg={theme().info}>
+            {SPINNER[props.frame() % SPINNER.length] ?? "◐"}
+          </text>
           <text fg={theme().text}>Reviewing this permission</text>
           <box flexGrow={1} />
           <text fg={theme().textMuted}>{elapsed()}</text>
@@ -137,25 +144,36 @@ export function ReviewOverlay(props: {
         </box>
       </box>
     </box>
-  )
+  );
 }
 
-export function ReviewResult(props: { theme: () => ReviewTheme; status: ReviewUiStatus }) {
-  const theme = props.theme
+export function ReviewResult(props: {
+  theme: () => ReviewTheme;
+  status: ReviewUiStatus;
+}) {
+  const theme = props.theme;
   const appearance = () => {
     if (props.status.phase === "unknown") {
-      return { color: theme().textMuted, icon: "?", title: "Review status unavailable" }
+      return {
+        color: theme().textMuted,
+        icon: "?",
+        title: "Review status unavailable",
+      };
     }
     if (props.status.phase === "approved") {
-      return { color: theme().success, icon: "✓", title: "Review approved" }
+      return { color: theme().success, icon: "✓", title: "Review approved" };
     }
     // Fail-closed escalate→deny is distinct from an explicit reviewer/policy deny.
     if (props.status.escalationDisposition === "deny") {
-      return { color: theme().error, icon: "✕", title: "Review blocked (fail-closed)" }
+      return {
+        color: theme().error,
+        icon: "✕",
+        title: "Review blocked (fail-closed)",
+      };
     }
-    return { color: theme().error, icon: "✕", title: "Review blocked" }
-  }
-  const singleLine = (value: string) => value.replace(/[\r\n\t]+/g, " ")
+    return { color: theme().error, icon: "✕", title: "Review blocked" };
+  };
+  const singleLine = (value: string) => value.replace(/[\r\n\t]+/g, " ");
 
   return (
     <box
@@ -177,5 +195,5 @@ export function ReviewResult(props: { theme: () => ReviewTheme; status: ReviewUi
         </text>
       </Show>
     </box>
-  )
+  );
 }

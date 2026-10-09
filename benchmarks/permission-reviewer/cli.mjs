@@ -1,7 +1,15 @@
 #!/usr/bin/env bun
-import { fileURLToPath } from "node:url"
-import { dirname, resolve } from "node:path"
-import { writeFile } from "node:fs/promises"
+import { writeFile } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { exportReview } from "./lib/audit.mjs";
+import { loadDataset, modelInput, selectCases } from "./lib/dataset.mjs";
+import { compareRows, printSummary, summarize } from "./lib/metrics.mjs";
+import { openPlugin } from "./lib/plugin.mjs";
+import { validateModel } from "./lib/providers.mjs";
+import { publicReport } from "./lib/publication.mjs";
+import { rowBase, runBenchmark } from "./lib/run.mjs";
+import { systemOneDifficultSubset } from "./lib/subsets.mjs";
 import {
   assert,
   atomicJSON,
@@ -10,16 +18,9 @@ import {
   privateDir,
   readJSON,
   readJSONL,
-} from "./lib/util.mjs"
-import { loadDataset, modelInput, selectCases } from "./lib/dataset.mjs"
-import { openPlugin } from "./lib/plugin.mjs"
-import { validateModel } from "./lib/providers.mjs"
-import { runBenchmark, rowBase } from "./lib/run.mjs"
-import { compareRows, printSummary, summarize } from "./lib/metrics.mjs"
-import { exportReview } from "./lib/audit.mjs"
-import { publicReport } from "./lib/publication.mjs"
-import { systemOneDifficultSubset } from "./lib/subsets.mjs"
-const ROOT = dirname(fileURLToPath(import.meta.url))
+} from "./lib/util.mjs";
+
+const ROOT = dirname(fileURLToPath(import.meta.url));
 const BOOLS = new Set([
   "resume",
   "allow-drift",
@@ -27,7 +28,7 @@ const BOOLS = new Set([
   "no-prompts",
   "oracle",
   "allow-profile-diff",
-])
+]);
 const VALUES = new Set([
   "data",
   "repo",
@@ -56,88 +57,98 @@ const VALUES = new Set([
   "sample",
   "track",
   "difficult-from",
-])
+]);
 function args(argv) {
-  const out = {}
+  const out = {};
   for (let i = 0; i < argv.length; i++) {
-    const key = argv[i]
-    assert(key.startsWith("--"), "Unexpected argument " + key)
-    const name = key.slice(2)
-    assert(BOOLS.has(name) || VALUES.has(name), "Unknown option " + key)
-    assert(out[name] === undefined, "Duplicate option " + key)
-    if (BOOLS.has(name)) out[name] = true
+    const key = argv[i];
+    assert(key.startsWith("--"), "Unexpected argument " + key);
+    const name = key.slice(2);
+    assert(BOOLS.has(name) || VALUES.has(name), "Unknown option " + key);
+    assert(out[name] === undefined, "Duplicate option " + key);
+    if (BOOLS.has(name)) out[name] = true;
     else {
-      assert(argv[i + 1] !== undefined && !argv[i + 1].startsWith("--"), "Missing value for " + key)
-      out[name] = argv[++i]
+      assert(
+        argv[i + 1] !== undefined && !argv[i + 1].startsWith("--"),
+        "Missing value for " + key,
+      );
+      out[name] = argv[++i];
     }
   }
-  return out
+  return out;
 }
 async function rowsAt(path) {
-  assert(path, "Specify the run path.")
-  const resolved = resolve(path)
-  if (path.endsWith(".jsonl")) return (await readJSONL(resolved)).rows
+  assert(path, "Specify the run path.");
+  const resolved = resolve(path);
+  if (path.endsWith(".jsonl")) return (await readJSONL(resolved)).rows;
   if (path.endsWith(".json")) {
-    const x = await readJSON(resolved)
-    return x.results ?? x
+    const x = await readJSON(resolved);
+    return x.results ?? x;
   }
-  return (await readJSONL(resolve(resolved, "results.jsonl"))).rows
+  return (await readJSONL(resolve(resolved, "results.jsonl"))).rows;
 }
 async function main() {
-  const command = process.argv[2] ?? "help"
+  const command = process.argv[2] ?? "help";
   if (["help", "--help", "-h"].includes(command)) {
     console.log(
       `PRB-600: permission model benchmark, audited source/core replay.\n\nCommands:\n  node cli.mjs validate\n  node cli.mjs baseline --out runs/smoke [--oracle]\n  bun cli.mjs render --repo /path/plugin --models models.local.json --out runs/render\n  bun cli.mjs run --repo /path/plugin --models models.local.json --out runs/comparison\n  node cli.mjs score --run runs/comparison\n  node cli.mjs audit --run runs/comparison --out reviews/manual.jsonl\n  node cli.mjs compare --left RUN --left-model ID --right RUN --right-model ID\n  node cli.mjs export-public --run runs/comparison --out reviews/public.json\n\nrun: --split all|dev|validation|holdout, --category NAME, --id ID, --limit N,\n     --repeats 1, --concurrency 2, --seed 17, --max-calls 1200,\n     --min-request-delay-ms 0, --max-request-delay-ms 0,\n     --timeout-ms 120000, --http-retries 1, --format-retries 1,\n     --track reviewer|system, --bootstrap 500, --difficult-from SYSTEM_ONE_RUN,\n     --resume, --allow-drift\nAll fixture commands are inert data. Requests go only to configured provider or local OpenCode host URLs.\nLive evaluation requires Bun and the plugin checkout.\nbaseline is a metric-only test, NOT model performance or host integration.\n`,
-    )
-    return
+    );
+    return;
   }
   const a = args(process.argv.slice(3)),
     seed = numberArg(a.seed, 17, 0, 2147483647, "seed"),
-    bootstrap = numberArg(a.bootstrap, 500, 0, 10000, "bootstrap")
+    bootstrap = numberArg(a.bootstrap, 500, 0, 10000, "bootstrap");
   if (["score", "audit", "compare", "export-public"].includes(command)) {
     if (command === "export-public") {
-      assert(a.run && a.out, "Specify --run RUN and --out FILE.")
-      assert(!(await exists(resolve(a.out))), "Public export already exists; choose a new path.")
-      const report = publicReport(await readJSON(resolve(a.run, "results.json")))
-      await atomicJSON(resolve(a.out), report)
+      assert(a.run && a.out, "Specify --run RUN and --out FILE.");
+      assert(
+        !(await exists(resolve(a.out))),
+        "Public export already exists; choose a new path.",
+      );
+      const report = publicReport(
+        await readJSON(resolve(a.run, "results.json")),
+      );
+      await atomicJSON(resolve(a.out), report);
       console.log(
         `Synthetic public report: ${resolve(a.out)} (${report.results.length} cases). Review it before publication.`,
-      )
-      return
+      );
+      return;
     }
     if (command === "score") {
       const rows = await rowsAt(a.run),
-        s = summarize(rows, { bootstrap, seed })
-      printSummary(s)
-      if (a.out) await atomicJSON(resolve(a.out), s)
-      return
+        s = summarize(rows, { bootstrap, seed });
+      printSummary(s);
+      if (a.out) await atomicJSON(resolve(a.out), s);
+      return;
     }
     if (command === "audit") {
-      assert(a.out, "Specify --out reviews/file.jsonl")
+      assert(a.out, "Specify --out reviews/file.jsonl");
       console.log(
         await exportReview(await rowsAt(a.run), resolve(a.out), {
           sample: numberArg(a.sample, 30, 0, 100000, "sample"),
           seed,
           all: !!a.all,
         }),
-      )
-      return
+      );
+      return;
     }
     let left = await rowsAt(a.left),
-      right = await rowsAt(a.right)
-    if (a["left-model"]) left = left.filter((r) => r.modelId === a["left-model"])
-    if (a["right-model"]) right = right.filter((r) => r.modelId === a["right-model"])
-    assert(left.length && right.length, "Selected model has no rows.")
+      right = await rowsAt(a.right);
+    if (a["left-model"])
+      left = left.filter((r) => r.modelId === a["left-model"]);
+    if (a["right-model"])
+      right = right.filter((r) => r.modelId === a["right-model"]);
+    assert(left.length && right.length, "Selected model has no rows.");
     const incompatible =
       new Set(left.map((r) => r.profile)).size !== 1 ||
       new Set(right.map((r) => r.profile)).size !== 1 ||
       left[0].profile !== right[0].profile ||
       left[0].pluginSourceSha256 !== right[0].pluginSourceSha256 ||
-      left[0].runMode !== right[0].runMode
+      left[0].runMode !== right[0].runMode;
     assert(
       !incompatible || a["allow-profile-diff"],
       "Profiles, source or run modes differ. Explicit --allow-profile-diff is needed for a descriptive, not controlled, comparison.",
-    )
+    );
     const result = {
       ...compareRows(left, right, {
         layer: a.layer ?? "model",
@@ -145,44 +156,48 @@ async function main() {
         seed,
       }),
       controlledProfileComparison: !incompatible,
-    }
-    console.log(JSON.stringify(result, null, 2))
-    if (a.out) await atomicJSON(resolve(a.out), result)
-    return
+    };
+    console.log(JSON.stringify(result, null, 2));
+    if (a.out) await atomicJSON(resolve(a.out), result);
+    return;
   }
-  const data = await loadDataset(resolve(a.data ?? resolve(ROOT, "data/cases.jsonl")))
-  let difficultSubset
+  const data = await loadDataset(
+    resolve(a.data ?? resolve(ROOT, "data/cases.jsonl")),
+  );
+  let difficultSubset;
   if (a["difficult-from"] !== undefined) {
-    assert(command === "run", "--difficult-from is supported only by run.")
+    assert(command === "run", "--difficult-from is supported only by run.");
     assert(
       a.split === undefined &&
         a.category === undefined &&
         a.id === undefined &&
         a.limit === undefined,
       "--difficult-from already defines the complete subset; do not combine filters.",
-    )
+    );
     difficultSubset = systemOneDifficultSubset(
       await readJSON(resolve(a["difficult-from"], "results.json")),
       data.hash,
       data.cases.length,
-    )
+    );
   }
   const limit =
-    a.limit === undefined ? undefined : numberArg(a.limit, 1, 1, data.cases.length, "limit")
+    a.limit === undefined
+      ? undefined
+      : numberArg(a.limit, 1, 1, data.cases.length, "limit");
   const cases = selectCases(data.cases, {
     split: a.split ?? "all",
     category: a.category,
     id: a.id,
     ids: difficultSubset?.ids,
     limit,
-  })
+  });
   if (command === "validate") {
-    const manifest = await readJSON(resolve(ROOT, "data/manifest.json"))
+    const manifest = await readJSON(resolve(ROOT, "data/manifest.json"));
     if (!a.data)
       assert(
         manifest.sha256 === data.hash,
         "Materialized corpus digest differs from manifest; rebuild and review changes.",
-      )
+      );
     console.log(
       JSON.stringify(
         {
@@ -195,22 +210,27 @@ async function main() {
         null,
         2,
       ),
-    )
-    return
+    );
+    return;
   }
   if (command === "baseline") {
-    assert(a.out, "Specify --out runs/smoke")
-    assert(!(await exists(resolve(a.out, "results.jsonl"))), "Baseline output already exists.")
+    assert(a.out, "Specify --out runs/smoke");
+    assert(
+      !(await exists(resolve(a.out, "results.jsonl"))),
+      "Baseline output already exists.",
+    );
     const choices = [
         "always-allow",
         "always-deny",
         "always-escalate",
         ...(a.oracle ? ["gold-oracle-SELF-TEST"] : []),
       ],
-      rows = []
+      rows = [];
     for (const id of choices)
       for (const c of cases) {
-        const label = id.startsWith("gold-oracle") ? c.gold.outcome : id.replace("always-", "")
+        const label = id.startsWith("gold-oracle")
+          ? c.gold.outcome
+          : id.replace("always-", "");
         const decision = {
           version: 2,
           outcome: label,
@@ -220,7 +240,7 @@ async function main() {
           evidence_completeness: "sufficient",
           rationale: "Synthetic metric self-test, NOT a real model response.",
           confidence: 1,
-        }
+        };
         rows.push({
           ...rowBase(
             c,
@@ -239,49 +259,61 @@ async function main() {
           },
           attempts: [],
           evidence: "No prompt was sent. This is a scoring self-test only.",
-        })
+        });
       }
-    await privateDir(resolve(a.out))
+    await privateDir(resolve(a.out));
     await writeFile(
       resolve(a.out, "results.jsonl"),
       rows.map((r) => JSON.stringify(r)).join("\n") + "\n",
       { mode: 0o600 },
-    )
-    const summary = summarize(rows, { bootstrap, seed })
-    summary.liveModelCalls = 0
+    );
+    const summary = summarize(rows, { bootstrap, seed });
+    summary.liveModelCalls = 0;
     summary.warning =
-      "SYNTHETIC BASELINES ONLY. Gold oracle deliberately reads labels to self-test the metric. Never a model ranking."
-    await atomicJSON(resolve(a.out, "summary.json"), summary)
-    printSummary(summary)
-    return
+      "SYNTHETIC BASELINES ONLY. Gold oracle deliberately reads labels to self-test the metric. Never a model ranking.";
+    await atomicJSON(resolve(a.out, "summary.json"), summary);
+    printSummary(summary);
+    return;
   }
-  assert(["run", "render", "parity"].includes(command), "Unknown command: " + command)
-  const adapter = await openPlugin(a.repo, { allowDrift: !!a["allow-drift"] })
+  assert(
+    ["run", "render", "parity"].includes(command),
+    "Unknown command: " + command,
+  );
+  const adapter = await openPlugin(a.repo, { allowDrift: !!a["allow-drift"] });
   if (difficultSubset)
     assert(
-      difficultSubset.provenance.sourcePluginSha256 === adapter.snapshot.sourceSha256,
+      difficultSubset.provenance.sourcePluginSha256 ===
+        adapter.snapshot.sourceSha256,
       "Difficult-subset source used a different plugin source.",
-    )
+    );
   if (command === "parity") {
-    console.log(JSON.stringify(adapter.snapshot, null, 2))
-    return
+    console.log(JSON.stringify(adapter.snapshot, null, 2));
+    return;
   }
-  assert(a.models, "Specify --models examples/models.local.example.json (copy and edit first).")
-  const config = await readJSON(resolve(a.models))
-  const models = (Array.isArray(config) ? config : config.models).map(validateModel)
+  assert(
+    a.models,
+    "Specify --models examples/models.local.example.json (copy and edit first).",
+  );
+  const config = await readJSON(resolve(a.models));
+  const models = (Array.isArray(config) ? config : config.models).map(
+    validateModel,
+  );
   if (difficultSubset)
     assert(
       models.every((model) => model.transport !== "system-one"),
       "--difficult-from is for follow-up reasoning models, not another System One run.",
-    )
-  assert(a.out, "Specify a new output directory via --out.")
+    );
+  assert(a.out, "Specify a new output directory via --out.");
   if (command === "render") {
-    assert(!(await exists(resolve(a.out, "requests.jsonl"))), "Render file already exists.")
-    await privateDir(resolve(a.out))
-    const lines = []
+    assert(
+      !(await exists(resolve(a.out, "requests.jsonl"))),
+      "Render file already exists.",
+    );
+    await privateDir(resolve(a.out));
+    const lines = [];
     for (const c of cases)
       for (const model of models) {
-        const p = await adapter.prepare(modelInput(c), model)
+        const p = await adapter.prepare(modelInput(c), model);
         lines.push(
           JSON.stringify({
             caseId: c.id,
@@ -294,31 +326,45 @@ async function main() {
               ? { systemOne: p.systemOne }
               : { system: p.system, user: p.user, schema: p.schema }),
           }),
-        )
+        );
       }
-    await writeFile(resolve(a.out, "requests.jsonl"), lines.join("\n") + "\n", { mode: 0o600 })
+    await writeFile(resolve(a.out, "requests.jsonl"), lines.join("\n") + "\n", {
+      mode: 0o600,
+    });
     await atomicJSON(resolve(a.out, "render-manifest.json"), {
       cases: cases.length,
       models: models.length,
       source: adapter.snapshot,
       datasetHash: data.hash,
       promptVersion: adapter.promptVersion,
-    })
+    });
     console.log(
       `${lines.length} rendered requests; ZERO network calls and ZERO fixture executions.`,
-    )
-    return
+    );
+    return;
   }
   const repeats = numberArg(a.repeats, 1, 1, 100, "repeats"),
-    total = cases.length * models.length * repeats
+    total = cases.length * models.length * repeats;
   const options = {
     repeats,
     concurrency: numberArg(a.concurrency, 2, 1, 32, "concurrency"),
     seed,
     track: a.track ?? "reviewer",
     maxCalls: numberArg(a["max-calls"], 1200, 1, 1000000, "max-calls"),
-    minRequestDelayMs: numberArg(a["min-request-delay-ms"], 0, 0, 60000, "min-request-delay-ms"),
-    maxRequestDelayMs: numberArg(a["max-request-delay-ms"], 0, 0, 60000, "max-request-delay-ms"),
+    minRequestDelayMs: numberArg(
+      a["min-request-delay-ms"],
+      0,
+      0,
+      60000,
+      "min-request-delay-ms",
+    ),
+    maxRequestDelayMs: numberArg(
+      a["max-request-delay-ms"],
+      0,
+      0,
+      60000,
+      "max-request-delay-ms",
+    ),
     timeoutMs: numberArg(a["timeout-ms"], 120000, 100, 1800000, "timeout-ms"),
     httpRetries: numberArg(a["http-retries"], 1, 0, 3, "http-retries"),
     formatRetries: numberArg(a["format-retries"], 1, 0, 2, "format-retries"),
@@ -326,11 +372,11 @@ async function main() {
     resume: !!a.resume,
     storePrompts: !a["no-prompts"],
     ...(difficultSubset ? { difficultSubset: difficultSubset.provenance } : {}),
-  }
+  };
   console.log(
     `${cases.length} cases x ${models.length} models x ${repeats} repetitions = ${total} decisions before retries; transport request cap ${options.maxCalls}.`,
-  )
-  let last = 0
+  );
+  let last = 0;
   const summary = await runBenchmark({
     cases,
     datasetHash: data.hash,
@@ -340,19 +386,25 @@ async function main() {
     options,
     onProgress: (p) => {
       if (p.finished === p.total || Date.now() - last > 3000) {
-        console.log(`${p.finished}/${p.total}, requests ${p.calls}, ${p.status}`)
-        last = Date.now()
+        console.log(
+          `${p.finished}/${p.total}, requests ${p.calls}, ${p.status}`,
+        );
+        last = Date.now();
       }
     },
-  })
-  printSummary(summary)
-  console.log(`Full results: ${resolve(a.out, "results.json")}`)
+  });
+  printSummary(summary);
+  console.log(`Full results: ${resolve(a.out, "results.json")}`);
   if (!summary.complete) {
-    console.error("Run incomplete: inspect budget, interruption and harness status.")
-    process.exitCode = 2
+    console.error(
+      "Run incomplete: inspect budget, interruption and harness status.",
+    );
+    process.exitCode = 2;
   }
 }
 main().catch(() => {
-  console.error("ERROR: benchmark command failed; check configuration and private run files.")
-  process.exitCode = 1
-})
+  console.error(
+    "ERROR: benchmark command failed; check configuration and private run files.",
+  );
+  process.exitCode = 1;
+});

@@ -1,7 +1,13 @@
 {
   // Untracked local plans and reports (.gitignore) are not linted.
   "gitignore": true,
-  "ignores": ["**/node_modules/**", "**/.venv/**", "**/.complexipy_cache/**", "**/dist/**", "**/coverage/**"],
+  "ignores": [
+    "**/node_modules/**",
+    "**/.venv/**",
+    "**/.complexipy_cache/**",
+    "**/dist/**",
+    "**/coverage/**"
+  ],
   "config": {
     "default": true,
     // Long lines are fine in prose, tables, and command examples

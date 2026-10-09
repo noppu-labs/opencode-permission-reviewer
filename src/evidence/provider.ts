@@ -1,5 +1,5 @@
-import type { PermissionRequest } from "../types.ts"
-import type { SshAuditSummary } from "../ssh-evidence.ts"
+import type { SshAuditSummary } from "../ssh-evidence.ts";
+import type { PermissionRequest } from "../types.ts";
 
 /**
  * A single piece of evidence gathered about a permission request. The runtime
@@ -8,19 +8,19 @@ import type { SshAuditSummary } from "../ssh-evidence.ts"
  * changing the interface.
  */
 export interface EvidenceFragment {
-  kind: "ssh" | "local_script" | "git"
-  text: string
-  audit?: SshAuditSummary[]
-  preflightDenial?: string
-  warnings?: string[]
-  durationMs?: number
+  kind: "ssh" | "local_script" | "git";
+  text: string;
+  audit?: SshAuditSummary[];
+  preflightDenial?: string;
+  warnings?: string[];
+  durationMs?: number;
 }
 
 export interface EvidenceProviderInput {
-  request: PermissionRequest
-  directory: string
-  worktree: string
-  maxChars: number
+  request: PermissionRequest;
+  directory: string;
+  worktree: string;
+  maxChars: number;
 }
 
 /**
@@ -29,6 +29,6 @@ export interface EvidenceProviderInput {
  * fragments are assembled into a single review envelope.
  */
 export interface EvidenceProvider {
-  readonly id: string
-  collect(input: EvidenceProviderInput): Promise<EvidenceFragment>
+  readonly id: string;
+  collect(input: EvidenceProviderInput): Promise<EvidenceFragment>;
 }

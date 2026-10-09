@@ -1,1 +1,1 @@
-export { ReviewerRpc, ReviewerRpc as default } from "./dist/rpc.js"
+export { ReviewerRpc, ReviewerRpc as default } from "./dist/rpc.js";

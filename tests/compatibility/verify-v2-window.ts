@@ -1,20 +1,25 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
-import contracts from "./host-contracts.json"
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import contracts from "./host-contracts.json";
 
 const releases = Object.entries({
   ...contracts.v2.integrities,
   ...contracts.v2.optionalIntegrities,
-}).sort(([left], [right]) => left.localeCompare(right, undefined, { numeric: true }))
-const python = process.env.PYTHON ?? "python"
-const build = Bun.spawn(["bun", "run", "build"], { stdout: "inherit", stderr: "inherit" })
-if ((await build.exited) !== 0) throw new Error("Plugin build failed")
+}).sort(([left], [right]) =>
+  left.localeCompare(right, undefined, { numeric: true }),
+);
+const python = process.env.PYTHON ?? "python";
+const build = Bun.spawn(["bun", "run", "build"], {
+  stdout: "inherit",
+  stderr: "inherit",
+});
+if ((await build.exited) !== 0) throw new Error("Plugin build failed");
 
 for (const [version, integrity] of releases) {
-  const directory = await mkdtemp(join(tmpdir(), "reviewer-v2-window-"))
+  const directory = await mkdtemp(join(tmpdir(), "reviewer-v2-window-"));
   try {
-    console.log(`\nVerifying OpenCode ${version}`)
+    console.log(`\nVerifying OpenCode ${version}`);
     const install = Bun.spawn(
       [
         "npm",
@@ -31,15 +36,27 @@ for (const [version, integrity] of releases) {
         stdout: "inherit",
         stderr: "inherit",
       },
+    );
+    if ((await install.exited) !== 0)
+      throw new Error(`Host ${version} installation failed`);
+    const lock = JSON.parse(
+      await readFile(join(directory, "package-lock.json"), "utf8"),
+    ) as {
+      packages: Record<string, { integrity?: string }>;
+    };
+    if (
+      lock.packages[`node_modules/${contracts.v2.package}`]?.integrity !==
+      integrity
     )
-    if ((await install.exited) !== 0) throw new Error(`Host ${version} installation failed`)
-    const lock = JSON.parse(await readFile(join(directory, "package-lock.json"), "utf8")) as {
-      packages: Record<string, { integrity?: string }>
-    }
-    if (lock.packages[`node_modules/${contracts.v2.package}`]?.integrity !== integrity)
-      throw new Error(`Host ${version} integrity mismatch`)
-    const binary = join(directory, "node_modules", "@opencode/cli-linux-x64", "bin", "opencode")
-    const variable = `OPENCODE_V2_${version.replaceAll(".", "_")}`
+      throw new Error(`Host ${version} integrity mismatch`);
+    const binary = join(
+      directory,
+      "node_modules",
+      "@opencode/cli-linux-x64",
+      "bin",
+      "opencode",
+    );
+    const variable = `OPENCODE_V2_${version.replaceAll(".", "_")}`;
     const tests = Bun.spawn(
       [
         python,
@@ -57,9 +74,10 @@ for (const [version, integrity] of releases) {
         stdout: "inherit",
         stderr: "inherit",
       },
-    )
-    if ((await tests.exited) !== 0) throw new Error(`Host ${version} compatibility failed`)
+    );
+    if ((await tests.exited) !== 0)
+      throw new Error(`Host ${version} compatibility failed`);
   } finally {
-    await rm(directory, { recursive: true, force: true })
+    await rm(directory, { recursive: true, force: true });
   }
 }

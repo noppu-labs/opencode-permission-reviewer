@@ -1,8 +1,6 @@
 {
   "score_cap": 52,
-  "extensions": [
-    ".mjs"
-  ],
+  "extensions": [".mjs"],
   "exclude_directories": [
     "tests/live-fixture",
     "tests/live-v2-fixture",

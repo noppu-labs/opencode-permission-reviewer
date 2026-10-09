@@ -19,12 +19,15 @@
  * The marker is stable (idempotent) thanks to `(?!\[REDACTED)` guards.
  */
 
-const REDACT = (type: string) => `[REDACTED:${type}]`
+const REDACT = (type: string) => `[REDACTED:${type}]`;
 
 // Order matters: run specific token formats first, then URL userinfo, then
 // auth headers, then generic credential assignments. Each value-level rule
 // carries a `(?!\[REDACTED)` guard so a second pass is a no-op.
-const RULES: ReadonlyArray<{ re: RegExp; replace: (match: string, groups: string[]) => string }> = [
+const RULES: ReadonlyArray<{
+  re: RegExp;
+  replace: (match: string, groups: string[]) => string;
+}> = [
   // PEM private key blocks (bounded to avoid pathological backtracking). The
   // optional ` BLOCK` arm covers ASCII-armored GPG secret keys
   // (`-----BEGIN PGP PRIVATE KEY BLOCK-----`), which the simpler alternation
@@ -45,8 +48,14 @@ const RULES: ReadonlyArray<{ re: RegExp; replace: (match: string, groups: string
   // AWS access key ids: long-term (AKIA) and temporary/session (ASIA).
   { re: /\bA(?:KIA|SIA)[0-9A-Z]{16}\b/g, replace: () => REDACT("aws") },
   // GitHub tokens (ghu_ covers user-to-server OAuth tokens).
-  { re: /\b(?:ghp|gho|ghs|ghr|ghu)_[A-Za-z0-9]{36,251}\b/g, replace: () => REDACT("github") },
-  { re: /\bgithub_pat_[A-Za-z0-9_]{22,251}\b/g, replace: () => REDACT("github") },
+  {
+    re: /\b(?:ghp|gho|ghs|ghr|ghu)_[A-Za-z0-9]{36,251}\b/g,
+    replace: () => REDACT("github"),
+  },
+  {
+    re: /\bgithub_pat_[A-Za-z0-9_]{22,251}\b/g,
+    replace: () => REDACT("github"),
+  },
   // OpenAI: project keys and long bare `sk-…` keys (excludes Anthropic).
   { re: /\bsk-proj-[A-Za-z0-9_-]{20,}\b/g, replace: () => REDACT("openai") },
   { re: /\bsk-(?!ant-)[A-Za-z0-9]{30,}\b/g, replace: () => REDACT("openai") },
@@ -57,11 +66,17 @@ const RULES: ReadonlyArray<{ re: RegExp; replace: (match: string, groups: string
   // Google API key.
   { re: /\bAIza[0-9A-Za-z_-]{35}\b/g, replace: () => REDACT("google") },
   // Stripe live/test restricted/secret keys.
-  { re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g, replace: () => REDACT("stripe") },
+  {
+    re: /\b(?:sk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g,
+    replace: () => REDACT("stripe"),
+  },
   // GitLab, NVIDIA, Telegram bot tokens.
   { re: /\bglpat-[A-Za-z0-9_-]{20,}\b/g, replace: () => REDACT("gitlab") },
   { re: /\bnvapi-[A-Za-z0-9_-]{20,}\b/g, replace: () => REDACT("nvidia") },
-  { re: /\b\d{8,12}:AA[A-Za-z0-9_-]{30,}\b/g, replace: () => REDACT("telegram") },
+  {
+    re: /\b\d{8,12}:AA[A-Za-z0-9_-]{30,}\b/g,
+    replace: () => REDACT("telegram"),
+  },
   // JWT (three base64url segments).
   {
     re: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
@@ -79,8 +94,8 @@ const RULES: ReadonlyArray<{ re: RegExp; replace: (match: string, groups: string
   {
     re: /\b(Bearer|Basic|Token)\s+(?!\[REDACTED)[A-Za-z0-9._~+/=-]{8,}/gi,
     replace: (_m, g) => {
-      const scheme = g[0] ?? ""
-      return `${scheme} ${REDACT(scheme.toLowerCase())}`
+      const scheme = g[0] ?? "";
+      return `${scheme} ${REDACT(scheme.toLowerCase())}`;
     },
   },
   // Cookie headers.
@@ -110,21 +125,22 @@ const RULES: ReadonlyArray<{ re: RegExp; replace: (match: string, groups: string
   // above misses because it requires a leading identifier).
   {
     re: /(^|_|[^A-Za-z0-9_])(api[_-]?key|access[_-]?token|secret[_-]?key|client[_-]?secret|secret|password|passwd|token|cookie|csrf[_-]?token|session[_-]?id|sessionid|session|sid|private[_-]?key|passphrase|credentials?)(["']?\s*[:=]\s*["']?)(?!\[REDACTED)([^$`{}()\s"'#[\]]{8,})/gi,
-    replace: (_m, g) => `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
+    replace: (_m, g) =>
+      `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
   },
-]
+];
 
 export function redactSecrets(input: string): string {
-  let result = input
+  let result = input;
   for (const rule of RULES) {
-    rule.re.lastIndex = 0
+    rule.re.lastIndex = 0;
     result = result.replace(rule.re, (match, ...rest) => {
       // rest ends with (offset, string) when a full function is used; keep only
       // the captured groups. The number of trailing items depends on whether
       // named groups exist, but the capture groups always come first.
-      const groups = rest.slice(0, rest.length - 2)
-      return rule.replace(match, groups)
-    })
+      const groups = rest.slice(0, rest.length - 2);
+      return rule.replace(match, groups);
+    });
   }
-  return result
+  return result;
 }

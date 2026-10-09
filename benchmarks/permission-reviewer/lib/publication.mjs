@@ -1,6 +1,6 @@
-import { assert } from "./util.mjs"
+import { assert } from "./util.mjs";
 
-const syntheticOrigins = new Set(["authored-synthetic", "metamorphic-context"])
+const syntheticOrigins = new Set(["authored-synthetic", "metamorphic-context"]);
 const metricFields = [
   "count",
   "families",
@@ -23,45 +23,54 @@ const metricFields = [
   "familiesWithAnyUnsafeApproval",
   "allMembersCorrectFamilyRate",
   "observedCriticalGate",
-]
+];
 
-const pick = (value, fields) => Object.fromEntries(fields.map((key) => [key, value?.[key] ?? null]))
+const pick = (value, fields) =>
+  Object.fromEntries(fields.map((key) => [key, value?.[key] ?? null]));
 
 export function publicReport(document) {
-  const { run, summary, results } = document
+  const { run, summary, results } = document;
   assert(
     !(run?.models ?? []).some(
-      (model) => model.transport === "system-one" || model.format === "system_one",
+      (model) =>
+        model.transport === "system-one" || model.format === "system_one",
     ),
     "System One evaluation runs are private and cannot be exported by this harness.",
-  )
+  );
   assert(
     run?.options?.difficultSubset === undefined,
     "Runs derived from a private System One evaluation cannot be exported by this harness.",
-  )
+  );
   assert(
     run?.fingerprint && run?.datasetHash && run?.source?.sourceSha256,
     "Missing run provenance.",
-  )
-  assert(run.source.match === true, "Public results require the pinned plugin source.")
+  );
   assert(
-    summary?.complete === true && Array.isArray(results) && results.length === summary.expectedRows,
+    run.source.match === true,
+    "Public results require the pinned plugin source.",
+  );
+  assert(
+    summary?.complete === true &&
+      Array.isArray(results) &&
+      results.length === summary.expectedRows,
     "Only complete runs can be published.",
-  )
+  );
   assert(
     results.every(
-      (row) => syntheticOrigins.has(row.origin) && row.runFingerprint === run.fingerprint,
+      (row) =>
+        syntheticOrigins.has(row.origin) &&
+        row.runFingerprint === run.fingerprint,
     ),
     "Public results must contain only matching synthetic cases.",
-  )
+  );
   const models = (run.models ?? []).map((model) =>
     pick(model, ["id", "model", "format", "transport", "variant"]),
-  )
-  assert(models.length > 0, "Missing model provenance.")
+  );
+  assert(models.length > 0, "Missing model provenance.");
   const metrics = Object.fromEntries(
     models.map((model) => {
-      const scored = summary.models?.[model.id]
-      assert(scored, `Missing metrics for ${model.id}.`)
+      const scored = summary.models?.[model.id];
+      assert(scored, `Missing metrics for ${model.id}.`);
       return [
         model.id,
         {
@@ -73,7 +82,11 @@ export function publicReport(document) {
             httpAttempts: scored.operational?.httpAttempts ?? null,
             transportFailures: scored.operational?.transportFailures ?? null,
             requestsRetried: scored.operational?.requestsRetried ?? null,
-            latencyMs: pick(scored.operational?.latencyMs, ["p50", "p95", "mean"]),
+            latencyMs: pick(scored.operational?.latencyMs, [
+              "p50",
+              "p95",
+              "mean",
+            ]),
             usage: pick(scored.operational?.usage, [
               "inputTokens",
               "outputTokens",
@@ -82,13 +95,14 @@ export function publicReport(document) {
             ]),
           },
         },
-      ]
+      ];
     }),
-  )
+  );
   return {
     schemaVersion: 1,
     kind: "synthetic-permission-reviewer-benchmark",
-    warning: "Single-author synthetic labels; not a production safety certification.",
+    warning:
+      "Single-author synthetic labels; not a production safety certification.",
     provenance: {
       runFingerprint: run.fingerprint,
       datasetHash: run.datasetHash,
@@ -123,5 +137,5 @@ export function publicReport(document) {
       confidence: row.decision?.confidence ?? null,
       effectiveOutcome: row.effective?.kind ?? null,
     })),
-  }
+  };
 }

@@ -1,16 +1,16 @@
-import { basename, resolve } from "node:path"
-import { localExecutableCommand } from "./evidence/local-command.ts"
-import type { PermissionRequest } from "./types.ts"
-import { sourceCommand } from "./evidence/source-command.ts"
+import { basename, resolve } from "node:path";
+import { localExecutableCommand } from "./evidence/local-command.ts";
+import { sourceCommand } from "./evidence/source-command.ts";
 import {
   analyzeScriptContent,
+  type FileEvidence,
   includeEvidenceFile,
   shellCommandSegmentsWithDirectory,
-  type FileEvidence,
-} from "./ssh-evidence.ts"
+} from "./ssh-evidence.ts";
+import type { PermissionRequest } from "./types.ts";
 
 export interface LocalScriptEnrichmentResult {
-  text: string
+  text: string;
 }
 
 const INTERPRETERS = new Set([
@@ -25,9 +25,17 @@ const INTERPRETERS = new Set([
   "zsh",
   "ruby",
   "perl",
-])
+]);
 
-const INLINE_CODE_OPTIONS = new Set(["-c", "-e", "--eval", "-p", "--print", "-s", "--stdin"])
+const INLINE_CODE_OPTIONS = new Set([
+  "-c",
+  "-e",
+  "--eval",
+  "-p",
+  "--print",
+  "-s",
+  "--stdin",
+]);
 const OPTIONS_WITH_VALUE = new Set([
   "-W",
   "-X",
@@ -38,7 +46,7 @@ const OPTIONS_WITH_VALUE = new Set([
   "-I",
   "-M",
   "-m",
-])
+]);
 
 // Bun subcommands whose operand names a package or workspace, never a local
 // script file. `run` is absent: it accepts a direct file target and is handled
@@ -56,26 +64,26 @@ const BUN_SUBCOMMANDS = new Set([
   "unlink",
   "update",
   "x",
-])
+]);
 
 interface InterpreterSpec {
   // Subcommands whose first non-option operand executes a local file.
-  fileTargetSubcommands?: Set<string>
+  fileTargetSubcommands?: Set<string>;
   // Options that consume the next token as their value; the value is never
   // the script target.
-  valueOptions?: Set<string>
+  valueOptions?: Set<string>;
   // Tokens that OPTIONS_WITH_VALUE consumes for other interpreters but this
   // runtime treats as non-consuming flags (their value syntax is `=`, or they
   // are repeated permission shorts).
-  noConsumeOptions?: Set<string>
+  noConsumeOptions?: Set<string>;
   // Options after which the executed file cannot be determined reliably;
   // gathering nothing beats attaching the wrong file.
-  bailOptions?: Set<string>
+  bailOptions?: Set<string>;
   // Subcommands whose operand is never a local file.
-  nonFileSubcommands?: Set<string>
+  nonFileSubcommands?: Set<string>;
   // A subcommand-less invocation still executes a file operand: require the
   // path-like shape so unrecognized subcommands gather nothing.
-  directRequiresPathLike?: boolean
+  directRequiresPathLike?: boolean;
 }
 
 // A script operand that names a file. Bare operands may resolve to manifest
@@ -85,13 +93,13 @@ interface InterpreterSpec {
 // remote or package references, not local paths; this also rejects
 // Windows-style drive paths, which never occur in the supported hosts.
 function pathLikeFileTarget(token: string): boolean {
-  if (/^[a-z][a-z0-9+.-]*:/i.test(token)) return false
-  return token.includes("/") || /\.(?:[mc]?[jt]sx?)$/i.test(token)
+  if (/^[a-z][a-z0-9+.-]*:/i.test(token)) return false;
+  return token.includes("/") || /\.(?:[mc]?[jt]sx?)$/i.test(token);
 }
 
 // Deno permission shorts and require-equals flags never consume the next
 // token even though other runtimes use the same spellings with a value.
-const DENO_NO_CONSUME = new Set(["-r", "-W", "-I"])
+const DENO_NO_CONSUME = new Set(["-r", "-W", "-I"]);
 
 // Node flags that consume the next token when written without `=`; tsx
 // forwards every flag it does not own, so tsx inherits the same table.
@@ -117,7 +125,7 @@ const NODE_VALUE_OPTIONS = new Set([
   "--openssl-config",
   "--redirect-warnings",
   "--heapsnapshot-signal",
-])
+]);
 
 const INTERPRETER_SPECS: Record<string, InterpreterSpec> = {
   node: {
@@ -181,11 +189,11 @@ const INTERPRETER_SPECS: Record<string, InterpreterSpec> = {
       ...NODE_VALUE_OPTIONS,
     ]),
   },
-}
+};
 
 function matchesOption(token: string, options: Set<string>): boolean {
-  if (options.has(token)) return true
-  return [...options].some((option) => token.startsWith(`${option}=`))
+  if (options.has(token)) return true;
+  return [...options].some((option) => token.startsWith(`${option}=`));
 }
 
 function scriptPath(
@@ -193,62 +201,76 @@ function scriptPath(
   interpreterIndex: number,
   interpreter: string,
 ): string | undefined {
-  const spec = INTERPRETER_SPECS[interpreter]
-  let fileTargetPending = false
-  let optionsEnded = false
+  const spec = INTERPRETER_SPECS[interpreter];
+  let fileTargetPending = false;
+  let optionsEnded = false;
   for (let index = interpreterIndex + 1; index < tokens.length; index += 1) {
-    const token = tokens[index]!
+    const token = tokens[index]!;
     if (token === "--" && !optionsEnded) {
-      optionsEnded = true
-      continue
+      optionsEnded = true;
+      continue;
     }
     if (
       !optionsEnded &&
       (["--help", "--version"].includes(token) ||
-        (["node", "bun", "deno", "tsx"].includes(interpreter) && token === "-v") ||
+        (["node", "bun", "deno", "tsx"].includes(interpreter) &&
+          token === "-v") ||
         (["python", "python3"].includes(interpreter) && token === "-V"))
     )
-      return
+      return;
     const inlineOption = [...INLINE_CODE_OPTIONS].find((option) =>
       option.startsWith("--")
         ? token === option || token.startsWith(`${option}=`)
         : token.startsWith(option),
-    )
+    );
     // A dash spell can mean inline code for one runtime and a valued option
     // for another (deno -c is --config, node -c is --check): the interpreter
     // spec wins.
     if (
       token === "-" ||
-      (!optionsEnded && inlineOption !== undefined && !spec?.valueOptions?.has(inlineOption)) ||
+      (!optionsEnded &&
+        inlineOption !== undefined &&
+        !spec?.valueOptions?.has(inlineOption)) ||
       (!optionsEnded && token.startsWith("-m"))
     ) {
-      return
+      return;
     }
-    if (!optionsEnded && spec?.bailOptions !== undefined && matchesOption(token, spec.bailOptions))
-      return
-    if (!optionsEnded && spec?.noConsumeOptions?.has(token)) continue
-    if (!optionsEnded && (OPTIONS_WITH_VALUE.has(token) || spec?.valueOptions?.has(token))) {
-      index += 1
-      continue
+    if (
+      !optionsEnded &&
+      spec?.bailOptions !== undefined &&
+      matchesOption(token, spec.bailOptions)
+    )
+      return;
+    if (!optionsEnded && spec?.noConsumeOptions?.has(token)) continue;
+    if (
+      !optionsEnded &&
+      (OPTIONS_WITH_VALUE.has(token) || spec?.valueOptions?.has(token))
+    ) {
+      index += 1;
+      continue;
     }
-    if (!optionsEnded && token.startsWith("-")) continue
+    if (!optionsEnded && token.startsWith("-")) continue;
     if (spec?.fileTargetSubcommands?.has(token) && !fileTargetPending) {
-      fileTargetPending = true
-      continue
+      fileTargetPending = true;
+      continue;
     }
-    if (/[$`*?{}<>]/.test(token)) return
+    if (/[$`*?{}<>]/.test(token)) return;
     // The first non-option operand after a file-target subcommand is
     // decisive: a path-like token is the executed file, anything else is a
     // manifest script or package reference.
-    if (fileTargetPending) return pathLikeFileTarget(token) ? token : undefined
-    if (spec?.directRequiresPathLike && !pathLikeFileTarget(token)) return
-    if (spec?.nonFileSubcommands?.has(token)) return
-    return token
+    if (fileTargetPending) return pathLikeFileTarget(token) ? token : undefined;
+    if (spec?.directRequiresPathLike && !pathLikeFileTarget(token)) return;
+    if (spec?.nonFileSubcommands?.has(token)) return;
+    return token;
   }
-  return
+  return;
 }
 
-function recordFor(interpreter: string, path: string, file: FileEvidence): Record<string, unknown> {
+function recordFor(
+  interpreter: string,
+  path: string,
+  file: FileEvidence,
+): Record<string, unknown> {
   return {
     kind: "local_script",
     interpreter,
@@ -256,15 +278,19 @@ function recordFor(interpreter: string, path: string, file: FileEvidence): Recor
     status: file.status,
     ...(file.reason === undefined ? {} : { reason: file.reason }),
     ...(file.size === undefined ? {} : { size: file.size }),
-    ...(file.includedBytes === undefined ? {} : { includedBytes: file.includedBytes }),
-    ...(file.includedSha256 === undefined ? {} : { includedSha256: file.includedSha256 }),
+    ...(file.includedBytes === undefined
+      ? {}
+      : { includedBytes: file.includedBytes }),
+    ...(file.includedSha256 === undefined
+      ? {}
+      : { includedSha256: file.includedSha256 }),
     ...(file.content === undefined
       ? {}
       : {
           signals: analyzeScriptContent(file.content),
           content: file.content,
         }),
-  }
+  };
 }
 
 export async function enrichLocalScriptEvidence(
@@ -273,27 +299,31 @@ export async function enrichLocalScriptEvidence(
   worktree: string,
   maxChars: number,
 ): Promise<LocalScriptEnrichmentResult> {
-  if (request.permission !== "bash") return { text: "" }
-  const segments = shellCommandSegmentsWithDirectory(sourceCommand(request), directory)
-  const records: Array<Record<string, unknown>> = []
-  const seen = new Set<string>()
+  if (request.permission !== "bash") return { text: "" };
+  const segments = shellCommandSegmentsWithDirectory(
+    sourceCommand(request),
+    directory,
+  );
+  const records: Array<Record<string, unknown>> = [];
+  const seen = new Set<string>();
 
   for (const segment of segments) {
-    const command = localExecutableCommand(segment.tokens)?.tokens
-    if (!command || !INTERPRETERS.has(basename(command[0] ?? ""))) continue
-    const interpreter = basename(command[0]!)
-    const path = scriptPath(command, 0, interpreter)
-    if (!path) continue
-    const key = `${interpreter}\0${segment.directory === undefined && !path.startsWith("/") ? `unresolved:${path}` : resolve(segment.directory ?? directory, path)}`
-    if (seen.has(key)) continue
-    seen.add(key)
+    const command = localExecutableCommand(segment.tokens)?.tokens;
+    if (!command || !INTERPRETERS.has(basename(command[0] ?? ""))) continue;
+    const interpreter = basename(command[0]!);
+    const path = scriptPath(command, 0, interpreter);
+    if (!path) continue;
+    const key = `${interpreter}\0${segment.directory === undefined && !path.startsWith("/") ? `unresolved:${path}` : resolve(segment.directory ?? directory, path)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
     const file =
       segment.directory === undefined && !path.startsWith("/")
         ? {
             source: "file" as const,
             path,
             status: "unavailable" as const,
-            reason: segment.directoryReason ?? "working directory is unresolved",
+            reason:
+              segment.directoryReason ?? "working directory is unresolved",
           }
         : await includeEvidenceFile(
             path,
@@ -301,15 +331,15 @@ export async function enrichLocalScriptEvidence(
             directory,
             worktree,
             maxChars,
-          )
-    records.push(recordFor(interpreter, file.path, file))
+          );
+    records.push(recordFor(interpreter, file.path, file));
   }
 
-  if (records.length === 0) return { text: "" }
-  const serialized = JSON.stringify(records, null, 2)
+  if (records.length === 0) return { text: "" };
+  const serialized = JSON.stringify(records, null, 2);
   const bounded =
     serialized.length <= maxChars
       ? serialized
-      : `${serialized.slice(0, maxChars)}\n<local_script_enrichment_truncated characters="${serialized.length - maxChars}" />`
-  return { text: `LOCAL_SCRIPT_ANALYSIS\n${bounded}` }
+      : `${serialized.slice(0, maxChars)}\n<local_script_enrichment_truncated characters="${serialized.length - maxChars}" />`;
+  return { text: `LOCAL_SCRIPT_ANALYSIS\n${bounded}` };
 }

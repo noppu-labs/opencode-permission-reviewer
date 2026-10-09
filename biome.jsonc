@@ -22,8 +22,6 @@
     ]
   },
   "formatter": {
-    // Pending (quality/2-format): that PR reformats the tree and deletes this line.
-    "enabled": false,
     "indentStyle": "space",
     "indentWidth": 2
   },
@@ -77,8 +75,6 @@
     }
   },
   "assist": {
-    // Pending (quality/2-format): that PR applies organizeImports and deletes this line.
-    "enabled": false,
     "actions": {
       "source": {
         "organizeImports": "on"
@@ -91,10 +87,7 @@
   "overrides": [
     // Pending (quality/2-format): style/useImportType, 2 files.
     {
-      "includes": [
-        "tests/failure-reason.test.ts",
-        "tests/v2-server.test.ts"
-      ],
+      "includes": ["tests/failure-reason.test.ts", "tests/v2-server.test.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -105,9 +98,7 @@
     },
     // Pending (quality/2-format): style/useConst, 1 file.
     {
-      "includes": [
-        "benchmarks/permission-reviewer/lib/run.mjs"
-      ],
+      "includes": ["benchmarks/permission-reviewer/lib/run.mjs"],
       "linter": {
         "rules": {
           "style": {
@@ -118,9 +109,7 @@
     },
     // Pending (quality/2-format): style/useExponentiationOperator, 1 file.
     {
-      "includes": [
-        "benchmarks/permission-reviewer/lib/metrics.mjs"
-      ],
+      "includes": ["benchmarks/permission-reviewer/lib/metrics.mjs"],
       "linter": {
         "rules": {
           "style": {
@@ -131,9 +120,7 @@
     },
     // Pending (quality/2-format): complexity/noUselessContinue, 1 file.
     {
-      "includes": [
-        "src/emergency-brake.ts"
-      ],
+      "includes": ["src/emergency-brake.ts"],
       "linter": {
         "rules": {
           "complexity": {
@@ -144,9 +131,7 @@
     },
     // Pending (quality/2-format): style/useShorthandFunctionType, 1 file.
     {
-      "includes": [
-        "src/opencode/v1-adapter.ts"
-      ],
+      "includes": ["src/opencode/v1-adapter.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -195,9 +180,7 @@
     },
     // Pending (quality/2-format): complexity/useLiteralKeys, 1 file.
     {
-      "includes": [
-        "tests/failure-reason.test.ts"
-      ],
+      "includes": ["tests/failure-reason.test.ts"],
       "linter": {
         "rules": {
           "complexity": {
@@ -208,9 +191,7 @@
     },
     // Pending (quality/2-format): complexity/useOptionalChain, 1 file.
     {
-      "includes": [
-        "src/context/actor-resolver.ts"
-      ],
+      "includes": ["src/context/actor-resolver.ts"],
       "linter": {
         "rules": {
           "complexity": {
@@ -290,10 +271,7 @@
     },
     // Pending (quality/4-ts-rules): style/noExportedImports, 2 files.
     {
-      "includes": [
-        "src/opencode/types.ts",
-        "src/tui.tsx"
-      ],
+      "includes": ["src/opencode/types.ts", "src/tui.tsx"],
       "linter": {
         "rules": {
           "style": {
@@ -304,9 +282,7 @@
     },
     // Pending (quality/4-ts-rules): suspicious/noImplicitAnyLet, 1 file.
     {
-      "includes": [
-        "src/context/evidence-assembler.ts"
-      ],
+      "includes": ["src/context/evidence-assembler.ts"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -381,9 +357,7 @@
     },
     // Pending (quality/4-ts-rules): suspicious/noPrototypeBuiltins, 1 file.
     {
-      "includes": [
-        "src/config/loader.ts"
-      ],
+      "includes": ["src/config/loader.ts"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -415,9 +389,7 @@
     },
     // Pending (quality/4-ts-rules): a11y/noStaticElementInteractions, 1 file.
     {
-      "includes": [
-        "src/ui/components.tsx"
-      ],
+      "includes": ["src/ui/components.tsx"],
       "linter": {
         "rules": {
           "a11y": {
@@ -428,9 +400,7 @@
     },
     // Pending (quality/4-ts-rules): suspicious/noTemplateCurlyInString, 1 file.
     {
-      "includes": [
-        "tests/capability.test.ts"
-      ],
+      "includes": ["tests/capability.test.ts"],
       "linter": {
         "rules": {
           "suspicious": {
@@ -441,9 +411,7 @@
     },
     // Pending (quality/4-ts-rules): correctness/noUnsafeFinally, 1 file.
     {
-      "includes": [
-        "src/opencode/v2/reviewer-backend.ts"
-      ],
+      "includes": ["src/opencode/v2/reviewer-backend.ts"],
       "linter": {
         "rules": {
           "correctness": {
@@ -454,9 +422,7 @@
     },
     // Pending (quality/4-ts-rules): correctness/noUnusedFunctionParameters, 1 file.
     {
-      "includes": [
-        "src/core/review-coordinator.ts"
-      ],
+      "includes": ["src/core/review-coordinator.ts"],
       "linter": {
         "rules": {
           "correctness": {
@@ -553,9 +519,7 @@
     },
     // Pending (quality/4-ts-rules): suspicious/useIterableCallbackReturn, 1 file.
     {
-      "includes": [
-        "src/context.ts"
-      ],
+      "includes": ["src/context.ts"],
       "linter": {
         "rules": {
           "suspicious": {

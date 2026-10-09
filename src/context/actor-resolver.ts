@@ -1,3 +1,7 @@
+import type { ContextReader } from "../core/ports.ts";
+import { withTimeout } from "../opencode/transport.ts";
+import type { OpenCodeClientLike } from "../opencode/types.ts";
+import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
 import type {
   ActorContext,
   ActorProfile,
@@ -11,15 +15,11 @@ import type {
   ReviewerConfig,
   SessionLineage,
   SessionNode,
-} from "../types.ts"
-import type { OpenCodeClientLike } from "../opencode/types.ts"
-import type { ContextReader } from "../core/ports.ts"
-import { createV1ContextReader } from "../opencode/v1/context-reader.ts"
-import { withTimeout } from "../opencode/transport.ts"
+} from "../types.ts";
 
 /** Bound for the resolver's metadata SDK calls: a hung session.get/messages
  *  must degrade to "unknown" instead of leaving the review pending forever. */
-const METADATA_TIMEOUT_MS = 10_000
+const METADATA_TIMEOUT_MS = 10_000;
 
 /**
  * Result of actor/lineage resolution. All fields are populated
@@ -28,10 +28,10 @@ const METADATA_TIMEOUT_MS = 10_000
  * actor metadata could not be fetched (unknown actors are first-class).
  */
 export interface ActorResolution {
-  actor: ActorContext
-  lineage: SessionLineage
-  intent: IntentContext
-  completeness: EvidenceCompleteness
+  actor: ActorContext;
+  lineage: SessionLineage;
+  intent: IntentContext;
+  completeness: EvidenceCompleteness;
 }
 
 // --- provenance helpers -----------------------------------------------------
@@ -42,18 +42,24 @@ function prov<T>(
   confidence: EvidenceConfidence,
   notes?: string[],
 ): Provenanced<T> {
-  return notes === undefined ? { value, source, confidence } : { value, source, confidence, notes }
+  return notes === undefined
+    ? { value, source, confidence }
+    : { value, source, confidence, notes };
 }
 
-const UNKNOWN_STRING = prov<string | undefined>(undefined, "unavailable", "unknown")
-const UNKNOWN_PROFILE = prov<ActorProfile>("unknown", "unavailable", "unknown")
+const UNKNOWN_STRING = prov<string | undefined>(
+  undefined,
+  "unavailable",
+  "unknown",
+);
+const UNKNOWN_PROFILE = prov<ActorProfile>("unknown", "unavailable", "unknown");
 
 // --- current-session actor (pure, from already-fetched messages) -----------
 
 interface CurrentActor {
-  agentName: string | undefined
-  mode: string | undefined
-  toolLocated: boolean
+  agentName: string | undefined;
+  mode: string | undefined;
+  toolLocated: boolean;
 }
 
 /**
@@ -66,37 +72,39 @@ function resolveCurrentActor(
   request: PermissionRequest,
   messages: MessageWithParts[],
 ): CurrentActor {
-  const tool = request.tool
-  if (!tool?.messageID) return { agentName: undefined, mode: undefined, toolLocated: false }
-  const container = messages.find((m) => m.info.id === tool.messageID)
-  if (!container) return { agentName: undefined, mode: undefined, toolLocated: false }
-  const info = container.info as Record<string, unknown>
-  const agentName = typeof info.agent === "string" ? info.agent : undefined
-  const mode = typeof info.mode === "string" ? info.mode : undefined
+  const tool = request.tool;
+  if (!tool?.messageID)
+    return { agentName: undefined, mode: undefined, toolLocated: false };
+  const container = messages.find((m) => m.info.id === tool.messageID);
+  if (!container)
+    return { agentName: undefined, mode: undefined, toolLocated: false };
+  const info = container.info as Record<string, unknown>;
+  const agentName = typeof info.agent === "string" ? info.agent : undefined;
+  const mode = typeof info.mode === "string" ? info.mode : undefined;
   // Confirm the specific tool call (callID) exists in the message parts.
   const toolLocated =
     typeof tool.callID === "string" &&
     (container.parts as Array<Record<string, unknown>>).some(
       (part) => part.type === "tool" && part.callID === tool.callID,
-    )
-  return { agentName, mode, toolLocated }
+    );
+  return { agentName, mode, toolLocated };
 }
 
 // --- session.get wrapper (resilient) ----------------------------------------
 
 interface SessionMetadata {
-  id: string
-  parentID: string | undefined
-  title: string | undefined
-  version: string | undefined
-  agent: string | undefined
-  mode: string | undefined
-  createdAt: number | undefined
+  id: string;
+  parentID: string | undefined;
+  title: string | undefined;
+  version: string | undefined;
+  agent: string | undefined;
+  mode: string | undefined;
+  createdAt: number | undefined;
 }
 
 function readSession(id: string, raw: unknown): SessionMetadata {
-  const r = (raw ?? {}) as Record<string, unknown>
-  const parentID = typeof r.parentID === "string" ? r.parentID : undefined
+  const r = (raw ?? {}) as Record<string, unknown>;
+  const parentID = typeof r.parentID === "string" ? r.parentID : undefined;
   return {
     id,
     parentID,
@@ -111,7 +119,7 @@ function readSession(id: string, raw: unknown): SessionMetadata {
       typeof (r.time as Record<string, unknown>).created === "number"
         ? ((r.time as Record<string, unknown>).created as number)
         : undefined,
-  }
+  };
 }
 
 async function fetchSession(
@@ -120,14 +128,20 @@ async function fetchSession(
   directory: string,
 ): Promise<SessionMetadata | undefined> {
   try {
-    const raw = await withTimeout(client.session(sessionID, directory), METADATA_TIMEOUT_MS)
-    if (typeof raw !== "object" || raw === null) return undefined
-    const data = raw as Record<string, unknown>
-    if (data.id !== sessionID || (data.parentID !== undefined && typeof data.parentID !== "string"))
-      return undefined
-    return readSession(sessionID, data)
+    const raw = await withTimeout(
+      client.session(sessionID, directory),
+      METADATA_TIMEOUT_MS,
+    );
+    if (typeof raw !== "object" || raw === null) return undefined;
+    const data = raw as Record<string, unknown>;
+    if (
+      data.id !== sessionID ||
+      (data.parentID !== undefined && typeof data.parentID !== "string")
+    )
+      return undefined;
+    return readSession(sessionID, data);
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
@@ -144,12 +158,12 @@ async function walkLineage(
   directory: string,
   config: ReviewerConfig,
 ): Promise<SessionLineage> {
-  const nodes: SessionNode[] = []
-  const missingParents: string[] = []
-  const visited = new Set<string>()
-  let cycleDetected = false
+  const nodes: SessionNode[] = [];
+  const missingParents: string[] = [];
+  const visited = new Set<string>();
+  let cycleDetected = false;
 
-  const current = await fetchSession(client, sessionID, directory)
+  const current = await fetchSession(client, sessionID, directory);
   const fallback: SessionMetadata = {
     id: sessionID,
     parentID: undefined,
@@ -158,49 +172,66 @@ async function walkLineage(
     agent: undefined,
     mode: undefined,
     createdAt: undefined,
-  }
+  };
   const origin =
-    current === undefined ? "unknown" : current.parentID !== undefined ? "delegated" : "human-root"
-  nodes.push(toNode(current ?? fallback))
-  visited.add(sessionID)
+    current === undefined
+      ? "unknown"
+      : current.parentID !== undefined
+        ? "delegated"
+        : "human-root";
+  nodes.push(toNode(current ?? fallback));
+  visited.add(sessionID);
 
-  let cursor = current
-  let depth = 0
+  let cursor = current;
+  let depth = 0;
   while (cursor?.parentID) {
-    if (depth >= config.maxSessionDepth || nodes.length - 1 >= config.maxParentSessions) {
+    if (
+      depth >= config.maxSessionDepth ||
+      nodes.length - 1 >= config.maxParentSessions
+    ) {
       // Hit a configured bound; remaining ancestry is truncated, not missing.
       return {
-        ...finalize(nodes, cursor.parentID, depth, cycleDetected, true, missingParents),
+        ...finalize(
+          nodes,
+          cursor.parentID,
+          depth,
+          cycleDetected,
+          true,
+          missingParents,
+        ),
         origin,
-      }
+      };
     }
     if (visited.has(cursor.parentID)) {
-      cycleDetected = true
-      missingParents.push(cursor.parentID)
-      break
+      cycleDetected = true;
+      missingParents.push(cursor.parentID);
+      break;
     }
-    visited.add(cursor.parentID)
-    const parent = await fetchSession(client, cursor.parentID, directory)
+    visited.add(cursor.parentID);
+    const parent = await fetchSession(client, cursor.parentID, directory);
     if (!parent) {
-      missingParents.push(cursor.parentID)
-      break
+      missingParents.push(cursor.parentID);
+      break;
     }
-    nodes.push(toNode(parent))
-    depth += 1
-    cursor = parent
+    nodes.push(toNode(parent));
+    depth += 1;
+    cursor = parent;
   }
-  return { ...finalize(nodes, undefined, depth, cycleDetected, false, missingParents), origin }
+  return {
+    ...finalize(nodes, undefined, depth, cycleDetected, false, missingParents),
+    origin,
+  };
 }
 
 function toNode(s: SessionMetadata): SessionNode {
-  const node: SessionNode = { sessionID: s.id }
-  if (s.parentID !== undefined) node.parentID = s.parentID
-  if (s.title !== undefined) node.title = s.title
-  if (s.version !== undefined) node.version = s.version
-  if (s.agent !== undefined) node.actorName = s.agent
-  if (s.mode !== undefined) node.mode = s.mode
-  if (s.createdAt !== undefined) node.createdAt = s.createdAt
-  return node
+  const node: SessionNode = { sessionID: s.id };
+  if (s.parentID !== undefined) node.parentID = s.parentID;
+  if (s.title !== undefined) node.title = s.title;
+  if (s.version !== undefined) node.version = s.version;
+  if (s.agent !== undefined) node.actorName = s.agent;
+  if (s.mode !== undefined) node.mode = s.mode;
+  if (s.createdAt !== undefined) node.createdAt = s.createdAt;
+  return node;
 }
 
 function finalize(
@@ -211,10 +242,13 @@ function finalize(
   truncated: boolean,
   missingParents: string[],
 ): SessionLineage {
-  if (nextUnresolved !== undefined && !missingParents.includes(nextUnresolved)) {
-    missingParents.push(nextUnresolved)
+  if (
+    nextUnresolved !== undefined &&
+    !missingParents.includes(nextUnresolved)
+  ) {
+    missingParents.push(nextUnresolved);
   }
-  const root = nodes[nodes.length - 1]
+  const root = nodes[nodes.length - 1];
   return {
     nodes,
     rootSessionID: root?.sessionID ?? nodes[0]!.sessionID,
@@ -222,7 +256,7 @@ function finalize(
     cycleDetected,
     truncated,
     missingParents,
-  }
+  };
 }
 
 // --- parent/root message fetch for intent extraction ------------------------
@@ -240,16 +274,16 @@ async function fetchMessagesBounded(
         ? client.intentMessages(sessionID, directory, limit)
         : client.messages(sessionID, directory, limit),
       METADATA_TIMEOUT_MS,
-    )
-    return normalizeFetched(response)
+    );
+    return normalizeFetched(response);
   } catch {
-    return []
+    return [];
   }
 }
 
 function normalizeFetched(raw: unknown): MessageWithParts[] {
-  if (!Array.isArray(raw)) return []
-  return raw as MessageWithParts[]
+  if (!Array.isArray(raw)) return [];
+  return raw as MessageWithParts[];
 }
 
 // --- intent extraction ------------------------------------------------------
@@ -259,27 +293,31 @@ function normalizeFetched(raw: unknown): MessageWithParts[] {
  *  flags when the host sets them; the text-pattern check below is only a
  *  fallback for hosts that do not. */
 function isSyntheticPart(part: Record<string, unknown>): boolean {
-  if (part.type !== "text" || typeof part.text !== "string") return false
-  if (part.synthetic === true || part.ignored === true) return true
-  return /^\s*(Magic Compact:|You have \d+ weighted tokens left)/.test(part.text)
+  if (part.type !== "text" || typeof part.text !== "string") return false;
+  if (part.synthetic === true || part.ignored === true) return true;
+  return /^\s*(Magic Compact:|You have \d+ weighted tokens left)/.test(
+    part.text,
+  );
 }
 
 function messageCreatedAt(message: MessageWithParts): number | undefined {
-  const time = message.info.time as Record<string, unknown> | undefined
-  return typeof time === "object" && time !== null && typeof time.created === "number"
+  const time = message.info.time as Record<string, unknown> | undefined;
+  return typeof time === "object" &&
+    time !== null &&
+    typeof time.created === "number"
     ? time.created
-    : undefined
+    : undefined;
 }
 
 function userTextOf(message: MessageWithParts): string | undefined {
-  if (message.info.role !== "user") return undefined
+  if (message.info.role !== "user") return undefined;
   for (const part of message.parts as Array<Record<string, unknown>>) {
-    if (isSyntheticPart(part)) continue
+    if (isSyntheticPart(part)) continue;
     if (typeof part.text === "string" && part.text.trim()) {
-      return part.text
+      return part.text;
     }
   }
-  return undefined
+  return undefined;
 }
 
 /** A delegation recorded as a subtask/task tool part in a parent session.
@@ -294,37 +332,40 @@ function extractDelegatedTasks(
   sessionID: string,
   childSessionID: string,
 ): IntentBlock[] {
-  const blocks: IntentBlock[] = []
+  const blocks: IntentBlock[] = [];
   for (const message of messages) {
     for (const part of message.parts as Array<Record<string, unknown>>) {
-      const isSubtask = part.type === "subtask"
-      const isTaskTool = part.type === "tool" && part.tool === "task"
-      if (!isSubtask && !isTaskTool) continue
-      let input: Record<string, unknown> | undefined
+      const isSubtask = part.type === "subtask";
+      const isTaskTool = part.type === "tool" && part.tool === "task";
+      if (!isSubtask && !isTaskTool) continue;
+      let input: Record<string, unknown> | undefined;
       if (isTaskTool) {
-        const state = part.state as Record<string, unknown> | undefined
-        const metadata = state?.metadata as Record<string, unknown> | undefined
-        if (typeof metadata?.sessionId === "string" && metadata.sessionId !== childSessionID) {
-          continue
+        const state = part.state as Record<string, unknown> | undefined;
+        const metadata = state?.metadata as Record<string, unknown> | undefined;
+        if (
+          typeof metadata?.sessionId === "string" &&
+          metadata.sessionId !== childSessionID
+        ) {
+          continue;
         }
         input =
           typeof state?.input === "object" && state?.input !== null
             ? (state.input as Record<string, unknown>)
-            : undefined
+            : undefined;
       }
       const fromInput =
         typeof input?.prompt === "string"
           ? input.prompt
           : typeof input?.description === "string"
             ? input.description
-            : undefined
+            : undefined;
       const text =
         typeof part.prompt === "string"
           ? part.prompt
           : typeof part.description === "string"
             ? part.description
-            : fromInput
-      if (!text || !text.trim()) continue
+            : fromInput;
+      if (!text || !text.trim()) continue;
       blocks.push({
         sessionID,
         messageID: typeof message.info.id === "string" ? message.info.id : "",
@@ -335,13 +376,15 @@ function extractDelegatedTasks(
         part.time !== null &&
         "start" in part.time &&
         typeof (part.time as Record<string, unknown>).start === "number"
-          ? { createdAt: (part.time as Record<string, unknown>).start as number }
+          ? {
+              createdAt: (part.time as Record<string, unknown>).start as number,
+            }
           : {}),
         provenance: prov<"intent">("intent", "parent-session", "high"),
-      })
+      });
     }
   }
-  return blocks
+  return blocks;
 }
 
 /** Extract the user-role text blocks of one session with a single source rule:
@@ -356,11 +399,11 @@ function extractSessionUserBlocks(
   sessionID: string,
   delegated: boolean,
 ): IntentBlock[] {
-  const blocks: IntentBlock[] = []
+  const blocks: IntentBlock[] = [];
   for (const message of messages) {
-    const text = userTextOf(message)
-    if (!text) continue
-    const createdAt = messageCreatedAt(message)
+    const text = userTextOf(message);
+    if (!text) continue;
+    const createdAt = messageCreatedAt(message);
     blocks.push({
       sessionID,
       messageID: typeof message.info.id === "string" ? message.info.id : "",
@@ -368,10 +411,14 @@ function extractSessionUserBlocks(
       text,
       synthetic: false,
       ...(createdAt === undefined ? {} : { createdAt }),
-      provenance: prov<"intent">("intent", delegated ? "parent-session" : "session-api", "high"),
-    })
+      provenance: prov<"intent">(
+        "intent",
+        delegated ? "parent-session" : "session-api",
+        "high",
+      ),
+    });
   }
-  return blocks
+  return blocks;
 }
 
 async function resolveIntent(
@@ -387,95 +434,114 @@ async function resolveIntent(
   // briefing and every `task_id` follow-up all come from the orchestrating
   // agent. They remain visible as local-session context labeled `assistant`
   // but can never surface as human authorization.
-  const currentDelegated = lineage.origin !== "human-root"
+  const currentDelegated = lineage.origin !== "human-root";
   const localSessionIntent = extractSessionUserBlocks(
     currentMessages,
     request.sessionID,
     currentDelegated,
-  )
+  );
   if (lineage.origin === "unknown") {
     for (const block of localSessionIntent) {
-      block.actor = "unknown"
-      block.provenance = prov<"intent">("intent", "unavailable", "unknown")
+      block.actor = "unknown";
+      block.provenance = prov<"intent">("intent", "unavailable", "unknown");
     }
   }
-  const directUserIntent: IntentBlock[] = currentDelegated ? [] : localSessionIntent
-  const delegatedTask: IntentBlock[] = []
-  const limit = Math.max(config.intentMessages, 4)
+  const directUserIntent: IntentBlock[] = currentDelegated
+    ? []
+    : localSessionIntent;
+  const delegatedTask: IntentBlock[] = [];
+  const limit = Math.max(config.intentMessages, 4);
 
   // Immediate parent: delegation that created/instructed this session. The
   // parent's own user messages are human intent only when the parent is
   // itself a top-level session (no grandparent).
-  const parent = lineage.nodes[1]
+  const parent = lineage.nodes[1];
   if (parent) {
     const [parentMessages, parentIntent] = await Promise.all([
       fetchMessagesBounded(client, parent.sessionID, directory, limit),
       fetchMessagesBounded(client, parent.sessionID, directory, limit, true),
-    ])
+    ]);
     delegatedTask.push(
-      ...extractDelegatedTasks(parentMessages, parent.sessionID, request.sessionID),
-    )
+      ...extractDelegatedTasks(
+        parentMessages,
+        parent.sessionID,
+        request.sessionID,
+      ),
+    );
     directUserIntent.push(
       ...extractSessionUserBlocks(
         parentIntent,
         parent.sessionID,
         parent.parentID !== undefined,
       ).filter((block) => block.actor === "user"),
-    )
+    );
   }
 
   // Root session (if distinct from parent AND from the current session whose
   // messages we already hold): authoritative user intent.
-  const root = lineage.nodes[lineage.nodes.length - 1]
+  const root = lineage.nodes[lineage.nodes.length - 1];
   if (root && root !== parent && root.sessionID !== request.sessionID) {
-    const rootMessages = await fetchMessagesBounded(client, root.sessionID, directory, limit, true)
+    const rootMessages = await fetchMessagesBounded(
+      client,
+      root.sessionID,
+      directory,
+      limit,
+      true,
+    );
     directUserIntent.push(
-      ...extractSessionUserBlocks(rootMessages, root.sessionID, root.parentID !== undefined).filter(
-        (block) => block.actor === "user",
-      ),
-    )
+      ...extractSessionUserBlocks(
+        rootMessages,
+        root.sessionID,
+        root.parentID !== undefined,
+      ).filter((block) => block.actor === "user"),
+    );
   }
 
   // Pick by creation time, not by array position: the intent arrays are
   // concatenated local → parent → root, so the last element is the root's
   // latest message even when the current session holds much newer input. When
   // no block carries a timestamp, fall back to the last recovered block.
-  const timestamped = directUserIntent.filter((block) => block.createdAt !== undefined)
+  const timestamped = directUserIntent.filter(
+    (block) => block.createdAt !== undefined,
+  );
   const latestExplicitAuthorization =
     timestamped.length > 0
       ? timestamped.reduce((best, block) =>
           (block.createdAt ?? 0) > (best.createdAt ?? 0) ? block : best,
         )
-      : directUserIntent[directUserIntent.length - 1]
+      : directUserIntent[directUserIntent.length - 1];
 
-  const reasons: string[] = []
+  const reasons: string[] = [];
   if (delegatedTask.length === 0 && lineage.depth > 0)
-    reasons.push("no delegation subtask located in parent session")
+    reasons.push("no delegation subtask located in parent session");
   if (lineage.missingParents.length > 0)
-    reasons.push(`missing parents: ${lineage.missingParents.join(", ")}`)
+    reasons.push(`missing parents: ${lineage.missingParents.join(", ")}`);
   if (directUserIntent.length === 0)
     reasons.push(
       currentDelegated
         ? "delegated session: no human-authored user messages exist in this session chain window"
         : "no direct user intent recovered",
-    )
+    );
 
   const completeness: IntentContext["completeness"] =
-    directUserIntent.length > 0 && (delegatedTask.length > 0 || !currentDelegated)
+    directUserIntent.length > 0 &&
+    (delegatedTask.length > 0 || !currentDelegated)
       ? "complete"
       : directUserIntent.length > 0 || localSessionIntent.length > 0
         ? "partial"
-        : "insufficient"
+        : "insufficient";
 
   return {
     directUserIntent,
     delegatedTask,
     localSessionIntent,
     conflictingInstructions: [],
-    ...(latestExplicitAuthorization === undefined ? {} : { latestExplicitAuthorization }),
+    ...(latestExplicitAuthorization === undefined
+      ? {}
+      : { latestExplicitAuthorization }),
     completeness,
     ...(reasons.length === 0 ? {} : { reasons }),
-  }
+  };
 }
 
 // --- actor context assembly -------------------------------------------------
@@ -485,12 +551,12 @@ function resolveProfile(
   config: ReviewerConfig,
 ): Provenanced<ActorProfile> {
   if (agentName !== undefined) {
-    const mapped = config.actorProfiles[agentName]
+    const mapped = config.actorProfiles[agentName];
     if (mapped !== undefined) {
-      return prov<ActorProfile>(mapped, "global-config", "confirmed")
+      return prov<ActorProfile>(mapped, "global-config", "confirmed");
     }
   }
-  return UNKNOWN_PROFILE
+  return UNKNOWN_PROFILE;
 }
 
 function assembleActorContext(
@@ -506,7 +572,7 @@ function assembleActorContext(
           "tool-message",
           current.toolLocated ? "confirmed" : "high",
         )
-      : UNKNOWN_STRING
+      : UNKNOWN_STRING;
   const mode =
     current.mode !== undefined
       ? prov<string | undefined>(
@@ -514,20 +580,20 @@ function assembleActorContext(
           "tool-message",
           current.toolLocated ? "confirmed" : "high",
         )
-      : UNKNOWN_STRING
+      : UNKNOWN_STRING;
 
-  const parentID = lineage.nodes[0]?.parentID
+  const parentID = lineage.nodes[0]?.parentID;
   const parentSessionID =
     parentID !== undefined
       ? prov<string | undefined>(parentID, "session-api", "confirmed")
-      : prov<string | undefined>(undefined, "unavailable", "unknown")
+      : prov<string | undefined>(undefined, "unavailable", "unknown");
 
   const identityCompleteness: ActorContext["identityCompleteness"] =
     current.agentName !== undefined && current.mode !== undefined
       ? "complete"
       : current.agentName !== undefined || current.mode !== undefined
         ? "partial"
-        : "unknown"
+        : "unknown";
 
   return {
     agentName,
@@ -546,7 +612,7 @@ function assembleActorContext(
       lineage.depth > 0 ? "confirmed" : "unknown",
     ),
     identityCompleteness,
-  }
+  };
 }
 
 function assessCompleteness(
@@ -554,25 +620,29 @@ function assessCompleteness(
   lineage: SessionLineage,
   intent: IntentContext,
 ): EvidenceCompleteness {
-  const reasons: string[] = []
-  if (actor.identityCompleteness === "unknown") reasons.push("actor identity unavailable")
-  if (lineage.depth === 0) reasons.push("no parent lineage resolved")
+  const reasons: string[] = [];
+  if (actor.identityCompleteness === "unknown")
+    reasons.push("actor identity unavailable");
+  if (lineage.depth === 0) reasons.push("no parent lineage resolved");
   if (lineage.missingParents.length > 0)
-    reasons.push(`missing parents: ${lineage.missingParents.join(", ")}`)
-  if (intent.directUserIntent.length === 0) reasons.push("no direct user intent recovered")
+    reasons.push(`missing parents: ${lineage.missingParents.join(", ")}`);
+  if (intent.directUserIntent.length === 0)
+    reasons.push("no direct user intent recovered");
   if (intent.delegatedTask.length === 0 && lineage.depth > 0)
-    reasons.push("no delegation task located")
+    reasons.push("no delegation task located");
 
-  const actorOk = actor.identityCompleteness !== "unknown"
-  const lineageOk = lineage.depth > 0
-  const directOk = intent.directUserIntent.length > 0
-  const delegatedOk = intent.delegatedTask.length > 0
+  const actorOk = actor.identityCompleteness !== "unknown";
+  const lineageOk = lineage.depth > 0;
+  const directOk = intent.directUserIntent.length > 0;
+  const delegatedOk = intent.delegatedTask.length > 0;
   // purpose is filled later by the evidence assembler; default false here so
   // callers that only run the resolver still see an explicit flag.
-  const purposeOk = false
-  const score = [true, actorOk, lineageOk, directOk, delegatedOk].filter(Boolean).length
+  const purposeOk = false;
+  const score = [true, actorOk, lineageOk, directOk, delegatedOk].filter(
+    Boolean,
+  ).length;
   const overall: EvidenceCompleteness["overall"] =
-    score >= 4 ? "sufficient" : score >= 2 ? "partial" : "insufficient"
+    score >= 4 ? "sufficient" : score >= 2 ? "partial" : "insufficient";
 
   return {
     permission: true,
@@ -586,7 +656,7 @@ function assessCompleteness(
     referencedCode: false,
     reasons,
     overall,
-  }
+  };
 }
 
 // --- public entry point (resilient) -----------------------------------------
@@ -605,21 +675,37 @@ export async function resolveActorContext(
   intentMessages = messages,
 ): Promise<ActorResolution> {
   try {
-    const reader = "messages" in client ? client : createV1ContextReader(client)
-    const current = resolveCurrentActor(request, messages)
-    const lineage = await walkLineage(reader, request.sessionID, directory, config)
-    const intent = await resolveIntent(request, intentMessages, lineage, reader, directory, config)
-    const actor = assembleActorContext(request, current, lineage, config)
-    const completeness = assessCompleteness(actor, lineage, intent)
-    return { actor, lineage, intent, completeness }
+    const reader =
+      "messages" in client ? client : createV1ContextReader(client);
+    const current = resolveCurrentActor(request, messages);
+    const lineage = await walkLineage(
+      reader,
+      request.sessionID,
+      directory,
+      config,
+    );
+    const intent = await resolveIntent(
+      request,
+      intentMessages,
+      lineage,
+      reader,
+      directory,
+      config,
+    );
+    const actor = assembleActorContext(request, current, lineage, config);
+    const completeness = assessCompleteness(actor, lineage, intent);
+    return { actor, lineage, intent, completeness };
   } catch (error) {
-    return unknownResolution(request, error)
+    return unknownResolution(request, error);
   }
 }
 
 /** Fallback used when resolution fails outright. Exposed for tests. */
-export function unknownResolution(request: PermissionRequest, error: unknown): ActorResolution {
-  const message = error instanceof Error ? error.message : String(error)
+export function unknownResolution(
+  request: PermissionRequest,
+  error: unknown,
+): ActorResolution {
+  const message = error instanceof Error ? error.message : String(error);
   const lineage: SessionLineage = {
     origin: "unknown",
     nodes: [{ sessionID: request.sessionID }],
@@ -628,7 +714,7 @@ export function unknownResolution(request: PermissionRequest, error: unknown): A
     cycleDetected: false,
     truncated: false,
     missingParents: [],
-  }
+  };
   const actor: ActorContext = {
     agentName: UNKNOWN_STRING,
     mode: UNKNOWN_STRING,
@@ -638,14 +724,14 @@ export function unknownResolution(request: PermissionRequest, error: unknown): A
     rootSessionID: prov<string>(request.sessionID, "unavailable", "unknown"),
     delegationDepth: prov<number>(0, "unavailable", "unknown"),
     identityCompleteness: "unknown",
-  }
+  };
   const intent: IntentContext = {
     directUserIntent: [],
     delegatedTask: [],
     localSessionIntent: [],
     conflictingInstructions: [],
     completeness: "insufficient",
-  }
+  };
   return {
     actor,
     lineage,
@@ -663,5 +749,5 @@ export function unknownResolution(request: PermissionRequest, error: unknown): A
       reasons: [`actor resolution failed: ${message}`],
       overall: "insufficient",
     },
-  }
+  };
 }

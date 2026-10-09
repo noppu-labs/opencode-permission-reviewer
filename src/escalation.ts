@@ -3,7 +3,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
   ReviewOutcome,
-} from "./types.ts"
+} from "./types.ts";
 
 /**
  * Categories that can be hardened independently of the global escalation mode
@@ -11,7 +11,10 @@ import type {
  * `general` covers every other escalate path (LLM escalate, gates, policy
  * manual, context failures, …).
  */
-export type EscalationCategory = "general" | "invalid-decision" | "reviewer-failure"
+export type EscalationCategory =
+  | "general"
+  | "invalid-decision"
+  | "reviewer-failure";
 
 /**
  * Resolve the effective disposition for an internal escalate.
@@ -28,18 +31,24 @@ export function resolveEscalationDisposition(
   config: ReviewerConfig,
   category: EscalationCategory = "general",
 ): EscalationDisposition {
-  if (result.decisionSource === "manual-superseded") return "manual"
-  if (result.kind !== "escalate") return "manual"
+  if (result.decisionSource === "manual-superseded") return "manual";
+  if (result.kind !== "escalate") return "manual";
 
-  if (config.escalationMode === "deny") return "deny"
+  if (config.escalationMode === "deny") return "deny";
 
-  if (category === "invalid-decision" && config.riskPolicy.onInvalidDecision === "deny") {
-    return "deny"
+  if (
+    category === "invalid-decision" &&
+    config.riskPolicy.onInvalidDecision === "deny"
+  ) {
+    return "deny";
   }
-  if (category === "reviewer-failure" && config.riskPolicy.onReviewerFailure === "deny") {
-    return "deny"
+  if (
+    category === "reviewer-failure" &&
+    config.riskPolicy.onReviewerFailure === "deny"
+  ) {
+    return "deny";
   }
-  return "manual"
+  return "manual";
 }
 
 /**
@@ -59,34 +68,40 @@ export function applyEscalationDisposition(
   config: ReviewerConfig,
   category: EscalationCategory = "general",
 ): ReviewExecutionResult {
-  if (result.decisionSource === "manual-superseded") return result
-  if (result.kind !== "escalate") return result
+  if (result.decisionSource === "manual-superseded") return result;
+  if (result.kind !== "escalate") return result;
 
-  const disposition = resolveEscalationDisposition(result, config, category)
-  const reviewerOutcome = resolveReviewerOutcome(result)
+  const disposition = resolveEscalationDisposition(result, config, category);
+  const reviewerOutcome = resolveReviewerOutcome(result);
 
   if (disposition === "manual") {
     return {
       ...result,
       ...(reviewerOutcome === undefined ? {} : { reviewerOutcome }),
       escalationDisposition: "manual",
-    }
+    };
   }
 
   return {
     kind: "deny",
     reason: result.reason,
     ...(result.decision === undefined ? {} : { decision: result.decision }),
-    ...(result.reviewSessionID === undefined ? {} : { reviewSessionID: result.reviewSessionID }),
-    ...(result.decisionSource === undefined ? {} : { decisionSource: result.decisionSource }),
+    ...(result.reviewSessionID === undefined
+      ? {}
+      : { reviewSessionID: result.reviewSessionID }),
+    ...(result.decisionSource === undefined
+      ? {}
+      : { decisionSource: result.decisionSource }),
     ...(reviewerOutcome === undefined ? {} : { reviewerOutcome }),
-    ...(result.reviewerModel === undefined ? {} : { reviewerModel: result.reviewerModel }),
+    ...(result.reviewerModel === undefined
+      ? {}
+      : { reviewerModel: result.reviewerModel }),
     ...(result.reviewerEscalatedFrom === undefined
       ? {}
       : { reviewerEscalatedFrom: result.reviewerEscalatedFrom }),
     ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
     escalationDisposition: "deny",
-  }
+  };
 }
 
 /**
@@ -94,8 +109,10 @@ export function applyEscalationDisposition(
  * `escalate` for timeouts, invalid output, policy-manual routes, or other
  * fail-safes that never produced a valid decision.
  */
-function resolveReviewerOutcome(result: ReviewExecutionResult): ReviewOutcome | undefined {
-  if (result.reviewerOutcome !== undefined) return result.reviewerOutcome
-  if (result.decision !== undefined) return result.decision.outcome
-  return undefined
+function resolveReviewerOutcome(
+  result: ReviewExecutionResult,
+): ReviewOutcome | undefined {
+  if (result.reviewerOutcome !== undefined) return result.reviewerOutcome;
+  if (result.decision !== undefined) return result.decision.outcome;
+  return undefined;
 }

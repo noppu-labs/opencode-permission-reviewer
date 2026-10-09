@@ -1,4 +1,4 @@
-import type { OpenCodeCapabilities } from "./adapter.ts"
+import type { OpenCodeCapabilities } from "./adapter.ts";
 
 /**
  * Probe what the host client actually exposes. Every check is a property-type
@@ -7,15 +7,16 @@ import type { OpenCodeCapabilities } from "./adapter.ts"
  * chain and is surfaced to diagnostics.
  */
 export function probeCapabilities(client: unknown): OpenCodeCapabilities {
-  const record = (client ?? {}) as Record<string, unknown>
-  const session = (record.session ?? {}) as Record<string, unknown>
-  const tui = (record.tui ?? {}) as Record<string, unknown>
-  const permission = (record.permission ?? {}) as Record<string, unknown>
-  const raw = (record._client ?? {}) as Record<string, unknown>
+  const record = (client ?? {}) as Record<string, unknown>;
+  const session = (record.session ?? {}) as Record<string, unknown>;
+  const tui = (record.tui ?? {}) as Record<string, unknown>;
+  const permission = (record.permission ?? {}) as Record<string, unknown>;
+  const raw = (record._client ?? {}) as Record<string, unknown>;
   // The v2-generation client exposes permission.reply and names its protected
   // transport `client` (not `_client`). The v1 server client handed to plugins
   // today has neither a permission namespace nor permission.reply.
-  const isV2Generation = typeof permission.reply === "function" && typeof raw.post !== "function"
+  const isV2Generation =
+    typeof permission.reply === "function" && typeof raw.post !== "function";
   return {
     publicPermissionReply:
       typeof permission.reply === "function" ||
@@ -36,5 +37,5 @@ export function probeCapabilities(client: unknown): OpenCodeCapabilities {
     // ruleset. Reported from the probe shape, not assumed.
     effectivePermissions: isV2Generation,
     tuiPublish: typeof tui.publish === "function",
-  }
+  };
 }

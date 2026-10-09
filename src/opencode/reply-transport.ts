@@ -1,16 +1,22 @@
-import type { OpenCodeCapabilities, PermissionReplyInput, RawTransport } from "./adapter.ts"
+import type {
+  OpenCodeCapabilities,
+  PermissionReplyInput,
+  RawTransport,
+} from "./adapter.ts";
 
 export interface ReplyTransport {
-  reply(input: PermissionReplyInput): Promise<{ data?: unknown; error?: unknown }>
+  reply(
+    input: PermissionReplyInput,
+  ): Promise<{ data?: unknown; error?: unknown }>;
 }
 
 export interface ReplyTransportDeps {
   /** The v1 authenticated raw transport (`client._client`). May be undefined
    *  when the host client does not expose it; the factory throws in that case. */
-  raw: RawTransport | undefined
-  capabilities: OpenCodeCapabilities
+  raw: RawTransport | undefined;
+  capabilities: OpenCodeCapabilities;
   /** Emitted once when the transport is built, for diagnostics. */
-  logOnce?: (message: string) => void
+  logOnce?: (message: string) => void;
 }
 
 /**
@@ -24,15 +30,16 @@ export interface ReplyTransportDeps {
  * public path slot in unchanged when a host exposes one.
  */
 export function createReplyTransport(deps: ReplyTransportDeps): ReplyTransport {
-  const useRaw = deps.capabilities.rawAuthenticatedTransport && deps.raw !== undefined
+  const useRaw =
+    deps.capabilities.rawAuthenticatedTransport && deps.raw !== undefined;
   if (!useRaw) {
     throw new Error(
       "OpenCode's authenticated SDK transport is unavailable; refusing unsafe partial startup.",
-    )
+    );
   }
   deps.logOnce?.(
     `permission reply transport ready: path=raw-authenticated capabilities=${JSON.stringify(deps.capabilities)}`,
-  )
+  );
   return {
     async reply(input: PermissionReplyInput) {
       return deps.raw!.post({
@@ -44,7 +51,7 @@ export function createReplyTransport(deps: ReplyTransportDeps): ReplyTransport {
         },
         query: { directory: input.directory },
         headers: { "Content-Type": "application/json" },
-      })
+      });
     },
-  }
+  };
 }
