@@ -171,9 +171,6 @@ mccabe.max-complexity = 10
 # Splitting them mid-sentence would hide the text from grep and make a case hard to compare.
 "benchmarks/permission-reviewer/scripts/build-dataset.py" = ["E501"]
 
-# Pending: removed by quality/3-python. Each entry lists only the codes that file still fails.
-"tests/compatibility/test_v2_reviewer.py" = ["C901"]
-
 [tool.ruff.format]
 quote-style = "double"
 skip-magic-trailing-comma = false

@@ -114,88 +114,55 @@ def audit_record(host, session_id):
     return None
 
 
-@pytest.mark.parametrize(("host_version", "output_format", "decision_outcome"), V2_CASES)
-def test_v2_reviewer_applies_and_cleans_up(
-    launch_host, activate_host, model_server, host_version, output_format, decision_outcome, tmp_path
-):
-    expected_effect = decision_outcome
+def arm_model(model_server, decision_outcome):
+    """Set up the synthetic model for one case and return the effect the host must apply."""
     if decision_outcome == "ambiguous":
         model_server["control"]["ambiguous"] = True
-        expected_effect = "ask"
-    elif decision_outcome == "low-confidence-deny":
+        return "ask"
+    if decision_outcome == "low-confidence-deny":
         model_server["decision"].update(outcome="deny", confidence=0.1)
-        expected_effect = "deny"
-    elif decision_outcome in {"prior-deny", "later-deny", "interrupted", "brake"}:
-        expected_effect = "deny"
-    elif decision_outcome in {"retained", "service"}:
-        expected_effect = "allow"
-    elif decision_outcome == "schema-retry":
+        return "deny"
+    if decision_outcome in {"prior-deny", "later-deny", "interrupted", "brake"}:
+        return "deny"
+    if decision_outcome in {"retained", "service"}:
+        return "allow"
+    if decision_outcome == "schema-retry":
         model_server["control"]["invalid_first"] = True
-        expected_effect = "allow"
-    else:
-        model_server["decision"]["outcome"] = decision_outcome
-    binary = os.environ[f"OPENCODE_V2_{host_version.replace('.', '_')}"]
-    package = os.environ.get("PLUGIN_PACKAGE_PATH", str(Path(__file__).resolve().parents[2]))
-    provider = {
-        "providers": {
-            "fixture": {
-                "package": "@opencode/ai/providers/openai-compatible",
-                "settings": {"baseURL": model_server["url"], "apiKey": "synthetic-fixture"},
-                "models": {
-                    "reviewer": {
-                        "name": "Fixture reviewer",
-                        "variants": [{"id": "max", "settings": {}}, {"id": "medium", "settings": {}}],
-                        "capabilities": {"tools": True, "input": ["text"], "output": ["text"]},
-                        "limit": {"context": 32000, "output": 1000},
-                    }
-                },
-            }
-        }
-    }
-    provider["providers"]["fixture"]["models"]["driver"] = {
+        return "allow"
+    model_server["decision"]["outcome"] = decision_outcome
+    return decision_outcome
+
+
+def driver_provider(model_server):
+    """The reviewer provider with a "max" variant listed first, plus a driver model for real operations."""
+    provider = reviewer_provider(model_server)
+    models = provider["providers"]["fixture"]["models"]
+    models["reviewer"]["variants"] = [{"id": "max", "settings": {}}, {"id": "medium", "settings": {}}]
+    models["driver"] = {
         "name": "Driver",
         "capabilities": {"tools": True, "input": ["text"], "output": ["text"]},
         "limit": {"context": 32000, "output": 1000},
     }
-    plugins = [package]
-    if decision_outcome in {"prior-deny", "later-deny"}:
-        other = tmp_path / "composition-plugin"
-        other.mkdir()
-        (other / "index.js").write_text(
-            'export default { id: "fixture-composition", async setup(ctx) { await ctx.permission.hook("evaluate", '
-            'input => { input.effect = "deny"; input.message = "Fixture plugin denial"; }); } };'
-        )
-        (other / "package.json").write_text(json.dumps({"name": "fixture-composition", "type": "module"}))
-        plugins = [str(other), package] if decision_outcome == "prior-deny" else [package, str(other)]
-    host = launch_host(
-        "v2",
-        binary,
-        {"plugins": plugins},
-        reviewer={
-            "model": "fixture/reviewer",
-            "timeoutMs": 5000,
-            "reviewBudgetMs": 15000,
-            "outputFormat": output_format,
-            "retainReviewSessions": decision_outcome == "retained",
-        },
-        global_config=provider,
-        service=decision_outcome == "service",
+    return provider
+
+
+def composition_plugins(package, decision_outcome, tmp_path):
+    """Load a plugin that denies every evaluation, before or after the reviewer, for the composition cases."""
+    if decision_outcome not in {"prior-deny", "later-deny"}:
+        return [package]
+    other = tmp_path / "composition-plugin"
+    other.mkdir()
+    (other / "index.js").write_text(
+        'export default { id: "fixture-composition", async setup(ctx) { await ctx.permission.hook("evaluate", '
+        'input => { input.effect = "deny"; input.message = "Fixture plugin denial"; }); } };'
     )
-    plugins = activate_host(host, "v2")
-    assert "opencode-permission-reviewer" in json.dumps(plugins), plugins
+    (other / "package.json").write_text(json.dumps({"name": "fixture-composition", "type": "module"}))
+    return [str(other), package] if decision_outcome == "prior-deny" else [package, str(other)]
 
-    def request(path, body=None):
-        req = urllib.request.Request(
-            host["url"] + path,
-            data=None if body is None else json.dumps(body).encode(),
-            headers={**host["headers"], "Content-Type": "application/json"},
-        )
-        with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
-            if response.status == 204:
-                return None
-            return json.load(response)
 
+def open_session(host, decision_outcome):
     session = request(
+        host,
         "/api/session",
         {
             "title": "Fixture operation",
@@ -204,58 +171,140 @@ def test_v2_reviewer_applies_and_cleans_up(
             "permissions": [{"action": "shell", "resource": "*", "effect": "ask"}],
         },
     )
-    session_id = session.get("data", session)["id"]
+    return session.get("data", session)["id"]
+
+
+def assistant_parts(context):
+    return (part for message in context["data"] if message["type"] == "assistant" for part in message["content"])
+
+
+def reviewer_called(model_server):
+    return any(call.get("model") == "reviewer" for call in model_server["calls"])
+
+
+def interrupt_review(host, model_server, session_id, wait_prefix):
+    """Interrupt the operation while its review is in flight; no tool may complete."""
+    model_server["control"]["delay"] = 1
+    request(host, f"/api/session/{session_id}/prompt", {"text": "Print the fixture marker using shell once"})
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline and not reviewer_called(model_server):
+        time.sleep(0.02)
+    assert reviewer_called(model_server)
+    request(host, f"/api/session/{session_id}/interrupt", {})
+    request(host, f"{wait_prefix}/{session_id}/wait", {})
+    context = request(host, f"/api/session/{session_id}/context")
+    assert not any(
+        part.get("type") == "tool" and part.get("state", {}).get("status") == "completed"
+        for part in assistant_parts(context)
+    ), context
+
+
+def request_permission(host, session_id, decision_outcome):
+    return request(
+        host,
+        f"/api/session/{session_id}/permission",
+        {
+            # Evaluation metadata only: the critical string is never executed.
+            "action": "shell",
+            "resources": ["printf *"],
+            "metadata": {"command": "rm -rf /" if decision_outcome == "brake" else "printf harmless"},
+        },
+    )
+
+
+def settled_audit_records(host):
+    deadline = time.monotonic() + 5
+    records = []
+    while time.monotonic() < deadline:
+        records = audit_records(host)
+        if records:
+            break
+        time.sleep(0.02)
+    assert records, "The completed evaluation must produce an audit record"
+    return records
+
+
+def assert_reviewer_offered_only_its_result_tool(model_server):
+    assert model_server["calls"]
+    for call in model_server["calls"]:
+        assert {tool["function"]["name"] for tool in call.get("tools", [])} <= {"permission_reviewer_result"}
+
+
+def retained_location(host, reviewer_id):
+    """Check the retained reviewer session ran in its own temporary location, and return that location."""
+    retained = request(host, "/api/session/" + reviewer_id)["data"]
+    isolated = Path(retained["location"]["directory"])
+    assert isolated.parent == Path(tempfile.gettempdir())
+    assert isolated.name.startswith("opencode-reviewer-")
+    assert isolated != host["project"]
+    assert (isolated / "index.js").exists()
+    assert "permission_reviewer_result" in json.dumps(request(host, f"/api/session/{reviewer_id}/context"))
+    return isolated
+
+
+def assert_allowed_shell_runs(host, wait_prefix):
+    operation = request(
+        host,
+        "/api/session",
+        {
+            "title": "Real shell fixture",
+            "location": {"directory": str(host["project"])},
+            "model": {"providerID": "fixture", "id": "driver"},
+            "permissions": [{"action": "shell", "resource": "*", "effect": "ask"}],
+        },
+    )
+    operation_id = operation.get("data", operation)["id"]
+    request(host, f"/api/session/{operation_id}/prompt", {"text": "Print the fixture marker with shell exactly once"})
+    request(host, f"{wait_prefix}/{operation_id}/wait", {})
+    context = request(host, f"/api/session/{operation_id}/context")
+    assert "COMPATIBILITY_EXECUTED" in json.dumps(context), context
+    assert any(
+        part.get("type") == "tool"
+        and part.get("name") == "shell"
+        and part.get("state", {}).get("status") == "completed"
+        for part in assistant_parts(context)
+    ), context
+
+
+@pytest.mark.parametrize(("host_version", "output_format", "decision_outcome"), V2_CASES)
+def test_v2_reviewer_applies_and_cleans_up(
+    launch_host, activate_host, model_server, host_version, output_format, decision_outcome, tmp_path
+):
+    expected_effect = arm_model(model_server, decision_outcome)
+    binary = os.environ[f"OPENCODE_V2_{host_version.replace('.', '_')}"]
+    package = os.environ.get("PLUGIN_PACKAGE_PATH", str(Path(__file__).resolve().parents[2]))
+    host = launch_host(
+        "v2",
+        binary,
+        {"plugins": composition_plugins(package, decision_outcome, tmp_path)},
+        reviewer={
+            "model": "fixture/reviewer",
+            "timeoutMs": 5000,
+            "reviewBudgetMs": 15000,
+            "outputFormat": output_format,
+            "retainReviewSessions": decision_outcome == "retained",
+        },
+        global_config=driver_provider(model_server),
+        service=decision_outcome == "service",
+    )
+    plugins = activate_host(host, "v2")
+    assert "opencode-permission-reviewer" in json.dumps(plugins), plugins
+
+    session_id = open_session(host, decision_outcome)
     wait_prefix = "/api/session" if host_version == "2.0.3" else "/api/experimental/session"
     if decision_outcome == "interrupted":
-        model_server["control"]["delay"] = 1
-        request(f"/api/session/{session_id}/prompt", {"text": "Print the fixture marker using shell once"})
-        deadline = time.monotonic() + 10
-        while time.monotonic() < deadline and not any(
-            call.get("model") == "reviewer" for call in model_server["calls"]
-        ):
-            time.sleep(0.02)
-        assert any(call.get("model") == "reviewer" for call in model_server["calls"])
-        request(f"/api/session/{session_id}/interrupt", {})
-        request(f"{wait_prefix}/{session_id}/wait", {})
-        context = request(f"/api/session/{session_id}/context")
-        assert not any(
-            part.get("type") == "tool" and part.get("state", {}).get("status") == "completed"
-            for message in context["data"]
-            if message["type"] == "assistant"
-            for part in message["content"]
-        ), context
-    else:
-        outcome = request(
-            f"/api/session/{session_id}/permission",
-            {
-                # Evaluation metadata only: the critical string is never executed.
-                "action": "shell",
-                "resources": ["printf *"],
-                "metadata": {"command": "rm -rf /" if decision_outcome == "brake" else "printf harmless"},
-            },
-        )
+        interrupt_review(host, model_server, session_id, wait_prefix)
+        records = settled_audit_records(host)
+        assert records[-1]["outcome"] == "deny", records
+        assert records[-1]["application"] == "cancelled", records
+        return
+    outcome = request_permission(host, session_id, decision_outcome)
     if decision_outcome == "prior-deny":
         assert outcome["data"]["effect"] == "deny"
         assert model_server["calls"] == []
         assert not (host["root"] / "reviewer-audit.jsonl").exists()
         return
-    audit_path = host["root"] / "reviewer-audit.jsonl"
-    deadline = time.monotonic() + 5
-    records = []
-    while time.monotonic() < deadline:
-        if audit_path.exists():
-            try:
-                records = [json.loads(line) for line in audit_path.read_text().splitlines()]
-            except json.JSONDecodeError:
-                records = []
-        if records:
-            break
-        time.sleep(0.02)
-    assert records, "The completed evaluation must produce an audit record"
-    if decision_outcome == "interrupted":
-        assert records[-1]["outcome"] == "deny", records
-        assert records[-1]["application"] == "cancelled", records
-        return
+    records = settled_audit_records(host)
     assert outcome["data"]["effect"] == expected_effect, records
     assert records[-1]["schemaVersion"] == 3
     assert records[-1]["application"] == ("human-pending" if expected_effect == "ask" else "evaluation-returned")
@@ -263,54 +312,19 @@ def test_v2_reviewer_applies_and_cleans_up(
         assert records[-1]["decisionSource"] == "emergency-brake"
         assert model_server["calls"] == []
         return
-    assert model_server["calls"]
-    for call in model_server["calls"]:
-        assert {tool["function"]["name"] for tool in call.get("tools", [])} <= {"permission_reviewer_result"}
+    assert_reviewer_offered_only_its_result_tool(model_server)
     if decision_outcome == "retained":
         reviewer_id = records[-1]["reviewerSessionID"]
-        retained = request("/api/session/" + reviewer_id)["data"]
-        isolated = Path(retained["location"]["directory"])
-        assert isolated.parent == Path(tempfile.gettempdir())
-        assert isolated.name.startswith("opencode-reviewer-")
-        assert isolated != host["project"]
-        assert (isolated / "index.js").exists()
-        assert "permission_reviewer_result" in json.dumps(request(f"/api/session/{reviewer_id}/context"))
-        with urllib.request.urlopen(  # nosec B310 # local 127.0.0.1 host under test
-            urllib.request.Request(
-                host["url"] + "/api/session/" + reviewer_id, headers=host["headers"], method="DELETE"
-            ),
-            timeout=5,
-        ):
-            pass
+        isolated = retained_location(host, reviewer_id)
+        delete_session(host, reviewer_id)
         host["stop"]()
         shutil.rmtree(isolated, ignore_errors=True)
         return
     with pytest.raises(urllib.error.HTTPError) as failure:
-        request("/api/session/" + records[-1]["reviewerSessionID"])
+        request(host, "/api/session/" + records[-1]["reviewerSessionID"])
     assert failure.value.code == 404
     if output_format == "json_schema" and decision_outcome == "allow":
-        operation = request(
-            "/api/session",
-            {
-                "title": "Real shell fixture",
-                "location": {"directory": str(host["project"])},
-                "model": {"providerID": "fixture", "id": "driver"},
-                "permissions": [{"action": "shell", "resource": "*", "effect": "ask"}],
-            },
-        )
-        operation_id = operation.get("data", operation)["id"]
-        request(f"/api/session/{operation_id}/prompt", {"text": "Print the fixture marker with shell exactly once"})
-        request(f"{wait_prefix}/{operation_id}/wait", {})
-        context = request(f"/api/session/{operation_id}/context")
-        assert "COMPATIBILITY_EXECUTED" in json.dumps(context), context
-        assert any(
-            part.get("type") == "tool"
-            and part.get("name") == "shell"
-            and part.get("state", {}).get("status") == "completed"
-            for message in context["data"]
-            if message["type"] == "assistant"
-            for part in message["content"]
-        ), context
+        assert_allowed_shell_runs(host, wait_prefix)
 
 
 @pytest.mark.parametrize("host_version", V2_VERSIONS)
