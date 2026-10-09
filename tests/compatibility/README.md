@@ -32,7 +32,7 @@ host at a time, verifies its integrity, runs the real-host tests, and removes
 the disposable installation before continuing:
 
 ```bash
-PYTHON=/path/to/python-with-pytest \
+PYTHON="$PWD/.venv/bin/python" \
   bun tests/compatibility/verify-v2-window.ts
 ```
 
