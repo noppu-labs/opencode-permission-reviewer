@@ -43,7 +43,7 @@ by `bun.lock`.
 | yamllint (`--strict`) | YAML style | `.yamllint.yaml` |
 | markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
-| Biome | Lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600) | `biome.jsonc` |
+| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600) | `biome.jsonc` |
 | `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
 | FTA | Maintainability score per file, cap 52 | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
@@ -54,8 +54,10 @@ by `bun.lock`.
 (Biome, ruff, bandit, complexipy, vulture, pyrefly, pylint, codespell, knip); keep it out of any
 tool you add.
 
-`.editorconfig` carries the editor basics. Biome's formatter and import organizing are still off
-(see the ratchet below), so TypeScript and JavaScript formatting is not checked yet.
+`.editorconfig` carries the editor basics. Biome formats TypeScript and JavaScript and organizes
+imports, so `biome check` fails on unformatted code. The commits that reformatted the tree are
+listed in `.git-blame-ignore-revs`; run `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+once per clone so `git blame` skips them (GitHub's blame view reads the file by itself).
 
 ### Where the pins live
 
@@ -115,9 +117,9 @@ The tooling landed with its full end-state configuration, plus temporary exempti
 code does not pass yet. Each exemption is narrow (it matches only what fails today) and names the
 stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
 
-- `biome.jsonc`: the formatter and `organizeImports` are disabled, and `overrides` turns off one
-  rule per entry for an exact list of files, except the file-length entries, which cap each listed
-  file at its current length. Entries are ordered by the pull request that removes them.
+- `biome.jsonc`: `overrides` turns off one rule per entry for an exact list of files, except the
+  file-length entries, which cap each listed file at its current length. Entries are ordered by
+  the pull request that removes them.
 - `fta.json`: `exclude_filenames` lists every file above the cap. JSON has no comments, so the
   pull request that removes each one is listed in the description of the pull request that added
   it.

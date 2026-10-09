@@ -422,7 +422,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1258
+                "maxLines": 1391
               }
             }
           }
@@ -431,7 +431,7 @@
     },
     // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
     {
-      "includes": ["src/context/actor-resolver.ts"],
+      "includes": ["src/cli/explain.ts"],
       "linter": {
         "rules": {
           "style": {
@@ -447,6 +447,70 @@
     },
     // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
     {
+      "includes": ["src/cli/init.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 646
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/context.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 629
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/context/actor-resolver.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 719
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/core/review-coordinator.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 702
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
       "includes": ["src/git-evidence.ts"],
       "linter": {
         "rules": {
@@ -454,7 +518,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1130
+                "maxLines": 1348
               }
             }
           }
@@ -470,7 +534,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 946
+                "maxLines": 1058
               }
             }
           }
@@ -486,7 +550,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 639
+                "maxLines": 715
               }
             }
           }
@@ -502,7 +566,55 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 664
+                "maxLines": 704
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/audit.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 647
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/capability.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 603
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/git-evidence.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 614
               }
             }
           }
@@ -518,7 +630,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 843
+                "maxLines": 1051
               }
             }
           }
@@ -534,7 +646,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 817
+                "maxLines": 980
               }
             }
           }
@@ -550,7 +662,23 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1733
+                "maxLines": 1941
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/v2-backend.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 616
               }
             }
           }
