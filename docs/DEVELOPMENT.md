@@ -54,9 +54,9 @@ by `bun.lock`.
 (Biome, ruff, bandit, complexipy, vulture, pyrefly, pylint, codespell, knip); keep it out of any
 tool you add.
 
-`.editorconfig` carries the editor basics. Biome formats TypeScript and JavaScript and organizes
-imports, so `biome check` fails on unformatted code. The commits that reformatted the tree are
-listed in `.git-blame-ignore-revs`; run `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+`.editorconfig` carries the editor basics. Biome formats TypeScript, JavaScript and JSON and
+organizes imports, so `biome check` fails on unformatted code. The commits that reformatted the tree
+are listed in `.git-blame-ignore-revs`; run `git config blame.ignoreRevsFile .git-blame-ignore-revs`
 once per clone so `git blame` skips them (GitHub's blame view reads the file by itself).
 
 ### Where the pins live
