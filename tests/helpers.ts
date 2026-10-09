@@ -7,6 +7,7 @@ import type {
   ReviewAuditRecord,
   ReviewDecision,
   ReviewerConfig,
+  SystemOneScores,
 } from "../src/types.ts"
 import type { ReviewUiStatus } from "../src/ui-protocol.ts"
 
@@ -27,6 +28,38 @@ export function decision(
     scope_alignment: "aligned",
     evidence_completeness: "sufficient",
     ...overrides,
+  }
+}
+
+/** Synthetic Jev scores shaped like a parsed escalation handed to a reasoning reviewer. */
+export function systemOneScores(): SystemOneScores {
+  return {
+    returnedModel: "jev-1.13.0",
+    outcome: {
+      choice: "escalate",
+      confidence: 0.52,
+      probabilities: { allow: 0.31, deny: 0.17, escalate: 0.52 },
+    },
+    supporting: {
+      riskLevel: { choice: "medium", confidence: 0.64 },
+      userAuthorization: { choice: "medium", confidence: 0.58 },
+      scopeAlignment: { choice: "aligned", confidence: 0.81 },
+      evidenceCompleteness: { choice: "partial", confidence: 0.47 },
+      primaryBasis: { choice: "insufficient_evidence", confidence: 0.39 },
+    },
+    signals: {
+      materialAuthorization: 0.62,
+      withinIntentScope: 0.84,
+      unauthorizedDataLoss: 0.21,
+      untrustedSensitiveDisclosure: 0.03,
+      excessiveCredentialAccess: 0.02,
+      unauthorizedSecurityChange: 0.04,
+      unauthorizedExternalMutation: 0.05,
+      essentialEvidenceMissing: 0.44,
+      absolutePolicyDeny: 0.06,
+    },
+    contradictions: [],
+    reasoningRecommended: true,
   }
 }
 

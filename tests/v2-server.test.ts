@@ -6,7 +6,7 @@ import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client"
 import { setupWithServices } from "../src/opencode/v2/server.ts"
 import { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts"
 import type { ReviewExecutionResult } from "../src/types.ts"
-import { config, decision } from "./helpers.ts"
+import { config, decision, systemOneScores } from "./helpers.ts"
 
 type Input = Parameters<typeof normalizeV2Permission>[0] & { message?: string }
 
@@ -317,5 +317,109 @@ test("action mutations and incomplete evidence cannot reuse an approval, and con
     } finally {
       await harness.cleanup()
     }
+  }
+})
+
+test("v2 audit records carry Jev's scores only when the reviewer result has them", async () => {
+  const scores = systemOneScores()
+  const allowScores: typeof scores = {
+    ...scores,
+    outcome: {
+      choice: "allow",
+      confidence: 0.83,
+      probabilities: { allow: 0.83, deny: 0.05, escalate: 0.12 },
+    },
+    supporting: {
+      ...scores.supporting,
+      evidenceCompleteness: { choice: "sufficient", confidence: 0.77 },
+      primaryBasis: { choice: "authorized_routine", confidence: 0.72 },
+    },
+    reasoningRecommended: false,
+  }
+  const cases: Array<{ result: ReviewExecutionResult; expected?: typeof scores }> = [
+    {
+      result: {
+        kind: "allow",
+        reason: "Fixture Jev-only allow",
+        decision: decision("allow"),
+        decisionSource: "system-one-reviewer",
+        reviewerModel: "opencode/jev-1.13-free",
+        systemOne: allowScores,
+      },
+      expected: allowScores,
+    },
+    {
+      result: {
+        kind: "deny",
+        reason: "Fixture reasoning deny",
+        decision: decision("deny"),
+        decisionSource: "llm-reviewer",
+        reviewerModel: "openai/gpt-5.6-luna",
+        reviewerEscalatedFrom: { model: "opencode/jev-1.13-free", reason: "Jev was unsure." },
+        systemOne: scores,
+      },
+      expected: scores,
+    },
+    {
+      result: {
+        kind: "escalate",
+        reason: "System One reviewer returned a missing, invalid, or ambiguous decision.",
+        decisionSource: "failure-safe",
+        reviewerModel: "opencode/jev-1.13-free",
+      },
+    },
+  ]
+  for (const { result, expected } of cases) {
+    const harness = await fixture({ result })
+    try {
+      await harness.evaluate(harness.input())
+      await harness.dispose()
+      const [record] = await harness.records()
+      expect(record?.decisionSource).toBe(result.decisionSource)
+      expect(record?.systemOne).toEqual(expected)
+      if (result.reviewerEscalatedFrom)
+        expect(record?.reviewerEscalatedFrom).toEqual(result.reviewerEscalatedFrom)
+    } finally {
+      await harness.cleanup()
+    }
+  }
+})
+
+test("v2 failure-safe overrides keep Jev's scores from the replaced result", async () => {
+  const scores = systemOneScores()
+  let release!: () => void
+  const harness = await fixture({
+    result: {
+      kind: "deny",
+      reason: "Fixture reasoning deny",
+      decision: decision("deny"),
+      decisionSource: "llm-reviewer",
+      reviewerModel: "openai/gpt-5.6-luna",
+      reviewerEscalatedFrom: { model: "opencode/jev-1.13-free", reason: "Jev was unsure." },
+      systemOne: scores,
+    },
+    delay: new Promise<void>((resolve) => {
+      release = resolve
+    }),
+  })
+  try {
+    const input = harness.input()
+    const work = harness.evaluate(input)
+    while (harness.reviews() === 0) await Bun.sleep(1)
+    Reflect.set(input, "metadata", { command: "printf changed" })
+    release()
+    await work
+    expect(input.effect).toBe("deny")
+    await harness.dispose()
+    const [record] = await harness.records()
+    expect(record).toMatchObject({
+      outcome: "deny",
+      reason: "Pending action changed during its review",
+      decisionSource: "failure-safe",
+      systemOne: scores,
+    })
+  } finally {
+    release()
+    await harness.cleanup()
   }
 })
