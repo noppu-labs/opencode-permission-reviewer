@@ -9,8 +9,15 @@ jobs:
   quality:
     name: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Hook repos install unpinned transitive dependencies, so this job gets a read-only token
+    # that is not left in .git/config.
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: "1.3.5"
@@ -26,10 +33,12 @@ jobs:
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-      # gitleaks scans the staged diff, which is empty here, so it only guards at commit time.
+      # The gitleaks hook scans the staged diff, which is empty here. The gitleaks-tree hook
+      # (manual stage) scans the whole working tree instead.
       # --all-files also runs the bun-audit hook, which at commit time fires only when the
       # lockfile changes, so a new advisory fails every push.
       - run: uv run --frozen pre-commit run --all-files --show-diff-on-failure
+      - run: uv run --frozen pre-commit run --hook-stage manual gitleaks-tree --all-files
 
   check:
     name: check (bun ${{ matrix.bun }})

@@ -26,10 +26,19 @@ repos:
 
   # Secrets in the staged diff. Test fixtures use synthetic credentials (CONTRIBUTING), so a hit
   # outside them is what this should catch. Settings in .gitleaks.toml.
+  # The second entry scans the whole working tree, which CI runs because the staged diff is empty
+  # there: `pre-commit run --hook-stage manual gitleaks-tree --all-files`. It reads
+  # .gitleaks.toml from the directory it scans.
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.1
     hooks:
       - id: gitleaks
+      - id: gitleaks
+        alias: gitleaks-tree
+        name: gitleaks (whole tree)
+        entry: gitleaks dir --redact --verbose
+        pass_filenames: false
+        stages: [manual]
 
   # YAML style beyond check-yaml's syntax check. Rules in .yamllint.yaml.
   - repo: https://github.com/adrienverge/yamllint
