@@ -1,7 +1,6 @@
 {
   // Untracked local plans and reports (.gitignore) are not linted.
   "gitignore": true,
-  "globs": ["**/*.md"],
   "ignores": ["**/node_modules/**", "**/.venv/**", "**/.complexipy_cache/**", "**/dist/**", "**/coverage/**"],
   "config": {
     "default": true,
