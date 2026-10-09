@@ -126,6 +126,7 @@ export class SystemOneReviewerBackend {
   ): Promise<ReviewExecutionResult> {
     const started = performance.now()
     let systemOne: SystemOneScores | undefined
+    let reasoning: { model: string; escalatedFrom: { model: string; reason: string } } | undefined
     try {
       const evidence = buildEvidenceResult(envelope, this.config)
       envelope.actionEvidenceComplete =
@@ -166,11 +167,15 @@ export class SystemOneReviewerBackend {
       }
 
       if (escalation && this.escalationModel && parsed.reasoningRecommended) {
+        reasoning = {
+          model: this.escalationModel,
+          escalatedFrom: { model: this.config.model, reason: enforced.reason },
+        }
         const secondary = reconcileReasoningEscalation(await escalation(envelope, attempt))
         return {
           ...secondary,
-          reviewerModel: secondary.reviewerModel ?? this.escalationModel,
-          reviewerEscalatedFrom: { model: this.config.model, reason: enforced.reason },
+          reviewerModel: secondary.reviewerModel ?? reasoning.model,
+          reviewerEscalatedFrom: reasoning.escalatedFrom,
           systemOne,
         }
       }
@@ -189,9 +194,13 @@ export class SystemOneReviewerBackend {
       return applyEscalationDisposition(
         {
           kind: "escalate",
-          reason: formatFailureReason("System One reviewer", error),
+          reason: formatFailureReason(
+            reasoning === undefined ? "System One reviewer" : "reasoning reviewer",
+            error,
+          ),
           decisionSource: "failure-safe",
-          reviewerModel: this.config.model,
+          reviewerModel: reasoning?.model ?? this.config.model,
+          ...(reasoning === undefined ? {} : { reviewerEscalatedFrom: reasoning.escalatedFrom }),
           ...(systemOne === undefined ? {} : { systemOne }),
         },
         this.config,

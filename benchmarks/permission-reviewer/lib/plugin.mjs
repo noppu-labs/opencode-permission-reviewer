@@ -13,14 +13,14 @@ export const PINNED_BLOBS = {
   "src/decision.ts": "ad3443f3bf2ca1b34b3b23e8115c79148e19238b",
   "src/policy/policy-engine.ts": "b4470dc188d956cc0ed25454c2d34465110fe1be",
   "src/escalation.ts": "8c4f580274997323794011579cb46448cba53035",
-  "src/core/review-engine.ts": "645145f1a1ab70d5d1d227d31cd19d1abc76ad9c",
+  "src/core/review-engine.ts": "916d2884d100615bd7ce6fb947f16c03babe26ad",
   "src/emergency-brake.ts": "f583b97b7d917b785c39ab208faa80b45fb6b6e8",
   "src/redact.ts": "e93e4d379b64866de9848a8a5a9b5d7b1e4a8f3e",
   "src/capability/command-parser.ts": "926def261a0f1af1eec4a5991a89eb24da32af59",
   "src/capability/bash-analyzer.ts": "dcf60b95b18ffe3a0256a01075bd34634265bfec",
   "src/shell-lexer.ts": "eaf40e0f9a66f82e61ff4c38532c103c37f82759",
   "src/capability/heredoc-extractor.ts": "de3c1bb00f5d7e430c86845455ce6de6b1c94f6c",
-  "src/system-one/review.ts": "5c093c1ec8c658d610ba2837073f9ec8aced0fb6",
+  "src/system-one/review.ts": "474bfc02fc51fdb212d6325c717dbbc405cd88df",
 }
 const gitBlob = (bytes) =>
   createHash("sha1").update(`blob ${bytes.length}\0`).update(bytes).digest("hex")

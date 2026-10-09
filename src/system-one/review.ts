@@ -5,11 +5,13 @@ import type {
   Questions,
   SystemOneResult,
 } from "@typesafe-ai/sdk"
-import type {
-  ReviewDecision,
-  ReviewExecutionResult,
-  ReviewerConfig,
-  SystemOneScores,
+import {
+  SYSTEM_ONE_BASES as BASES,
+  type ReviewDecision,
+  type ReviewExecutionResult,
+  type ReviewerConfig,
+  type SystemOneScores,
+  type SystemOneSignals,
 } from "../types.ts"
 import { enforceDecision } from "../decision.ts"
 
@@ -20,19 +22,6 @@ const RISKS = ["low", "medium", "high", "critical"] as const
 const AUTHORIZATIONS = ["high", "medium", "low", "unknown"] as const
 const ALIGNMENTS = ["aligned", "partial", "misaligned", "unknown"] as const
 const COMPLETENESS = ["sufficient", "partial", "insufficient", "unknown"] as const
-const BASES = [
-  "authorized_routine",
-  "authorized_reversible_change",
-  "insufficient_authorization",
-  "scope_mismatch",
-  "insufficient_evidence",
-  "destructive_effect",
-  "credential_or_private_data",
-  "security_or_privilege_change",
-  "external_or_remote_effect",
-  "trusted_policy_restriction",
-  "conflicting_evidence",
-] as const
 
 const choice = <const T extends ChoiceCriteria>(instructions: EntryType, criteria: T) => ({
   type: "choice" as const,
@@ -267,7 +256,7 @@ export function parseSystemOneReview(
   const basis = parseChoice(answers.primary_basis, BASES)
   if (!outcome || !risk || !authorization || !alignment || !completeness || !basis) return
 
-  const signals = {
+  const signals: { [K in keyof SystemOneSignals]: number | undefined } = {
     materialAuthorization: parseNoul(answers.material_authorization),
     withinIntentScope: parseNoul(answers.within_intent_scope),
     unauthorizedDataLoss: parseNoul(answers.unauthorized_data_loss),
@@ -279,7 +268,7 @@ export function parseSystemOneReview(
     absolutePolicyDeny: parseNoul(answers.absolute_policy_deny),
   }
   if (Object.values(signals).some((value) => value === undefined)) return
-  const s = signals as Record<keyof typeof signals, number>
+  const s = signals as SystemOneSignals
 
   const supportingConfidence = Math.min(
     risk.confidence,
@@ -388,7 +377,7 @@ export function parseSystemOneReview(
         evidenceCompleteness: score(completeness),
         primaryBasis: score(basis),
       },
-      signals: { ...s },
+      signals: s,
       contradictions: uniqueContradictions,
       reasoningRecommended,
     },

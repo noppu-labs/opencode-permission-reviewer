@@ -430,12 +430,14 @@ are stored as **SHA-256**, never in clear text. Set `audit: false` to disable.
 When Jev (System One) returns a valid decision, the record also carries
 `systemOne` with Jev's own scores, even when a reasoning reviewer made the
 final call and the top-level `confidence` and `riskLevel` are that reviewer's.
-It holds the versioned model that answered, the outcome with its
+It holds the model ID the provider reported, the outcome with its
 probabilities, the choice and confidence of each supporting classification,
-the nine 0–1 safety signals, the consistency checks that marked the decision
-difficult, and whether reasoning was recommended. It holds numbers and fixed
-labels only, never evidence or command text, and is absent when Jev's answer
-was invalid or its call failed.
+the nine 0–1 safety signals, the consistency checks that failed, and whether
+reasoning was recommended. The model ID is capped at 128 characters and
+redacted like other free text; everything else is numbers and fixed labels,
+never evidence or command text. The field is absent when Jev never ran (a
+deterministic route), when its answer was invalid or its call failed, and on
+V1 hosts when a manual answer superseded the automatic review.
 
 ```json
 "systemOne": {

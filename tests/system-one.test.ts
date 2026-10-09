@@ -485,8 +485,7 @@ describe("System One reviewer", () => {
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free")
     expect(escalations).toBe(1)
-    // The reasoning reviewer owns the final decision; Jev's scores travel
-    // separately and reviewerEscalatedFrom keeps only its routing origin.
+    // Jev's scores go in `systemOne`; `reviewerEscalatedFrom` keeps only model and reason.
     expect(Object.keys(result.reviewerEscalatedFrom!).sort()).toEqual(["model", "reason"])
     expect(result.systemOne).toMatchObject({
       returnedModel: "jev-1.13.0",
@@ -543,12 +542,12 @@ describe("System One reviewer", () => {
     expect(result.systemOne).toBeUndefined()
   })
 
-  test("keeps Jev's scores when the reasoning reviewer fails after a parsed decision", async () => {
+  test("records a reasoning reviewer failure against that reviewer and keeps Jev's scores", async () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
     const backend = new SystemOneReviewerBackend(
       config,
       async () => {
-        throw new Error("synthetic reasoning failure")
+        throw new Error("shutting down")
       },
       "openai/gpt-5.6-luna",
       async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
@@ -557,6 +556,53 @@ describe("System One reviewer", () => {
     expect(result.kind).toBe("escalate")
     expect(result.decisionSource).toBe("failure-safe")
     expect(result.systemOne?.outcome.choice).toBe("escalate")
+    expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
+    expect(result.reviewerEscalatedFrom).toEqual({
+      model: "opencode/jev-1.13-free",
+      reason: "System One explicitly requested a reasoning or human review.",
+    })
+    expect(result.reason).toContain("reasoning reviewer failed")
+    expect(result.reason).toContain("shutting down")
+    expect(result.reason).not.toContain("System One reviewer")
+  })
+
+  test("credits a gate-downgraded reasoning allow to the reasoning reviewer", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const backend = new SystemOneReviewerBackend(
+      config,
+      async () => ({
+        kind: "allow",
+        reason: "The action is supported by complete evidence.",
+        decisionSource: "llm-reviewer",
+        reviewerOutcome: "allow",
+        decision: {
+          version: 2,
+          outcome: "allow",
+          risk_level: "low",
+          user_authorization: "high",
+          scope_alignment: "aligned",
+          evidence_completeness: "sufficient",
+          rationale: "The action is supported by complete evidence.",
+          confidence: 0.95,
+        },
+      }),
+      "openai/gpt-5.6-luna",
+      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+    )
+    const pending = envelope()
+    const result = await evaluateReview(pending.request, config, {
+      collect: async () => ({ ...pending, actionEvidenceComplete: false }),
+      review: (value) => backend.review(value, new ReviewAttempt("generation", 10_000)),
+      active: () => true,
+      auxiliarySession: () => false,
+      observe: () => {},
+    })
+    expect(result.kind).toBe("escalate")
+    expect(result.decisionSource).toBe("deterministic-policy")
+    expect(result.decision?.confidence).toBe(0.95)
+    expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
+    expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free")
+    expect(result.systemOne?.outcome).toMatchObject({ choice: "escalate", confidence: 0.6 })
   })
 
   test("keeps Jev's scores when a gate downgrades its allow", async () => {
@@ -716,6 +762,9 @@ describe("System One reviewer", () => {
     expect(result.decisionSource).toBe("failure-safe")
     expect(escalations).toBe(0)
     expect(result.systemOne).toBeUndefined()
+    expect(result.reason).toContain("System One reviewer failed")
+    expect(result.reviewerModel).toBe("opencode/jev-1.13-free")
+    expect(result.reviewerEscalatedFrom).toBeUndefined()
   })
 })
 

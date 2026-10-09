@@ -101,6 +101,21 @@ describe("audit writer", () => {
     })
   })
 
+  test("bounds and redacts the provider-reported System One model ID", async () => {
+    const auditPath = join(directory, "audit.jsonl")
+    const writeAudit = createAuditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath })!
+    const token = `ghp_${"A".repeat(36)}`
+    const scores = { ...systemOneScores(), returnedModel: `jev-${token}-${"x".repeat(100_000)}` }
+    await writeAudit(record({ systemOne: scores }))
+    const line = (await readFile(auditPath, "utf8")).trim()
+    expect(line).not.toContain(token)
+    const parsed = JSON.parse(line) as ReviewAuditRecord
+    const returnedModel = parsed.systemOne!.returnedModel
+    expect(returnedModel.startsWith("jev-[REDACTED:github]-x")).toBe(true)
+    expect(returnedModel.length).toBeLessThanOrEqual(129)
+    expect({ ...parsed.systemOne, returnedModel: scores.returnedModel }).toEqual(scores)
+  })
+
   test("lazily creates nested directories", async () => {
     const auditPath = join(directory, "nested", "deep", "audit.jsonl")
     const writeAudit = createAuditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath })!

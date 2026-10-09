@@ -10,13 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Record Jev's own scores in an additive `systemOne` audit field whenever it
-  returns a valid decision, on V1 and V2 hosts: the versioned model that
-  answered, outcome probabilities, supporting classification confidences, the
-  nine safety signals, the consistency checks that marked the decision
-  difficult, and whether reasoning was recommended. The field survives a
-  hand-off to the reasoning reviewer, which previously kept only the System
-  One model and reason. Outcomes and routing are unchanged. Audit
-  `schemaVersion` stays 3.
+  returns a valid decision, on V1 and V2 hosts, including after a hand-off to
+  the reasoning reviewer, which previously kept only the System One model and
+  reason. The README's audit section lists the fields and when the field is
+  absent. Outcomes and routing are unchanged. Audit `schemaVersion` stays 3.
+
+### Fixed
+
+- Audit records credit the reasoning reviewer, not Jev, when a configuration
+  or evidence gate downgrades its allow, and when it fails after a hand-off
+  (the failure reason now names the reasoning reviewer).
 
 ## [2.4.0] - 2026-10-02
 
