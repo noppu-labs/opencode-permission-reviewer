@@ -14,7 +14,7 @@ export const PINNED_BLOBS = {
   "src/policy/policy-engine.ts": "474e28ab9bb7a0d12196c1d045507af83b4d269b",
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "3802cf5940ca711b016e720bd22205c56a27928d",
+  "src/emergency-brake.ts": "da3c9c5e4b2504810062b81cebf6bdddb9034d96",
   "src/redact.ts": "f125ef1347e05eb69d9d8a476a7246a5bd81eac2",
   "src/capability/command-parser.ts":
     "2a3bae3a5f7ed387db52cef25d652c83b4c58a2f",
@@ -22,7 +22,7 @@ export const PINNED_BLOBS = {
   "src/shell-lexer.ts": "8df45208e880bfe141f69a59d1a730b9107e931d",
   "src/capability/heredoc-extractor.ts":
     "84ee7ef2db5f1ac940fa6ad330a54df4b3ecef37",
-  "src/system-one/review.ts": "0be046dbbf20324c3ee19a3f9d64371eb6c33628",
+  "src/system-one/review.ts": "bd8a97c69724428be1aefff5f339b8acbe2de515",
 };
 const gitBlob = (bytes) =>
   createHash("sha1") // NOSONAR(S4790) SHA-1 is git's blob-object hash, compared against git blob IDs, not used for security
@@ -60,7 +60,7 @@ export async function sourceSnapshot(repo) {
   try {
     // The blob map gates source parity; record the checked-out commit for provenance.
     pinnedCommit = execFileSync(
-      "git", // NOSONAR(S4036) provenance-only git rev-parse in a local benchmark CLI, resolved via PATH like every other git call; never trusted for a decision
+      "git", // NOSONAR(S4036) resolved via PATH like every other git call; the commit is provenance only
       ["-C", resolve(repo), "rev-parse", "HEAD"],
       {
         encoding: "utf8",

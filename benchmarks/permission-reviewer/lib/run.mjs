@@ -90,7 +90,7 @@ async function harnessHash() {
     ...(await readdir(resolve(root, "lib")))
       .filter((x) => x.endsWith(".mjs"))
       .map((x) => `lib/${x}`),
-  ].sort(); // NOSONAR(S2871) sorts ASCII file names for a deterministic hash order; code-unit order is intended
+  ].sort(); // NOSONAR(S2871) orders the reads only; stable() sorts the keys again before hashing
   const hashes = {};
   for (const path of files)
     hashes[path] = sha256(await readFile(resolve(root, path), "utf8"));
