@@ -115,3 +115,12 @@ repos:
         language: unsupported
         types_or: [ts, tsx]
         pass_filenames: false
+      # score_cap and the pending per-file exclusions are in fta.json. Exits non-zero when any
+      # scanned file scores above the cap. `bun run` resolves node_modules/.bin only, so it
+      # cannot fetch an unrelated package the way `bunx` would.
+      - id: fta
+        name: fta (maintainability, cap in fta.json)
+        entry: bun run fta
+        language: unsupported
+        types_or: [javascript, jsx, ts, tsx]
+        pass_filenames: false
