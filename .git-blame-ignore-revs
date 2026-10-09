@@ -1,6 +1,5 @@
-# Mechanical reformat and lint-fix commits (quality/2-format). Skip them in `git blame` with:
-#   git config blame.ignoreRevsFile .git-blame-ignore-revs
-# A rebase changes these SHAs; refresh the list after any restack.
+# Tool-output commits for `git blame` to skip. See docs/DEVELOPMENT.md, "Quality gates".
+# A squash or rebase merge, or a restack, rewrites these SHAs, and git skips unknown ones silently: refresh the list.
 # style: format with Biome and organize imports
 7ca04fe4660c7fd23862f9d6fe06a9214216aef8
 # style: apply Biome's safe lint fixes

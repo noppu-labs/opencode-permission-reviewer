@@ -245,8 +245,7 @@ describe("deterministic emergency brake", () => {
   test("long rm flags do not set recursive or force by their spelling", () => {
     const blocked =
       "Emergency brake: command contains unmistakable broad system destruction.";
-    // `--one-file-system` and `--no-preserve-root` contain the letters r and f,
-    // but only an explicit -r/-f/--recursive/--force may count.
+    // `--one-file-system` holds an f and `--no-preserve-root` an r; neither may set force or recursive.
     for (const command of [
       "rm --one-file-system --no-preserve-root /",
       "rm -r --one-file-system /",

@@ -349,7 +349,7 @@ describe("trust hardening — project config cannot weaken trusted layers", () =
     console.warn = (message: string) => warnings.push(String(message));
     try {
       const globalPath = join(warnDir, "permission-reviewer.jsonc");
-      writeFileSync(globalPath, '{ "escalationMode": "deny"'); // unterminated string
+      writeFileSync(globalPath, '{ "escalationMode": "deny"'); // unterminated object
       setGlobalConfigPathForTests(globalPath);
       mkdirSync(join(projectDir, ".opencode"), { recursive: true });
       writeFileSync(projectConfigPath(projectDir), JSON.stringify({}));
