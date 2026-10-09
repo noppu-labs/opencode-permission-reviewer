@@ -1,19 +1,5 @@
 [
   {
-    "path": "tests/compatibility/test_tui.py",
-    "file_name": "test_tui.py",
-    "functions": [
-      {
-        "name": "test_tui_renders_review_state",
-        "complexity": 17
-      },
-      {
-        "name": "terminal",
-        "complexity": 19
-      }
-    ]
-  },
-  {
     "path": "tests/compatibility/test_v2_analysis_regressions.py",
     "file_name": "test_v2_analysis_regressions.py",
     "functions": [
