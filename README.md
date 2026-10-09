@@ -22,8 +22,8 @@ plugin, not affiliated with or endorsed by [Anomaly](https://anoma.ly).
 
 - Leaves your existing policy alone: `allow` rules continue and `deny` rules stay blocked
   without reaching the reviewer.
-- Reviews in isolation. Normal models run in a scratch session with every tool denied. Jev
-  models use their typed System One API, which exposes no tools or project runtime.
+- Reviews in isolation. Normal models run in a scratch session with every operational tool
+  denied. Jev models use their typed System One API, which exposes no tools or project runtime.
 - Gives the reviewer bounded, sanitized, read-only evidence about SSH commands, local scripts,
   and Git state.
 - Never auto-approves an action the reviewer classifies as critical. Reviewer failures lead to

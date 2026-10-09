@@ -6,9 +6,9 @@ layering, see [Configuration](CONFIGURATION.md).
 
 ## Choosing the reviewer model
 
-By default the reviewer is a normal OpenCode model invocation with every tool denied at the
-session-permission level, so it can be any model from any provider you have configured. Jev models
-automatically use the typed System One API instead.
+By default the reviewer is a normal OpenCode model invocation with every operational tool denied
+at the session-permission level, so it can be any model from any provider you have configured. Jev
+models automatically use the typed System One API instead.
 
 The model options are:
 
