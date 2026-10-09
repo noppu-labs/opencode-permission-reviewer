@@ -427,6 +427,33 @@ deny from fail-closed escalate→deny), optional System One escalation origin,
 and a bounded SSH summary. Remote commands
 are stored as **SHA-256**, never in clear text. Set `audit: false` to disable.
 
+When Jev (System One) returns a valid decision, the record also carries
+`systemOne` with Jev's own scores, even when a reasoning reviewer made the
+final call and the top-level `confidence` and `riskLevel` are that reviewer's.
+It holds the versioned model that answered, the outcome with its
+probabilities, the choice and confidence of each supporting classification,
+the nine 0–1 safety signals, the consistency checks that marked the decision
+difficult, and whether reasoning was recommended. It holds numbers and fixed
+labels only, never evidence or command text, and is absent when Jev's answer
+was invalid or its call failed.
+
+```json
+"systemOne": {
+  "returnedModel": "jev-1.13.0",
+  "outcome": { "choice": "allow", "confidence": 0.55, "probabilities": { "allow": 0.55, "deny": 0.05, "escalate": 0.4 } },
+  "supporting": {
+    "riskLevel": { "choice": "low", "confidence": 0.82 },
+    "userAuthorization": { "choice": "high", "confidence": 0.77 },
+    "scopeAlignment": { "choice": "aligned", "confidence": 0.9 },
+    "evidenceCompleteness": { "choice": "partial", "confidence": 0.61 },
+    "primaryBasis": { "choice": "authorized_reversible_change", "confidence": 0.58 }
+  },
+  "signals": { "materialAuthorization": 0.81, "withinIntentScope": 0.88, "unauthorizedDataLoss": 0.12, "untrustedSensitiveDisclosure": 0.01, "excessiveCredentialAccess": 0.01, "unauthorizedSecurityChange": 0.02, "unauthorizedExternalMutation": 0.03, "essentialEvidenceMissing": 0.27, "absolutePolicyDeny": 0.02 },
+  "contradictions": ["an allow with incomplete evidence lacks strong outcome confidence"],
+  "reasoningRecommended": true
+}
+```
+
 ## What you'll see
 
 ```text

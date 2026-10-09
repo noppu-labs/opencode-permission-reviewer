@@ -344,6 +344,7 @@ export async function setupWithServices(
             ...(result.reviewerEscalatedFrom
               ? { reviewerEscalatedFrom: result.reviewerEscalatedFrom }
               : {}),
+            ...(result.systemOne ? { systemOne: result.systemOne } : {}),
             effectiveConfigHash,
             ...(normalized
               ? {

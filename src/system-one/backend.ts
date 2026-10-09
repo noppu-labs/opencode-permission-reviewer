@@ -6,7 +6,12 @@ import { formatFailureReason } from "../failure-reason.ts"
 import { DEFAULT_TENANT_POLICY, REVIEWER_SYSTEM_PROMPT } from "../policy.ts"
 import { redactSecrets } from "../redact.ts"
 import { splitModel } from "../config.ts"
-import type { ReviewEnvelope, ReviewExecutionResult, ReviewerConfig } from "../types.ts"
+import type {
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+  SystemOneScores,
+} from "../types.ts"
 import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
@@ -120,6 +125,7 @@ export class SystemOneReviewerBackend {
     escalation: ReasoningEscalation | undefined,
   ): Promise<ReviewExecutionResult> {
     const started = performance.now()
+    let systemOne: SystemOneScores | undefined
     try {
       const evidence = buildEvidenceResult(envelope, this.config)
       envelope.actionEvidenceComplete =
@@ -147,6 +153,7 @@ export class SystemOneReviewerBackend {
           "invalid-decision",
         )
       }
+      systemOne = parsed.scores
 
       const enforced = enforceParsedSystemOneReview(parsed, this.config)
       if (enforced.kind !== "escalate") {
@@ -154,6 +161,7 @@ export class SystemOneReviewerBackend {
           ...enforced,
           decisionSource: "system-one-reviewer",
           reviewerModel: this.config.model,
+          systemOne,
         }
       }
 
@@ -163,6 +171,7 @@ export class SystemOneReviewerBackend {
           ...secondary,
           reviewerModel: secondary.reviewerModel ?? this.escalationModel,
           reviewerEscalatedFrom: { model: this.config.model, reason: enforced.reason },
+          systemOne,
         }
       }
 
@@ -171,6 +180,7 @@ export class SystemOneReviewerBackend {
           ...enforced,
           decisionSource: "system-one-reviewer",
           reviewerModel: this.config.model,
+          systemOne,
         },
         this.config,
         "general",
@@ -182,6 +192,7 @@ export class SystemOneReviewerBackend {
           reason: formatFailureReason("System One reviewer", error),
           decisionSource: "failure-safe",
           reviewerModel: this.config.model,
+          ...(systemOne === undefined ? {} : { systemOne }),
         },
         this.config,
         "reviewer-failure",

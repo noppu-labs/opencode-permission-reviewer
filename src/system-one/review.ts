@@ -5,7 +5,12 @@ import type {
   Questions,
   SystemOneResult,
 } from "@typesafe-ai/sdk"
-import type { ReviewDecision, ReviewExecutionResult, ReviewerConfig } from "../types.ts"
+import type {
+  ReviewDecision,
+  ReviewExecutionResult,
+  ReviewerConfig,
+  SystemOneScores,
+} from "../types.ts"
 import { enforceDecision } from "../decision.ts"
 
 export const SYSTEM_ONE_SPEC_VERSION = "system-one-1"
@@ -168,6 +173,7 @@ export interface ParsedSystemOneReview {
   difficultReason?: string
   reasoningRecommended: boolean
   returnedModel: string
+  scores: SystemOneScores
 }
 
 function exactKeys(value: Record<string, unknown>, expected: readonly string[]): boolean {
@@ -349,23 +355,43 @@ export function parseSystemOneReview(
       contradictions.push("an allow with incomplete evidence lacks strong outcome confidence")
   }
 
+  const uniqueContradictions = [...new Set(contradictions)]
   const difficultReason =
     decision.outcome === "escalate"
       ? "System One explicitly requested a reasoning or human review."
-      : contradictions.length > 0
-        ? `System One decision is uncertain or inconsistent: ${[...new Set(contradictions)].join("; ")}.`
+      : uniqueContradictions.length > 0
+        ? `System One decision is uncertain or inconsistent: ${uniqueContradictions.join("; ")}.`
         : undefined
+  const reasoningRecommended =
+    difficultReason !== undefined &&
+    (decision.outcome === "allow" ||
+      (decision.outcome === "escalate" &&
+        outcome.probabilities.allow + outcome.probabilities.deny >=
+          config.systemOneReasoningThreshold))
+  const score = <T extends string>(parsed: { choice: T; confidence: number }) => ({
+    choice: parsed.choice,
+    confidence: parsed.confidence,
+  })
   return {
     decision,
     primaryBasis: basis.choice,
     ...(difficultReason === undefined ? {} : { difficultReason }),
-    reasoningRecommended:
-      difficultReason !== undefined &&
-      (decision.outcome === "allow" ||
-        (decision.outcome === "escalate" &&
-          outcome.probabilities.allow + outcome.probabilities.deny >=
-            config.systemOneReasoningThreshold)),
+    reasoningRecommended,
     returnedModel: raw.model,
+    scores: {
+      returnedModel: raw.model,
+      outcome: { ...score(outcome), probabilities: { ...outcome.probabilities } },
+      supporting: {
+        riskLevel: score(risk),
+        userAuthorization: score(authorization),
+        scopeAlignment: score(alignment),
+        evidenceCompleteness: score(completeness),
+        primaryBasis: score(basis),
+      },
+      signals: { ...s },
+      contradictions: uniqueContradictions,
+      reasoningRecommended,
+    },
   }
 }
 

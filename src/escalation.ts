@@ -84,6 +84,7 @@ export function applyEscalationDisposition(
     ...(result.reviewerEscalatedFrom === undefined
       ? {}
       : { reviewerEscalatedFrom: result.reviewerEscalatedFrom }),
+    ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
     escalationDisposition: "deny",
   }
 }

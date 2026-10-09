@@ -110,6 +110,7 @@ export async function evaluateReview(
           ...(result.reviewSessionID === undefined
             ? {}
             : { reviewSessionID: result.reviewSessionID }),
+          ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
           decisionSource: "deterministic-policy",
         },
         config,

@@ -6,7 +6,7 @@ import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client"
 import { setupWithServices } from "../src/opencode/v2/server.ts"
 import { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts"
 import type { ReviewExecutionResult } from "../src/types.ts"
-import { config, decision } from "./helpers.ts"
+import { config, decision, systemOneScores } from "./helpers.ts"
 
 type Input = Parameters<typeof normalizeV2Permission>[0] & { message?: string }
 
@@ -314,6 +314,57 @@ test("action mutations and incomplete evidence cannot reuse an approval, and con
       expect(input.effect).not.toBe("allow")
       if (connectionError)
         expect(await harness.rpc.status()).toMatchObject({ connection: "failed" })
+    } finally {
+      await harness.cleanup()
+    }
+  }
+})
+
+test("v2 audit records carry Jev's scores only when the reviewer result has them", async () => {
+  const scores = systemOneScores()
+  const cases: Array<{ result: ReviewExecutionResult; expected?: typeof scores }> = [
+    {
+      result: {
+        kind: "allow",
+        reason: "Fixture Jev-only allow",
+        decision: decision("allow"),
+        decisionSource: "system-one-reviewer",
+        reviewerModel: "opencode/jev-1.13-free",
+        systemOne: { ...scores, outcome: { ...scores.outcome, choice: "allow" } },
+      },
+      expected: { ...scores, outcome: { ...scores.outcome, choice: "allow" } },
+    },
+    {
+      result: {
+        kind: "deny",
+        reason: "Fixture reasoning deny",
+        decision: decision("deny"),
+        decisionSource: "llm-reviewer",
+        reviewerModel: "openai/gpt-5.6-luna",
+        reviewerEscalatedFrom: { model: "opencode/jev-1.13-free", reason: "Jev was unsure." },
+        systemOne: scores,
+      },
+      expected: scores,
+    },
+    {
+      result: {
+        kind: "escalate",
+        reason: "System One reviewer returned a missing, invalid, or ambiguous decision.",
+        decisionSource: "failure-safe",
+        reviewerModel: "opencode/jev-1.13-free",
+      },
+    },
+  ]
+  for (const { result, expected } of cases) {
+    const harness = await fixture({ result })
+    try {
+      await harness.evaluate(harness.input())
+      await harness.dispose()
+      const [record] = await harness.records()
+      expect(record?.decisionSource).toBe(result.decisionSource)
+      expect(record?.systemOne).toEqual(expected)
+      if (result.reviewerEscalatedFrom)
+        expect(record?.reviewerEscalatedFrom).toEqual(result.reviewerEscalatedFrom)
     } finally {
       await harness.cleanup()
     }

@@ -395,6 +395,7 @@ export class ReviewCoordinator {
       ...(result.reviewerEscalatedFrom === undefined
         ? {}
         : { reviewerEscalatedFrom: result.reviewerEscalatedFrom }),
+      ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
       timestamp: new Date().toISOString(),
       durationMs: Math.max(0, Date.now() - startedAt),
       requestID: request.id,
