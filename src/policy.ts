@@ -5,7 +5,7 @@ import type { ReviewerOutputFormat } from "./types.ts"
 /*
  * Adapted from the OpenAI Codex Guardian auto-review policy and policy
  * template:
- *   https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian
+ *   https://github.com/openai/codex/tree/c82cb044f3413e6584308d969b94e7a1430711ab/codex-rs/core/src/guardian
  *
  * The taxonomy, risk/authorization ladders, and several policy definitions are
  * paraphrased or derived from the Codex source (Apache-2.0, Copyright OpenAI

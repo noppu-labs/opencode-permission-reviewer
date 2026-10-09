@@ -86,6 +86,7 @@ describe("npm pack ship set", () => {
       "README.md",
       "CHANGELOG.md",
       "LICENSE",
+      "LICENSE-APACHE",
       "NOTICE",
       "SECURITY.md",
       "dist/index.js",

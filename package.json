@@ -1,6 +1,6 @@
 {
   "name": "@noppu-labs/opencode-permission-reviewer",
-  "version": "2.4.1",
+  "version": "2.4.2",
   "description": "Policy-aware permission reviewer for OpenCode V1 and V2",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,10 +42,11 @@
     "CHANGELOG.md",
     "NOTICE",
     "LICENSE",
+    "LICENSE-APACHE",
     "SECURITY.md"
   ],
-  "license": "Apache-2.0",
-  "author": "Warc0s",
+  "license": "MIT AND Apache-2.0",
+  "author": "cris005",
   "homepage": "https://github.com/noppu-labs/opencode-permission-reviewer",
   "repository": {
     "type": "git",

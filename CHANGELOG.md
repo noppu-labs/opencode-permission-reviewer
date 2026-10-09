@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Changes made in this fork are now licensed under the MIT License. Code from
+  the upstream project remains under the Apache License 2.0, which now ships as
+  `LICENSE-APACHE` alongside `NOTICE`. The package `license` field is
+  `MIT AND Apache-2.0`.
+- The real-host compatibility matrix now pins OpenCode 1.18.35 and 2.0.26 as
+  the verified V1 and V2 references. 2.0.20 moves to the optional V2 window.
+  Hosts from 2.0.22 expose `session.remove` to plugins; the reviewer does not
+  use it, and the contract test accepts either shape.
+- `NOTICE` now says the reviewer policy is adapted from OpenAI Codex Guardian,
+  matching the attribution in `src/policy.ts`, and links the Codex commit it
+  was adapted from.
+- Split the README into a short overview and reference pages under `docs/`
+  (configuration, reviewer models, how it works, safety, supply chain,
+  compatibility, development).
+
+## [2.4.2] - 2026-10-09
+
 ### Added
 
 - Record Jev's own scores in an additive `systemOne` audit field whenever it
@@ -14,6 +33,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the reasoning reviewer, which previously kept only the System One model and
   reason. The README's audit section lists the fields and when the field is
   absent. Outcomes and routing are unchanged. Audit `schemaVersion` stays 3.
+
+### Changed
+
+- Update the `@opencode/client` dependency to 2.0.26, from upstream.
 
 ### Fixed
 
@@ -144,7 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Jev as a reviewer model choice through OpenCode Zen, TypeSafe AI, or the
   Command Code Provider API. Use Jev alone, or configure a second LLM such as
   Luna for difficult decisions. See the [Jev setup
-  guide](./README.md#jev-system-one-reviewer).
+  guide](./docs/REVIEWER-MODELS.md#jev-system-one-reviewer).
 
 ### Changed
 

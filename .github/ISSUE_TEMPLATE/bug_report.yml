@@ -10,7 +10,7 @@ body:
         detail you include, the faster we can reproduce it.
 
         For security vulnerabilities, **do not** use this form — use
-        [private vulnerability reporting](https://github.com/Warc0s/opencode-permission-reviewer/security/advisories/new)
+        [private vulnerability reporting](https://github.com/noppu-labs/opencode-permission-reviewer/security/advisories/new)
         instead.
 
         **Never paste secrets into any field.** Redact API keys, tokens,
