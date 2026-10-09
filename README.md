@@ -151,6 +151,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately as desc
 ## License
 
 Changes made in this fork are released under the [MIT License](LICENSE). Code from the upstream
-project remains under the [Apache License 2.0](LICENSE-APACHE). The reviewer policy design is
-inspired by [OpenAI Codex Guardian](https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian);
-[NOTICE](NOTICE) has the full attribution.
+project remains under the [Apache License 2.0](LICENSE-APACHE). The reviewer policy is adapted
+from [OpenAI Codex Guardian](https://github.com/openai/codex/tree/c82cb044f3413e6584308d969b94e7a1430711ab/codex-rs/core/src/guardian)
+(Apache-2.0, Copyright OpenAI and contributors); [NOTICE](NOTICE) has the full attribution.

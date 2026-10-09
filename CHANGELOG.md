@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the verified V1 and V2 references. 2.0.20 moves to the optional V2 window.
   Hosts from 2.0.22 expose `session.remove` to plugins; the reviewer does not
   use it, and the contract test accepts either shape.
+- `NOTICE` now says the reviewer policy is adapted from OpenAI Codex Guardian,
+  matching the attribution in `src/policy.ts`, and links the Codex commit it
+  was adapted from.
 - Split the README into a short overview and reference pages under `docs/`
   (configuration, reviewer models, how it works, safety, supply chain,
   compatibility, development).
