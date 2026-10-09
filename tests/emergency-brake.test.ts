@@ -242,6 +242,28 @@ describe("deterministic emergency brake", () => {
     ).toBeUndefined();
   });
 
+  test("long rm flags do not set recursive or force by their spelling", () => {
+    const blocked =
+      "Emergency brake: command contains unmistakable broad system destruction.";
+    // `--one-file-system` and `--no-preserve-root` contain the letters r and f,
+    // but only an explicit -r/-f/--recursive/--force may count.
+    for (const command of [
+      "rm --one-file-system --no-preserve-root /",
+      "rm -r --one-file-system /",
+      "rm -f --no-preserve-root /",
+    ]) {
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeUndefined();
+    }
+    // Control: with both effects explicit, the same long flags still block.
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command: "rm -rf --no-preserve-root /" } }),
+      ),
+    ).toBe(blocked);
+  });
+
   test("does not apply bash heuristics to other permission types", () => {
     expect(
       emergencyBrakeReason(
