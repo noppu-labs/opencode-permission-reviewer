@@ -8,7 +8,7 @@
     "MD013": false,
     // Docs open with intro prose or frontmatter rather than a strict top-level heading
     "MD041": false,
-    // Allow duplicate headings when they are not siblings (e.g. repeated "Verifying" sections)
+    // CHANGELOG.md repeats Added/Changed/Fixed under each release.
     "MD024": { "siblings_only": true }
   }
 }

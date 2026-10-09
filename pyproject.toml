@@ -27,11 +27,10 @@ dev = [
     "pytest==9.1.1",
 ]
 
-# Cognitive complexity (complexipy, run by pre-commit on changed files). 15 is the SonarSource
-# default; 14 agrees with PyCharm. A deliberate exception is `# complexipy: ignore (reason)` on
-# the def line. Pending: the 11 functions already over 14 are recorded in
-# complexipy-snapshot.json (JSON, no comments), which fails on any new function over 14 and on
-# any recorded one getting worse; removed by quality/3-python.
+# Cognitive complexity (complexipy, run by pre-commit on changed files), capped at 14 as in the
+# sibling repos. A deliberate exception is `# complexipy: ignore (reason)` on the def line.
+# Pending, removed by quality/3-python: complexipy-snapshot.json records the 11 functions over 14
+# and fails on a new one or on a recorded one getting worse.
 [tool.complexipy]
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 max-complexity-allowed = 14
@@ -54,10 +53,9 @@ ignore_decorators = ["@pytest.fixture"]
 # BaseHTTPRequestHandler calls these by name (tests/compatibility/test_v2_reviewer.py).
 ignore_names = ["do_POST", "log_message"]
 
-# Spell check (codespell, run by pre-commit).
 [tool.codespell]
 # benchmarks/permission-reviewer/data holds verbatim dataset cases that contain misspellings and
-# foreign-language text on purpose; tests/live-fixture holds deliberate attack fixtures.
+# foreign-language text on purpose.
 skip = "bun.lock,*.lock,./node_modules,./dist,./coverage,benchmarks/permission-reviewer/data/*,tests/live-fixture/*"
 # afterall: Bun's `afterAll` test hook.
 # unparseable: the runtime reason string in src/opencode/v1/reviewer-backend.ts, asserted by
@@ -70,9 +68,7 @@ ignore-words-list = "afterall,unparseable,truncat,opeator"
 # Security lint (bandit, run by pre-commit with `-c pyproject.toml`). Each accepted finding is a
 # `# nosec <id> # <reason>` on its line.
 [tool.bandit]
-# Unlike a repo with application code, tests/ is not excluded: all Python here is tests or a
-# script, so excluding it would check nothing. The live-fixture files are deliberate attack
-# fixtures the live harness runs.
+# tests/ is not excluded: all Python here is tests or a script, so excluding it would check nothing.
 exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
 # B101: asserts are how pytest tests assert.
 # B404: flags any `import subprocess`; the calls themselves are still checked (B603/B607).
@@ -86,8 +82,7 @@ search-path = ["tests/compatibility"]
 python-version = "3.12"
 
 # Pending: removed by quality/3-python. One sub-config per file, switching off only the error
-# kinds that file still reports (the test helpers return `None` on some paths and are subscripted
-# unconditionally).
+# kinds that file still reports.
 [[tool.pyrefly.sub-config]]
 matches = "benchmarks/permission-reviewer/scripts/build-dataset.py"
 [tool.pyrefly.sub-config.errors]
@@ -127,8 +122,7 @@ missing-attribute = false
 [tool.ruff]
 line-length = 120
 target-version = "py312"
-# tests/live-fixture holds deliberate attack fixtures the live harness runs; they are excluded
-# from Biome for the same reason.
+# tests/live-fixture: see docs/DEVELOPMENT.md, "Quality gates".
 extend-exclude = ["tests/live-fixture", "node_modules"]
 
 [tool.ruff.lint]

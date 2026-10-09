@@ -19,7 +19,7 @@
     "benchmarks/permission-reviewer/tests/*.mjs"
   ],
   "project": ["src/**", "tests/**", "scripts/**", "benchmarks/**/*.mjs"],
-  // Deliberate attack fixtures the live harness runs; no tool analyses them.
+  // See docs/DEVELOPMENT.md, "Quality gates".
   "ignoreFiles": ["tests/live-fixture/**"],
   // System tools, not npm packages: uv runs pre-commit (package.json "check"), mkfifo builds a
   // named pipe in two tests.
@@ -43,7 +43,7 @@
     "benchmarks/permission-reviewer/lib/plugin.mjs": ["exports"],
     "benchmarks/permission-reviewer/lib/run.mjs": ["exports"]
   },
-  // quality/4-ts-rules: jiti has no user left after the ESLint config went (remove it, or keep it
-  // with a reason); the live harness imports @opencode-ai/sdk without declaring it.
+  // quality/4-ts-rules: nothing imports jiti (remove it, or keep it with a reason); tests import
+  // @opencode-ai/sdk without declaring it.
   "ignoreDependencies": ["jiti", "@opencode-ai/sdk"]
 }

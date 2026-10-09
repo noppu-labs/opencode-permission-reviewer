@@ -1,7 +1,7 @@
 # Install once per clone: uv sync && uv run pre-commit install
 # Run everything by hand:  uv run pre-commit run --all-files
-# Tool settings live in pyproject.toml, .yamllint.yaml, .markdownlint-cli2.jsonc and .gitleaks.toml;
-# this file only wires them to the commit.
+# Tool settings live in pyproject.toml, biome.jsonc, fta.json, knip.jsonc, .yamllint.yaml,
+# .markdownlint-cli2.jsonc and .gitleaks.toml; this file only wires them to the commit.
 minimum_pre_commit_version: "4.4.0"
 repos:
   # File hygiene. detect-private-key is left out: gitleaks below covers secrets.
@@ -25,11 +25,9 @@ repos:
         args: [--markdown-linebreak-ext=md]
       - id: mixed-line-ending
 
-  # Secrets in the staged diff. Test fixtures use synthetic credentials (CONTRIBUTING), so a hit
-  # outside them is what this should catch. Settings in .gitleaks.toml.
-  # The second entry scans the whole working tree, which CI runs because the staged diff is empty
-  # there: `pre-commit run --hook-stage manual gitleaks-tree --all-files`. It reads
-  # .gitleaks.toml from the directory it scans.
+  # Secrets in the staged diff; settings in .gitleaks.toml. `gitleaks-tree` (manual stage) scans
+  # the working tree for CI, where the staged diff is empty; it reads .gitleaks.toml from the
+  # directory it scans.
   - repo: https://github.com/gitleaks/gitleaks
     rev: v8.30.1
     hooks:
@@ -54,16 +52,14 @@ repos:
     hooks:
       - id: markdownlint-cli2
 
-  # Settings in [tool.codespell] in pyproject.toml. pre-commit's codespell hook needs the toml
-  # extra to read them.
+  # Settings in [tool.codespell] in pyproject.toml; codespell needs tomli to read them before Python 3.11.
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.3
     hooks:
       - id: codespell
         additional_dependencies: ["tomli; python_version < '3.11'"]
 
-  # Python. Settings in pyproject.toml. tests/live-fixture holds deliberate attack fixtures the
-  # live harness runs, so no Python hook sees it.
+  # Python. Settings in pyproject.toml.
   # Keep rev in step with ruff in uv.lock, so the hook and `uv run ruff` agree.
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.16.10
@@ -118,10 +114,8 @@ repos:
         language: unsupported
         files: ^tests/compatibility/test_v2_reviewer\.py$
 
-  # TypeScript and JavaScript. Biome runs from the bun.lock pin, so the hook and `bun run lint`
-  # agree. Settings, and the pending exemptions each stacked PR deletes, in biome.jsonc.
-  # `bun run` only resolves node_modules/.bin, so without `bun install` the hook fails instead of
-  # fetching the unrelated npm package named `biome` the way `bunx` would.
+  # TypeScript and JavaScript, from the bun.lock pins through `bun run`, never `bunx` (see
+  # docs/DEVELOPMENT.md, "Where the pins live"). Settings and pending exemptions in biome.jsonc.
   - repo: local
     hooks:
       - id: biome
@@ -138,9 +132,7 @@ repos:
         language: unsupported
         files: \.[cm]?tsx?$|^(tsconfig(\.hook)?\.json|package\.json|bun\.lock)$
         pass_filenames: false
-      # score_cap and the pending per-file exclusions are in fta.json. Exits non-zero when any
-      # scanned file scores above the cap. `bun run` resolves node_modules/.bin only, so it
-      # cannot fetch an unrelated package the way `bunx` would.
+      # Fails when any scanned file scores above score_cap in fta.json.
       - id: fta
         name: fta (maintainability, cap in fta.json)
         entry: bun run fta
@@ -148,8 +140,7 @@ repos:
         # A regex so a commit that only edits fta.json still runs it.
         files: \.([cm]?[jt]sx?)$|^fta\.json$
         pass_filenames: false
-      # Entry points, the pending exemptions each stacked PR deletes, and the reasons are in
-      # knip.jsonc. It also reads package.json, so any JSON change reruns it.
+      # knip also reads package.json, so any JSON change reruns it.
       - id: knip
         name: knip (dead code and dependencies, config in knip.jsonc)
         entry: bun run knip
@@ -157,9 +148,8 @@ repos:
         # A regex, not types: identify gives .jsonc files no json tag.
         files: \.([cm]?[jt]sx?|jsonc?)$
         pass_filenames: false
-      # Fails on any advisory except the three ignored in the package.json "audit" script
-      # (seroval via solid-js, http-cache-semantics via @opencode/plugin). Runs only when the
-      # lockfile or the script changes; a periodic `pre-commit run --all-files` catches new advisories.
+      # Fails on any advisory except the three the package.json "audit" script ignores.
+      # See docs/DEVELOPMENT.md, "Ignored audit advisories".
       - id: bun-audit
         name: bun audit (bun.lock; ignored advisories in package.json "audit")
         entry: bun run audit

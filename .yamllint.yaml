@@ -8,13 +8,12 @@ ignore: |
   coverage/
 
 rules:
-  # Compose files and workflow files don't open with `---`.
+  # No YAML file here opens with `---`.
   document-start: disable
-  # Long image digests, healthcheck commands and URLs don't wrap.
+  # Issue-template text, URLs and pinned action SHAs don't wrap.
   line-length:
     max: 160
-  # Compose writes `- item` under a key at the key's indent or one level in; accept both, but
-  # stay consistent within a file.
+  # Accept `- item` at the key's indent or one level in, but stay consistent within a file.
   indentation:
     spaces: 2
     indent-sequences: consistent

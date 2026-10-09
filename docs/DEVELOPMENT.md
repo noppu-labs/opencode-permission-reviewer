@@ -50,8 +50,12 @@ by `bun.lock`.
 | `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
 | ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml`, `complexipy-snapshot.json` |
 
+`tests/live-fixture` holds deliberate attack fixtures the live harness runs. Every tool excludes it
+(Biome, ruff, bandit, complexipy, vulture, pyrefly, pylint, codespell, knip); keep it out of any
+tool you add.
+
 `.editorconfig` carries the editor basics. Biome's formatter and import organizing are still off
-(see the ratchet below), so formatting is not checked yet.
+(see the ratchet below), so TypeScript and JavaScript formatting is not checked yet.
 
 ### Where the pins live
 
@@ -71,9 +75,7 @@ and `uv sync --locked`.
 and the `exclude_directories` in `fta.json`, and `extensions` adds `.mjs` to the TypeScript and
 JavaScript files it reads by default. Two behaviors of the tool matter when you edit it:
 
-- A file fails only when its score is strictly greater than the cap (the source compares
-  `fta_score > score_cap`; a cap of 50 failed a 50.99 file and a cap of 51 passed it). Scores
-  are floats and the cap is an integer, so an exactly equal score has not been observed.
+- A file fails only when its score is strictly greater than the cap.
 - `exclude_filenames` matches basenames only; a path does not exclude. A new file that reuses an
   excluded basename, for example from splitting a large file, is silently exempt. Check the list
   whenever you add or move a file.
@@ -116,7 +118,9 @@ stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
 - `biome.jsonc`: the formatter and `organizeImports` are disabled, and `overrides` turns off one
   rule per entry for an exact list of files, except the file-length entries, which cap each listed
   file at its current length. Entries are ordered by the pull request that removes them.
-- `fta.json`: `exclude_filenames` lists every file above the cap.
+- `fta.json`: `exclude_filenames` lists every file above the cap. JSON has no comments, so the
+  pull request that removes each one is listed in the description of the pull request that added
+  it.
 - `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
   dependencies.
 - `pyproject.toml` and `complexipy-snapshot.json`: per-file ruff ignores, pyrefly sub-configs and

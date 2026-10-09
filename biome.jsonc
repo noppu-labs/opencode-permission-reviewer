@@ -6,8 +6,8 @@
     "useIgnoreFile": true
   },
   "files": {
-    // Mirrors the old .prettierignore. `!!` keeps build output away from the scanner entirely;
-    // `!` excludes from lint and format. tests/live-fixture holds deliberate attack fixtures.
+    // `!!` keeps build output away from the scanner entirely; `!` excludes from lint and format
+    // only. tests/live-fixture: see docs/DEVELOPMENT.md, "Quality gates".
     "includes": [
       "**",
       "!!**/dist",
@@ -77,8 +77,7 @@
     }
   },
   "assist": {
-    // Pending (quality/2-format): organizeImports would rewrite 98 files; that PR applies it and
-    // deletes this line.
+    // Pending (quality/2-format): that PR applies organizeImports and deletes this line.
     "enabled": false,
     "actions": {
       "source": {
@@ -86,11 +85,10 @@
       }
     }
   },
-  // The ratchet. Each entry turns off one rule for exactly the files that fail it today, grouped
-  // and ordered by the stacked PR that fixes those files and deletes the entry. When the last
-  // PR lands, this array is gone.
+  // The ratchet. Each entry turns off one rule for exactly the files that fail it today (file-length
+  // entries cap each file at its current length instead), ordered by the stacked PR that fixes
+  // those files and deletes the entry.
   "overrides": [
-    // ---- Pending: removed by quality/2-format ----
     // Pending (quality/2-format): style/useImportType, 2 files.
     {
       "includes": [
@@ -221,7 +219,6 @@
         }
       }
     },
-    // ---- Pending: removed by quality/4-ts-rules ----
     // Pending (quality/4-ts-rules): performance/noAwaitInLoops, 39 files.
     {
       "includes": [
@@ -711,7 +708,6 @@
         }
       }
     },
-    // ---- Pending: removed by quality/7-complexity-analyzers ----
     // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 9 files.
     {
       "includes": [
@@ -733,7 +729,6 @@
         }
       }
     },
-    // ---- Pending: removed by quality/8-complexity-core ----
     // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 18 files.
     {
       "includes": [
@@ -764,7 +759,6 @@
         }
       }
     },
-    // ---- Pending: removed by quality/9-complexity-rest ----
     // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 32 files.
     {
       "includes": [

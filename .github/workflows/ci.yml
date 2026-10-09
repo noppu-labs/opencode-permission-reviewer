@@ -26,15 +26,14 @@ jobs:
           enable-cache: true
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: uv sync --locked --no-build
-      # pre-commit builds an environment per hook repo; cache them keyed on the config.
+      # pre-commit builds an environment per hook repo.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/.cache/pre-commit
           key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
-      # The gitleaks hook scans the staged diff, which is empty here. The gitleaks-tree hook
-      # (manual stage) scans the whole working tree instead.
-      # --all-files also runs the bun-audit hook, which at commit time fires only when the
-      # lockfile changes, so a new advisory fails every push.
+      # The staged diff is empty here, so the second step runs gitleaks-tree over the working
+      # tree. --all-files also runs bun-audit on every push (docs/DEVELOPMENT.md, "Ignored audit
+      # advisories").
       - run: uv run --frozen --no-build pre-commit run --all-files --show-diff-on-failure
       - run: uv run --frozen --no-build pre-commit run --hook-stage manual gitleaks-tree --all-files
 

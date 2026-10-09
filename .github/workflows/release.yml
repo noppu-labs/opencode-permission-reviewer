@@ -60,11 +60,7 @@ jobs:
           ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
           persist-credentials: false
 
-      # Same gate as `build`, because this job installs dependencies and runs hook code first:
-      # the tag must point at HEAD, HEAD must descend from origin/main, and
-      # the tag version must equal package.json's. Pure git + shell (no bun,
-      # no node) so an invalid tag fails without executing anything from the
-      # dependency tree.
+      # The same tag check as `build`, run here because this job executes dependency and hook code first.
       - name: Verify tag (pre-install gate)
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
@@ -145,8 +141,7 @@ jobs:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: GITHUB_REF_NAME="$RELEASE_TAG" bun scripts/release-metadata.ts
 
-      # This job holds the artifact, so it runs only what bun.lock pins. The pre-commit hooks
-      # install unpinned transitive dependencies and run in the `quality` job instead.
+      # This job holds the artifact, so it runs only what bun.lock pins; the pre-commit hooks run in `quality`.
       - name: Build and test
         run: |
           bun run build
