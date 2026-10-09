@@ -42,9 +42,10 @@
     "CHANGELOG.md",
     "NOTICE",
     "LICENSE",
+    "LICENSE-APACHE",
     "SECURITY.md"
   ],
-  "license": "Apache-2.0",
+  "license": "MIT AND Apache-2.0",
   "author": "Warc0s",
   "homepage": "https://github.com/noppu-labs/opencode-permission-reviewer",
   "repository": {
