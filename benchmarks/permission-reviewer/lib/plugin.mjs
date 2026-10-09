@@ -7,22 +7,22 @@ import { assert, sha256 } from "./util.mjs";
 
 // Git blob hashes of the security-critical files actually inspected for this kit.
 export const PINNED_BLOBS = {
-  "src/policy.ts": "78ccee39f0c8d4f69dcf43c3b59d27f8969710a0",
-  "src/context.ts": "5473abbe19ccce27163ceaaf87a63e63e6d5215a",
-  "src/config.ts": "5799271b0c8ea441f96e89ce5f1c085879ba72f6",
-  "src/decision.ts": "ad3443f3bf2ca1b34b3b23e8115c79148e19238b",
-  "src/policy/policy-engine.ts": "b4470dc188d956cc0ed25454c2d34465110fe1be",
-  "src/escalation.ts": "8c4f580274997323794011579cb46448cba53035",
-  "src/core/review-engine.ts": "916d2884d100615bd7ce6fb947f16c03babe26ad",
-  "src/emergency-brake.ts": "f583b97b7d917b785c39ab208faa80b45fb6b6e8",
-  "src/redact.ts": "e93e4d379b64866de9848a8a5a9b5d7b1e4a8f3e",
+  "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
+  "src/context.ts": "7aa6c2d8d96ed745a686204ab7aa18c45caf86bc",
+  "src/config.ts": "370df2d5303de9c5f7fb8ef5efd5f89bbc7ba4a3",
+  "src/decision.ts": "66a2091cd7d0e93e4dfc9e34d3567dddb55d316b",
+  "src/policy/policy-engine.ts": "474e28ab9bb7a0d12196c1d045507af83b4d269b",
+  "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
+  "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
+  "src/emergency-brake.ts": "3802cf5940ca711b016e720bd22205c56a27928d",
+  "src/redact.ts": "f125ef1347e05eb69d9d8a476a7246a5bd81eac2",
   "src/capability/command-parser.ts":
-    "926def261a0f1af1eec4a5991a89eb24da32af59",
-  "src/capability/bash-analyzer.ts": "dcf60b95b18ffe3a0256a01075bd34634265bfec",
-  "src/shell-lexer.ts": "eaf40e0f9a66f82e61ff4c38532c103c37f82759",
+    "2a3bae3a5f7ed387db52cef25d652c83b4c58a2f",
+  "src/capability/bash-analyzer.ts": "238283897ef64b1f853f4a0e8098bafc728554e1",
+  "src/shell-lexer.ts": "8df45208e880bfe141f69a59d1a730b9107e931d",
   "src/capability/heredoc-extractor.ts":
-    "de3c1bb00f5d7e430c86845455ce6de6b1c94f6c",
-  "src/system-one/review.ts": "474bfc02fc51fdb212d6325c717dbbc405cd88df",
+    "84ee7ef2db5f1ac940fa6ad330a54df4b3ecef37",
+  "src/system-one/review.ts": "5351b62a018a85d8c59415c975b9bc767c0b0ec0",
 };
 const gitBlob = (bytes) =>
   createHash("sha1")
