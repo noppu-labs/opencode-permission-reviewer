@@ -1,15 +1,5 @@
 [
   {
-    "path": "tests/compatibility/test_evidence_recovery.py",
-    "file_name": "test_evidence_recovery.py",
-    "functions": [
-      {
-        "name": "test_literal_intent_survives_long_history_and_restart",
-        "complexity": 28
-      }
-    ]
-  },
-  {
     "path": "tests/compatibility/test_local_evidence.py",
     "file_name": "test_local_evidence.py",
     "functions": [
