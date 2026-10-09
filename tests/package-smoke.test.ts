@@ -432,29 +432,51 @@ describe("npm install dedupe shape", () => {
     if (unexpected.length > 0) console.log("consumer native set:", natives)
     expect(unexpected).toEqual([])
 
+    // seroval reaches the consumer tree through solid-js, which @opentui/solid
+    // pins EXACTLY as a peer (1.9.12, still at 0.5.17). GHSA-p6vx-979v-rg4c and
+    // GHSA-jp82-f5mq-hwhp affect seroval's JSON deserialization, which solid-js
+    // only loads in its server renderer; the TUI imports core solid-js and
+    // never renders on a server. The exposure is residual and DOCUMENTED, not
+    // fixed: when @opentui/solid accepts a fixed solid-js (>= 1.9.16), this
+    // assertion forces the bump and the removal of both advisories below.
+    const solidPkg = JSON.parse(
+      readFileSync(join(installDir, "node_modules", "solid-js", "package.json"), "utf8"),
+    ) as { version: string }
+    expect(solidPkg.version).toBe("1.9.12")
+    const documentedAdvisories = new Set(["GHSA-p6vx-979v-rg4c", "GHSA-jp82-f5mq-hwhp"])
+
     // npm audit over the CONSUMER tree (registry reachability required; the
     // repository's own overrides never apply here). No high or critical
-    // advisories; low ones are the documented residuals above.
+    // advisories beyond the documented residuals above.
     const audit = Bun.spawnSync({
-      cmd: ["npm", "audit", "--prefix", installDir, "--audit-level=high", "--json"],
+      cmd: ["npm", "audit", "--prefix", installDir, "--json"],
       cwd: installDir,
       stdout: "pipe",
       stderr: "pipe",
     })
-    const auditText = audit.stdout.toString()
-    let vulnerabilities: Record<string, number> | undefined
+    type Advisory = { name?: string; severity?: string; url?: string }
+    let report: { vulnerabilities: Record<string, { via: Array<string | Advisory> }> } | undefined
     try {
-      const parsed = JSON.parse(auditText) as {
-        metadata?: { vulnerabilities?: Record<string, number> }
+      const parsed = JSON.parse(audit.stdout.toString()) as {
+        metadata?: { vulnerabilities?: unknown }
+        vulnerabilities?: Record<string, { via: Array<string | Advisory> }>
       }
-      vulnerabilities = parsed.metadata?.vulnerabilities
+      if (parsed.metadata?.vulnerabilities !== undefined)
+        report = { vulnerabilities: parsed.vulnerabilities ?? {} }
     } catch {
       // Registry unreachable: surveillance degrades to the structural
       // checks above rather than failing the suite offline.
     }
-    if (vulnerabilities !== undefined) {
-      expect(vulnerabilities.high ?? 0).toBe(0)
-      expect(vulnerabilities.critical ?? 0).toBe(0)
+    if (report !== undefined) {
+      // Packages that only depend on a vulnerable one list it by name; the
+      // advisory objects are the root causes, so judge those.
+      const blocking = Object.values(report.vulnerabilities)
+        .flatMap((entry) => entry.via)
+        .filter((via): via is Advisory => typeof via === "object")
+        .filter((advisory) => advisory.severity === "high" || advisory.severity === "critical")
+        .filter((advisory) => !documentedAdvisories.has(advisory.url?.split("/").pop() ?? ""))
+        .map((advisory) => `${advisory.name} ${advisory.url}`)
+      expect([...new Set(blocking)]).toEqual([])
     }
   }, 240_000)
 })

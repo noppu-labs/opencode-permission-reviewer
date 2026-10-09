@@ -11,15 +11,18 @@ name: release
 # publishes and creates the release.
 #
 # Prerequisites (configure once in repo settings):
-#   - Secret `NPM_TOKEN` with publish rights for `opencode-permission-reviewer`.
+#   - An npm trusted publisher for the package: GitHub Actions, this
+#     repository, workflow `release.yml`, no environment, npm publish
+#     allowed. The publish job authenticates through OIDC, so no npm token
+#     is stored in the repository.
 #   - Actions → General → "Workflow permissions" allows id-token writes
-#     (required for npm --provenance).
+#     (required for OIDC publishing and npm --provenance).
 #
 # PENDING ADMINISTRATIVE STEP (not satisfiable by any change to this file):
 #   protect the `v*` tags with a repository ruleset restricting tag
 #   creation/update/deletion to maintainers (Rules → Rulesets → New branch
 #   ruleset applied to `refs/tags/v*`, or:
-#     gh api -X POST /repos/Warc0s/opencode-permission-reviewer/rulesets -f ...
+#     gh api -X POST /repos/noppu-labs/opencode-permission-reviewer/rulesets -f ...
 #   with restrictions=push for refs/tags/v*). A tag-triggered workflow can
 #   never be its own root of trust: whoever controls the tagged commit
 #   controls these guards, so tag protection must live outside the repo.
@@ -157,17 +160,15 @@ jobs:
           set -euo pipefail
           sha256sum --check checksums-sha256.txt
 
-      # Install Node/npm for publishing. setup-node configures the npm
-      # registry auth from NODE_AUTH_TOKEN via .npmrc automatically.
+      # Trusted publishing needs Node >= 22.14 and npm >= 11.5.1; Node 24
+      # bundles a new enough npm. npm exchanges the job's OIDC token itself.
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
 
       # Publish the exact verified artifact.
       - name: Publish to npm
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           set -- artifacts/*.tgz
           [ "$#" -eq 1 ]
