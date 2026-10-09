@@ -99,13 +99,16 @@ repos:
 
   # TypeScript and JavaScript. Biome runs from the bun.lock pin, so the hook and `bun run lint`
   # agree. Settings, and the pending exemptions each stacked PR deletes, in biome.jsonc.
+  # `bun run` only resolves node_modules/.bin, so without `bun install` the hook fails instead of
+  # fetching the unrelated npm package named `biome` the way `bunx` would.
   - repo: local
     hooks:
       - id: biome
         name: biome check
-        entry: bunx --bun biome check --write --error-on-warnings --no-errors-on-unmatched --files-ignore-unknown=true
+        entry: bun run --bun biome check --write --error-on-warnings --no-errors-on-unmatched --files-ignore-unknown=true
         language: unsupported
-        types_or: [javascript, jsx, ts, tsx, json]
+        # A regex, not types: identify gives .jsonc files no json tag.
+        files: \.([cm]?[jt]sx?|jsonc?)$
       - id: tsc
         name: tsc --noEmit
         entry: bun run typecheck
