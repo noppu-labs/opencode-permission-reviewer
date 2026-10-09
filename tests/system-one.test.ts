@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 import { resolveConfig, isSystemOneReviewerModel } from "../src/config.ts"
 import { ReviewAttempt } from "../src/core/review-attempt.ts"
+import { evaluateReview } from "../src/core/review-engine.ts"
 import { createSystemOneInvoker, SystemOneReviewerBackend } from "../src/system-one/backend.ts"
 import {
   enforceParsedSystemOneReview,
@@ -8,7 +9,13 @@ import {
   parseSystemOneReview,
   SYSTEM_ONE_QUESTIONS,
 } from "../src/system-one/review.ts"
-import type { ReviewEnvelope, ReviewExecutionResult } from "../src/types.ts"
+import type {
+  ReviewAuditRecord,
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+} from "../src/types.ts"
+import { decision, MockClient, request, runtime } from "./helpers.ts"
 
 const choice = (selected: string, keys: string[], confidence = 1) => {
   const remainder = (1 - confidence) / (keys.length - 1)
@@ -78,6 +85,50 @@ function envelope(): ReviewEnvelope {
     enrichment: "",
     sshAudit: [],
   }
+}
+
+function reasoningAllow(
+  evidence: "sufficient" | "partial",
+  rationale: string,
+): ReviewExecutionResult {
+  return {
+    kind: "allow",
+    reason: rationale,
+    decisionSource: "llm-reviewer",
+    reviewerOutcome: "allow",
+    decision: {
+      version: 2,
+      outcome: "allow",
+      risk_level: "low",
+      user_authorization: "high",
+      scope_alignment: "aligned",
+      evidence_completeness: evidence,
+      rationale,
+      confidence: 0.95,
+    },
+  }
+}
+
+// An explicit Jev escalation at 0.6 is plausible enough to hand to reasoning.
+function escalatingJevBackend(config: ReviewerConfig, reasoning: ReviewExecutionResult) {
+  return new SystemOneReviewerBackend(
+    config,
+    async () => reasoning,
+    "openai/gpt-5.6-luna",
+    async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+  )
+}
+
+// Incomplete action evidence makes the engine's allow gate downgrade any allow.
+function reviewWithIncompleteEvidence(config: ReviewerConfig, backend: SystemOneReviewerBackend) {
+  const pending = envelope()
+  return evaluateReview(pending.request, config, {
+    collect: async () => ({ ...pending, actionEvidenceComplete: false }),
+    review: (value) => backend.review(value, new ReviewAttempt("generation", 10_000)),
+    active: () => true,
+    auxiliarySession: () => false,
+    observe: () => {},
+  })
 }
 
 async function withSyntheticCommandCodeKey<T>(run: () => Promise<T>): Promise<T> {
@@ -277,6 +328,49 @@ describe("System One reviewer", () => {
     })
   })
 
+  test("exposes Jev's own scores without any evidence text", () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const outcome = choice("escalate", ["allow", "deny", "escalate"], 0.6)
+    const parsed = parseSystemOneReview(
+      response({
+        outcome,
+        risk_level: choice("low", ["low", "medium", "high", "critical"], 0.8),
+        within_intent_scope: { type: "noul", noul: 0.8 },
+        unauthorized_external_mutation: { type: "noul", noul: 0.15 },
+        absolute_policy_deny: { type: "noul", noul: 0.75 },
+      }),
+      config,
+    )
+    expect(parsed?.scores).toEqual({
+      returnedModel: "jev-1.13.0",
+      outcome: {
+        choice: "escalate",
+        confidence: 0.6,
+        probabilities: { allow: 0.2, deny: 0.2, escalate: 0.6 },
+      },
+      supporting: {
+        riskLevel: { choice: "low", confidence: 0.8 },
+        userAuthorization: { choice: "high", confidence: 1 },
+        scopeAlignment: { choice: "aligned", confidence: 1 },
+        evidenceCompleteness: { choice: "sufficient", confidence: 1 },
+        primaryBasis: { choice: "authorized_routine", confidence: 1 },
+      },
+      signals: {
+        materialAuthorization: 1,
+        withinIntentScope: 0.8,
+        unauthorizedDataLoss: 0,
+        untrustedSensitiveDisclosure: 0,
+        excessiveCredentialAccess: 0,
+        unauthorizedSecurityChange: 0,
+        unauthorizedExternalMutation: 0.15,
+        essentialEvidenceMissing: 0,
+        absolutePolicyDeny: 0.75,
+      },
+      contradictions: ["the disposition conflicts with an absolute policy-deny signal"],
+      reasoningRecommended: true,
+    })
+  })
+
   test("escalates a low-confidence deny instead of trusting it", () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
     const parsed = parseSystemOneReview(
@@ -440,6 +534,111 @@ describe("System One reviewer", () => {
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free")
     expect(escalations).toBe(1)
+    // Jev's scores go in `systemOne`; `reviewerEscalatedFrom` keeps only model and reason.
+    expect(Object.keys(result.reviewerEscalatedFrom!).sort()).toEqual(["model", "reason"])
+    expect(result.systemOne).toMatchObject({
+      returnedModel: "jev-1.13.0",
+      outcome: {
+        choice: "escalate",
+        confidence: 0.6,
+        probabilities: choice("escalate", ["allow", "deny", "escalate"], 0.6).probabilities,
+      },
+      reasoningRecommended: true,
+    })
+  })
+
+  test("records Jev's scores on a Jev-only allow without evidence text", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const backend = new SystemOneReviewerBackend(config, undefined, undefined, async () =>
+      response(),
+    )
+    const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
+    expect(result.kind).toBe("allow")
+    expect(result.decisionSource).toBe("system-one-reviewer")
+    expect(result.systemOne).toMatchObject({
+      returnedModel: "jev-1.13.0",
+      outcome: { choice: "allow", confidence: 1 },
+      supporting: { riskLevel: { choice: "low", confidence: 1 } },
+      signals: { materialAuthorization: 1, absolutePolicyDeny: 0 },
+      contradictions: [],
+      reasoningRecommended: false,
+    })
+    const serialized = JSON.stringify(result.systemOne)
+    expect(serialized).not.toContain("printf")
+    expect(serialized).not.toContain("harmless marker")
+  })
+
+  test("records Jev's scores when the escalate disposition denies", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free", escalationMode: "deny" })
+    const backend = new SystemOneReviewerBackend(config, undefined, undefined, async () =>
+      response({ outcome: choice("escalate", ["allow", "deny", "escalate"]) }),
+    )
+    const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
+    expect(result.kind).toBe("deny")
+    expect(result.escalationDisposition).toBe("deny")
+    expect(result.systemOne?.outcome).toMatchObject({ choice: "escalate", confidence: 1 })
+  })
+
+  test("records no scores when Jev returns an invalid decision", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const backend = new SystemOneReviewerBackend(config, undefined, undefined, async () => ({
+      ...response(),
+      model: "not-jev",
+    }))
+    const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
+    expect(result.kind).toBe("escalate")
+    expect(result.decisionSource).toBe("failure-safe")
+    expect(result.systemOne).toBeUndefined()
+  })
+
+  test("records a reasoning reviewer failure against that reviewer and keeps Jev's scores", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const backend = new SystemOneReviewerBackend(
+      config,
+      async () => {
+        throw new Error("shutting down")
+      },
+      "openai/gpt-5.6-luna",
+      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+    )
+    const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
+    expect(result.kind).toBe("escalate")
+    expect(result.decisionSource).toBe("failure-safe")
+    expect(result.systemOne?.outcome.choice).toBe("escalate")
+    expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
+    expect(result.reviewerEscalatedFrom).toEqual({
+      model: "opencode/jev-1.13-free",
+      reason: "System One explicitly requested a reasoning or human review.",
+    })
+    expect(result.reason).toContain("reasoning reviewer failed")
+    expect(result.reason).toContain("shutting down")
+    expect(result.reason).not.toContain("System One reviewer")
+  })
+
+  test("credits a gate-downgraded reasoning allow to the reasoning reviewer", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const backend = escalatingJevBackend(
+      config,
+      reasoningAllow("sufficient", "The action is supported by complete evidence."),
+    )
+    const result = await reviewWithIncompleteEvidence(config, backend)
+    expect(result.kind).toBe("escalate")
+    expect(result.decisionSource).toBe("deterministic-policy")
+    expect(result.decision?.confidence).toBe(0.95)
+    expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
+    expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free")
+    expect(result.systemOne?.outcome).toMatchObject({ choice: "escalate", confidence: 0.6 })
+  })
+
+  test("keeps Jev's scores when a gate downgrades its allow", async () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" })
+    const backend = new SystemOneReviewerBackend(config, undefined, undefined, async () =>
+      response(),
+    )
+    const result = await reviewWithIncompleteEvidence(config, backend)
+    expect(result.kind).toBe("escalate")
+    expect(result.decisionSource).toBe("deterministic-policy")
+    expect(result.systemOne?.outcome.choice).toBe("allow")
   })
 
   test("keeps a clear System One escalation manual without paying for reasoning", async () => {
@@ -458,6 +657,11 @@ describe("System One reviewer", () => {
     expect(result.kind).toBe("escalate")
     expect(result.decisionSource).toBe("system-one-reviewer")
     expect(escalations).toBe(0)
+    expect(result.escalationDisposition).toBe("manual")
+    expect(result.systemOne).toMatchObject({
+      outcome: { choice: "escalate", confidence: 1 },
+      reasoningRecommended: false,
+    })
   })
 
   test("honors a valid System One deny without paying for reasoning", async () => {
@@ -491,60 +695,32 @@ describe("System One reviewer", () => {
     const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
     expect(result.kind).toBe("deny")
     expect(escalations).toBe(0)
+    expect(result.systemOne?.outcome).toMatchObject({ choice: "deny", confidence: 0.35 })
+    expect(result.systemOne?.supporting.primaryBasis.choice).toBe("destructive_effect")
+    expect(result.systemOne?.contradictions).toContain(
+      "System One outcome confidence 0.35 is below 0.40",
+    )
   })
 
   test("does not let a reasoning reviewer override an escalation with incomplete evidence", async () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
-    const backend = new SystemOneReviewerBackend(
+    const backend = escalatingJevBackend(
       config,
-      async () => ({
-        kind: "allow",
-        reason: "The action appears safe.",
-        decisionSource: "llm-reviewer",
-        reviewerOutcome: "allow",
-        decision: {
-          version: 2,
-          outcome: "allow",
-          risk_level: "low",
-          user_authorization: "high",
-          scope_alignment: "aligned",
-          evidence_completeness: "partial",
-          rationale: "The action appears safe.",
-          confidence: 0.95,
-        },
-      }),
-      "openai/gpt-5.6-luna",
-      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+      reasoningAllow("partial", "The action appears safe."),
     )
     const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
     expect(result.kind).toBe("escalate")
     expect(result.reviewerOutcome).toBe("allow")
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna")
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free")
+    expect(result.systemOne?.outcome.choice).toBe("escalate")
   })
 
   test("accepts a reasoning reviewer allow backed by sufficient evidence", async () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
-    const backend = new SystemOneReviewerBackend(
+    const backend = escalatingJevBackend(
       config,
-      async () => ({
-        kind: "allow",
-        reason: "The action is supported by complete evidence.",
-        decisionSource: "llm-reviewer",
-        reviewerOutcome: "allow",
-        decision: {
-          version: 2,
-          outcome: "allow",
-          risk_level: "low",
-          user_authorization: "high",
-          scope_alignment: "aligned",
-          evidence_completeness: "sufficient",
-          rationale: "The action is supported by complete evidence.",
-          confidence: 0.95,
-        },
-      }),
-      "openai/gpt-5.6-luna",
-      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+      reasoningAllow("sufficient", "The action is supported by complete evidence."),
     )
     const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
     expect(result.kind).toBe("allow")
@@ -569,5 +745,73 @@ describe("System One reviewer", () => {
     expect(result.kind).toBe("escalate")
     expect(result.decisionSource).toBe("failure-safe")
     expect(escalations).toBe(0)
+    expect(result.systemOne).toBeUndefined()
+    expect(result.reason).toContain("System One reviewer failed")
+    expect(result.reviewerModel).toBe("opencode/jev-1.13-free")
+    expect(result.reviewerEscalatedFrom).toBeUndefined()
+  })
+})
+
+describe("System One scores in V1 audit records", () => {
+  async function withJevEndpoint<T>(body: unknown, run: () => Promise<T>): Promise<T> {
+    const previousKey = process.env.OPENCODE_API_KEY
+    const previousFetch = globalThis.fetch
+    process.env.OPENCODE_API_KEY = "synthetic-opencode-key"
+    globalThis.fetch = (async () => Response.json(body)) as unknown as typeof fetch
+    try {
+      return await run()
+    } finally {
+      globalThis.fetch = previousFetch
+      if (previousKey === undefined) delete process.env.OPENCODE_API_KEY
+      else process.env.OPENCODE_API_KEY = previousKey
+    }
+  }
+
+  function audits(harness: ReturnType<typeof runtime>) {
+    return (harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }).auditRecords
+  }
+
+  test("records Jev-only scores and omits them for an invalid decision", async () => {
+    const config = { model: "opencode/jev-1.13-free" }
+    const allowed = runtime(new MockClient(), config)
+    await withJevEndpoint(response(), () => allowed.runtime.process(request()))
+    expect(audits(allowed)[0]).toMatchObject({
+      outcome: "allow",
+      decisionSource: "system-one-reviewer",
+      systemOne: { returnedModel: "jev-1.13.0", outcome: { choice: "allow", confidence: 1 } },
+    })
+
+    const invalid = runtime(new MockClient(), config)
+    await withJevEndpoint({ ...response(), model: "not-jev" }, () =>
+      invalid.runtime.process(request()),
+    )
+    expect(audits(invalid)[0]?.decisionSource).toBe("failure-safe")
+    expect(audits(invalid)[0]?.systemOne).toBeUndefined()
+  })
+
+  test("records Jev's scores beside the reasoning reviewer's decision", async () => {
+    const client = new MockClient()
+    client.nextStructured = decision("deny", { confidence: 0.9 })
+    const harness = runtime(client, {
+      model: "opencode/jev-1.13-free",
+      escalationReviewer: {
+        model: "openai/gpt-5.6-luna",
+        variant: "medium",
+        outputFormat: "json_schema",
+        timeoutMs: 5_000,
+      },
+    })
+    await withJevEndpoint(
+      response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+      () => harness.runtime.process(request()),
+    )
+    const record = audits(harness)[0]
+    expect(record).toMatchObject({
+      outcome: "deny",
+      reviewerModel: "openai/gpt-5.6-luna",
+      confidence: 0.9,
+      reviewerEscalatedFrom: { model: "opencode/jev-1.13-free" },
+      systemOne: { outcome: { choice: "escalate", confidence: 0.6 }, reasoningRecommended: true },
+    })
   })
 })

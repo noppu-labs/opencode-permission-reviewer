@@ -6,7 +6,12 @@ import { formatFailureReason } from "../failure-reason.ts"
 import { DEFAULT_TENANT_POLICY, REVIEWER_SYSTEM_PROMPT } from "../policy.ts"
 import { redactSecrets } from "../redact.ts"
 import { splitModel } from "../config.ts"
-import type { ReviewEnvelope, ReviewExecutionResult, ReviewerConfig } from "../types.ts"
+import type {
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+  SystemOneScores,
+} from "../types.ts"
 import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
@@ -120,6 +125,8 @@ export class SystemOneReviewerBackend {
     escalation: ReasoningEscalation | undefined,
   ): Promise<ReviewExecutionResult> {
     const started = performance.now()
+    let systemOne: SystemOneScores | undefined
+    let reasoning: { model: string; escalatedFrom: { model: string; reason: string } } | undefined
     try {
       const evidence = buildEvidenceResult(envelope, this.config)
       envelope.actionEvidenceComplete =
@@ -147,6 +154,7 @@ export class SystemOneReviewerBackend {
           "invalid-decision",
         )
       }
+      systemOne = parsed.scores
 
       const enforced = enforceParsedSystemOneReview(parsed, this.config)
       if (enforced.kind !== "escalate") {
@@ -154,15 +162,21 @@ export class SystemOneReviewerBackend {
           ...enforced,
           decisionSource: "system-one-reviewer",
           reviewerModel: this.config.model,
+          systemOne,
         }
       }
 
       if (escalation && this.escalationModel && parsed.reasoningRecommended) {
+        reasoning = {
+          model: this.escalationModel,
+          escalatedFrom: { model: this.config.model, reason: enforced.reason },
+        }
         const secondary = reconcileReasoningEscalation(await escalation(envelope, attempt))
         return {
           ...secondary,
-          reviewerModel: secondary.reviewerModel ?? this.escalationModel,
-          reviewerEscalatedFrom: { model: this.config.model, reason: enforced.reason },
+          reviewerModel: secondary.reviewerModel ?? reasoning.model,
+          reviewerEscalatedFrom: reasoning.escalatedFrom,
+          systemOne,
         }
       }
 
@@ -171,6 +185,7 @@ export class SystemOneReviewerBackend {
           ...enforced,
           decisionSource: "system-one-reviewer",
           reviewerModel: this.config.model,
+          systemOne,
         },
         this.config,
         "general",
@@ -179,9 +194,14 @@ export class SystemOneReviewerBackend {
       return applyEscalationDisposition(
         {
           kind: "escalate",
-          reason: formatFailureReason("System One reviewer", error),
+          reason: formatFailureReason(
+            reasoning === undefined ? "System One reviewer" : "reasoning reviewer",
+            error,
+          ),
           decisionSource: "failure-safe",
-          reviewerModel: this.config.model,
+          reviewerModel: reasoning?.model ?? this.config.model,
+          ...(reasoning === undefined ? {} : { reviewerEscalatedFrom: reasoning.escalatedFrom }),
+          ...(systemOne === undefined ? {} : { systemOne }),
         },
         this.config,
         "reviewer-failure",

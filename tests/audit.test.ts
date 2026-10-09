@@ -17,6 +17,7 @@ import { tmpdir } from "node:os"
 import { createAuditWriter, DEFAULT_AUDIT_PATH, readAuditSummary } from "../src/audit.ts"
 import { DEFAULT_CONFIG } from "../src/config.ts"
 import type { ReviewAuditRecord } from "../src/types.ts"
+import { systemOneScores } from "./helpers.ts"
 
 const execFileAsync = (cmd: string, args: string[]) =>
   new Promise<void>((resolve, reject) => {
@@ -76,6 +77,43 @@ describe("audit writer", () => {
     expect(JSON.parse(lines[1]!).requestID).toBe("per_b")
     const info = await stat(auditPath)
     expect(info.mode & 0o777).toBe(0o600)
+  })
+
+  test("preserves System One scores through the sanitiser", async () => {
+    const auditPath = join(directory, "audit.jsonl")
+    const writeAudit = createAuditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath })!
+    const scores = {
+      ...systemOneScores(),
+      contradictions: ["a supporting classification has very low confidence"],
+    }
+    await writeAudit(
+      record({
+        reviewerModel: "openai/gpt-5.6-luna",
+        reviewerEscalatedFrom: { model: "opencode/jev-1.13-free", reason: "Jev was unsure." },
+        systemOne: scores,
+      }),
+    )
+    const parsed = JSON.parse((await readFile(auditPath, "utf8")).trim()) as ReviewAuditRecord
+    expect(parsed.systemOne).toEqual(scores)
+    expect(parsed.reviewerEscalatedFrom).toEqual({
+      model: "opencode/jev-1.13-free",
+      reason: "Jev was unsure.",
+    })
+  })
+
+  test("bounds and redacts the provider-reported System One model ID", async () => {
+    const auditPath = join(directory, "audit.jsonl")
+    const writeAudit = createAuditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath })!
+    const token = `ghp_${"A".repeat(36)}`
+    const scores = { ...systemOneScores(), returnedModel: `jev-${token}-${"x".repeat(100_000)}` }
+    await writeAudit(record({ systemOne: scores }))
+    const line = (await readFile(auditPath, "utf8")).trim()
+    expect(line).not.toContain(token)
+    const parsed = JSON.parse(line) as ReviewAuditRecord
+    const returnedModel = parsed.systemOne!.returnedModel
+    expect(returnedModel.startsWith("jev-[REDACTED:github]-x")).toBe(true)
+    expect(returnedModel.length).toBeLessThanOrEqual(129)
+    expect({ ...parsed.systemOne, returnedModel: scores.returnedModel }).toEqual(scores)
   })
 
   test("lazily creates nested directories", async () => {

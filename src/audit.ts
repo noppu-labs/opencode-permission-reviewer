@@ -255,6 +255,10 @@ function boundedReason(reason: string): string {
   return normalized.length <= 2_000 ? normalized : `${normalized.slice(0, 2_000)}…`
 }
 
+function boundedModelID(model: string): string {
+  return model.length <= 128 ? model : `${model.slice(0, 128)}…`
+}
+
 export function createAuditWriter(
   config: ReviewerConfig,
   logger?: (message: string, details?: unknown) => void,
@@ -317,6 +321,15 @@ export function createAuditWriter(
             reviewerEscalatedFrom: {
               ...record.reviewerEscalatedFrom,
               reason: redactSecrets(boundedReason(record.reviewerEscalatedFrom.reason)),
+            },
+          }),
+      // The model ID is the one provider-controlled string in systemOne.
+      ...(record.systemOne === undefined
+        ? {}
+        : {
+            systemOne: {
+              ...record.systemOne,
+              returnedModel: boundedModelID(redactSecrets(record.systemOne.returnedModel)),
             },
           }),
     }

@@ -289,12 +289,14 @@ export async function setupWithServices(
             kind: "deny",
             reason: "Pending action changed during its review",
             decisionSource: "failure-safe",
+            ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
           }
       } catch {
         result = {
           kind: "deny",
           reason: "Pending action could not be revalidated",
           decisionSource: "failure-safe",
+          ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
         }
       }
       const active = !disposed && attempt.active(generation)
@@ -303,6 +305,7 @@ export async function setupWithServices(
           kind: "deny",
           reason: "Review was cancelled or its total deadline expired",
           decisionSource: "failure-safe",
+          ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
         }
       // The hook owns this evaluation; there is no published permission ID to reply to.
       input.effect = result.kind === "allow" ? "allow" : result.kind === "deny" ? "deny" : "ask"
@@ -344,6 +347,7 @@ export async function setupWithServices(
             ...(result.reviewerEscalatedFrom
               ? { reviewerEscalatedFrom: result.reviewerEscalatedFrom }
               : {}),
+            ...(result.systemOne ? { systemOne: result.systemOne } : {}),
             effectiveConfigHash,
             ...(normalized
               ? {

@@ -433,6 +433,35 @@ deny from fail-closed escalate→deny), optional System One escalation origin,
 and a bounded SSH summary. Remote commands
 are stored as **SHA-256**, never in clear text. Set `audit: false` to disable.
 
+When Jev (System One) returns a valid decision, the record also carries
+`systemOne` with Jev's own scores, even when a reasoning reviewer made the
+final call and the top-level `confidence` and `riskLevel` are that reviewer's.
+It holds the model ID the provider reported, the outcome with its
+probabilities, the choice and confidence of each supporting classification,
+the nine 0–1 safety signals, the consistency checks that failed, and whether
+reasoning was recommended. The model ID is capped at 128 characters and
+redacted like other free text; everything else is numbers and fixed labels,
+never evidence or command text. The field is absent when Jev never ran (a
+deterministic route), when its answer was invalid or its call failed, and on
+V1 hosts when a manual answer superseded the automatic review.
+
+```json
+"systemOne": {
+  "returnedModel": "jev-1.13.0",
+  "outcome": { "choice": "allow", "confidence": 0.55, "probabilities": { "allow": 0.55, "deny": 0.05, "escalate": 0.4 } },
+  "supporting": {
+    "riskLevel": { "choice": "low", "confidence": 0.82 },
+    "userAuthorization": { "choice": "high", "confidence": 0.77 },
+    "scopeAlignment": { "choice": "aligned", "confidence": 0.9 },
+    "evidenceCompleteness": { "choice": "partial", "confidence": 0.61 },
+    "primaryBasis": { "choice": "authorized_reversible_change", "confidence": 0.58 }
+  },
+  "signals": { "materialAuthorization": 0.81, "withinIntentScope": 0.88, "unauthorizedDataLoss": 0.12, "untrustedSensitiveDisclosure": 0.01, "excessiveCredentialAccess": 0.01, "unauthorizedSecurityChange": 0.02, "unauthorizedExternalMutation": 0.03, "essentialEvidenceMissing": 0.27, "absolutePolicyDeny": 0.02 },
+  "contradictions": ["an allow with incomplete evidence lacks strong outcome confidence"],
+  "reasoningRecommended": true
+}
+```
+
 ## What you'll see
 
 ```text
@@ -685,8 +714,9 @@ binary, blocked, or truncated evidence) remains a reviewer decision.
   installs the published tarball in an isolated tree and freezes what a
   consumer actually gets: the platform-specific packages under `@opentui`
   (rendering only), the optional `@msgpackr-extract` accelerators, the exact
-  `@babel/core` version documented below, and an `npm audit` gate that fails
-  on any high or critical advisory. Root
+  `@babel/core` and `solid-js` versions documented below, and an `npm audit`
+  gate that fails on any high or critical advisory other than the documented
+  `seroval` residuals. Root
   `overrides` in this repository protect the development tree only; npm never
   applies a dependency's overrides to the installing application, which is
   why consumer-side guarantees live in tests against the installed tree
@@ -702,7 +732,14 @@ binary, blocked, or truncated evidence) remains a reviewer decision.
   installed version, and moving off 7.28.0 is a conscious bump (an
   `@opentui/solid` release with a fixed pin, or dropping the exact-pin
   constraint) together with this note. The development tree overrides Babel to
-  7.29.7, but that override cannot reach an npm consumer. Separately, `esbuild`
+  7.29.7, but that override cannot reach an npm consumer. Likewise,
+  `@opentui/solid` peer-pins `solid-js@1.9.12` exactly, whose `seroval`
+  dependency carries GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (unsafe
+  `fromJSON` deserialization, fixed in `solid-js` 1.9.16). `seroval` is only
+  imported by the SSR renderer `solid-js/web`, which neither this package nor
+  OpenTUI loads, so the vulnerable code is not reachable at runtime; the
+  consumer surveillance test pins `solid-js`, asserts that nothing imports
+  `solid-js/web`, and admits only those two advisories. Separately, `esbuild`
   (a build-time dependency here, never shipped) is root-overridden past
   GHSA-g7r4-m6w7-qqqr; that override intentionally does not reach consumers
   because consumers never install `esbuild` from this package at all.
