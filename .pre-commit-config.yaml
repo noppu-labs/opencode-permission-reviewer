@@ -104,7 +104,18 @@ repos:
         entry: uv run --frozen pylint
         language: unsupported
         types: [python]
-        exclude: ^tests/live-fixture/
+        exclude: ^(tests/live-fixture/|benchmarks/permission-reviewer/scripts/build-dataset\.py$|tests/compatibility/test_v2_reviewer\.py$)
+      # Pending (quality/3-python): the two modules over 600 lines, capped at their current length.
+      - id: pylint-ceiling-build-dataset
+        name: pylint (build-dataset.py, at most 3060 lines)
+        entry: uv run --frozen pylint --max-module-lines=3060
+        language: unsupported
+        files: ^benchmarks/permission-reviewer/scripts/build-dataset\.py$
+      - id: pylint-ceiling-v2-reviewer
+        name: pylint (test_v2_reviewer.py, at most 676 lines)
+        entry: uv run --frozen pylint --max-module-lines=676
+        language: unsupported
+        files: ^tests/compatibility/test_v2_reviewer\.py$
 
   # TypeScript and JavaScript. Biome runs from the bun.lock pin, so the hook and `bun run lint`
   # agree. Settings, and the pending exemptions each stacked PR deletes, in biome.jsonc.

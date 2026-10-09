@@ -1,7 +1,5 @@
 """Exercise the distributed reviewer through the real host and a synthetic model."""
 
-# Pending: removed by quality/3-python.
-# pylint: disable=too-many-lines
 import json
 import os
 import shutil

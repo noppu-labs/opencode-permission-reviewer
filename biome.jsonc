@@ -567,37 +567,146 @@
         }
       }
     },
-    // ---- Pending: removed by quality/5-split-src ----
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, 6 files.
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
     {
-      "includes": [
-        "src/capability/bash-analyzer.ts",
-        "src/context/actor-resolver.ts",
-        "src/git-evidence.ts",
-        "src/shell-lexer.ts",
-        "src/ssh-evidence.ts",
-        "src/types.ts"
-      ],
+      "includes": ["src/capability/bash-analyzer.ts"],
       "linter": {
         "rules": {
           "style": {
-            "noExcessiveLinesPerFile": "off"
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 1258
+              }
+            }
           }
         }
       }
     },
-    // ---- Pending: removed by quality/6-split-tests ----
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, 3 files.
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
     {
-      "includes": [
-        "tests/runtime.test.ts",
-        "tests/system-one.test.ts",
-        "tests/trust-hardening.test.ts"
-      ],
+      "includes": ["src/context/actor-resolver.ts"],
       "linter": {
         "rules": {
           "style": {
-            "noExcessiveLinesPerFile": "off"
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 633
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/git-evidence.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 1130
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/shell-lexer.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 946
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/ssh-evidence.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 639
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["src/types.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 664
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/runtime.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 843
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/system-one.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 817
+              }
+            }
+          }
+        }
+      }
+    },
+    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    {
+      "includes": ["tests/trust-hardening.test.ts"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 1733
+              }
+            }
           }
         }
       }

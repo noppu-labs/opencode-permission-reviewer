@@ -4,8 +4,6 @@ The materialized JSONL is committed; Python is not needed to run the benchmark.
 Each semantic family stays together across all data partitions.
 """
 
-# Pending: removed by quality/3-python.
-# pylint: disable=too-many-lines
 import collections
 import copy
 import hashlib

@@ -114,13 +114,14 @@ code does not pass yet. Each exemption is narrow (it matches only what fails tod
 stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
 
 - `biome.jsonc`: the formatter and `organizeImports` are disabled, and `overrides` turns off one
-  rule per entry for an exact list of files. Entries are ordered by the pull request that removes
-  them.
+  rule per entry for an exact list of files, except the file-length entries, which cap each listed
+  file at its current length. Entries are ordered by the pull request that removes them.
 - `fta.json`: `exclude_filenames` lists every file above the cap.
 - `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
   dependencies.
 - `pyproject.toml` and `complexipy-snapshot.json`: per-file ruff ignores, pyrefly sub-configs and
   the functions over the complexipy limit.
+- `.pre-commit-config.yaml`: pylint length ceilings for the two Python modules over 600 lines.
 
 Don't add to these lists to get a new change through. Fix the finding, or suppress it on the line
 with a reason. When the last stacked pull request lands, none of them remain.
