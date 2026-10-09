@@ -9,7 +9,7 @@ import {
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-const CWD = import.meta.dir + "/..";
+const CWD = `${import.meta.dir}/..`;
 const PACKAGE_NAME = (
   JSON.parse(readFileSync(join(CWD, "package.json"), "utf8")) as {
     name: string;

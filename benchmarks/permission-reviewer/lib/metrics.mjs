@@ -113,7 +113,7 @@ export function bootstrapScore(
     const sampled = [];
     for (let j = 0; j < groups.length; j++)
       for (const r of groups[Math.floor(random() * groups.length)])
-        sampled.push({ ...r, family: "draw_" + j });
+        sampled.push({ ...r, family: `draw_${j}` });
     const score = coreMetrics(sampled, layer).primaryScore;
     if (score !== null) scores.push(score);
   }
@@ -357,7 +357,7 @@ export function compareRows(
   for (const [k, r] of l)
     assert(
       r.caseHash === rr.get(k).caseHash,
-      "Gold/input changed between runs: " + k,
+      `Gold/input changed between runs: ${k}`,
     );
   const groups = [...groupBy([...l.values()], "family").values()],
     random = rng(seed),
@@ -367,10 +367,10 @@ export function compareRows(
       b = [];
     for (let j = 0; j < groups.length; j++)
       for (const row of groups[Math.floor(random() * groups.length)]) {
-        a.push({ ...row, family: "draw_" + j });
+        a.push({ ...row, family: `draw_${j}` });
         b.push({
           ...rr.get(`${row.caseId}/${row.repeat}`),
-          family: "draw_" + j,
+          family: `draw_${j}`,
         });
       }
     const sa = coreMetrics(a, layer).primaryScore,

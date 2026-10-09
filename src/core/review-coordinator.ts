@@ -443,7 +443,7 @@ export class ReviewCoordinator {
       effectiveConfigHash: createHash("sha256")
         .update(JSON.stringify(this.config))
         .digest("hex"),
-      actionFingerprint: "v1:" + actionHash(request),
+      actionFingerprint: `v1:${actionHash(request)}`,
       application: this.isSuperseded(request)
         ? "superseded"
         : (this.attempts.get(request.id)?.application ?? "unknown"),

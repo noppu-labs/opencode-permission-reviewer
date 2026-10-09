@@ -71,9 +71,9 @@ const provider = Bun.serve({
       choices: [{ index: 0, delta, finish_reason }],
     });
     return new Response(
-      [chunk(delta, null), chunk({}, tool ? "tool_calls" : "stop")]
+      `${[chunk(delta, null), chunk({}, tool ? "tool_calls" : "stop")]
         .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
-        .join("") + "data: [DONE]\n\n",
+        .join("")}data: [DONE]\n\n`,
       { headers: { "content-type": "text/event-stream" } },
     );
   },

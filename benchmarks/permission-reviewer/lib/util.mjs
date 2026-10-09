@@ -15,14 +15,14 @@ export const sha256 = (value) =>
     .update(typeof value === "string" ? value : stable(value))
     .digest("hex");
 export function stable(value) {
-  if (Array.isArray(value)) return "[" + value.map(stable).join(",") + "]";
+  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
   if (value !== null && typeof value === "object")
     return (
       "{" +
       Object.keys(value)
         .sort()
         .filter((k) => value[k] !== undefined)
-        .map((k) => JSON.stringify(k) + ":" + stable(value[k]))
+        .map((k) => `${JSON.stringify(k)}:${stable(value[k])}`)
         .join(",") +
       "}"
     );
@@ -63,8 +63,8 @@ export async function privateDir(path) {
 }
 export async function atomicJSON(path, value) {
   await privateDir(dirname(path));
-  const tmp = path + `.tmp-${process.pid}`;
-  await writeFile(tmp, JSON.stringify(value, null, 2) + "\n", { mode: 0o600 });
+  const tmp = `${path}.tmp-${process.pid}`;
+  await writeFile(tmp, `${JSON.stringify(value, null, 2)}\n`, { mode: 0o600 });
   await chmod(tmp, 0o600);
   await rename(tmp, path);
 }

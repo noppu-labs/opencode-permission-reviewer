@@ -77,7 +77,7 @@ describe("verified SSH script protocol", () => {
   test("reads a 28 KiB script once and reuses only its analysis for the same scope", async () => {
     const directory = await fixture();
     const path = join(directory, "deploy.sh");
-    const content = "# deployment script\n" + "echo safe\n".repeat(2800);
+    const content = `# deployment script\n${"echo safe\n".repeat(2800)}`;
     await writeFile(path, content);
     const command = {
       path,

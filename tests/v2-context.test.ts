@@ -185,7 +185,7 @@ test("native forms retain labels, scope, redaction, cancellation, and orphan pro
     "Dismissed by user",
   );
   observe("form.created", { form: { ...form, id: "form_secret" } });
-  const secret = "gh" + "p_" + "synthetic".repeat(6);
+  const secret = `ghp_${"synthetic".repeat(6)}`;
   observe("form.replied", {
     id: "form_secret",
     sessionID: form.sessionID,

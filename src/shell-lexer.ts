@@ -514,7 +514,7 @@ export function lexSegments(
     }
     if (c === "\\" && i + 1 < command.length) {
       const next = command[i + 1]!;
-      raw += "\\" + next;
+      raw += `\\${next}`;
       // Backslash-newline is a line continuation outside quotes: both
       // characters vanish, so `r\<newline>m` lexes as the token `rm`.
       if (next !== "\n" && next !== "\r") {

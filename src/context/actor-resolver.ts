@@ -365,7 +365,7 @@ function extractDelegatedTasks(
           : typeof part.description === "string"
             ? part.description
             : fromInput;
-      if (!text || !text.trim()) continue;
+      if (!text?.trim()) continue;
       blocks.push({
         sessionID,
         messageID: typeof message.info.id === "string" ? message.info.id : "",

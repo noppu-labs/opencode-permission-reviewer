@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const CWD = import.meta.dir + "/..";
+const CWD = `${import.meta.dir}/..`;
 
 function run(
   args: string[],
@@ -103,7 +103,7 @@ describe("audit report", () => {
         });
       writeFileSync(
         file,
-        [
+        `${[
           v2({
             requestID: "r1",
             sessionID: "s1",
@@ -123,7 +123,7 @@ describe("audit report", () => {
             riskLevel: "critical",
           }),
           "{not valid json}",
-        ].join("\n") + "\n",
+        ].join("\n")}\n`,
       );
       const { exitCode, stdout } = await run([
         "audit",

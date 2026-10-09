@@ -62,15 +62,15 @@ function args(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i++) {
     const key = argv[i];
-    assert(key.startsWith("--"), "Unexpected argument " + key);
+    assert(key.startsWith("--"), `Unexpected argument ${key}`);
     const name = key.slice(2);
-    assert(BOOLS.has(name) || VALUES.has(name), "Unknown option " + key);
-    assert(out[name] === undefined, "Duplicate option " + key);
+    assert(BOOLS.has(name) || VALUES.has(name), `Unknown option ${key}`);
+    assert(out[name] === undefined, `Duplicate option ${key}`);
     if (BOOLS.has(name)) out[name] = true;
     else {
       assert(
         argv[i + 1] !== undefined && !argv[i + 1].startsWith("--"),
-        "Missing value for " + key,
+        `Missing value for ${key}`,
       );
       out[name] = argv[++i];
     }
@@ -246,7 +246,7 @@ async function main() {
             c,
             { id, model: "NO_MODEL_CALLS", format: "metric-only" },
             0,
-            "offline-" + data.hash,
+            `offline-${data.hash}`,
           ),
           runMode: "metric-only-baseline",
           status: "valid",
@@ -264,7 +264,7 @@ async function main() {
     await privateDir(resolve(a.out));
     await writeFile(
       resolve(a.out, "results.jsonl"),
-      rows.map((r) => JSON.stringify(r)).join("\n") + "\n",
+      `${rows.map((r) => JSON.stringify(r)).join("\n")}\n`,
       { mode: 0o600 },
     );
     const summary = summarize(rows, { bootstrap, seed });
@@ -277,7 +277,7 @@ async function main() {
   }
   assert(
     ["run", "render", "parity"].includes(command),
-    "Unknown command: " + command,
+    `Unknown command: ${command}`,
   );
   const adapter = await openPlugin(a.repo, { allowDrift: !!a["allow-drift"] });
   if (difficultSubset)
@@ -328,7 +328,7 @@ async function main() {
           }),
         );
       }
-    await writeFile(resolve(a.out, "requests.jsonl"), lines.join("\n") + "\n", {
+    await writeFile(resolve(a.out, "requests.jsonl"), `${lines.join("\n")}\n`, {
       mode: 0o600,
     });
     await atomicJSON(resolve(a.out, "render-manifest.json"), {

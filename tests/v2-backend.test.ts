@@ -118,7 +118,7 @@ function fixture(
         checks++;
         if (!activated.has(directory)) {
           const plugin = await import(
-            pathToFileURL(directory + "/index.js").href
+            pathToFileURL(`${directory}/index.js`).href
           );
           pluginID = plugin.default.id;
           scope.length = 0;
@@ -137,7 +137,7 @@ function fixture(
           return {
             data: [
               {
-                source: { type: "local", path: directory + "/index.js" },
+                source: { type: "local", path: `${directory}/index.js` },
                 state: {
                   status: "failed",
                   error: "Fixture activation failure",
@@ -148,12 +148,12 @@ function fixture(
         if (options.activationDelayed && checks < 3) return { data: [] };
         const sourcePath =
           options.activationRepresentation === "directory-slash"
-            ? directory + "/"
+            ? `${directory}/`
             : options.activationRepresentation === "file-url"
-              ? pathToFileURL(directory + "/index.js").href
+              ? pathToFileURL(`${directory}/index.js`).href
               : options.activationRepresentation === "id-new-path"
                 ? `plugin://${pluginID}`
-                : directory + "/index.js";
+                : `${directory}/index.js`;
         return {
           data: [
             {
@@ -355,7 +355,7 @@ function fixture(
     reload: async () => {
       await hostCleanup?.();
       await Promise.all(scope.splice(0).map((handle) => handle.dispose()));
-      const plugin = await import(pathToFileURL(directory + "/index.js").href);
+      const plugin = await import(pathToFileURL(`${directory}/index.js`).href);
       hostCleanup = await plugin.default.setup({
         ...ctx,
         location: { directory },
@@ -398,7 +398,7 @@ test("isolated structured and text backends preserve scope, variant, and retenti
       expect(state.removed).toBe(format !== "text");
       expect(state.disposed).toBe(0);
       expect(harness.backend.owns(state.sessionID)).toBe(false);
-      expect(existsSync(state.directory + "/index.js")).toBe(true);
+      expect(existsSync(`${state.directory}/index.js`)).toBe(true);
       await expect(harness.unrelated()).rejects.toThrow("Not an active");
     } finally {
       await harness.cleanup();
@@ -461,7 +461,7 @@ test("a failed isolation bootstrap is retried in a new location", async () => {
     expect(recovered.disposed).toBe(3);
     expect(recovered.directories).toHaveLength(2);
     expect(recovered.directory).not.toBe(failedDirectory);
-    expect(existsSync(failedDirectory + "/opencode.json")).toBe(true);
+    expect(existsSync(`${failedDirectory}/opencode.json`)).toBe(true);
   } finally {
     await harness.cleanup();
   }
@@ -476,7 +476,7 @@ test("backend disposal releases hooks registered by a later location activation"
     expect((await harness.run()).kind).toBe("allow");
     await harness.backend.dispose();
     expect(harness.state().disposed).toBe(6);
-    expect(existsSync(harness.state().directory + "/opencode.json")).toBe(true);
+    expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(true);
   } finally {
     await harness.cleanup();
   }
@@ -510,7 +510,7 @@ test("unavailable model, unsupported format or variant, and wrong isolation fail
     try {
       expect((await harness.run()).kind).toBe("escalate");
       expect(harness.state().prompts).toBe(0);
-      expect(existsSync(harness.state().directory + "/opencode.json")).toBe(
+      expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(
         true,
       );
     } finally {
@@ -543,7 +543,7 @@ test("review sessions share one MCP-free location without mixing concurrent evid
     });
     expect(new Set(markers)).toEqual(new Set(commands));
     const isolatedConfig = JSON.parse(
-      await readFile(state.directory + "/opencode.json", "utf8"),
+      await readFile(`${state.directory}/opencode.json`, "utf8"),
     );
     expect(isolatedConfig.plugins).toEqual([
       "-opencode.config.mcp",
@@ -556,7 +556,7 @@ test("review sessions share one MCP-free location without mixing concurrent evid
     expect(harness.state().setups).toBe(1);
     await harness.backend.dispose();
     expect(harness.state().disposed).toBe(3);
-    expect(existsSync(state.directory + "/opencode.json")).toBe(true);
+    expect(existsSync(`${state.directory}/opencode.json`)).toBe(true);
     expect(() => harness.run()).toThrow("shutting down");
   } finally {
     await harness.cleanup();

@@ -506,7 +506,7 @@ function collectBody(
       // the command that follows the heredoc into its own segment.
       return { body, endIndex: lineEnd, truncated };
     }
-    body += line + "\n";
+    body += `${line}\n`;
     if (body.length > MAX_BODY_BYTES * 4) truncated = true;
     i = lineEnd + 1;
   }
@@ -530,7 +530,7 @@ function boundBody(
     cut += 1;
   }
   return {
-    bounded: fullBody.slice(0, cut) + "\n…[truncated]",
+    bounded: `${fullBody.slice(0, cut)}\n…[truncated]`,
     wasTruncated: true,
   };
 }

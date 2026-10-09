@@ -298,7 +298,7 @@ export async function openPlugin(
       const tenantPolicy =
         (cfg.policy ?? policy.DEFAULT_TENANT_POLICY) +
         (input.policyAppend
-          ? "\n\n## Trusted case-specific restrictions\n" + input.policyAppend
+          ? `\n\n## Trusted case-specific restrictions\n${input.policyAppend}`
           : "");
       const user = policy.buildReviewerPrompt(
         tenantPolicy,

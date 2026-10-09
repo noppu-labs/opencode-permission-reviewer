@@ -8,7 +8,7 @@ describe("explain CLI", () => {
     ]) {
       const proc = Bun.spawn({
         cmd: ["bun", "run", "src/cli/explain.ts", "--defaults"],
-        cwd: import.meta.dir + "/..",
+        cwd: `${import.meta.dir}/..`,
         stdin: new TextEncoder().encode(JSON.stringify(input)),
         stdout: "pipe",
         stderr: "pipe",
@@ -24,7 +24,7 @@ describe("explain CLI", () => {
   test("parses a bash fixture and prints capability + policyTrace", async () => {
     const proc = Bun.spawn({
       cmd: ["bun", "run", "src/cli/explain.ts"],
-      cwd: import.meta.dir + "/..",
+      cwd: `${import.meta.dir}/..`,
       stdin: new TextEncoder().encode(
         JSON.stringify({
           permission: "bash",
@@ -47,7 +47,7 @@ describe("explain CLI", () => {
   test("exits 2 on invalid JSON", async () => {
     const proc = Bun.spawn({
       cmd: ["bun", "run", "src/cli/explain.ts"],
-      cwd: import.meta.dir + "/..",
+      cwd: `${import.meta.dir}/..`,
       stdin: new TextEncoder().encode("not json"),
       stdout: "pipe",
       stderr: "pipe",
@@ -59,7 +59,7 @@ describe("explain CLI", () => {
   test("exits 2 on missing permission field", async () => {
     const proc = Bun.spawn({
       cmd: ["bun", "run", "src/cli/explain.ts"],
-      cwd: import.meta.dir + "/..",
+      cwd: `${import.meta.dir}/..`,
       stdin: new TextEncoder().encode(JSON.stringify({ foo: "bar" })),
       stdout: "pipe",
       stderr: "pipe",
@@ -71,7 +71,7 @@ describe("explain CLI", () => {
   test("non-bash permission yields null capability", async () => {
     const proc = Bun.spawn({
       cmd: ["bun", "run", "src/cli/explain.ts"],
-      cwd: import.meta.dir + "/..",
+      cwd: `${import.meta.dir}/..`,
       stdin: new TextEncoder().encode(
         JSON.stringify({ permission: "edit", patterns: ["file.txt"] }),
       ),

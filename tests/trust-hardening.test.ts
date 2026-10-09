@@ -737,7 +737,7 @@ describe("trust hardening — audit output boundary", () => {
     try {
       writeFileSync(
         file,
-        [
+        `${[
           JSON.stringify({
             timestamp: "2026-01-01T00:00:00.000Z",
             requestID: "r1",
@@ -747,7 +747,7 @@ describe("trust hardening — audit output boundary", () => {
             reason: "ok",
             actor: null,
           }),
-        ].join("\n") + "\n",
+        ].join("\n")}\n`,
       );
       const summary = readAuditSummary(file);
       expect(summary.validRecords).toBe(1);

@@ -54,7 +54,7 @@ async function writer(path) {
   return {
     write: (value) => {
       pending = pending.then(async () => {
-        await file.write(JSON.stringify(value) + "\n");
+        await file.write(`${JSON.stringify(value)}\n`);
         await file.sync();
       });
       return pending;
@@ -70,7 +70,7 @@ async function recover(path) {
   const read = await readJSONL(path, { recoverTail: true });
   if (read.truncatedBytes) {
     await writeFile(
-      path + ".recovered-tail.txt",
+      `${path}.recovered-tail.txt`,
       "A final incomplete JSONL record was discarded during explicit resume. Bytes: " +
         read.truncatedBytes +
         "\n",
@@ -89,7 +89,7 @@ async function harnessHash() {
     "cli.mjs",
     ...(await readdir(resolve(root, "lib")))
       .filter((x) => x.endsWith(".mjs"))
-      .map((x) => "lib/" + x),
+      .map((x) => `lib/${x}`),
   ].sort();
   const hashes = {};
   for (const path of files)
@@ -262,7 +262,7 @@ export async function runBenchmark({
     for (const r of rows) {
       assert(r.runFingerprint === fingerprint, "Unexpected row fingerprint.");
       const key = `${r.modelId}/${r.caseId}/${r.repeat}`;
-      assert(!completed.has(key), "Duplicate completed result: " + key);
+      assert(!completed.has(key), `Duplicate completed result: ${key}`);
       completed.add(key);
     }
     rowsWriter = await writer(rowsPath);

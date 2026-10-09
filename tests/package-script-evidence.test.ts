@@ -77,7 +77,7 @@ test("script cycles, excessive depth and large content remain explicit gaps", as
   const directory = await fixture({
     a: "bun run b",
     b: "bun run a",
-    huge: "printf " + "x".repeat(10000),
+    huge: `printf ${"x".repeat(10000)}`,
     d0: "bun run d1",
     d1: "bun run d2",
     d2: "bun run d3",

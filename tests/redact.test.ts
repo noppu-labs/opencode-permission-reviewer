@@ -27,7 +27,7 @@ const JWT = "ey" + "JhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.signatureabcdefg";
 const GLPAT = "gl" + "pat-syntheticgitlabtoken1234";
 const NVAPI = "nv" + "api-syntheticnvidiatoken1234abcd";
 const AWS_SECRET_VAL = "wJalrXUt" + "nFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
-const AWS_SECRET_LINE = "AWS_SECRET_ACCESS_KEY=" + AWS_SECRET_VAL;
+const AWS_SECRET_LINE = `AWS_SECRET_ACCESS_KEY=${AWS_SECRET_VAL}`;
 const TELEGRAM = "123456789:" + "AAH-synthetic-telegram-bot-token-12345";
 const PEM_BEGIN_RSA = "-----BEGIN RSA " + "PRIVATE KEY-----";
 const PEM_END_RSA = "-----END RSA " + "PRIVATE KEY-----";
@@ -338,7 +338,7 @@ describe("redactSecrets — robustness", () => {
     expect(Date.now() - start).toBeLessThan(1000);
 
     const start2 = Date.now();
-    redactSecrets(`${PEM_BEGIN}\n` + "x".repeat(50_000));
+    redactSecrets(`${PEM_BEGIN}\n${"x".repeat(50_000)}`);
     expect(Date.now() - start2).toBeLessThan(1000);
   });
 

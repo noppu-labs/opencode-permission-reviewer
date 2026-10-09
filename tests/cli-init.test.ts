@@ -40,7 +40,7 @@ async function run(
   delete inherited.OPENCODE_CONFIG_CONTENT;
   const proc = Bun.spawn({
     cmd: ["bun", "run", "src/cli/explain.ts", "init", ...isolatedArgs],
-    cwd: import.meta.dir + "/..",
+    cwd: `${import.meta.dir}/..`,
     stdout: "pipe",
     stderr: "pipe",
     env: { ...inherited, ...env },

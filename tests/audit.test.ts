@@ -493,7 +493,7 @@ describe("audit summary hardening", () => {
         actor: { name: 42, profile: "unknown" },
       }),
     ];
-    writeFileSync(file, lines.join("\n") + "\n");
+    writeFileSync(file, `${lines.join("\n")}\n`);
     const summary = readAuditSummary(file);
     expect(summary.validRecords).toBe(2);
     expect(summary.unknownActorNames[0]!.name).toBe("42");

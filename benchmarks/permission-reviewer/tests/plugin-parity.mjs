@@ -38,7 +38,7 @@ for (const c of data.cases) {
   const tenant =
     (p.config.policy ?? policy.DEFAULT_TENANT_POLICY) +
     (c.input.policyAppend
-      ? "\n\n## Trusted case-specific restrictions\n" + c.input.policyAppend
+      ? `\n\n## Trusted case-specific restrictions\n${c.input.policyAppend}`
       : "");
   assert.equal(p.user, policy.buildReviewerPrompt(tenant, exact.text, "text"));
   for (const outcome of ["allow", "deny", "escalate"]) {
@@ -54,7 +54,7 @@ for (const c of data.cases) {
       decisionSource: "llm-reviewer",
     });
     if (p.actionEvidenceComplete === false && result.effective.kind === "allow")
-      throw new Error("Incomplete action was approved: " + c.id);
+      throw new Error(`Incomplete action was approved: ${c.id}`);
     checks++;
   }
 }
@@ -71,13 +71,13 @@ const p = await adapter.prepare(modelInput(c), {
 for (const invalid of [
   "",
   "{}",
-  "prose " + JSON.stringify(decision()),
-  JSON.stringify(decision()) + "\n" + JSON.stringify(decision()),
+  `prose ${JSON.stringify(decision())}`,
+  `${JSON.stringify(decision())}\n${JSON.stringify(decision())}`,
   "[]",
   "null",
 ])
   assert.equal(adapter.parse(invalid), undefined);
-assert(adapter.parse("```json\n" + JSON.stringify(decision()) + "\n```"));
+assert(adapter.parse(`\`\`\`json\n${JSON.stringify(decision())}\n\`\`\``));
 assert.equal(
   (await adapter.finish(p, decision("deny", { confidence: 0 }))).gated.kind,
   "deny",

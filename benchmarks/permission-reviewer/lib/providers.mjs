@@ -200,7 +200,7 @@ export function buildBody(model, prepared, retryNote) {
     {
       role: "user",
       content:
-        prepared.user + (retryNote ? "\n\n" + retryNote : "") + lowEffort,
+        prepared.user + (retryNote ? `\n\n${retryNote}` : "") + lowEffort,
     },
   ];
   // Granite's chat template uses this assistant prefix to skip the open

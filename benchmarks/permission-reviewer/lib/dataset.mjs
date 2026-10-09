@@ -49,7 +49,7 @@ export function validateCases(cases) {
   for (const c of cases) {
     assert(
       c && typeof c.id === "string" && c.id.length > 3 && !ids.has(c.id),
-      "Missing or duplicate case id: " + c?.id,
+      `Missing or duplicate case id: ${c?.id}`,
     );
     ids.add(c.id);
     assert(

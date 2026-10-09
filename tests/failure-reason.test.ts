@@ -128,7 +128,7 @@ test("review coordination failure audits deny with phase and cause", async () =>
       outcome: "deny",
       decisionSource: "failure-safe",
     });
-    const reason = audits[0]!["reason"] as string;
+    const reason = audits[0]!.reason as string;
     expect(reason).toContain("review coordination");
     expect(reason).toContain("ClientError");
     expect(reason).toContain("socket hang up");
@@ -294,9 +294,9 @@ test("v2 permission review hook failure denies with phase and cause", async () =
       outcome: "deny",
       decisionSource: "failure-safe",
     });
-    expect(String(records[0]!["reason"])).toContain("permission review hook");
-    expect(String(records[0]!["reason"])).toContain("ClientError");
-    expect(String(records[0]!["reason"])).toContain("socket hang up");
+    expect(String(records[0]!.reason)).toContain("permission review hook");
+    expect(String(records[0]!.reason)).toContain("ClientError");
+    expect(String(records[0]!.reason)).toContain("socket hang up");
   } finally {
     ended = true;
     resume?.();
