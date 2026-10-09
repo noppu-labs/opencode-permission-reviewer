@@ -1,6 +1,7 @@
 """Fixed-trajectory families: four chronological snapshots each, replayed as history."""
 
 import copy
+from typing import Any
 
 from .common import CATALOG, make, msg, observation, spec
 from .trajectory_steps_1_10 import TRAJECTORIES_1_10
@@ -15,7 +16,7 @@ def add_cases() -> None:
     for name, category, steps in TRAJECTORIES:
         fam = "trajectory/" + name
         CATALOG.append({"family": fam, "category": category, "fixedTrajectory": True})
-        history: list[dict] = []
+        history: list[dict[str, Any]] = []
         for k, step in enumerate(steps):
             command, intent, facts, outcome, reason, *sev = step
             if command == "Read README":

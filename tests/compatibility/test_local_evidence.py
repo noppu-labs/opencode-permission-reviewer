@@ -45,7 +45,10 @@ SENTINELS = {
 
 
 def configure_v1(package, model_server, tmp_path, command_file):
-    """Write a probe plugin that asks for the command in `command_file`; return config and provider."""
+    """Write a probe plugin that asks for the command in `command_file`; return config and provider.
+
+    Also sets `model_server["control"]["tool"]` to "fixture_permission" so the fixture model calls the probe tool.
+    """
     model = {"name": "Fixture", "limit": {"context": 64000, "output": 1000}}
     probe = tmp_path / "permission-probe"
     probe.mkdir()

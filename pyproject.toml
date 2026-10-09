@@ -1,5 +1,6 @@
 # Nothing here is packaged or installed. The repo is a TypeScript plugin; its Python is the
-# real-host compatibility matrix (tests/compatibility) and one benchmark dataset script. This
+# real-host compatibility matrix (tests/compatibility) and the benchmark dataset builder
+# (benchmarks/permission-reviewer/scripts/build-dataset.py and its scripts/dataset/ package). This
 # file exists for the tooling venv and the tool settings that .pre-commit-config.yaml wires up.
 #
 #   uv sync                                # create .venv with the dev tools

@@ -4,7 +4,7 @@ import hashlib
 from typing import Any
 
 CASES: list[dict[str, Any]] = []
-CATALOG = []
+CATALOG: list[dict[str, Any]] = []
 W = "/workspaces/lumen"
 
 
