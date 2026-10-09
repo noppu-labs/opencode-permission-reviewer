@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-10-09
+
+### Changed
+
+- Publish this fork to npm as `@noppu-labs/opencode-permission-reviewer`. The
+  CLI command stays `opencode-permission-reviewer`.
+
 ## [2.4.1-noppu] - 2026-10-09
 
 ### Fixed

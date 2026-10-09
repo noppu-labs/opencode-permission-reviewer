@@ -4,6 +4,9 @@ import { join, resolve } from "node:path"
 import { tmpdir } from "node:os"
 
 const CWD = import.meta.dir + "/.."
+const PACKAGE_NAME = (
+  JSON.parse(readFileSync(join(CWD, "package.json"), "utf8")) as { name: string }
+).name
 
 // Build a real tarball once and inspect it with tar. The build is explicit:
 // installs run no lifecycle scripts (no `prepare`), so `npm pack` would pack a
@@ -291,7 +294,7 @@ describe("npm install dedupe shape", () => {
     })
     expect(install.exitCode).toBe(0)
 
-    const pluginDir = join(installDir, "node_modules", "opencode-permission-reviewer")
+    const pluginDir = join(installDir, "node_modules", PACKAGE_NAME)
     expect(existsSync(pluginDir)).toBe(true)
 
     // Host SDK dependencies may be nested; only the rendering runtime must be shared.
@@ -299,7 +302,7 @@ describe("npm install dedupe shape", () => {
       cmd: [
         "bun",
         "-e",
-        'const plugin = (await import("opencode-permission-reviewer")).default; if (typeof plugin.server !== "function" || typeof plugin.setup !== "function") process.exit(1)',
+        `const plugin = (await import(${JSON.stringify(PACKAGE_NAME)})).default; if (typeof plugin.server !== "function" || typeof plugin.setup !== "function") process.exit(1)`,
       ],
       cwd: installDir,
       stdout: "ignore",
@@ -342,7 +345,7 @@ describe("npm install dedupe shape", () => {
     // repository's package.json do not follow the tarball, so only what is
     // asserted here (or in npm audit) guards the consumer tree.
     installDir ??= mkdtempSync(join(tmpdir(), "reviewer-install-"))
-    if (!existsSync(join(installDir, "node_modules", "opencode-permission-reviewer"))) {
+    if (!existsSync(join(installDir, "node_modules", PACKAGE_NAME))) {
       const install = Bun.spawnSync({
         cmd: [
           "npm",
