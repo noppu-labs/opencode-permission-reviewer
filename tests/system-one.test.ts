@@ -9,7 +9,12 @@ import {
   parseSystemOneReview,
   SYSTEM_ONE_QUESTIONS,
 } from "../src/system-one/review.ts"
-import type { ReviewAuditRecord, ReviewEnvelope, ReviewExecutionResult } from "../src/types.ts"
+import type {
+  ReviewAuditRecord,
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+} from "../src/types.ts"
 import { decision, MockClient, request, runtime } from "./helpers.ts"
 
 const choice = (selected: string, keys: string[], confidence = 1) => {
@@ -80,6 +85,50 @@ function envelope(): ReviewEnvelope {
     enrichment: "",
     sshAudit: [],
   }
+}
+
+function reasoningAllow(
+  evidence: "sufficient" | "partial",
+  rationale: string,
+): ReviewExecutionResult {
+  return {
+    kind: "allow",
+    reason: rationale,
+    decisionSource: "llm-reviewer",
+    reviewerOutcome: "allow",
+    decision: {
+      version: 2,
+      outcome: "allow",
+      risk_level: "low",
+      user_authorization: "high",
+      scope_alignment: "aligned",
+      evidence_completeness: evidence,
+      rationale,
+      confidence: 0.95,
+    },
+  }
+}
+
+// An explicit Jev escalation at 0.6 is plausible enough to hand to reasoning.
+function escalatingJevBackend(config: ReviewerConfig, reasoning: ReviewExecutionResult) {
+  return new SystemOneReviewerBackend(
+    config,
+    async () => reasoning,
+    "openai/gpt-5.6-luna",
+    async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+  )
+}
+
+// Incomplete action evidence makes the engine's allow gate downgrade any allow.
+function reviewWithIncompleteEvidence(config: ReviewerConfig, backend: SystemOneReviewerBackend) {
+  const pending = envelope()
+  return evaluateReview(pending.request, config, {
+    collect: async () => ({ ...pending, actionEvidenceComplete: false }),
+    review: (value) => backend.review(value, new ReviewAttempt("generation", 10_000)),
+    active: () => true,
+    auxiliarySession: () => false,
+    observe: () => {},
+  })
 }
 
 async function withSyntheticCommandCodeKey<T>(run: () => Promise<T>): Promise<T> {
@@ -568,35 +617,11 @@ describe("System One reviewer", () => {
 
   test("credits a gate-downgraded reasoning allow to the reasoning reviewer", async () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
-    const backend = new SystemOneReviewerBackend(
+    const backend = escalatingJevBackend(
       config,
-      async () => ({
-        kind: "allow",
-        reason: "The action is supported by complete evidence.",
-        decisionSource: "llm-reviewer",
-        reviewerOutcome: "allow",
-        decision: {
-          version: 2,
-          outcome: "allow",
-          risk_level: "low",
-          user_authorization: "high",
-          scope_alignment: "aligned",
-          evidence_completeness: "sufficient",
-          rationale: "The action is supported by complete evidence.",
-          confidence: 0.95,
-        },
-      }),
-      "openai/gpt-5.6-luna",
-      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+      reasoningAllow("sufficient", "The action is supported by complete evidence."),
     )
-    const pending = envelope()
-    const result = await evaluateReview(pending.request, config, {
-      collect: async () => ({ ...pending, actionEvidenceComplete: false }),
-      review: (value) => backend.review(value, new ReviewAttempt("generation", 10_000)),
-      active: () => true,
-      auxiliarySession: () => false,
-      observe: () => {},
-    })
+    const result = await reviewWithIncompleteEvidence(config, backend)
     expect(result.kind).toBe("escalate")
     expect(result.decisionSource).toBe("deterministic-policy")
     expect(result.decision?.confidence).toBe(0.95)
@@ -610,14 +635,7 @@ describe("System One reviewer", () => {
     const backend = new SystemOneReviewerBackend(config, undefined, undefined, async () =>
       response(),
     )
-    const pending = envelope()
-    const result = await evaluateReview(pending.request, config, {
-      collect: async () => ({ ...pending, actionEvidenceComplete: false }),
-      review: (value) => backend.review(value, new ReviewAttempt("generation", 10_000)),
-      active: () => true,
-      auxiliarySession: () => false,
-      observe: () => {},
-    })
+    const result = await reviewWithIncompleteEvidence(config, backend)
     expect(result.kind).toBe("escalate")
     expect(result.decisionSource).toBe("deterministic-policy")
     expect(result.systemOne?.outcome.choice).toBe("allow")
@@ -686,26 +704,9 @@ describe("System One reviewer", () => {
 
   test("does not let a reasoning reviewer override an escalation with incomplete evidence", async () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
-    const backend = new SystemOneReviewerBackend(
+    const backend = escalatingJevBackend(
       config,
-      async () => ({
-        kind: "allow",
-        reason: "The action appears safe.",
-        decisionSource: "llm-reviewer",
-        reviewerOutcome: "allow",
-        decision: {
-          version: 2,
-          outcome: "allow",
-          risk_level: "low",
-          user_authorization: "high",
-          scope_alignment: "aligned",
-          evidence_completeness: "partial",
-          rationale: "The action appears safe.",
-          confidence: 0.95,
-        },
-      }),
-      "openai/gpt-5.6-luna",
-      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+      reasoningAllow("partial", "The action appears safe."),
     )
     const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
     expect(result.kind).toBe("escalate")
@@ -717,26 +718,9 @@ describe("System One reviewer", () => {
 
   test("accepts a reasoning reviewer allow backed by sufficient evidence", async () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" })
-    const backend = new SystemOneReviewerBackend(
+    const backend = escalatingJevBackend(
       config,
-      async () => ({
-        kind: "allow",
-        reason: "The action is supported by complete evidence.",
-        decisionSource: "llm-reviewer",
-        reviewerOutcome: "allow",
-        decision: {
-          version: 2,
-          outcome: "allow",
-          risk_level: "low",
-          user_authorization: "high",
-          scope_alignment: "aligned",
-          evidence_completeness: "sufficient",
-          rationale: "The action is supported by complete evidence.",
-          confidence: 0.95,
-        },
-      }),
-      "openai/gpt-5.6-luna",
-      async () => response({ outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6) }),
+      reasoningAllow("sufficient", "The action is supported by complete evidence."),
     )
     const result = await backend.review(envelope(), new ReviewAttempt("generation", 10_000))
     expect(result.kind).toBe("allow")
