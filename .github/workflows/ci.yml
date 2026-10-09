@@ -26,8 +26,6 @@ jobs:
           enable-cache: true
       - run: bun install --frozen-lockfile --ignore-scripts
       - run: uv sync --locked --no-build
-      # The tsc hook imports dist/ (tests/live-host-regressions.ts), so build first.
-      - run: bun run build
       # pre-commit builds an environment per hook repo; cache them keyed on the config.
       - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:

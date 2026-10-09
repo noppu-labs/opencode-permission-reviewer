@@ -130,6 +130,7 @@ describe("npm pack ship set", () => {
         f === "CODE_OF_CONDUCT.md" ||
         f === "tsup.config.ts" ||
         f === "tsconfig.json" ||
+        f === "tsconfig.hook.json" ||
         f === "biome.jsonc" ||
         f === "fta.json" ||
         f === "knip.jsonc" ||

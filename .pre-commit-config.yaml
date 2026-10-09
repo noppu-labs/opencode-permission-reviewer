@@ -118,11 +118,13 @@ repos:
         language: unsupported
         # A regex, not types: identify gives .jsonc files no json tag.
         files: \.([cm]?[jt]sx?|jsonc?)$
+      # The live harness imports ../dist, so the hook skips it; CI's check job type-checks it
+      # after a build.
       - id: tsc
         name: tsc --noEmit
-        entry: bun run typecheck
+        entry: bun run --bun tsc --noEmit -p tsconfig.hook.json
         language: unsupported
-        types_or: [ts, tsx]
+        files: \.[cm]?tsx?$|^(tsconfig(\.hook)?\.json|package\.json|bun\.lock)$
         pass_filenames: false
       # score_cap and the pending per-file exclusions are in fta.json. Exits non-zero when any
       # scanned file scores above the cap. `bun run` resolves node_modules/.bin only, so it

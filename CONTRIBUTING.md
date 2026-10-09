@@ -39,11 +39,11 @@ bun run check           # build, every pre-commit hook on every file, and the fu
 bun run test:coverage   # test suite with the coverage threshold check
 ```
 
-`bun run check` builds first because the `tsc` hook needs `dist/`. The Biome hook runs with
-`--write`, so `check` can rewrite files; look at `git diff` afterwards, because CI fails when a
-hook changes the tree. `bun run lint:fix` applies Biome's fixes on its own. `bun run format`
-errors while the Biome formatter is disabled (pending `quality/2-format`), so don't use it yet.
-`bun run test:stress` and `bun run test:package` rerun only the stress suite or the npm pack ship-set test. Don't disable or skip tests to get `check` passing.
+The Biome hook runs with `--write`, so `check` can rewrite files; look at `git diff` afterwards,
+because CI fails when a hook changes the tree. `bun run lint:fix` applies Biome's fixes on its
+own. `bun run format` errors while the Biome formatter is disabled (pending `quality/2-format`),
+so don't use it yet. `bun run test:stress` and `bun run test:package` rerun only the stress suite
+or the npm pack ship-set test. Don't disable or skip tests to get `check` passing.
 
 Every accepted lint finding carries its reason on the line, as a line-level
 `// biome-ignore lint/<group>/<rule>: <reason>` comment. Don't add file-wide or ranged ignores

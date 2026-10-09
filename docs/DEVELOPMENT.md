@@ -44,7 +44,7 @@ steps pinned by `bun.lock`.
 | markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
 | Biome | Lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600) | `biome.jsonc` |
-| `tsc --noEmit` | Types | `tsconfig.json` |
+| `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
 | FTA | Maintainability score per file, cap 52 | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
 | `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
