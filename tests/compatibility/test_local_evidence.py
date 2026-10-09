@@ -108,7 +108,7 @@ def prepare_project(project):
         ["commit", "--allow-empty", "-m", "fixture"],
         ["remote", "add", "origin", "https://local.example.invalid/project.git"],
     ]:
-        subprocess.run(["git", *args], cwd=project, check=True, capture_output=True)  # nosec B603 B607 # fixed argv, no shell
+        subprocess.run(["git", *args], cwd=project, check=True, capture_output=True)  # nosec B603 B607 # fixed argv, no shell; git is resolved from PATH
 
 
 def request(host, generation, path, body):

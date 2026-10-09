@@ -139,7 +139,7 @@ def compact_history(host, generation, version, session_id):
 
 
 def capture_evidence(source, generation, host, session_id):
-    return subprocess.run(  # nosec B603 B607 # fixed argv, no shell
+    return subprocess.run(  # nosec B603 B607 # fixed argv, no shell; git is resolved from PATH
         [
             "bun",
             "tests/compatibility/capture-evidence.ts",

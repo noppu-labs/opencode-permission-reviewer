@@ -132,7 +132,15 @@ mccabe.max-complexity = 10
 
 # Permanent: the dataset case strings are the benchmark's input and read as one verbatim line each.
 # Splitting them mid-sentence would hide the text from grep and make a case hard to compare.
-"benchmarks/permission-reviewer/scripts/dataset/*.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/common.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/derived.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/injections.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_dataflow.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_git.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_intent.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_paths.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_shell.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_side_effects.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
