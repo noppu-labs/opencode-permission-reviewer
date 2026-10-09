@@ -24,7 +24,7 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with:
           enable-cache: true
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - run: uv sync --locked --no-build
       # The tsc hook imports dist/ (tests/live-host-regressions.ts), so build first.
       - run: bun run build
@@ -37,8 +37,8 @@ jobs:
       # (manual stage) scans the whole working tree instead.
       # --all-files also runs the bun-audit hook, which at commit time fires only when the
       # lockfile changes, so a new advisory fails every push.
-      - run: uv run --frozen pre-commit run --all-files --show-diff-on-failure
-      - run: uv run --frozen pre-commit run --hook-stage manual gitleaks-tree --all-files
+      - run: uv run --frozen --no-build pre-commit run --all-files --show-diff-on-failure
+      - run: uv run --frozen --no-build pre-commit run --hook-stage manual gitleaks-tree --all-files
 
   check:
     name: check (bun ${{ matrix.bun }})
@@ -134,14 +134,14 @@ jobs:
           HOST_GENERATION: ${{ matrix.host }}
         run: |
           if [ "$HOST_GENERATION" = v1 ]; then
-            uv run --frozen pytest \
+            uv run --frozen --no-build pytest \
               tests/compatibility/test_opencode_v1.py \
               tests/compatibility/test_evidence_recovery.py \
               tests/compatibility/test_local_evidence.py \
               -q
-            uv run --frozen pytest tests/compatibility/test_tui.py -k v1 -q
+            uv run --frozen --no-build pytest tests/compatibility/test_tui.py -k v1 -q
           else
-            uv run --frozen pytest \
+            uv run --frozen --no-build pytest \
               tests/compatibility/test_opencode_v2.py \
               tests/compatibility/test_v2_reviewer.py \
               tests/compatibility/test_v2_analysis_regressions.py \
@@ -149,7 +149,7 @@ jobs:
               tests/compatibility/test_evidence_recovery.py \
               tests/compatibility/test_local_evidence.py \
               -q
-            uv run --frozen pytest tests/compatibility/test_tui.py -k v2 -q
+            uv run --frozen --no-build pytest tests/compatibility/test_tui.py -k v2 -q
           fi
 
   # Stable required-check name for branch protection. Matrix leg names change

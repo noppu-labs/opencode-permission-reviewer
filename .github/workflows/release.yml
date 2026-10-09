@@ -88,14 +88,14 @@ jobs:
         with:
           enable-cache: false
 
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
 
       - run: uv sync --locked --no-build
 
       # The tsc hook imports dist/ (tests/live-host-regressions.ts), so build first.
       - run: bun run build
 
-      - run: uv run --frozen pre-commit run --all-files --show-diff-on-failure
+      - run: uv run --frozen --no-build pre-commit run --all-files --show-diff-on-failure
 
   build:
     needs: quality
