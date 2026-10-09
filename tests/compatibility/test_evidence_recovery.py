@@ -8,6 +8,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -53,7 +54,7 @@ def host_configs(generation, package, model_server):
     return config, provider
 
 
-def request(host, generation, path, body=None):
+def request(host, generation, path, body=None) -> Any:
     query = "?" + urllib.parse.urlencode({"directory": str(host["project"])}) if generation == "v1" else ""
     req = urllib.request.Request(
         host["url"] + path + query,

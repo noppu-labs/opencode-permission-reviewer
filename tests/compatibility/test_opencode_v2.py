@@ -49,8 +49,10 @@ def test_native_context_fork_and_form_contracts(launch_host, model_server, host_
     }
     host = launch_host("v2", binary, {}, global_config=provider)
     script = Path(__file__).with_name("capture-contracts.ts")
+    bun = shutil.which("bun")
+    assert bun is not None, "bun is not on PATH"
     captured = subprocess.run(  # nosec B603 # fixed argv, no shell
-        [shutil.which("bun"), str(script), host["url"], str(host["project"]), host_version],
+        [bun, str(script), host["url"], str(host["project"]), host_version],
         env=host["env"],
         capture_output=True,
         text=True,

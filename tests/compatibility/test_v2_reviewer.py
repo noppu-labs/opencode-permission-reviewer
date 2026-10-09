@@ -11,6 +11,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import pytest
 from hosts import V2_VERSIONS
@@ -75,7 +76,7 @@ def reviewer_provider(model_server):
     }
 
 
-def request(host, path, body=None):
+def request(host, path, body=None) -> Any:
     req = urllib.request.Request(
         host["url"] + path,
         data=None if body is None else json.dumps(body).encode(),

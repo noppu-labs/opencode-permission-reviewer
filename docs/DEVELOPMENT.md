@@ -125,7 +125,6 @@ stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
   it.
 - `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
   dependencies.
-- `pyproject.toml`: per-file ruff ignores and pyrefly sub-configs.
 - `.pre-commit-config.yaml`: pylint length ceilings for the two Python modules over 600 lines.
 
 Don't add to these lists to get a new change through. Fix the finding, or suppress it on the line

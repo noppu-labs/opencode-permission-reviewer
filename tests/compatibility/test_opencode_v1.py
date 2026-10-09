@@ -9,6 +9,7 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -51,7 +52,7 @@ def v1_provider(model_server):
     }
 
 
-def v1_request(host, path, body=None, directory=None, timeout=45):
+def v1_request(host, path, body=None, directory=None, timeout=45) -> Any:
     query = urllib.parse.urlencode({"directory": str(directory or host["project"])})
     req = urllib.request.Request(
         host["url"] + path + "?" + query,

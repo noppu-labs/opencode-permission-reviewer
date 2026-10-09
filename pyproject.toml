@@ -80,42 +80,6 @@ project-includes = ["tests/compatibility", "benchmarks/permission-reviewer/scrip
 search-path = ["tests/compatibility"]
 python-version = "3.12"
 
-# Pending: removed by quality/3-python. One sub-config per file, switching off only the error
-# kinds that file still reports.
-[[tool.pyrefly.sub-config]]
-matches = "benchmarks/permission-reviewer/scripts/build-dataset.py"
-[tool.pyrefly.sub-config.errors]
-bad-assignment = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_evidence_recovery.py"
-[tool.pyrefly.sub-config.errors]
-unsupported-operation = false
-unbound-name = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_local_evidence.py"
-[tool.pyrefly.sub-config.errors]
-unbound-name = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_opencode_v1.py"
-[tool.pyrefly.sub-config.errors]
-unsupported-operation = false
-not-iterable = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_opencode_v2.py"
-[tool.pyrefly.sub-config.errors]
-no-matching-overload = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_v2_reviewer.py"
-[tool.pyrefly.sub-config.errors]
-unsupported-operation = false
-unbound-name = false
-missing-attribute = false
-
 [tool.ruff]
 line-length = 120
 target-version = "py312"
