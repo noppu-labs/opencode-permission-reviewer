@@ -1,12 +1,1 @@
-[
-  {
-    "path": "tests/compatibility/test_v2_analysis_regressions.py",
-    "file_name": "test_v2_analysis_regressions.py",
-    "functions": [
-      {
-        "name": "test_current_bundle_regressions",
-        "complexity": 20
-      }
-    ]
-  }
-]
+[]
