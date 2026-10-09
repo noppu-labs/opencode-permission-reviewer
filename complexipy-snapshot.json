@@ -20,20 +20,6 @@
     ]
   },
   {
-    "path": "tests/compatibility/test_opencode_v1.py",
-    "file_name": "test_opencode_v1.py",
-    "functions": [
-      {
-        "name": "test_v1_reviewer_applies_decision",
-        "complexity": 18
-      },
-      {
-        "name": "test_v1_reuses_mcp_free_reviewer_location",
-        "complexity": 31
-      }
-    ]
-  },
-  {
     "path": "tests/compatibility/test_tui.py",
     "file_name": "test_tui.py",
     "functions": [
