@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.2] - 2026-10-09
+
 ### Added
 
 - Record Jev's own scores in an additive `systemOne` audit field whenever it
@@ -14,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the reasoning reviewer, which previously kept only the System One model and
   reason. The README's audit section lists the fields and when the field is
   absent. Outcomes and routing are unchanged. Audit `schemaVersion` stays 3.
+
+### Changed
+
+- Update the `@opencode/client` dependency to 2.0.26, from upstream.
 
 ### Fixed
 
