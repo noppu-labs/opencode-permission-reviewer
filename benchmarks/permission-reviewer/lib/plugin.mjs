@@ -22,10 +22,10 @@ export const PINNED_BLOBS = {
   "src/shell-lexer.ts": "8df45208e880bfe141f69a59d1a730b9107e931d",
   "src/capability/heredoc-extractor.ts":
     "84ee7ef2db5f1ac940fa6ad330a54df4b3ecef37",
-  "src/system-one/review.ts": "5351b62a018a85d8c59415c975b9bc767c0b0ec0",
+  "src/system-one/review.ts": "0be046dbbf20324c3ee19a3f9d64371eb6c33628",
 };
 const gitBlob = (bytes) =>
-  createHash("sha1")
+  createHash("sha1") // NOSONAR(S4790) SHA-1 is git's blob-object hash, compared against git blob IDs, not used for security
     .update(`blob ${bytes.length}\0`)
     .update(bytes)
     .digest("hex");
@@ -60,7 +60,7 @@ export async function sourceSnapshot(repo) {
   try {
     // The blob map gates source parity; record the checked-out commit for provenance.
     pinnedCommit = execFileSync(
-      "git",
+      "git", // NOSONAR(S4036) provenance-only git rev-parse in a local benchmark CLI, resolved via PATH like every other git call; never trusted for a decision
       ["-C", resolve(repo), "rev-parse", "HEAD"],
       {
         encoding: "utf8",

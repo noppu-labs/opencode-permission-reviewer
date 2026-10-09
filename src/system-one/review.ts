@@ -194,7 +194,7 @@ function exactKeys(
   value: Record<string, unknown>,
   expected: readonly string[],
 ): boolean {
-  const keys = Object.keys(value).sort();
+  const keys = Object.keys(value).sort(); // NOSONAR(S2871) compares key sets; any deterministic order works, code-unit order is intended
   return (
     keys.length === expected.length &&
     keys.every((key, index) => key === [...expected].sort()[index])
