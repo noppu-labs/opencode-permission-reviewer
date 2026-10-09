@@ -31,7 +31,7 @@ from test_v2_reviewer import model_server  # noqa: F401
 def terminal(arguments, env):
     master, slave = pty.openpty()
     fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 140, 0, 0))
-    proc = subprocess.Popen(arguments, env={**env, "COLORTERM": "truecolor"}, stdin=slave, stdout=slave, stderr=slave)
+    proc = subprocess.Popen(arguments, env={**env, "COLORTERM": "truecolor"}, stdin=slave, stdout=slave, stderr=slave)  # nosec B603 - fixed argv, no shell
     os.close(slave)
     output = bytearray()
     stop = False
@@ -134,7 +134,7 @@ def test_tui_renders_review_state(launch_host, activate_host, model_server, gene
             data=None if body is None else json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
             return json.load(response)
 
     session = request(

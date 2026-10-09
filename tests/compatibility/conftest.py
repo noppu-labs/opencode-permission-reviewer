@@ -32,7 +32,7 @@ def activate_host():
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
             request = urllib.request.Request(host["url"] + route + "?" + query, headers=host["headers"])
-            with urllib.request.urlopen(request, timeout=30) as response:
+            with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
                 result = json.load(response)
             if generation == "v1":
                 return result
@@ -98,9 +98,9 @@ def launch_host(tmp_path):
         if generation == "v2":
             if not service:
                 env["OPENCODE_PERMISSION_REVIEWER_HOST_URL"] = f"http://127.0.0.1:{port}"
-            env["OPENCODE_PASSWORD"] = "synthetic-local-host-password"
+            env["OPENCODE_PASSWORD"] = "synthetic-local-host-password"  # nosec B105 - synthetic test password
         log = (root / "server.log").open("w+", encoding="utf-8")
-        process = subprocess.Popen(
+        process = subprocess.Popen(  # nosec B603 - fixed argv, no shell
             [executable, "serve", "--hostname", "127.0.0.1", "--port", str(port), *(["--service"] if service else [])],
             cwd=project,
             env=env,
@@ -160,7 +160,7 @@ def launch_host(tmp_path):
                     headers["Authorization"] = "Basic " + auth
             try:
                 request = urllib.request.Request(url + health, headers=headers)
-                with urllib.request.urlopen(request, timeout=1) as response:
+                with urllib.request.urlopen(request, timeout=1) as response:  # nosec B310 - local 127.0.0.1 host under test
                     if response.status == 200:
                         return {
                             "url": url,

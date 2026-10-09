@@ -55,7 +55,7 @@ def test_native_context_fork_and_form_contracts(launch_host, model_server, host_
     }
     host = launch_host("v2", binary, {}, global_config=provider)
     script = Path(__file__).with_name("capture-contracts.ts")
-    captured = subprocess.run(
+    captured = subprocess.run(  # nosec B603 - fixed argv, no shell
         [shutil.which("bun"), str(script), host["url"], str(host["project"]), host_version],
         env=host["env"],
         capture_output=True,

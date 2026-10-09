@@ -76,18 +76,7 @@ ignore-words-list = "afterall,unparseable,truncat,opeator"
 exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
 # B101: asserts are how pytest tests assert.
 # B404: flags any `import subprocess`; the calls themselves are still checked (B603/B607).
-skips = [
-    "B101",
-    "B404",
-    # Pending: removed by quality/3-python, which fixes each finding or marks it with a
-    # `# nosec <id> - reason`. All are in the test harness: it calls the host binaries with a
-    # list of arguments and talks to its own local servers.
-    "B105",  # hardcoded_password_string: synthetic fixture credentials
-    "B108",  # hardcoded_tmp_directory: dataset cases whose text contains /tmp paths
-    "B310",  # urllib.request.urlopen: requests to the local fixture servers
-    "B603",  # subprocess without shell
-    "B607",  # subprocess with a partial executable path
-]
+skips = ["B101", "B404"]
 
 # Type checking (PyCharm runs Pyrefly). The compatibility tests import `test_v2_reviewer` as a
 # sibling module, so that folder is on the search path.

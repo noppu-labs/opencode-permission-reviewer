@@ -89,7 +89,7 @@ def test_local_executable_evidence_reaches_the_reviewer(
         ["commit", "--allow-empty", "-m", "fixture"],
         ["remote", "add", "origin", "https://local.example.invalid/project.git"],
     ]:
-        subprocess.run(["git", *args], cwd=project, check=True, capture_output=True)
+        subprocess.run(["git", *args], cwd=project, check=True, capture_output=True)  # nosec B603 B607 - fixed argv, no shell
 
     def request(path, body):
         query = "?" + urllib.parse.urlencode({"directory": str(project)}) if generation == "v1" else ""
@@ -98,7 +98,7 @@ def test_local_executable_evidence_reaches_the_reviewer(
             data=json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=45) as response:
+        with urllib.request.urlopen(req, timeout=45) as response:  # nosec B310 - local 127.0.0.1 host under test
             value = json.load(response)
             return value.get("data", value)
 

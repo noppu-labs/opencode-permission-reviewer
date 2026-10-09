@@ -74,7 +74,7 @@ def test_v1_reviewer_applies_decision(launch_host, version, model_server, outcom
             data=None if body is None else json.dumps(body).encode(),
             headers={"Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=40) as response:
+        with urllib.request.urlopen(req, timeout=40) as response:  # nosec B310 - local 127.0.0.1 host under test
             return json.load(response)
 
     session = request("/session", {"title": "Compatibility safe operation"})
@@ -178,7 +178,7 @@ for line in sys.stdin:
             data=None if body is None else json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=45) as response:
+        with urllib.request.urlopen(req, timeout=45) as response:  # nosec B310 - local 127.0.0.1 host under test
             return json.load(response) if response.status != 204 else None
 
     def inventory(directory):
