@@ -22,6 +22,7 @@ repos:
         # complexipy rewrites its snapshot without a final newline on every run.
         exclude: ^complexipy-snapshot\.json$
       - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
       - id: mixed-line-ending
 
   # Secrets in the staged diff. Test fixtures use synthetic credentials (CONTRIBUTING), so a hit
