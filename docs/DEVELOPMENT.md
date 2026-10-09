@@ -32,12 +32,14 @@ See [Supply chain](./SUPPLY-CHAIN.md) for what that test enforces on dependencie
 `pre-commit` is the single runner. `bun run check` is the local equivalent of CI: it builds, runs
 every hook on every file, then runs `bun test`. The CI `quality` job runs the same hooks once; the
 `check` job repeats build, typecheck and tests on the minimum and the pinned Bun versions. Set up
-once per clone with `uv sync && uv run pre-commit install`.
+once per clone with `uv sync && uv run pre-commit install`. The release workflow runs the same hooks
+in its own read-only `quality` job, which the artifact-building job needs, so that job only runs
+steps pinned by `bun.lock`.
 
 | Tool | What it checks | Settings |
 | --- | --- | --- |
 | pre-commit-hooks | File hygiene: YAML, TOML and JSON syntax, merge markers, case conflicts, large files, shebangs, end of file, whitespace, line endings | `.pre-commit-config.yaml` |
-| gitleaks | Secrets in the staged diff. It only guards at commit time, since CI has no staged diff. | `.gitleaks.toml` (allows the synthetic fixtures CONTRIBUTING requires, scoped by path) |
+| gitleaks | Secrets in the staged diff at commit time. CI has no staged diff, so it also runs a second, manual-stage hook (`gitleaks-tree`) that scans the whole working tree. | `.gitleaks.toml` (allows the synthetic fixtures CONTRIBUTING requires, scoped by path) |
 | yamllint (`--strict`) | YAML style | `.yamllint.yaml` |
 | markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
@@ -65,8 +67,9 @@ and `uv sync --locked`.
 
 ### FTA
 
-`fta.json` sets `score_cap` to 52 and scans `src`, `tests`, `scripts` and the benchmark `.mjs`
-files. Two behaviors of the tool matter when you edit it:
+`fta.json` sets `score_cap` to 52. `fta .` scans the whole repository, minus `.gitignore`d paths
+and the `exclude_directories` in `fta.json`, and `extensions` adds `.mjs` to the TypeScript and
+JavaScript files it reads by default. Two behaviors of the tool matter when you edit it:
 
 - A file fails only when its score is strictly greater than the cap (the source compares
   `fta_score > score_cap`; a cap of 50 failed a 50.99 file and a cap of 51 passed it). Scores
@@ -113,7 +116,7 @@ stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
 - `biome.jsonc`: the formatter and `organizeImports` are disabled, and `overrides` turns off one
   rule per entry for an exact list of files. Entries are ordered by the pull request that removes
   them.
-- `fta.json`: `exclude_filenames` lists every file at or over the cap.
+- `fta.json`: `exclude_filenames` lists every file above the cap.
 - `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
   dependencies.
 - `pyproject.toml` and `complexipy-snapshot.json`: per-file ruff ignores, pyrefly sub-configs and
