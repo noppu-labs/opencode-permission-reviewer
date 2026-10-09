@@ -17,14 +17,7 @@ from pathlib import Path
 from threading import Thread
 
 import pytest
-
-V2_VERSIONS = (
-    [os.environ["V2_HOST_VERSION"]]
-    if os.environ.get("V2_HOST_VERSION")
-    else ["2.0.3", "2.0.11", "2.0.15", "2.0.18", "2.0.26"]
-)
-
-from test_v2_reviewer import model_server  # noqa: F401
+from hosts import V2_VERSIONS
 
 
 @contextmanager

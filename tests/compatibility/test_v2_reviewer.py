@@ -9,17 +9,11 @@ import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from threading import Thread
 
 import pytest
+from hosts import V2_VERSIONS
 
-V2_VERSIONS = (
-    [os.environ["V2_HOST_VERSION"]]
-    if os.environ.get("V2_HOST_VERSION")
-    else ["2.0.3", "2.0.11", "2.0.15", "2.0.18", "2.0.26"]
-)
 V2_CASES = [
     (version, "json_schema", outcome) for version in V2_VERSIONS for outcome in ("allow", "deny", "service")
 ] + (
@@ -117,130 +111,6 @@ def audit_record(host, session_id):
             return record
         time.sleep(0.05)
     return None
-
-
-@pytest.fixture
-def model_server():
-    calls = []
-    control = {"delay": 0}
-    decision = {
-        "version": 2,
-        "outcome": "allow",
-        "risk_level": "low",
-        "user_authorization": "high",
-        "scope_alignment": "aligned",
-        "evidence_completeness": "sufficient",
-        "rationale": "Synthetic harmless command review",
-        "confidence": 0.99,
-    }
-
-    class Handler(BaseHTTPRequestHandler):
-        def log_message(self, *_args):
-            pass
-
-        def do_POST(self):
-            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-            calls.append(body)
-            time.sleep(control["delay"])
-            tool_name = next(
-                (
-                    tool.get("function", {}).get("name")
-                    for tool in body.get("tools", [])
-                    if tool.get("function", {}).get("name") in {"permission_reviewer_result", "StructuredOutput"}
-                ),
-                None,
-            )
-            structured = tool_name is not None
-            delta = (
-                {
-                    "role": "assistant",
-                    "tool_calls": [
-                        {
-                            "index": 0,
-                            "id": "call_fixture",
-                            "type": "function",
-                            "function": {"name": tool_name, "arguments": json.dumps(decision)},
-                        }
-                    ],
-                }
-                if structured
-                else {"role": "assistant", "content": json.dumps(decision)}
-            )
-            if structured and control.get("ambiguous"):
-                delta["tool_calls"].append(
-                    {
-                        "index": 1,
-                        "id": "call_invalid_fixture",
-                        "type": "function",
-                        "function": {"name": tool_name, "arguments": json.dumps({"outcome": "deny"})},
-                    }
-                )
-            if (
-                structured
-                and control.get("invalid_first")
-                and sum(call.get("model") == "reviewer" for call in calls) == 1
-            ):
-                delta["tool_calls"][0]["function"]["arguments"] = "{}"
-            if body.get("model") == "driver":
-                structured = not any(message.get("role") == "tool" for message in body.get("messages", []))
-                native_tool = (
-                    "shell"
-                    if any(tool.get("function", {}).get("name") == "shell" for tool in body.get("tools", []))
-                    else "bash"
-                )
-                native_tool = control.get("tool", native_tool)
-                tool_arguments = (
-                    {}
-                    if control.get("tool")
-                    else {"command": "printf COMPATIBILITY_EXECUTED", "description": "Print a synthetic fixture marker"}
-                )
-                delta = (
-                    {
-                        "role": "assistant",
-                        "tool_calls": [
-                            {
-                                "index": 0,
-                                "id": "call_operation",
-                                "type": "function",
-                                "function": {"name": native_tool, "arguments": json.dumps(tool_arguments)},
-                            }
-                        ],
-                    }
-                    if structured
-                    else {"role": "assistant", "content": "Completed."}
-                )
-            common = {
-                "id": "chatcmpl-fixture",
-                "object": "chat.completion.chunk",
-                "created": 1,
-                "model": body.get("model", "reviewer"),
-            }
-            chunks = [
-                {**common, "choices": [{"index": 0, "delta": delta, "finish_reason": None}]},
-                {
-                    **common,
-                    "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls" if structured else "stop"}],
-                    "usage": {"prompt_tokens": 10, "completion_tokens": 10, "total_tokens": 20},
-                },
-            ]
-            encoded = ("".join("data: " + json.dumps(chunk) + "\n\n" for chunk in chunks) + "data: [DONE]\n\n").encode()
-            try:
-                self.send_response(200)
-                self.send_header("Content-Type", "text/event-stream")
-                self.send_header("Content-Length", str(len(encoded)))
-                self.end_headers()
-                self.wfile.write(encoded)
-            except (BrokenPipeError, ConnectionResetError):
-                # Cancellation deliberately closes an in-flight model transport.
-                pass
-
-    server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-    thread = Thread(target=server.serve_forever, daemon=True)
-    thread.start()
-    yield {"url": f"http://127.0.0.1:{server.server_port}/v1", "calls": calls, "decision": decision, "control": control}
-    server.shutdown()
-    server.server_close()
-    thread.join(timeout=5)
 
 
 @pytest.mark.parametrize("host_version,output_format,decision_outcome", V2_CASES)

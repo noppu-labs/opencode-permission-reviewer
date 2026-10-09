@@ -10,7 +10,6 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
-from test_v2_reviewer import model_server  # noqa: F401, shared synthetic HTTP provider
 
 V1_VERSIONS = (
     [os.environ["V1_HOST_VERSION"]]

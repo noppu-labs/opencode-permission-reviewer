@@ -6,7 +6,7 @@ import urllib.request
 from pathlib import Path
 
 import pytest
-from test_v2_reviewer import V2_VERSIONS, model_server
+from hosts import V2_VERSIONS
 
 
 @pytest.mark.parametrize("host_version", V2_VERSIONS)

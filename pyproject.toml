@@ -50,8 +50,9 @@ max-module-lines = 600
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 # pytest finds fixtures by name; nothing calls them.
 ignore_decorators = ["@pytest.fixture"]
-# BaseHTTPRequestHandler calls these by name (tests/compatibility/test_v2_reviewer.py).
-ignore_names = ["do_POST", "log_message"]
+# BaseHTTPRequestHandler calls these by name, and `format` is the parameter name its `log_message`
+# signature fixes (tests/compatibility/conftest.py).
+ignore_names = ["do_POST", "log_message", "format"]
 
 [tool.codespell]
 # benchmarks/permission-reviewer/data holds verbatim dataset cases that contain misspellings and
@@ -74,7 +75,7 @@ exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
 # B404: flags any `import subprocess`; the calls themselves are still checked (B603/B607).
 skips = ["B101", "B404"]
 
-# Type checking (PyCharm runs Pyrefly). The compatibility tests import `test_v2_reviewer` as a
+# Type checking (PyCharm runs Pyrefly). The compatibility tests import `hosts` as a
 # sibling module, so that folder is on the search path.
 [tool.pyrefly]
 project-includes = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
@@ -115,8 +116,6 @@ matches = "tests/compatibility/test_v2_reviewer.py"
 [tool.pyrefly.sub-config.errors]
 unsupported-operation = false
 unbound-name = false
-bad-index = false
-bad-override = false
 missing-attribute = false
 
 [tool.ruff]
@@ -169,8 +168,6 @@ mccabe.max-complexity = 10
 "tests/**/*.py" = ["ARG"]
 
 # Pending: removed by quality/3-python. Each entry lists only the codes that file still fails.
-# F811/F401: fixtures are imported from test_v2_reviewer and redeclared as parameters. Removing the
-# import breaks the run (pytest cannot find the fixture), so they move to conftest.py in 3-python.
 "benchmarks/permission-reviewer/scripts/build-dataset.py" = [
     "E501",    # dataset strings that ruff format cannot split; text stays verbatim
     "RUF001",  # deliberate full-width and curly-quote characters in dataset cases
@@ -179,13 +176,11 @@ mccabe.max-complexity = 10
     "C401",
 ]
 "tests/compatibility/conftest.py" = ["C901"]
-"tests/compatibility/test_evidence_recovery.py" = ["PT006", "F811"]
-"tests/compatibility/test_local_evidence.py" = ["PT006", "F811", "E501"]
-"tests/compatibility/test_opencode_v1.py" = ["F811", "E501"]
-"tests/compatibility/test_opencode_v2.py" = ["F811"]
-"tests/compatibility/test_rollback.py" = ["F811"]
-"tests/compatibility/test_tui.py" = ["E402", "PT006", "F811"]
-"tests/compatibility/test_v2_analysis_regressions.py" = ["F401", "F811", "PT018"]
+"tests/compatibility/test_evidence_recovery.py" = ["PT006"]
+"tests/compatibility/test_local_evidence.py" = ["PT006", "E501"]
+"tests/compatibility/test_opencode_v1.py" = ["E501"]
+"tests/compatibility/test_tui.py" = ["PT006"]
+"tests/compatibility/test_v2_analysis_regressions.py" = ["PT018"]
 "tests/compatibility/test_v2_reviewer.py" = ["PT006", "C901", "E501", "SIM105"]
 
 [tool.ruff.format]

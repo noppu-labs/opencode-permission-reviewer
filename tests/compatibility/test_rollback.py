@@ -6,8 +6,6 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-from test_v2_reviewer import model_server  # noqa: F401
-
 
 def test_profile_rollback_preserves_config_sessions_and_audit(launch_host, activate_host, model_server):
     package = os.environ.get("PLUGIN_PACKAGE_PATH", str(Path(__file__).resolve().parents[2]))

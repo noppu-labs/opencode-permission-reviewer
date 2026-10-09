@@ -10,7 +10,6 @@ import uuid
 from pathlib import Path
 
 import pytest
-from test_v2_reviewer import model_server  # noqa: F401
 
 CASES = [
     (generation, version)

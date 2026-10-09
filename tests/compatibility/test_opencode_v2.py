@@ -7,13 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from test_v2_reviewer import model_server  # noqa: F401
-
-V2_VERSIONS = (
-    [os.environ["V2_HOST_VERSION"]]
-    if os.environ.get("V2_HOST_VERSION")
-    else ["2.0.3", "2.0.11", "2.0.15", "2.0.18", "2.0.26"]
-)
+from hosts import V2_VERSIONS
 
 
 @pytest.mark.parametrize("host_version", V2_VERSIONS)
