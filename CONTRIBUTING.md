@@ -7,17 +7,21 @@ most of the rest supports OpenCode V1 and V2 hosts, the TUI overlay, and the CLI
 ## Prerequisites
 
 - [Bun](https://bun.sh) >= 1.3.0
+- [uv](https://docs.astral.sh/uv/). It installs the Python tooling that runs the pre-commit hooks
+  and `pytest` for the real-host compatibility matrix in `tests/compatibility`.
 - `git`
-- Python with `pytest`, needed only for the real-host compatibility matrix in
-  `tests/compatibility`
 
 ```sh
 git clone https://github.com/noppu-labs/opencode-permission-reviewer.git
 cd opencode-permission-reviewer
 git switch dev
 bun install
+uv sync
+uv run pre-commit install
 bun run check
 ```
+
+`uv run pre-commit install` makes the same hooks run on every commit.
 
 ## Branches
 
@@ -27,17 +31,24 @@ separate pull request, and releases are cut from `main`.
 
 ## Before opening a pull request
 
-Run the Bun checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-host matrix and
+Run the checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-host matrix and
 the benchmark, which the [development guide](docs/DEVELOPMENT.md) covers.
 
 ```sh
-bun run check           # prettier, eslint, build, tsc, and the full bun test suite
+bun run check           # build, every pre-commit hook on every file, and the full bun test suite
 bun run test:coverage   # test suite with the coverage threshold check
 ```
 
-`bun run format` fixes formatting. `bun run test:stress` and `bun run test:package` rerun only
-the stress suite or the npm pack ship-set test. Don't disable or skip tests to get `check`
-passing.
+`bun run check` builds first because the `tsc` hook needs `dist/`. The Biome hook runs with
+`--write`, so `check` can rewrite files; look at `git diff` afterwards, because CI fails when a
+hook changes the tree. `bun run lint:fix` and `bun run format` apply Biome's fixes and
+formatting on their own. `bun run test:stress` and `bun run test:package` rerun only the stress
+suite or the npm pack ship-set test. Don't disable or skip tests to get `check` passing.
+
+Every accepted lint finding carries its reason on the line, as a line-level
+`// biome-ignore lint/<group>/<rule>: <reason>` comment. Don't add file-wide or ranged ignores
+(`biome-ignore-all`, `biome-ignore-start`). The [development guide](docs/DEVELOPMENT.md#quality-gates)
+covers the other tools' conventions.
 
 Your pull request should also meet these rules:
 

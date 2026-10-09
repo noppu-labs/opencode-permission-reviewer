@@ -16,7 +16,7 @@
 ## Checklist
 
 - [ ] Contribution targets `dev` (or this is a maintainer promotion from `dev` to `main`)
-- [ ] `bun run check` is green (format + lint + typecheck + tests + build)
+- [ ] `bun run check` is green (pre-commit hooks + build + tests)
 - [ ] No personal data, secrets, or absolute personal paths in the diff
 - [ ] Safety changes include regression tests that demonstrate the invariant
 - [ ] User-facing strings are in English

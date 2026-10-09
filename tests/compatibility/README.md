@@ -1,7 +1,7 @@
 # Real-host compatibility matrix
 
-Build with `bun run build`, install pytest (`python -m pip install pytest==9.1.1`)
-in a disposable Python environment, and set these executable paths:
+Build with `bun run build`, install pytest with `uv sync` (the version is pinned in `uv.lock`),
+and set these executable paths:
 
 ```bash
 export OPENCODE_V1_1_18_29=/absolute/path/to/opencode-1.18.29
@@ -14,7 +14,7 @@ export OPENCODE_V2_2_0_11=/absolute/path/to/opencode-2.0.11
 export OPENCODE_V2_2_0_15=/absolute/path/to/opencode-2.0.15
 export OPENCODE_V2_2_0_18=/absolute/path/to/opencode-2.0.18
 export OPENCODE_V2_2_0_26=/absolute/path/to/opencode-2.0.26
-python -m pytest tests/compatibility -q
+uv run pytest tests/compatibility -q
 ```
 
 `HOST_GENERATION=v1 bun tests/compatibility/install-hosts.ts` and the equivalent
