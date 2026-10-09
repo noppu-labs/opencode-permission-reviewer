@@ -96,3 +96,19 @@ repos:
         language: unsupported
         types: [python]
         exclude: ^tests/live-fixture/
+
+  # TypeScript and JavaScript. Biome runs from the bun.lock pin, so the hook and `bun run lint`
+  # agree. Settings, and the pending exemptions each stacked PR deletes, in biome.jsonc.
+  - repo: local
+    hooks:
+      - id: biome
+        name: biome check
+        entry: bunx --bun biome check --write --error-on-warnings --no-errors-on-unmatched --files-ignore-unknown=true
+        language: unsupported
+        types_or: [javascript, jsx, ts, tsx, json]
+      - id: tsc
+        name: tsc --noEmit
+        entry: bun run typecheck
+        language: unsupported
+        types_or: [ts, tsx]
+        pass_filenames: false
