@@ -45,7 +45,7 @@ def test_current_bundle_regressions(launch_host, activate_host, model_server, ho
         ["commit", "--allow-empty", "-m", "fixture"],
         ["remote", "add", "origin", "https://original.example.invalid/repo.git"],
     ]:
-        subprocess.run(["git", *args], cwd=host["project"], check=True, capture_output=True)  # nosec B603 B607 - fixed argv, no shell
+        subprocess.run(["git", *args], cwd=host["project"], check=True, capture_output=True)  # nosec B603 B607 # fixed argv, no shell
 
     def request(path, body):
         req = urllib.request.Request(
@@ -53,7 +53,7 @@ def test_current_bundle_regressions(launch_host, activate_host, model_server, ho
             data=json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
+        with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
             return json.load(response)["data"]
 
     for command, expected in [

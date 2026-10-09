@@ -87,7 +87,7 @@ Every accepted finding carries its reason where it applies:
 
 - Biome: a line-level `// biome-ignore lint/<group>/<rule>: <reason>`. No `biome-ignore-all` and no
   `biome-ignore-start`/`-end` ranges.
-- Python: `# noqa: <code>` with a reason, `# nosec <id> - <reason>`, or
+- Python: `# noqa: <code>` with a reason, `# nosec <id> # <reason>`, or
   `# complexipy: ignore (<reason>)` on the def line.
 - gitleaks: an allowlist entry in `.gitleaks.toml`, scoped by path and exact token.
 - FTA: an `exclude_filenames` entry. JSON has no comments, so the reason goes in the pull request

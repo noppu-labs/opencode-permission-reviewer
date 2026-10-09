@@ -69,7 +69,7 @@ def test_literal_intent_survives_long_history_and_restart(
             data=None if body is None else json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=45) as response:  # nosec B310 - local 127.0.0.1 host under test
+        with urllib.request.urlopen(req, timeout=45) as response:  # nosec B310 # local 127.0.0.1 host under test
             if response.status == 204:
                 return None
             result = json.load(response)
@@ -135,7 +135,7 @@ def test_literal_intent_survives_long_history_and_restart(
     host["stop"]()
     host = launch_host(generation, binary, config, reviewer=reviewer, global_config=provider, profile="intent-fixture")
     activate_host(host, generation)
-    proc = subprocess.run(  # nosec B603 B607 - fixed argv, no shell
+    proc = subprocess.run(  # nosec B603 B607 # fixed argv, no shell
         [
             "bun",
             "tests/compatibility/capture-evidence.ts",
@@ -146,7 +146,7 @@ def test_literal_intent_survives_long_history_and_restart(
             "bun run check",
         ],
         cwd=source,
-        env={**os.environ, "OPENCODE_PASSWORD": "synthetic-local-host-password"} if generation == "v2" else os.environ,  # nosec B105 - synthetic test password
+        env={**os.environ, "OPENCODE_PASSWORD": "synthetic-local-host-password"} if generation == "v2" else os.environ,  # nosec B105 # synthetic test password
         capture_output=True,
         text=True,
         timeout=60,

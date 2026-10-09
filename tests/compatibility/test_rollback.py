@@ -51,7 +51,7 @@ def test_profile_rollback_preserves_config_sessions_and_audit(launch_host, activ
             data=None if body is None else json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=40) as response:  # nosec B310 - local 127.0.0.1 host under test
+        with urllib.request.urlopen(req, timeout=40) as response:  # nosec B310 # local 127.0.0.1 host under test
             return json.load(response)
 
     original = launch_host("v1", v1, config_v1, reviewer=settings, global_config=provider_v1, profile="rollback")

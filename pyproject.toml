@@ -68,7 +68,7 @@ skip = "bun.lock,*.lock,./node_modules,./dist,./coverage,benchmarks/permission-r
 ignore-words-list = "afterall,unparseable,truncat,opeator"
 
 # Security lint (bandit, run by pre-commit with `-c pyproject.toml`). Each accepted finding is a
-# `# nosec <id> - reason` on its line.
+# `# nosec <id> # <reason>` on its line.
 [tool.bandit]
 # Unlike a repo with application code, tests/ is not excluded: all Python here is tests or a
 # script, so excluding it would check nothing. The live-fixture files are deliberate attack

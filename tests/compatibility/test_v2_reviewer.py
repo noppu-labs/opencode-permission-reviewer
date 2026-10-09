@@ -86,13 +86,13 @@ def request(host, path, body=None):
         data=None if body is None else json.dumps(body).encode(),
         headers={**host["headers"], "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
+    with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
         return json.load(response) if response.status != 204 else None
 
 
 def delete_session(host, session_id):
     req = urllib.request.Request(host["url"] + "/api/session/" + session_id, headers=host["headers"], method="DELETE")
-    with urllib.request.urlopen(req, timeout=5):  # nosec B310 - local 127.0.0.1 host under test
+    with urllib.request.urlopen(req, timeout=5):  # nosec B310 # local 127.0.0.1 host under test
         pass
 
 
@@ -318,7 +318,7 @@ def test_v2_reviewer_applies_and_cleans_up(
             data=None if body is None else json.dumps(body).encode(),
             headers={**host["headers"], "Content-Type": "application/json"},
         )
-        with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
+        with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
             if response.status == 204:
                 return None
             return json.load(response)
@@ -403,7 +403,7 @@ def test_v2_reviewer_applies_and_cleans_up(
         assert isolated != host["project"]
         assert (isolated / "index.js").exists()
         assert "permission_reviewer_result" in json.dumps(request(f"/api/session/{reviewer_id}/context"))
-        with urllib.request.urlopen(  # nosec B310 - local 127.0.0.1 host under test
+        with urllib.request.urlopen(  # nosec B310 # local 127.0.0.1 host under test
             urllib.request.Request(
                 host["url"] + "/api/session/" + reviewer_id, headers=host["headers"], method="DELETE"
             ),
@@ -530,7 +530,7 @@ def test_v2_reuses_mcp_free_reviewer_location(launch_host, activate_host, model_
         reload_request = urllib.request.Request(
             host["url"] + "/api/location/reload", data=b"", headers=host["headers"], method="POST"
         )
-        with urllib.request.urlopen(reload_request, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
+        with urllib.request.urlopen(reload_request, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
             assert response.status == 204
         # The host rebuilds locations after a reload without awaiting plugin
         # activation; a permission evaluated in that window has no hooks and
@@ -652,7 +652,7 @@ def test_v2_strips_plugin_added_mcp_from_reviewer_location(
             reload_request = urllib.request.Request(
                 host["url"] + "/api/location/reload", data=b"", headers=host["headers"], method="POST"
             )
-            with urllib.request.urlopen(reload_request, timeout=30) as response:  # nosec B310 - local 127.0.0.1 host under test
+            with urllib.request.urlopen(reload_request, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
                 assert response.status == 204
             activate_host(host, "v2")
             # The reload rebuilds the old reviewer location after its backend released it, so
