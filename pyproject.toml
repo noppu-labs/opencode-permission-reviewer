@@ -74,10 +74,11 @@ exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
 skips = ["B101", "B404"]
 
 # Type checking (PyCharm runs Pyrefly). The compatibility tests import `hosts` as a
-# sibling module, so that folder is on the search path.
+# sibling module and build-dataset.py imports the `dataset` package beside it, so both
+# folders are on the search path.
 [tool.pyrefly]
 project-includes = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
-search-path = ["tests/compatibility"]
+search-path = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 python-version = "3.12"
 
 [tool.ruff]
@@ -131,7 +132,7 @@ mccabe.max-complexity = 10
 
 # Permanent: the dataset case strings are the benchmark's input and read as one verbatim line each.
 # Splitting them mid-sentence would hide the text from grep and make a case hard to compare.
-"benchmarks/permission-reviewer/scripts/build-dataset.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/*.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"
