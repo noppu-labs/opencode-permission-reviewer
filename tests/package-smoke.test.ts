@@ -132,7 +132,7 @@ describe("npm pack ship set", () => {
         f === "tsconfig.json" ||
         f === "biome.jsonc" ||
         f === "fta.json" ||
-        f === "knip.json" ||
+        f === "knip.jsonc" ||
         f === "pyproject.toml" ||
         f === "uv.lock" ||
         f === "complexipy-snapshot.json" ||
