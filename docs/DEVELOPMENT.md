@@ -125,7 +125,6 @@ stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
   it.
 - `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
   dependencies.
-- `.pre-commit-config.yaml`: pylint length ceilings for the two Python modules over 600 lines.
 
 Don't add to these lists to get a new change through. Fix the finding, or suppress it on the line
 with a reason. When the last stacked pull request lands, none of them remain.
