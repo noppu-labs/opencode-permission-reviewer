@@ -1,15 +1,5 @@
 [
   {
-    "path": "tests/compatibility/test_local_evidence.py",
-    "file_name": "test_local_evidence.py",
-    "functions": [
-      {
-        "name": "test_local_executable_evidence_reaches_the_reviewer",
-        "complexity": 17
-      }
-    ]
-  },
-  {
     "path": "tests/compatibility/test_tui.py",
     "file_name": "test_tui.py",
     "functions": [
