@@ -2,12 +2,12 @@ version: 2
 updates:
   # Bun dependencies are checked daily so OpenCode host updates surface quickly.
   # Other packages wait through a stability window before Dependabot proposes them.
-  # PRs target `dev` (the integration branch) instead of `main` so Dependabot
+  # PRs target `develop` (the integration branch) instead of `main` so Dependabot
   # compares against the up-to-date manifest and does not re-open PRs for
   # versions already integrated.
   - package-ecosystem: bun
     directory: /
-    target-branch: dev
+    target-branch: develop
     schedule:
       interval: daily
     open-pull-requests-limit: 5
@@ -60,7 +60,7 @@ updates:
   # GitHub Actions used in workflows.
   - package-ecosystem: github-actions
     directory: /
-    target-branch: dev
+    target-branch: develop
     schedule:
       interval: weekly
       day: monday

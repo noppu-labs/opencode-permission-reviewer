@@ -14,7 +14,7 @@ most of the rest supports OpenCode V1 and V2 hosts, the TUI overlay, and the CLI
 ```sh
 git clone https://github.com/noppu-labs/opencode-permission-reviewer.git
 cd opencode-permission-reviewer
-git switch dev
+git switch develop
 bun install
 uv sync
 uv run pre-commit install
@@ -25,9 +25,9 @@ bun run check
 
 ## Branches
 
-Branch from `dev` and open your pull request against `dev`. GitHub defaults to `main`, so pick
-`dev` as the base explicitly. Maintainers promote validated changes from `dev` to `main` in a
-separate pull request, and releases are cut from `main`.
+Branch from `develop` and open your pull request against `develop`. GitHub defaults to `main`, so
+pick `develop` as the base explicitly. Maintainers promote validated changes from `develop` to
+`main` in a separate pull request, and releases are cut from `main`.
 
 ## Before opening a pull request
 
