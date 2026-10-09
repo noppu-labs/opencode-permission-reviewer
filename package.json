@@ -30,7 +30,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "opencode-permission-reviewer": "./dist/explain.js"
+    "opencode-permission-reviewer": "dist/explain.js"
   },
   "files": [
     "server.js",
@@ -49,7 +49,7 @@
   "homepage": "https://github.com/noppu-labs/opencode-permission-reviewer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/noppu-labs/opencode-permission-reviewer"
+    "url": "git+https://github.com/noppu-labs/opencode-permission-reviewer.git"
   },
   "bugs": {
     "url": "https://github.com/noppu-labs/opencode-permission-reviewer/issues"
