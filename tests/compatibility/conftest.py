@@ -3,14 +3,14 @@
 import base64
 import json
 import os
-from pathlib import Path
 import re
 import shutil
 import socket
 import subprocess
 import time
-import urllib.request
 import urllib.parse
+import urllib.request
+from pathlib import Path
 
 import pytest
 
@@ -31,9 +31,7 @@ def activate_host():
         query = urllib.parse.urlencode({key: str(host["project"])})
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline:
-            request = urllib.request.Request(
-                host["url"] + route + "?" + query, headers=host["headers"]
-            )
+            request = urllib.request.Request(host["url"] + route + "?" + query, headers=host["headers"])
             with urllib.request.urlopen(request, timeout=30) as response:
                 result = json.load(response)
             if generation == "v1":
@@ -47,6 +45,7 @@ def activate_host():
                 return result
             time.sleep(0.1)
         pytest.fail("Host plugin activation timed out")
+
     return activate
 
 
@@ -84,9 +83,15 @@ def launch_host(tmp_path):
         if reviewer is not None:
             reviewer_dir = home / ".config" / "opencode"
             reviewer_dir.mkdir(parents=True, exist_ok=True)
-            (reviewer_dir / "permission-reviewer.jsonc").write_text(json.dumps({
-                **reviewer, "auditPath": str(root / "reviewer-audit.jsonl"),
-            }), encoding="utf-8")
+            (reviewer_dir / "permission-reviewer.jsonc").write_text(
+                json.dumps(
+                    {
+                        **reviewer,
+                        "auditPath": str(root / "reviewer-audit.jsonl"),
+                    }
+                ),
+                encoding="utf-8",
+            )
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))
             port = listener.getsockname()[1]
@@ -103,6 +108,7 @@ def launch_host(tmp_path):
             stderr=subprocess.STDOUT,
         )
         processes.append((process, log))
+
         def stop():
             if process.poll() is None:
                 process.terminate()
@@ -111,12 +117,15 @@ def launch_host(tmp_path):
                 except subprocess.TimeoutExpired:
                     process.kill()
                     process.wait(timeout=5)
+
         url = f"http://127.0.0.1:{port}"
         health = "/global/health" if generation == "v1" else "/api/location"
         deadline = time.monotonic() + 45
-        headers = {} if generation == "v1" else {"Authorization": "Basic " + base64.b64encode(
-            b"opencode:synthetic-local-host-password"
-        ).decode()}
+        headers = (
+            {}
+            if generation == "v1"
+            else {"Authorization": "Basic " + base64.b64encode(b"opencode:synthetic-local-host-password").decode()}
+        )
         service_discovered = False
 
         def safe_log():
@@ -133,9 +142,13 @@ def launch_host(tmp_path):
                         connection = json.loads(registration.read_text())
                         url = connection["url"]
                         password = connection.get("password")
-                        headers = {} if password is None else {"Authorization": "Basic " + base64.b64encode(
-                            ("opencode:" + password).encode()
-                        ).decode()}
+                        headers = (
+                            {}
+                            if password is None
+                            else {
+                                "Authorization": "Basic " + base64.b64encode(("opencode:" + password).encode()).decode()
+                            }
+                        )
                         service_discovered = True
                     except (KeyError, json.JSONDecodeError, OSError):
                         pass
@@ -149,8 +162,14 @@ def launch_host(tmp_path):
                 request = urllib.request.Request(url + health, headers=headers)
                 with urllib.request.urlopen(request, timeout=1) as response:
                     if response.status == 200:
-                        return {"url": url, "root": root, "project": project, "env": env,
-                                "headers": headers, "stop": stop}
+                        return {
+                            "url": url,
+                            "root": root,
+                            "project": project,
+                            "env": env,
+                            "headers": headers,
+                            "stop": stop,
+                        }
             except (OSError, ValueError):
                 time.sleep(0.1)
         pytest.fail(f"Host readiness timed out:\n{safe_log()}")

@@ -29,7 +29,9 @@ dev = [
 
 # Cognitive complexity (complexipy, run by pre-commit on changed files). 15 is the SonarSource
 # default; 14 agrees with PyCharm. A deliberate exception is `# complexipy: ignore (reason)` on
-# the def line.
+# the def line. Pending: the 11 functions already over 14 are recorded in
+# complexipy-snapshot.json (JSON, no comments), which fails on any new function over 14 and on
+# any recorded one getting worse; removed by quality/3-python.
 [tool.complexipy]
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 max-complexity-allowed = 14
@@ -49,6 +51,8 @@ max-module-lines = 600
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 # pytest finds fixtures by name; nothing calls them.
 ignore_decorators = ["@pytest.fixture"]
+# BaseHTTPRequestHandler calls these by name (tests/compatibility/test_v2_reviewer.py).
+ignore_names = ["do_POST", "log_message"]
 
 # Spell check (codespell, run by pre-commit).
 [tool.codespell]
@@ -72,7 +76,18 @@ ignore-words-list = "afterall,unparseable,truncat,opeator"
 exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
 # B101: asserts are how pytest tests assert.
 # B404: flags any `import subprocess`; the calls themselves are still checked (B603/B607).
-skips = ["B101", "B404"]
+skips = [
+    "B101",
+    "B404",
+    # Pending: removed by quality/3-python, which fixes each finding or marks it with a
+    # `# nosec <id> - reason`. All are in the test harness: it calls the host binaries with a
+    # list of arguments and talks to its own local servers.
+    "B105",  # hardcoded_password_string: synthetic fixture credentials
+    "B108",  # hardcoded_tmp_directory: dataset cases whose text contains /tmp paths
+    "B310",  # urllib.request.urlopen: requests to the local fixture servers
+    "B603",  # subprocess without shell
+    "B607",  # subprocess with a partial executable path
+]
 
 # Type checking (PyCharm runs Pyrefly). The compatibility tests import `test_v2_reviewer` as a
 # sibling module, so that folder is on the search path.
@@ -80,6 +95,45 @@ skips = ["B101", "B404"]
 project-includes = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 search-path = ["tests/compatibility"]
 python-version = "3.12"
+
+# Pending: removed by quality/3-python. One sub-config per file, switching off only the error
+# kinds that file still reports (the test helpers return `None` on some paths and are subscripted
+# unconditionally).
+[[tool.pyrefly.sub-config]]
+matches = "benchmarks/permission-reviewer/scripts/build-dataset.py"
+[tool.pyrefly.sub-config.errors]
+bad-assignment = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_evidence_recovery.py"
+[tool.pyrefly.sub-config.errors]
+unsupported-operation = false
+unbound-name = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_local_evidence.py"
+[tool.pyrefly.sub-config.errors]
+unbound-name = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_opencode_v1.py"
+[tool.pyrefly.sub-config.errors]
+unsupported-operation = false
+not-iterable = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_opencode_v2.py"
+[tool.pyrefly.sub-config.errors]
+no-matching-overload = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_v2_reviewer.py"
+[tool.pyrefly.sub-config.errors]
+unsupported-operation = false
+unbound-name = false
+bad-index = false
+bad-override = false
+missing-attribute = false
 
 [tool.ruff]
 line-length = 120
@@ -130,6 +184,26 @@ mccabe.max-complexity = 10
 [tool.ruff.lint.per-file-ignores]
 # Test stubs mirror a real signature and fixtures are requested for their side effects.
 "tests/**/*.py" = ["ARG"]
+
+# Pending: removed by quality/3-python. Each entry lists only the codes that file still fails.
+# F811/F401: fixtures are imported from test_v2_reviewer and redeclared as parameters. Removing the
+# import breaks the run (pytest cannot find the fixture), so they move to conftest.py in 3-python.
+"benchmarks/permission-reviewer/scripts/build-dataset.py" = [
+    "E501",    # dataset strings that ruff format cannot split; text stays verbatim
+    "RUF001",  # deliberate full-width and curly-quote characters in dataset cases
+    "RUF005",
+    "UP031",
+    "C401",
+]
+"tests/compatibility/conftest.py" = ["C901"]
+"tests/compatibility/test_evidence_recovery.py" = ["PT006", "F811"]
+"tests/compatibility/test_local_evidence.py" = ["PT006", "F811", "E501"]
+"tests/compatibility/test_opencode_v1.py" = ["F811", "E501"]
+"tests/compatibility/test_opencode_v2.py" = ["F811"]
+"tests/compatibility/test_rollback.py" = ["F811"]
+"tests/compatibility/test_tui.py" = ["E402", "PT006", "F811"]
+"tests/compatibility/test_v2_analysis_regressions.py" = ["F401", "F811", "PT018"]
+"tests/compatibility/test_v2_reviewer.py" = ["PT006", "C901", "E501", "SIM105"]
 
 [tool.ruff.format]
 quote-style = "double"

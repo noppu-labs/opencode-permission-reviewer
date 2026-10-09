@@ -1,0 +1,88 @@
+[
+  {
+    "path": "tests/compatibility/conftest.py",
+    "file_name": "conftest.py",
+    "functions": [
+      {
+        "name": "activate_host",
+        "complexity": 16
+      },
+      {
+        "name": "launch_host",
+        "complexity": 70
+      }
+    ]
+  },
+  {
+    "path": "tests/compatibility/test_evidence_recovery.py",
+    "file_name": "test_evidence_recovery.py",
+    "functions": [
+      {
+        "name": "test_literal_intent_survives_long_history_and_restart",
+        "complexity": 28
+      }
+    ]
+  },
+  {
+    "path": "tests/compatibility/test_local_evidence.py",
+    "file_name": "test_local_evidence.py",
+    "functions": [
+      {
+        "name": "test_local_executable_evidence_reaches_the_reviewer",
+        "complexity": 17
+      }
+    ]
+  },
+  {
+    "path": "tests/compatibility/test_opencode_v1.py",
+    "file_name": "test_opencode_v1.py",
+    "functions": [
+      {
+        "name": "test_v1_reviewer_applies_decision",
+        "complexity": 18
+      },
+      {
+        "name": "test_v1_reuses_mcp_free_reviewer_location",
+        "complexity": 31
+      }
+    ]
+  },
+  {
+    "path": "tests/compatibility/test_tui.py",
+    "file_name": "test_tui.py",
+    "functions": [
+      {
+        "name": "test_tui_renders_review_state",
+        "complexity": 17
+      },
+      {
+        "name": "terminal",
+        "complexity": 19
+      }
+    ]
+  },
+  {
+    "path": "tests/compatibility/test_v2_analysis_regressions.py",
+    "file_name": "test_v2_analysis_regressions.py",
+    "functions": [
+      {
+        "name": "test_current_bundle_regressions",
+        "complexity": 21
+      }
+    ]
+  },
+  {
+    "path": "tests/compatibility/test_v2_reviewer.py",
+    "file_name": "test_v2_reviewer.py",
+    "functions": [
+      {
+        "name": "model_server",
+        "complexity": 18
+      },
+      {
+        "name": "test_v2_reviewer_applies_and_cleans_up",
+        "complexity": 49
+      }
+    ]
+  }
+]
