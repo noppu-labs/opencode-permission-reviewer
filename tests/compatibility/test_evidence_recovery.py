@@ -19,7 +19,7 @@ CASES = [
 ]
 
 
-@pytest.mark.parametrize("generation,version", CASES)
+@pytest.mark.parametrize(("generation", "version"), CASES)
 def test_literal_intent_survives_long_history_and_restart(
     launch_host, activate_host, model_server, generation, version
 ):

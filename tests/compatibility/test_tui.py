@@ -66,7 +66,7 @@ def terminal(arguments, env):
 
 
 @pytest.mark.parametrize(
-    "generation,version",
+    ("generation", "version"),
     [
         ("v1", "1.18.29"),
         ("v1", "1.18.30"),

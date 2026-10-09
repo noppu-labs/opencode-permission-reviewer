@@ -21,7 +21,7 @@ CASES = [
 ]
 
 
-@pytest.mark.parametrize("generation,version", CASES)
+@pytest.mark.parametrize(("generation", "version"), CASES)
 def test_local_executable_evidence_reaches_the_reviewer(
     launch_host, activate_host, model_server, generation, version, tmp_path
 ):
@@ -34,9 +34,12 @@ def test_local_executable_evidence_reaches_the_reviewer(
         command_file = tmp_path / "command.txt"
         (probe / "package.json").write_text(json.dumps({"name": "fixture-permission", "type": "module"}))
         (probe / "index.js").write_text(
-            'import { readFile } from "node:fs/promises"; export default { id: "fixture-permission", async server() { return { tool: { fixture_permission: { description: "Request a synthetic permission without executing the command", args: {}, async execute(_args, ctx) { const command = await readFile('
+            'import { readFile } from "node:fs/promises"; export default { id: "fixture-permission", async server() { '
+            'return { tool: { fixture_permission: { description: "Request a synthetic permission without executing '
+            'the command", args: {}, async execute(_args, ctx) { const command = await readFile('
             + json.dumps(str(command_file))
-            + ', "utf8"); await ctx.ask({ permission: "bash", patterns: [command], always: [], metadata: { command } }); return "COMPATIBILITY_EXECUTED"; } } } }; } };'
+            + ', "utf8"); await ctx.ask({ permission: "bash", patterns: [command], always: [], '
+            'metadata: { command } }); return "COMPATIBILITY_EXECUTED"; } } } }; } };'
         )
         config = {"plugin": [package, str(probe)], "permission": {"bash": "ask"}}
         provider = {

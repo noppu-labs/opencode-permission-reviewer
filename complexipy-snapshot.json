@@ -71,7 +71,7 @@
     "functions": [
       {
         "name": "test_current_bundle_regressions",
-        "complexity": 21
+        "complexity": 20
       }
     ]
   },

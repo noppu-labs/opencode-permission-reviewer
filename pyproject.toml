@@ -167,21 +167,13 @@ mccabe.max-complexity = 10
 # Test stubs mirror a real signature and fixtures are requested for their side effects.
 "tests/**/*.py" = ["ARG"]
 
+# Permanent: the dataset case strings are the benchmark's input and read as one verbatim line each.
+# Splitting them mid-sentence would hide the text from grep and make a case hard to compare.
+"benchmarks/permission-reviewer/scripts/build-dataset.py" = ["E501"]
+
 # Pending: removed by quality/3-python. Each entry lists only the codes that file still fails.
-"benchmarks/permission-reviewer/scripts/build-dataset.py" = [
-    "E501",    # dataset strings that ruff format cannot split; text stays verbatim
-    "RUF001",  # deliberate full-width and curly-quote characters in dataset cases
-    "RUF005",
-    "UP031",
-    "C401",
-]
 "tests/compatibility/conftest.py" = ["C901"]
-"tests/compatibility/test_evidence_recovery.py" = ["PT006"]
-"tests/compatibility/test_local_evidence.py" = ["PT006", "E501"]
-"tests/compatibility/test_opencode_v1.py" = ["E501"]
-"tests/compatibility/test_tui.py" = ["PT006"]
-"tests/compatibility/test_v2_analysis_regressions.py" = ["PT018"]
-"tests/compatibility/test_v2_reviewer.py" = ["PT006", "C901", "E501", "SIM105"]
+"tests/compatibility/test_v2_reviewer.py" = ["C901"]
 
 [tool.ruff.format]
 quote-style = "double"

@@ -54,7 +54,10 @@ def test_v1_reviewer_applies_decision(launch_host, version, model_server, outcom
         probe.mkdir()
         (probe / "package.json").write_text(json.dumps({"name": "fixture-brake", "type": "module"}))
         (probe / "index.js").write_text(
-            'export default { id: "fixture-brake", async server() { return { tool: { fixture_permission: { description: "Request a synthetic permission without executing a command", args: {}, async execute(_args, ctx) { await ctx.ask({ permission: "bash", patterns: ["rm -rf /"], always: [], metadata: { command: "rm -rf /" } }); return "COMPATIBILITY_EXECUTED"; } } } }; } };'
+            'export default { id: "fixture-brake", async server() { return { tool: { fixture_permission: { '
+            'description: "Request a synthetic permission without executing a command", args: {}, '
+            'async execute(_args, ctx) { await ctx.ask({ permission: "bash", patterns: ["rm -rf /"], always: [], '
+            'metadata: { command: "rm -rf /" } }); return "COMPATIBILITY_EXECUTED"; } } } }; } };'
         )
         plugins.append(str(probe))
         model_server["control"]["tool"] = "fixture_permission"

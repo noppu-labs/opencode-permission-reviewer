@@ -1,5 +1,6 @@
 """Exercise the distributed reviewer through the real host and a synthetic model."""
 
+import contextlib
 import json
 import os
 import shutil
@@ -113,7 +114,7 @@ def audit_record(host, session_id):
     return None
 
 
-@pytest.mark.parametrize("host_version,output_format,decision_outcome", V2_CASES)
+@pytest.mark.parametrize(("host_version", "output_format", "decision_outcome"), V2_CASES)
 def test_v2_reviewer_applies_and_cleans_up(
     launch_host, activate_host, model_server, host_version, output_format, decision_outcome, tmp_path
 ):
@@ -161,7 +162,8 @@ def test_v2_reviewer_applies_and_cleans_up(
         other = tmp_path / "composition-plugin"
         other.mkdir()
         (other / "index.js").write_text(
-            'export default { id: "fixture-composition", async setup(ctx) { await ctx.permission.hook("evaluate", input => { input.effect = "deny"; input.message = "Fixture plugin denial"; }); } };'
+            'export default { id: "fixture-composition", async setup(ctx) { await ctx.permission.hook("evaluate", '
+            'input => { input.effect = "deny"; input.message = "Fixture plugin denial"; }); } };'
         )
         (other / "package.json").write_text(json.dumps({"name": "fixture-composition", "type": "module"}))
         plugins = [str(other), package] if decision_outcome == "prior-deny" else [package, str(other)]
@@ -441,7 +443,8 @@ def test_v2_strips_plugin_added_mcp_from_reviewer_location(
     (adder / "index.js").write_text(
         'export default { id: "fixture-mcp-adder", async setup(ctx) {\n'
         "  await ctx.mcp.transform((editor) => {\n"
-        f'    if (!editor.get("plugin-fixture")) editor.set("plugin-fixture", {{ type: "local", command: {command} }});\n'
+        '    if (!editor.get("plugin-fixture")) '
+        f'editor.set("plugin-fixture", {{ type: "local", command: {command} }});\n'
         "  });\n"
         "  return async () => {};\n"
         "} };\n",
@@ -537,10 +540,8 @@ def test_v2_strips_plugin_added_mcp_from_reviewer_location(
             assert started_in == {Path(host["project"]).resolve()}, starts.read_text()
     finally:
         for reviewer_id in reviewer_ids:
-            try:
+            with contextlib.suppress(urllib.error.URLError):
                 delete_session(host, reviewer_id)
-            except urllib.error.URLError:
-                pass
         host["stop"]()
         for directory in reviewer_directories:
             shutil.rmtree(directory, ignore_errors=True)

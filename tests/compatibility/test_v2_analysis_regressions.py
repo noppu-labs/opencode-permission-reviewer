@@ -93,6 +93,7 @@ def test_current_bundle_regressions(launch_host, activate_host, model_server, ho
         if expected == "external":
             assert '"externalWrite":true' in re.sub(r"\s+", "", text), text
         if expected == "unresolved":
-            assert "working directory" in text and "unresolved" in text, text
+            assert "working directory" in text, text
+            assert "unresolved" in text, text
         if expected == "override":
             assert '"input": "https://override.example.invalid/repo.git"' in text, text
