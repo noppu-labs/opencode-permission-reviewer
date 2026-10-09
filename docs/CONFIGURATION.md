@@ -198,16 +198,20 @@ config matches everything. Allow rules from the project config are still rejecte
 
 ## Headless use
 
-Reviews run inside the OpenCode server, and the TUI overlay is optional. The plugin therefore works
-with a headless `opencode serve` and with any client that drives it through the server API. The
-compatibility matrix in CI and the live test harnesses exercise it this way, with no TUI attached.
+Reviews run inside the OpenCode server, and the TUI overlay is optional. The plugin works with a
+headless `opencode serve`, with clients that drive the server API, and with `opencode run`. The
+compatibility matrix in CI and the live test harnesses run against `opencode serve` with no TUI
+attached. `opencode run` was checked by hand on V2 2.0.26: a command that hit an `ask` rule was
+reviewed and approved without a prompt, both with and without `--auto`. V1 hosts have not been
+checked with `opencode run`.
 
 With no one at a terminal, a manual escalation has nobody to answer it. Use fail-closed mode for
-unattended agents, as described in the next section.
+unattended agents, as described in the next section, so that escalations become denials with a
+reason. This matters most with `opencode run --auto`, which approves any permission that is not
+explicitly denied.
 
-`opencode run` is not covered by the tests. In non-interactive mode it answers pending permission
-requests itself, rejecting them or approving them with `--auto`, so its answer can arrive before a
-review finishes. Check it against your host version before relying on it.
+When you script `opencode run`, close its standard input (`</dev/null`) or pipe the prompt in. If
+stdin is not a terminal, it reads stdin to the end before it starts.
 
 ## Interactive vs autonomous
 

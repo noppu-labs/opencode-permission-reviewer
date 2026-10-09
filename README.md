@@ -32,15 +32,15 @@ plugin, not affiliated with or endorsed by [Anomaly](https://anoma.ly).
 - Shows review progress in an optional TUI overlay that steps aside for OpenCode's own approval
   controls.
 - Runs headless. Reviews happen inside the OpenCode server, so the plugin works with
-  `opencode serve` and API clients without a TUI. With `escalationMode: "deny"`, unattended agents
-  never wait on a human prompt and anything uncertain is rejected with a reason. See
-  [Headless use](docs/CONFIGURATION.md#headless-use).
+  `opencode serve`, `opencode run`, and API clients without a TUI. With `escalationMode: "deny"`,
+  unattended agents never wait on a human prompt and anything uncertain is rejected with a reason.
+  See [Headless use](docs/CONFIGURATION.md#headless-use).
 
 ## Requirements
 
 - [Bun](https://bun.sh) >= 1.3.0
-- [OpenCode](https://opencode.ai) V1 `>=1.18.29 <2` (tested with 1.18.34) or V2 `>=2.0.3 <3`
-  (tested with 2.0.21)
+- [OpenCode](https://opencode.ai) V1 `>=1.18.29 <2` (tested with 1.18.35) or V2 `>=2.0.3 <3`
+  (tested with 2.0.26)
 - `git` on `PATH`, used only for read-only Git enrichment. Without it, the reviewer gets no Git
   snapshot.
 - A reviewer model: either a model configured in OpenCode that follows JSON schemas reliably, or
@@ -151,7 +151,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately as desc
 ## License
 
 Changes made in this fork are released under the [MIT License](LICENSE). Code from the upstream
-project, © 2026 Warc0s, remains under the [Apache License 2.0](LICENSE-APACHE). The reviewer
-policy design is inspired by
-[OpenAI Codex Guardian](https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian);
+project remains under the [Apache License 2.0](LICENSE-APACHE). The reviewer policy design is
+inspired by [OpenAI Codex Guardian](https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian);
 [NOTICE](NOTICE) has the full attribution.
