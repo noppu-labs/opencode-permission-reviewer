@@ -1,0 +1,15 @@
+{
+  // Untracked local plans and reports (.gitignore) are not linted.
+  "gitignore": true,
+  "globs": ["**/*.md"],
+  "ignores": ["**/node_modules/**", "**/.venv/**", "**/.complexipy_cache/**", "**/dist/**", "**/coverage/**"],
+  "config": {
+    "default": true,
+    // Long lines are fine in prose, tables, and command examples
+    "MD013": false,
+    // Docs open with intro prose or frontmatter rather than a strict top-level heading
+    "MD041": false,
+    // Allow duplicate headings when they are not siblings (e.g. repeated "Verifying" sections)
+    "MD024": { "siblings_only": true }
+  }
+}

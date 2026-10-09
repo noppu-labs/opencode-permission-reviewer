@@ -1,0 +1,51 @@
+# Install once per clone: uv sync && uv run pre-commit install
+# Run everything by hand:  uv run pre-commit run --all-files
+# Tool settings live in pyproject.toml, .yamllint.yaml, .markdownlint-cli2.jsonc and .gitleaks.toml;
+# this file only wires them to the commit.
+minimum_pre_commit_version: "4.4.0"
+repos:
+  # File hygiene. detect-private-key is left out: gitleaks below covers secrets.
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+      - id: check-executables-have-shebangs
+      - id: check-shebang-scripts-are-executable
+        # Run through an interpreter (bun, node, python) or compiled by tsup, never executed in place.
+        exclude: ^(benchmarks/permission-reviewer/(cli\.mjs|scripts/build-dataset\.py|tests/plugin-parity\.mjs)|src/cli/explain\.ts)$
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+
+  # Secrets in the staged diff. Test fixtures use synthetic credentials (CONTRIBUTING), so a hit
+  # outside them is what this should catch. Settings in .gitleaks.toml.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+
+  # YAML style beyond check-yaml's syntax check. Rules in .yamllint.yaml.
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.38.0
+    hooks:
+      - id: yamllint
+        args: [--strict]
+
+  # Settings in .markdownlint-cli2.jsonc.
+  - repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.23.3
+    hooks:
+      - id: markdownlint-cli2
+
+  # Settings in [tool.codespell] in pyproject.toml. pre-commit's codespell hook needs the toml
+  # extra to read them.
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.3
+    hooks:
+      - id: codespell
+        additional_dependencies: ["tomli; python_version < '3.11'"]

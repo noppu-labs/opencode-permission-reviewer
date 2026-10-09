@@ -1,0 +1,26 @@
+# yamllint (run by pre-commit with --strict, so warnings fail too).
+extends: default
+
+ignore: |
+  .venv/
+  node_modules/
+  dist/
+  coverage/
+
+rules:
+  # Compose files and workflow files don't open with `---`.
+  document-start: disable
+  # Long image digests, healthcheck commands and URLs don't wrap.
+  line-length:
+    max: 160
+  # Compose writes `- item` under a key at the key's indent or one level in; accept both, but
+  # stay consistent within a file.
+  indentation:
+    spaces: 2
+    indent-sequences: consistent
+  # Only `true`/`false` are booleans. Quote yes/no/on/off, which YAML 1.1 parsers read as booleans.
+  truthy:
+    allowed-values: ["true", "false"]
+    check-keys: false
+  comments:
+    min-spaces-from-content: 1
