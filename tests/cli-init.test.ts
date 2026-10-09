@@ -226,7 +226,9 @@ describe("cli init", () => {
     expect(code).toBe(0)
     const report = JSON.parse(stdout)
     expect(report.command).toBe("init")
-    expect(report.package.name).toBe("opencode-permission-reviewer")
+    expect(report.package.name).toBe(
+      JSON.parse(readFileSync(join(import.meta.dir, "..", "package.json"), "utf8")).name,
+    )
     expect(report.versionChecks.length).toBeGreaterThanOrEqual(1)
     expect(report.targets[0].action).toBe("create")
   })

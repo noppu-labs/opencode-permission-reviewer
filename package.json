@@ -1,6 +1,6 @@
 {
-  "name": "opencode-permission-reviewer",
-  "version": "2.4.1-noppu",
+  "name": "@noppu-labs/opencode-permission-reviewer",
+  "version": "2.4.1",
   "description": "Policy-aware permission reviewer for OpenCode V1 and V2",
   "type": "module",
   "main": "./dist/index.js",
@@ -46,13 +46,16 @@
   ],
   "license": "Apache-2.0",
   "author": "Warc0s",
-  "homepage": "https://github.com/warc0s/opencode-permission-reviewer",
+  "homepage": "https://github.com/noppu-labs/opencode-permission-reviewer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/warc0s/opencode-permission-reviewer"
+    "url": "https://github.com/noppu-labs/opencode-permission-reviewer"
   },
   "bugs": {
-    "url": "https://github.com/warc0s/opencode-permission-reviewer/issues"
+    "url": "https://github.com/noppu-labs/opencode-permission-reviewer/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "opencode",
