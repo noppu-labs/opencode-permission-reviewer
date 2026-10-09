@@ -252,7 +252,7 @@ export async function runBenchmark({
         createdAt: new Date().toISOString(),
       });
     }
-    let rows = resume ? await recover(rowsPath) : [];
+    const rows = resume ? await recover(rowsPath) : [];
     const journal = resume ? await recover(attemptPath) : [];
     const previousEvents = resume
       ? await recover(resolve(directory, "events.jsonl"))

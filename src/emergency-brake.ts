@@ -91,14 +91,11 @@ function hasRmFlags(tokens: ShellToken[]): {
       if (value === "--recursive" || value === "-R") recursive = true;
       else if (value === "--force") force = true;
       else if (value.startsWith("--")) {
-        // Other long flags (--no-preserve-root, --one-file-system, …): no effect on r/f.
-        continue;
       } else {
         // Clustered short flags; GNU rm allows them interleaved with operands.
         if (value.includes("r") || value.includes("R")) recursive = true;
         if (value.includes("f")) force = true;
       }
-      continue;
     }
   }
   return { recursive, force };

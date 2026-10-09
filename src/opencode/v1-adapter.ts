@@ -16,12 +16,10 @@ interface V1ServerInput {
 }
 
 /** Typed v1 TUI publish shape (matches `TuiPublishData` in the SDK). */
-interface TypedTuiPublish {
-  (options: {
-    body: { type: string; properties: { command: string } };
-    query?: { directory?: string };
-  }): Promise<unknown>;
-}
+type TypedTuiPublish = (options: {
+  body: { type: string; properties: { command: string } };
+  query?: { directory?: string };
+}) => Promise<unknown>;
 
 type Logger = (message: string, details?: unknown) => void;
 

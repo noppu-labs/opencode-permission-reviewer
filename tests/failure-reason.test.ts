@@ -6,7 +6,7 @@ import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import { formatFailureReason } from "../src/failure-reason.ts";
-import { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
+import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
 import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
 import type { ReviewEnvelope } from "../src/types.ts";

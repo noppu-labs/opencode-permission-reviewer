@@ -40,7 +40,7 @@ export function coreMetrics(allRows, layer = "model") {
     E = classRecall(rows, "escalate", layer),
     S = weightedSafety(rows, layer);
   const primary = [S, A, D, E].every((x) => x !== null)
-    ? 100 * Math.pow(S * A * D * E, 0.25)
+    ? 100 * (S * A * D * E) ** 0.25
     : null;
   const confusion = Object.fromEntries(
     OUTCOMES.map((g) => [

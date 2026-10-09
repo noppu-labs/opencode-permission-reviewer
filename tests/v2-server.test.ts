@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
-import { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
+import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
 import type { ReviewExecutionResult } from "../src/types.ts";
 import { config, decision, systemOneScores } from "./helpers.ts";
