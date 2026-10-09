@@ -21,6 +21,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   or evidence gate downgrades its allow, and when it fails after a hand-off
   (the failure reason now names the reasoning reviewer).
 
+## [2.4.1] - 2026-10-09
+
+### Changed
+
+- Publish this fork to npm as `@noppu-labs/opencode-permission-reviewer`. The
+  CLI command stays `opencode-permission-reviewer`.
+
+## [2.4.1-noppu] - 2026-10-09
+
+### Fixed
+
+- Keep MCP servers that other plugins add from code, such as
+  `@upstash/context7-opencode`, out of the OpenCode V2 reviewer Location. They
+  previously made every review fail closed.
+
 ## [2.4.0] - 2026-10-02
 
 ### Added
