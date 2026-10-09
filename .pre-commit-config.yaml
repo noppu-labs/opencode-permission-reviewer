@@ -122,5 +122,24 @@ repos:
         name: fta (maintainability, cap in fta.json)
         entry: bun run fta
         language: unsupported
-        types_or: [javascript, jsx, ts, tsx]
+        # A regex so a commit that only edits fta.json still runs it.
+        files: \.([cm]?[jt]sx?)$|^fta\.json$
+        pass_filenames: false
+      # Entry points, the pending exemptions each stacked PR deletes, and the reasons are in
+      # knip.jsonc. It also reads package.json, so any JSON change reruns it.
+      - id: knip
+        name: knip (dead code and dependencies, config in knip.jsonc)
+        entry: bun run knip
+        language: unsupported
+        # A regex, not types: identify gives .jsonc files no json tag.
+        files: \.([cm]?[jt]sx?|jsonc?)$
+        pass_filenames: false
+      # Fails on any advisory except the three ignored in the package.json "audit" script
+      # (seroval via solid-js, http-cache-semantics via @opencode/plugin). Runs only when the
+      # lockfile or the script changes; a periodic `pre-commit run --all-files` catches new advisories.
+      - id: bun-audit
+        name: bun audit (bun.lock; ignored advisories in package.json "audit")
+        entry: bun run audit
+        language: unsupported
+        files: ^(bun\.lock|package\.json)$
         pass_filenames: false

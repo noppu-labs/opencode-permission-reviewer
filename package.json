@@ -95,6 +95,7 @@
     "@types/semver": "7.8.0",
     "fta-cli": "3.1.0",
     "jiti": "^2.7.0",
+    "knip": "6.41.0",
     "tsup": "^8.0.0",
     "typescript": "6.0.3"
   },
@@ -108,6 +109,8 @@
     "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
     "fta": "fta .",
+    "knip": "knip",
+    "audit": "bun audit --ignore GHSA-ch52-4w7c-c8xp --ignore GHSA-p6vx-979v-rg4c --ignore GHSA-jp82-f5mq-hwhp",
     "build": "tsup && bun scripts/copy-tui.ts",
     "test": "bun test",
     "test:stress": "bun test tests/stress.test.ts --timeout 30000",

@@ -1,0 +1,49 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  // Files that run or ship without an import edge knip can follow. The bun, tsup, node and
+  // github-actions plugins already cover the tsup entries, the bun test files, server.js and the
+  // benchmark CLI.
+  "entry": [
+    // Shipped to hosts as-is (package.json "files").
+    "rpc.js",
+    "tui.tsx",
+    // Copied raw to dist/tui by scripts/copy-tui.ts and loaded by the host as the TUI plugin.
+    "src/tui.tsx",
+    "scripts/*.ts",
+    // Live harness, host fixtures and the compatibility matrix, run by hand or from CI.
+    "tests/live-*.ts",
+    "tests/fixtures/*.ts",
+    "tests/compatibility/*.ts",
+    "tests/compatibility/probe/index.js",
+    // Benchmark `node --test` files and the helpers they spawn.
+    "benchmarks/permission-reviewer/tests/*.mjs"
+  ],
+  "project": ["src/**", "tests/**", "scripts/**", "benchmarks/**/*.mjs"],
+  // Deliberate attack fixtures the live harness runs; no tool analyses them.
+  "ignoreFiles": ["tests/live-fixture/**"],
+  // System tools, not npm packages: uv runs pre-commit (package.json "check"), mkfifo builds a
+  // named pipe in two tests.
+  "ignoreBinaries": ["uv", "mkfifo"],
+
+  // Pending exemptions. Each one matches only what knip reports today, and the PR named on it
+  // removes it by fixing the code. Keep this list in step with the PR description.
+  // quality/4-ts-rules: delete the dead exports and the dead file, or use them.
+  "ignoreIssues": {
+    "src/opencode/v2-adapter.ts": ["files"],
+    "src/audit.ts": ["types"],
+    "src/context.ts": ["exports"],
+    "src/core/contracts.ts": ["types"],
+    "src/opencode/types.ts": ["types"],
+    "src/runtime.ts": ["types"],
+    "src/shell-lexer.ts": ["exports", "types"],
+    "src/ssh-evidence.ts": ["exports"],
+    "src/system-one/review.ts": ["exports"],
+    "src/ui-protocol.ts": ["exports"],
+    "src/ui-state.ts": ["exports"],
+    "benchmarks/permission-reviewer/lib/plugin.mjs": ["exports"],
+    "benchmarks/permission-reviewer/lib/run.mjs": ["exports"]
+  },
+  // quality/4-ts-rules: jiti has no user left after the ESLint config went (remove it, or keep it
+  // with a reason); the live harness imports @opencode-ai/sdk without declaring it.
+  "ignoreDependencies": ["jiti", "@opencode-ai/sdk"]
+}
