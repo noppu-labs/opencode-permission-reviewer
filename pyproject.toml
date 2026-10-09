@@ -1,0 +1,193 @@
+# Nothing here is packaged or installed. The repo is a TypeScript plugin; its Python is the
+# real-host compatibility matrix (tests/compatibility) and one benchmark dataset script. This
+# file exists for the tooling venv and the tool settings that .pre-commit-config.yaml wires up.
+#
+#   uv sync                                # create .venv with the dev tools
+#   uv run pre-commit install              # once per clone
+#   uv run pre-commit run --all-files      # every check on every tracked file
+#   uv run pytest -q tests/compatibility/test_<name>.py   # one compatibility file
+#
+# `package = false` stops uv from building this directory.
+[project]
+name = "opencode-permission-reviewer-tooling"
+version = "0"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.6",
+    "ruff>=0.16",
+    "pyrefly>=1.3",
+    "pylint>=4.0",
+    # The CI hosts job installs pytest from this pin (uv sync, then uv run pytest).
+    "pytest==9.1.1",
+]
+
+# Cognitive complexity (complexipy, run by pre-commit on changed files), capped at 14 as in the
+# sibling repos. A deliberate exception is `# complexipy: ignore (reason)` on the def line.
+# Pending, removed by quality/3-python: complexipy-snapshot.json records the 11 functions over 14
+# and fails on a new one or on a recorded one getting worse.
+[tool.complexipy]
+paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
+max-complexity-allowed = 14
+
+# File length (pylint, run by pre-commit with only this check enabled; ruff has no equivalent).
+[tool.pylint.main]
+disable = ["all"]
+enable = ["too-many-lines"]
+score = false
+
+[tool.pylint.format]
+max-module-lines = 600
+
+# Dead code (vulture, run by pre-commit). vulture only parses source, so names a framework reads
+# by name are declared here rather than whitelisted per line.
+[tool.vulture]
+paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
+# pytest finds fixtures by name; nothing calls them.
+ignore_decorators = ["@pytest.fixture"]
+# BaseHTTPRequestHandler calls these by name (tests/compatibility/test_v2_reviewer.py).
+ignore_names = ["do_POST", "log_message"]
+
+[tool.codespell]
+# benchmarks/permission-reviewer/data holds verbatim dataset cases that contain misspellings and
+# foreign-language text on purpose.
+skip = "bun.lock,*.lock,./node_modules,./dist,./coverage,benchmarks/permission-reviewer/data/*,tests/live-fixture/*"
+# afterall: Bun's `afterAll` test hook.
+# unparseable: the runtime reason string in src/opencode/v1/reviewer-backend.ts, asserted by
+#   tests and quoted in docs and the CHANGELOG.
+# truncat: a regex stem in the pinned src/core/review-engine.ts (PINNED_BLOBS in
+#   benchmarks/permission-reviewer/lib/plugin.mjs hashes that file).
+# opeator: a deliberate invalid enum value under test in tests/trust-hardening.test.ts.
+ignore-words-list = "afterall,unparseable,truncat,opeator"
+
+# Security lint (bandit, run by pre-commit with `-c pyproject.toml`). Each accepted finding is a
+# `# nosec <id> # <reason>` on its line.
+[tool.bandit]
+# tests/ is not excluded: all Python here is tests or a script, so excluding it would check nothing.
+exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
+# B101: asserts are how pytest tests assert.
+# B404: flags any `import subprocess`; the calls themselves are still checked (B603/B607).
+skips = ["B101", "B404"]
+
+# Type checking (PyCharm runs Pyrefly). The compatibility tests import `test_v2_reviewer` as a
+# sibling module, so that folder is on the search path.
+[tool.pyrefly]
+project-includes = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
+search-path = ["tests/compatibility"]
+python-version = "3.12"
+
+# Pending: removed by quality/3-python. One sub-config per file, switching off only the error
+# kinds that file still reports.
+[[tool.pyrefly.sub-config]]
+matches = "benchmarks/permission-reviewer/scripts/build-dataset.py"
+[tool.pyrefly.sub-config.errors]
+bad-assignment = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_evidence_recovery.py"
+[tool.pyrefly.sub-config.errors]
+unsupported-operation = false
+unbound-name = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_local_evidence.py"
+[tool.pyrefly.sub-config.errors]
+unbound-name = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_opencode_v1.py"
+[tool.pyrefly.sub-config.errors]
+unsupported-operation = false
+not-iterable = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_opencode_v2.py"
+[tool.pyrefly.sub-config.errors]
+no-matching-overload = false
+
+[[tool.pyrefly.sub-config]]
+matches = "tests/compatibility/test_v2_reviewer.py"
+[tool.pyrefly.sub-config.errors]
+unsupported-operation = false
+unbound-name = false
+bad-index = false
+bad-override = false
+missing-attribute = false
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+# tests/live-fixture: see docs/DEVELOPMENT.md, "Quality gates".
+extend-exclude = ["tests/live-fixture", "node_modules"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # import sorting
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "SIM",  # simplify
+    "BLE",  # blind except
+    "RUF",  # ruff-specific
+    "C90",  # mccabe complexity (C901)
+    "SLF",  # private member access (PyCharm: PyProtectedMember)
+    "A",    # shadowing a builtin (PyCharm: PyShadowingBuiltins)
+    "PLR6301",  # method could be static (PyCharm: PyMethodMayBeStatic); preview, see below
+    "ASYNC",  # blocking calls inside async functions stall the event loop
+    "DTZ",    # timezone-naive datetimes
+    "LOG",    # logging misuse (e.g. logger.exception outside an except)
+    "G",      # logging calls that format eagerly instead of passing args
+    "PERF",   # avoidable performance anti-patterns
+    "ARG",    # unused arguments: often a parameter someone forgot to use
+    "RET",    # return mistakes, e.g. a path that falls off the end and returns None by accident
+    "TRY",    # exception handling: bare Exception, error-vs-exception logging, try/else placement
+    "PT",     # pytest style: composite asserts, broad pytest.raises
+    "FURB",   # modern idioms
+    "PTH",    # pathlib over os.path / open()
+]
+ignore = [
+    "TRY003",  # long messages in raise: an opinion, and the messages are the useful part
+]
+# PLR6301 is a preview rule. explicit-preview-rules keeps every *other* preview rule off, but
+# preview also switches stable rules to their preview behaviour. The formatter has its own flag.
+preview = true
+explicit-preview-rules = true
+# C901 is cyclomatic complexity; complexipy ([tool.complexipy]) is cognitive complexity, which
+# weights nesting. Ruff has no cognitive-complexity rule, so both run.
+mccabe.max-complexity = 10
+
+[tool.ruff.lint.per-file-ignores]
+# Test stubs mirror a real signature and fixtures are requested for their side effects.
+"tests/**/*.py" = ["ARG"]
+
+# Pending: removed by quality/3-python. Each entry lists only the codes that file still fails.
+# F811/F401: fixtures are imported from test_v2_reviewer and redeclared as parameters. Removing the
+# import breaks the run (pytest cannot find the fixture), so they move to conftest.py in 3-python.
+"benchmarks/permission-reviewer/scripts/build-dataset.py" = [
+    "E501",    # dataset strings that ruff format cannot split; text stays verbatim
+    "RUF001",  # deliberate full-width and curly-quote characters in dataset cases
+    "RUF005",
+    "UP031",
+    "C401",
+]
+"tests/compatibility/conftest.py" = ["C901"]
+"tests/compatibility/test_evidence_recovery.py" = ["PT006", "F811"]
+"tests/compatibility/test_local_evidence.py" = ["PT006", "F811", "E501"]
+"tests/compatibility/test_opencode_v1.py" = ["F811", "E501"]
+"tests/compatibility/test_opencode_v2.py" = ["F811"]
+"tests/compatibility/test_rollback.py" = ["F811"]
+"tests/compatibility/test_tui.py" = ["E402", "PT006", "F811"]
+"tests/compatibility/test_v2_analysis_regressions.py" = ["F401", "F811", "PT018"]
+"tests/compatibility/test_v2_reviewer.py" = ["PT006", "C901", "E501", "SIM105"]
+
+[tool.ruff.format]
+quote-style = "double"
+skip-magic-trailing-comma = false

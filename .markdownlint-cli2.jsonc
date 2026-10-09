@@ -1,0 +1,14 @@
+{
+  // Untracked local plans and reports (.gitignore) are not linted.
+  "gitignore": true,
+  "ignores": ["**/node_modules/**", "**/.venv/**", "**/.complexipy_cache/**", "**/dist/**", "**/coverage/**"],
+  "config": {
+    "default": true,
+    // Long lines are fine in prose, tables, and command examples
+    "MD013": false,
+    // Docs open with intro prose or frontmatter rather than a strict top-level heading
+    "MD041": false,
+    // CHANGELOG.md repeats Added/Changed/Fixed under each release.
+    "MD024": { "siblings_only": true }
+  }
+}

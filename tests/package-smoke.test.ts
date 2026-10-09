@@ -130,10 +130,19 @@ describe("npm pack ship set", () => {
         f === "CODE_OF_CONDUCT.md" ||
         f === "tsup.config.ts" ||
         f === "tsconfig.json" ||
-        f === "eslint.config.ts" ||
+        f === "tsconfig.hook.json" ||
+        f === "biome.jsonc" ||
+        f === "fta.json" ||
+        f === "knip.jsonc" ||
+        f === "pyproject.toml" ||
+        f === "uv.lock" ||
+        f === "complexipy-snapshot.json" ||
+        f === ".pre-commit-config.yaml" ||
+        f === ".editorconfig" ||
+        f === ".gitleaks.toml" ||
+        f === ".yamllint.yaml" ||
+        f === ".markdownlint-cli2.jsonc" ||
         f === ".gitignore" ||
-        f === ".prettierrc.json" ||
-        f === ".prettierignore" ||
         f === "bun.lock" ||
         f.endsWith("-plan.md"),
     )

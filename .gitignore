@@ -44,3 +44,6 @@ tests/.tmp-reviewer-isolated/
 __pycache__/
 .pytest_cache/
 /plan_*.md
+.venv/
+.ruff_cache/
+.complexipy_cache/

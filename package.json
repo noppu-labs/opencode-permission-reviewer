@@ -88,35 +88,35 @@
     }
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.0",
+    "@biomejs/biome": "2.5.15",
     "@opencode-ai/plugin": "1.18.35",
     "@opencode/plugin": "2.0.26",
     "@types/bun": "^1.3.0",
     "@types/semver": "7.8.0",
-    "eslint": "^10.8.0",
-    "eslint-config-prettier": "^10.0.0",
-    "globals": "^17.9.0",
+    "fta-cli": "3.1.0",
     "jiti": "^2.7.0",
-    "prettier": "^3.0.0",
+    "knip": "6.41.0",
     "tsup": "^8.0.0",
-    "typescript": "6.0.3",
-    "typescript-eslint": "^8.0.0"
+    "typescript": "6.0.3"
   },
   "overrides": {
     "@babel/core": "7.29.7",
     "esbuild": "^0.28.2"
   },
   "scripts": {
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint . --max-warnings=0",
+    "lint": "biome check --error-on-warnings .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
     "typecheck": "tsc --noEmit",
+    "fta": "fta .",
+    "knip": "knip",
+    "audit": "bun audit --ignore GHSA-ch52-4w7c-c8xp --ignore GHSA-p6vx-979v-rg4c --ignore GHSA-jp82-f5mq-hwhp",
     "build": "tsup && bun scripts/copy-tui.ts",
     "test": "bun test",
     "test:stress": "bun test tests/stress.test.ts --timeout 30000",
     "test:package": "bun test tests/package-smoke.test.ts --timeout 120000",
     "test:coverage": "bun test --coverage --coverage-reporter lcov --coverage-dir ./coverage && bun scripts/check-coverage.ts",
-    "check": "bun run format:check && bun run lint && bun run build && bun run typecheck && bun run test"
+    "check": "bun run build && bun run typecheck && uv run --frozen pre-commit run --all-files && uv run --frozen pre-commit run --hook-stage manual gitleaks-tree --all-files && bun test"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "0.6.0",
