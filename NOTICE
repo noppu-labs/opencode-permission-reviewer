@@ -1,13 +1,21 @@
 OpenCode Permission Reviewer
+Copyright 2026 Noppu Labs
 
-The reviewer policy design is inspired by OpenAI Codex Guardian:
+This project is a fork of warc0s/opencode-permission-reviewer
+(https://github.com/warc0s/opencode-permission-reviewer), Copyright 2026 Warc0s,
+licensed under the Apache License, Version 2.0 (see ./LICENSE-APACHE). Code from
+that project remains under the Apache License, Version 2.0. Changes made in this
+fork are licensed under the MIT License (see ./LICENSE).
 
-  https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian
+The reviewer policy in src/policy.ts is adapted from the OpenAI Codex Guardian
+auto-review policy and policy template:
 
-The policy wording and implementation are independent. The plugin adds
-OpenCode permission semantics, human escalation, confidence validation,
+  https://github.com/openai/codex/tree/c82cb044f3413e6584308d969b94e7a1430711ab/codex-rs/core/src/guardian
+
+Its user-authorization ladder, risk taxonomy, tenant policy structure, and
+several definitions are paraphrased or derived from that source. The plugin
+adds OpenCode permission semantics, human escalation, confidence validation,
 isolated review, and SSH, local-script, and Git evidence enrichment.
 
 OpenAI Codex is Copyright OpenAI and contributors and is licensed under the
-Apache License, Version 2.0. This project is licensed under the Apache License,
-Version 2.0 (see ./LICENSE).
+Apache License, Version 2.0 (see ./LICENSE-APACHE).

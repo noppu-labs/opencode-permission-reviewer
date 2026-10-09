@@ -13,7 +13,7 @@ import pytest
 V2_VERSIONS = (
     [os.environ["V2_HOST_VERSION"]]
     if os.environ.get("V2_HOST_VERSION")
-    else ["2.0.3", "2.0.11", "2.0.15", "2.0.18"]
+    else ["2.0.3", "2.0.11", "2.0.15", "2.0.18", "2.0.26"]
 )
 
 
@@ -26,8 +26,10 @@ def test_v2_isolated_server(launch_host, activate_host, probe_package, host_vers
     activate_host(host, "v2")
     assert (host["project"] / "host-probe.txt").read_text() == f"setup:v2:{host_version}\n"
     capabilities = json.loads((host["project"] / "host-capabilities.json").read_text())
+    # Hosts from 2.0.22 expose session.remove to plugins; the reviewer deletes
+    # sessions through its own client, so either shape is supported.
     assert capabilities == {
-        "sessionRemove": False,
+        "sessionRemove": tuple(map(int, host_version.split("."))) >= (2, 0, 22),
         "sessionGenerate": True,
         "generateText": True,
         "generateKeys": ["text"],

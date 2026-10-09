@@ -1,160 +1,92 @@
 # OpenCode Permission Reviewer
 
-> [!NOTE]
-> This is an **unofficial community plugin** for OpenCode. It is not affiliated
-> with or endorsed by [Anomaly](https://anoma.ly).
-
-> [!NOTE]
-> This fork of [warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer)
-> is published to npm as `@noppu-labs/opencode-permission-reviewer`. It carries fixes
-> that are waiting upstream.
-
-> **A tool-free AI reviewer for every `ask` permission.** It reads the request,
-> your policy, and the session context, then **allows, denies with
-> feedback, or escalates to you** — so safe actions don't wait for a keystroke,
-> and genuinely risky ones still get blocked or surfaced.
-
+[![checks](https://img.shields.io/github/actions/workflow/status/noppu-labs/opencode-permission-reviewer/ci.yml?branch=main&label=checks)](https://github.com/noppu-labs/opencode-permission-reviewer/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@noppu-labs/opencode-permission-reviewer?color=CB3837)](https://www.npmjs.com/package/@noppu-labs/opencode-permission-reviewer)
+[![downloads](https://img.shields.io/npm/dw/@noppu-labs/opencode-permission-reviewer)](https://www.npmjs.com/package/@noppu-labs/opencode-permission-reviewer)
 [![OpenCode](https://img.shields.io/badge/OpenCode-%E2%89%A51.18.29-6E56CF)](https://opencode.ai)
 [![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3.0-000000)](https://bun.sh)
-[![npm](https://img.shields.io/npm/v/@noppu-labs/opencode-permission-reviewer?color=CB3837)](https://www.npmjs.com/package/@noppu-labs/opencode-permission-reviewer)
-[![Downloads](https://img.shields.io/npm/dw/@noppu-labs/opencode-permission-reviewer)](https://www.npmjs.org/package/@noppu-labs/opencode-permission-reviewer)
-[![License](https://img.shields.io/github/license/Warc0s/opencode-permission-reviewer?color=blue)](./LICENSE)
-[![Checks](https://img.shields.io/github/actions/workflow/status/Warc0s/opencode-permission-reviewer/ci.yml?branch=main&label=checks)](https://github.com/Warc0s/opencode-permission-reviewer/actions/workflows/ci.yml)
-[![Open issues](https://img.shields.io/github/issues/Warc0s/opencode-permission-reviewer?color=555)](https://github.com/Warc0s/opencode-permission-reviewer/issues)
+[![license](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue)](#license)
 
-OpenCode pauses on **every** `ask` permission and waits for a keystroke — even
-for safe, routine actions. This plugin adds a Codex-Guardian-style reviewer: a
-dedicated, tool-free model backend reads the pending request, bounded
-transcript evidence, recovered user intent, and **a tenant policy you control**,
-then allows, denies with rationale, or escalates to you.
-Actions the reviewer classifies as critical are not auto-approved. Failures do
-not become new approvals: they lead to manual review or denial, depending on
-the host and configuration.
+An OpenCode plugin that sends every `ask` permission to a tool-free AI reviewer. The reviewer
+reads the pending request, recent transcript evidence, what you asked for, and a policy you
+control. It then allows the action, denies it with a reason the agent can act on, or escalates
+it to you. Routine actions stop waiting for a keystroke, and risky ones are still blocked or
+brought to you.
 
-- **Preserves your policy** — `allow` continues, `deny` stays blocked; neither
-  ever reaches the reviewer.
-- **Tool-free review**: normal models run in an isolated scratch session with
-  every tool denied; Jev uses its typed System One API, which exposes no tools
-  or project runtime.
-- **Read-only enrichment** — bounded, sanitized SSH / local-script / Git
-  evidence for the reviewer; the filesystem is never modified.
-- **Auditable** — one JSONL record per review, with remote commands stored as
-  SHA-256, not plaintext.
-- **Optional TUI overlay** — shows review state and gets out of the way of your
-  native approval controls.
+This is a fork of [warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer),
+published to npm as `@noppu-labs/opencode-permission-reviewer`. It includes changes upstream
+has not released, such as Jev's System One scores in audit records. It is an unofficial community
+plugin, not affiliated with or endorsed by [Anomaly](https://anoma.ly).
 
-> **Policy design inspired by [OpenAI Codex Guardian](https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian).**
-> The wording and implementation are independent. See [`NOTICE`](./NOTICE).
+## What it does
 
----
+- Leaves your existing policy alone: `allow` rules continue and `deny` rules stay blocked
+  without reaching the reviewer.
+- Reviews in isolation. Normal models run in a scratch session with every operational tool
+  denied. Jev models use their typed System One API, which exposes no tools or project runtime.
+- Gives the reviewer bounded, sanitized, read-only evidence about SSH commands, local scripts,
+  and Git state.
+- Never auto-approves an action the reviewer classifies as critical. Reviewer failures lead to
+  manual review or denial, depending on the host and configuration, and never to an approval.
+- Writes one JSONL audit record per review, with remote commands stored as SHA-256 hashes.
+- Shows review progress in an optional TUI overlay that steps aside for OpenCode's own approval
+  controls.
+- Runs headless. Reviews happen inside the OpenCode server, so the plugin works with
+  `opencode serve`, `opencode run`, and API clients without a TUI. With `escalationMode: "deny"`,
+  unattended agents never wait on a human prompt and anything uncertain is rejected with a reason.
+  See [Headless use](docs/CONFIGURATION.md#headless-use).
 
-## Quickstart
+## Requirements
 
-### Requirements
+- [Bun](https://bun.sh) >= 1.3.0
+- [OpenCode](https://opencode.ai) V1 `>=1.18.29 <2` (tested with 1.18.35) or V2 `>=2.0.3 <3`
+  (tested with 2.0.26)
+- `git` on `PATH`, used only for read-only Git enrichment. Without it, the reviewer gets no Git
+  snapshot.
+- A reviewer model: either a model configured in OpenCode that follows JSON schemas reliably, or
+  a Jev API key in the OpenCode server's environment. See
+  [Reviewer models](docs/REVIEWER-MODELS.md).
+- At least one action in your OpenCode permission policy that resolves to `ask`. On V2, an action
+  that matches no rule is `ask` by default. If everything is already `allow` or `deny`, the plugin
+  never runs.
 
-- [Bun](https://bun.sh) ≥ 1.3.0 (CI runs 1.3.0 and 1.3.5)
-- [OpenCode](https://opencode.ai) V1 `>=1.18.29 <2` (**tested with 1.18.34**), or V2 `>=2.0.3 <3` (**tested with 2.0.21**)
-- `git` on `PATH` (only used for read-only Git-state enrichment; missing git
-  degrades gracefully)
-- A model provider configured in OpenCode, exposing a model that follows JSON
-  schemas reliably, or a Jev API key in the trusted process environment (see
-  [Choosing the reviewer model](#choosing-the-reviewer-model))
-- A permission policy with at least one `ask` rule — **if nothing is `ask`, the
-  plugin never activates** (everything is already `allow`/`deny`).
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) has the full support matrix.
 
-See [Supported versions](#supported-versions) for the full matrix.
-
-### Install
-
-The package is published to **npm**. Install it as a dependency, or clone and
-build when you want to run from a checkout:
+## Install
 
 ```bash
-# From npm
 bun add @noppu-labs/opencode-permission-reviewer   # or: npm install @noppu-labs/opencode-permission-reviewer
-
-# From a checkout (development)
-git clone https://github.com/noppu-labs/opencode-permission-reviewer.git
-cd opencode-permission-reviewer
-bun install && bun run build
 ```
 
-What ships in `dist/`:
-
-- **Server** — `main` / `./server` → `dist/index.js` (bundled).
-- **TUI overlay** — `./tui` → `dist/tui/tui.tsx` (**raw TSX**, not a JS bundle).
-  OpenCode's host compiles that entry with its own Solid/OpenTUI pipeline and
-  rewrites `solid-js` / `@opentui/*` onto the host runtime. A prebundled
-  `dist/tui.js` loads but **never paints** the overlay.
-- **CLI** — `./cli` / `bin` → `dist/explain.js`.
-
-The CLI can register the plugin for you (`--tui` writes V1 `tui.json` or V2 global `cli.json`;
-`--npm` emits an npm package name instead of a path; it never clobbers an
-existing entry):
+The CLI can register the plugin for you. `--host auto` detects V1 or V2, `--tui` also registers
+the overlay (V1 `tui.json` or V2 global `cli.json`), and `--npm` writes the package name instead
+of a path. It never overwrites an existing entry.
 
 ```bash
 bunx @noppu-labs/opencode-permission-reviewer init --host auto --npm --tui --yes
 ```
 
-### Configure OpenCode V1
+To run from a checkout instead, clone the repository, run `bun install && bun run build`, and
+register the checkout's absolute path.
 
-Register the plugin in your `opencode.json` (project or
-`~/.config/opencode/opencode.json`). Use an absolute path to a checkout, or the
-npm package name after `bun add` / `npm install`:
+## Configure
+
+Register the plugin.
+
+OpenCode V1 (`opencode.json` in the project, or `~/.config/opencode/opencode.json`):
 
 ```jsonc
 // opencode.json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["/absolute/path/to/opencode-permission-reviewer"],
-  // or: "plugin": ["@noppu-labs/opencode-permission-reviewer"],
+  "plugin": ["@noppu-labs/opencode-permission-reviewer"],
   "permission": {
     "bash": "ask", // at least one ask rule, or the plugin is a no-op
   },
 }
 ```
 
-For the optional TUI overlay, register the plugin in your `tui.json`
-(`~/.config/opencode/tui.json`). Both V1 components read the global
-`permission-reviewer.jsonc`, so put shared reviewer settings there rather
-than repeating them in the two plugin entries. The built-in default is
-`openai/gpt-6-luna` at `medium` reasoning. To override it for both, use:
-
-```jsonc
-// ~/.config/opencode/permission-reviewer.jsonc
-{ "model": "provider/model", "variant": "medium", "timeoutMs": 120000 }
-```
-
-```jsonc
-// tui.json
-{
-  "$schema": "https://opencode.ai/tui.json",
-  "plugin": ["/absolute/path/to/opencode-permission-reviewer"],
-}
-```
-
-**Restart OpenCode fully** after install or rebuild. The host imports the plugin
-once at startup; a live session keeps the previous code in memory and will not
-show a rebuilt overlay.
-
-Then ask the agent to run something safe, e.g. `printf hello`. An auto-approved
-`ask` resolves itself with `once` and the tool runs normally — **without**
-injecting rationale into the agent context. Denials still return a short reason
-the agent can act on.
-
-**Cost note:** every `ask` action makes one reviewer call (up to `timeoutMs`).
-Normal models use an extra child session; Jev uses a direct typed request. Your
-model spend scales with how much your policy `ask`s. Lower the reasoning
-`variant` where supported or raise `confidenceThreshold` to taste.
-
-### Configure OpenCode V2
-
-V2 uses `plugins` with object entries. The same package supplies `setup()` for
-the server and a separate TUI adapter. Use `--host v2` to select this format:
-
-```bash
-bunx @noppu-labs/opencode-permission-reviewer init --host v2 --npm --tui --yes
-```
+OpenCode V2:
 
 ```jsonc
 // opencode.json
@@ -164,680 +96,61 @@ bunx @noppu-labs/opencode-permission-reviewer init --host v2 --npm --tui --yes
 }
 ```
 
-The optional interface belongs in the global `cli.json`, not a project
-`tui.json`. The installer writes the correct destination. Reviewer settings
-belong in the trusted global `permission-reviewer.jsonc`; V2 inline options
-of unknown provenance can only tighten security restrictions. The TUI reads
-effective settings and review status from the server.
-
-V2 uses the official authenticated client to manage isolated reviewer sessions
-for normal models. It reuses one reviewer location per backend, removes every
-MCP server there, including ones other plugins add from code, and checks that
-the location has no MCP servers before each review. Jev instead uses its direct
-typed API.
-The registered service is discovered without starting or stopping it. For an
-independent `serve`, configure `OPENCODE_PERMISSION_REVIEWER_HOST_URL` and the
-host's `OPENCODE_PASSWORD` in the trusted process environment. An identity check
-rejects connections to a different plugin instance. Provider credentials stay
-inside OpenCode. See [Migration and rollback](./MIGRATION.md).
-
-Structured output uses a dedicated schema-validated result tool. All operational
-tools remain disabled. `retainReviewSessions: false` removes the auxiliary
-session; `true` keeps it for inspection. `reviewBudgetMs` bounds the whole
-review; by default it is `2 * timeoutMs + 60000`. Retries consume this budget.
-
-## Choosing the reviewer model
-
-By default the reviewer is a normal OpenCode model invocation with every tool
-denied at the session-permission level, so it can be **any model from any
-provider you have configured**. Jev models automatically use the typed System
-One API instead. For V1, put shared options in the global
-`permission-reviewer.jsonc`; both the server and TUI read it. For V2, the
-server reads that file and the TUI receives effective settings from the server.
-The model options are:
-
-- **`model`**: in `provider/model` form. Chat models must match a configured
-  OpenCode provider; supported Jev IDs use the direct System One API below.
-- **`variant`**: reasoning effort the model supports (`max`, `high`, `medium`,
-  `low`, `none`). Passed straight through to OpenCode.
-- **`outputFormat`**: how the reviewer returns its decision: `json_schema`
-  (default; uses OpenCode's structured output, needs provider support) or
-  `text` (ask the model to emit JSON in plain text and parse it locally). Use
-  `text` for models that reject the `json_schema` format, e.g.
-  `opencode-go/deepseek-v4-flash`.
-- **`timeoutMs`**: review timeout; keep it in the shared config for V1.
-
-The default reviewer is **`openai/gpt-6-luna`** (`medium` reasoning). Override
-`model` to use any other provider/model you have configured; whichever you pick should follow structured
-output reliably. Model mistakes can cause unsupported approvals as well as
-unnecessary escalations, so compare both safety errors and format validity.
-Higher reasoning variants may cost more or take longer without always improving
-the result.
-
-### Jev System One reviewer
-
-Set `model` in the trusted global `~/.config/opencode/permission-reviewer.jsonc`
-and put the matching key in the **OpenCode server process environment** before
-starting OpenCode. The Jev call uses the provider's System One endpoint directly;
-OpenCode's `/connect` credentials and the Command Code CLI login are not read by
-this call. The supported routes are:
-
-| Reviewer `model`                                       | Required environment variable | System One API                                                                                |
-| ------------------------------------------------------ | ----------------------------- | --------------------------------------------------------------------------------------------- |
-| `opencode/jev-1.13` (or `opencode/jev-1.13-free`)      | `OPENCODE_API_KEY`            | [OpenCode Zen](https://opencode.ai/docs/en/zen/#jev)                                          |
-| `typesafe-ai/jev-1.13.0` (or `typesafe-ai/jev-latest`) | `TYPESAFE_API_KEY`            | [TypeSafe AI](https://docs.typesafe.ai/sdk/javascript)                                        |
-| `commandcode/typesafe/jev`                             | `CMD_API_KEY`                 | [Command Code Provider API](https://commandcode.ai/docs/provider#decision-models-typesafejev) |
-
-For **Jev only**, omit `escalationReviewer`:
+Reviewer settings go in the trusted global `~/.config/opencode/permission-reviewer.jsonc`. The
+default reviewer is `openai/gpt-6-luna` at `medium` reasoning. To change it:
 
 ```jsonc
 // ~/.config/opencode/permission-reviewer.jsonc
-{
-  "model": "opencode/jev-1.13",
-  "timeoutMs": 120000,
-}
+{ "model": "provider/model", "variant": "medium", "timeoutMs": 120000 }
 ```
 
-Replace the `model` with either of the other IDs in the table to use that
-provider. Command Code requires an API-enabled plan such as GOAT, Pro, Max,
-Team, or Provider; the Go plan has no Provider API access. Use a Command Code
-API key from Studio in `CMD_API_KEY`. Jev is a headless decision model there,
-so it cannot be selected as an interactive Command Code chat model.
+Restart OpenCode fully after installing or rebuilding, because the host loads plugins once at
+startup. Then ask the agent to run something safe, such as `printf hello`; it should run
+normally. A denied action returns a short reason the agent can act on.
 
-For **Jev with selective reasoning escalation**, add a chat model already
-configured in OpenCode:
+Every `ask` costs one reviewer call, so model spend grows with how much your policy asks. A
+lower reasoning `variant` or a higher `confidenceThreshold` reduces it.
 
-```jsonc
-// ~/.config/opencode/permission-reviewer.jsonc
-{
-  "model": "commandcode/typesafe/jev",
-  "timeoutMs": 120000,
-  "systemOneConfidenceThreshold": 0.4,
-  "systemOneReasoningThreshold": 0.38,
-  "escalationReviewer": {
-    "model": "openai/gpt-6-luna",
-    "variant": "medium",
-    "outputFormat": "json_schema",
-    "timeoutMs": 120000,
-  },
-}
-```
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md) covers TUI registration, V2 server connections,
+every option, the trust rules between global and project config, unattended (fail-closed) mode,
+and the audit log.
 
-Jev receives typed state and fixed questions, not a chat session, so `variant`
-and `outputFormat` do not apply to the primary call. The plugin reconciles its
-answers with deterministic confidence and consistency checks. Straightforward
-valid decisions are enforced normally, including valid denials. A difficult
-`allow` goes to `escalationReviewer` when configured; an explicit `escalate`
-goes there only when Jev assigns enough combined probability to `allow` or
-`deny` to make a second opinion useful. Clear escalations remain human reviews
-instead of paying for another model that is unlikely to resolve them. Without
-`escalationReviewer`, final escalations follow `escalationMode` and the failure
-settings. Provider failures, timeouts, and invalid responses never invoke the
-second model. The built-in default reviewer remains Luna.
+## How it works
 
-`systemOneConfidenceThreshold` applies to Jev's outcome confidence, not the
-lowest confidence among all descriptive fields. Supporting classifications are
-used as consistency signals: very weak support restricts an `allow`, incomplete
-evidence requires stronger outcome confidence, and material safety signals
-always route away from automatic approval. This calibration is separate from
-the chat-reviewer `confidenceThreshold`.
-`systemOneReasoningThreshold` controls secondary-review traffic for explicit
-Jev escalations. Raising it sends fewer cases to the reasoning reviewer; project
-configuration may raise this value but cannot lower a trusted threshold.
-
-### Reviewer models without structured-output support
-
-Some models (for example `opencode-go/deepseek-v4-flash`) do not support
-OpenCode's `json_schema` structured-output format and fail with a format error
-when it is requested. For those, set `"outputFormat": "text"` so the reviewer
-asks the model to emit its decision as plain JSON and parses it locally. Set
-this option in the trusted global `permission-reviewer.jsonc` for either host:
-
-```jsonc
-{
-  "model": "opencode-go/deepseek-v4-flash",
-  "variant": "high",
-  "outputFormat": "text",
-  "timeoutMs": 120000,
-}
-```
-
-Text mode has no host-side schema enforcement: the plugin re-prompts the
-reviewer once if the response is unparseable (mirroring the auto-retry that
-`json_schema` mode gets from OpenCode). A response that is still invalid is not
-auto-approved; it escalates or is denied according to `escalationMode`. Parsing
-is deliberately strict and fail-closed: the entire response must be exactly one
-JSON object (optionally wrapped in a single Markdown code fence). Prose around
-the object, multiple objects, multiple fences, or any other ambiguity prevents
-automatic approval: the parser never guesses which candidate the model meant. Every
-parsed decision still passes the same strict `parseDecision` validation and
-`enforceDecision` invariants (model-classified critical risk is not approved,
-etc.), so text
-mode cannot approve anything that structured mode would not.
-
-One caveat applies to any output format: the deterministic gates check the
-decision's _consistency_, not its semantic correctness. A reviewer model that
-misclassifies an unsafe action as low risk can produce an unsafe `allow` in
-either mode, so pick as strong a reviewer model as your budget allows.
-
-### All configuration options
-
-Every option is optional. Numeric/string options are clamped to safe bounds.
-
-| Option                         | Default                                                   | Bounds / type                       | Description                                                                                   |
-| ------------------------------ | --------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| `model`                        | `openai/gpt-6-luna`                                       | `provider/model`                    | Reviewer model (override with any provider/model)                                             |
-| `variant`                      | `medium`                                                  | non-empty string                    | Reasoning variant passed to OpenCode                                                          |
-| `outputFormat`                 | `json_schema`                                             | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)           |
-| `escalationReviewer`           | unset                                                     | trusted object                      | Optional reasoning reviewer for valid but difficult Jev decisions                             |
-| `timeoutMs`                    | `120000`                                                  | `5000`–`600000`                     | Review timeout; put shared V1 settings in the global config                                   |
-| `confidenceThreshold`          | `0.7`                                                     | `0.5`–`1`                           | Minimum confidence to auto-act; below it escalates                                            |
-| `systemOneConfidenceThreshold` | `0.4`                                                     | `0.3`–`1`                           | Calibrated Jev outcome-confidence floor; below it escalates                                   |
-| `systemOneReasoningThreshold`  | `0.38`                                                    | `0`–`1`                             | Combined `allow`/`deny` probability required to send an explicit Jev escalation to reasoning  |
-| `maxContextChars`              | `32000`                                                   | `4000`–`200000`                     | Total transcript evidence budget                                                              |
-| `maxPartChars`                 | `8000`                                                    | `500`–`50000`                       | Per-message-part budget                                                                       |
-| `maxEnrichmentChars`           | `24000`                                                   | `1000`–`100000`                     | SSH / script / Git enrichment budget                                                          |
-| `maxIntentChars`               | `8000`                                                    | `1000`–`50000`                      | User-intent history budget                                                                    |
-| `transcriptMessages`           | `12`                                                      | `1`–`100`                           | Recent messages shown to the reviewer                                                         |
-| `intentMessages`               | `8`                                                       | `1`–`50`                            | Genuine user intents kept                                                                     |
-| `historyMessages`              | `200`                                                     | `20`–`500`                          | Operational messages fetched; literal user intent is recovered separately                     |
-| `retainReviewSessions`         | `false`                                                   | boolean                             | Keep reviewer child sessions (debug only; see below)                                          |
-| `audit`                        | `true`                                                    | boolean                             | Append one JSONL audit record per review                                                      |
-| `auditPath`                    | `~/.local/share/opencode/permission-reviewer-audit.jsonl` | path                                | Audit file location                                                                           |
-| `policy`                       | built-in default                                          | string                              | Full local override of the tenant policy text                                                 |
-| `debug`                        | `false`                                                   | boolean                             | Verbose logs to stderr                                                                        |
-| `enforcementMode`              | `observe`                                                 | `observe` / `enforce`               | `enforce` applies declarative policy routes; `observe` audits them only                       |
-| `escalationMode`               | `manual`                                                  | `manual` / `deny`                   | How final escalations are disposed (`manual` = human; `deny` = fail-closed reject)            |
-| `maxSessionDepth`              | `8`                                                       | `1`–`32`                            | Parent-session lineage walk depth                                                             |
-| `maxParentSessions`            | `8`                                                       | `0`–`32`                            | Max parent sessions resolved for actor context                                                |
-| `actorProfiles`                | `{}`                                                      | name → profile map                  | Trusted agent name → profile (`read-only`, `validation`, `workspace`, …)                      |
-| `riskPolicy`                   | built-in conservative matrix                              | object                              | Override `allow` cells per risk level and failure modes (`onInvalidDecision`, …)              |
-| `repositoryTrust`              | `unknown`                                                 | `trusted` / `untrusted` / `unknown` | Repository trust level used by the policy engine                                              |
-| `policyRules`                  | `[]`                                                      | array                               | Declarative rules (most-restrictive wins); project rules combine with trusted ones            |
-| `askDecisions`                 | `true`                                                    | boolean                             | Show the reviewer what the user answered in agent ask dialogs (scoped authorization evidence) |
-
-Config is layered: built-in defaults ← trusted global
-`~/.config/opencode/permission-reviewer.jsonc` ← untrusted project
-`.opencode/permission-reviewer.jsonc` ← unknown-origin inline plugin options.
-The project layer crosses a trust boundary: it can only **tighten**
-security-sensitive fields, and its hardening survives even when a trusted layer
-set the same field. The project layer cannot choose the reviewer `model`,
-`escalationReviewer`, `variant`, `outputFormat`, or replace the `policy` text
-(these decide where code/context travels and how the
-reviewer enforces and reports), cannot redirect `auditPath`, flip
-`retainReviewSessions`, `askDecisions`, or `debug`, grant `actorProfiles`, set
-`repositoryTrust: "trusted"`, downgrade a global `enforcementMode: "enforce"`,
-or relax a trusted `escalationMode: "deny"` / failure-mode deny knob /
-`confidenceThreshold` / `systemOneConfidenceThreshold` /
-`systemOneReasoningThreshold` / `riskPolicy`. Reviewer resource knobs
-(`timeoutMs`, `reviewBudgetMs`, and the context budgets `maxContextChars`,
-`maxEnrichmentChars`, `transcriptMessages`, `historyMessages`,
-`maxSessionDepth`, and siblings) cannot be set by the project layer at all:
-they decide how long a review runs and how much conversation reaches the
-provider, which is not a monotonic security trade, so only global
-configuration may move them in either direction. Project and inline
-values of the wrong type (including `null`) are ignored, never normalized
-back to defaults.
-
-A config file that exists but cannot be honored fails CLOSED on the trusted
-side: a malformed or unreadable **global** config, or trusted `policyRules`
-dropped by validation, marks the run _degraded_ — reviews still run, but
-automatic approval stays off (everything escalates) until the file is fixed,
-and the degradation is reported on stderr. A malformed **project** file is
-reported and ignored (the untrusted layer adds nothing anyway).
-
-In declarative `policyRules`, a `when` condition with an unknown key (a typo),
-a `false` flag, or an empty object drops the whole rule — a mistyped rule must
-never degrade into a universal match. Catch-all rules are spelled explicitly:
-omit `when` entirely, or use `"when": { "always": true }` (valid only alone).
-When a catch-all comes from the trusted global config it simply matches
-everything; project-sourced allow rules are still rejected outright.
-
-#### Interactive vs autonomous
-
-| Mode                        | Config                     | Behavior                                                                |
-| --------------------------- | -------------------------- | ----------------------------------------------------------------------- |
-| Interactive (default / 1.0) | `escalationMode: "manual"` | Uncertainty escalates to you; OpenCode's native approval UI takes over  |
-| Autonomous / fail-closed    | `escalationMode: "deny"`   | Every final escalation becomes a reject with rationale; no human prompt |
-
-For unattended agents, set fail-closed in **global** config (not in the repo):
-
-```jsonc
-// ~/.config/opencode/permission-reviewer.jsonc
-{
-  "escalationMode": "deny",
-}
-```
-
-Optional fine-grained hardening under interactive mode (only their own cases):
-
-```jsonc
-{
-  "riskPolicy": {
-    "onInvalidDecision": "deny", // invalid structured output → reject
-    "onReviewerFailure": "deny", // timeout / transport failure → reject
-  },
-}
-```
-
-`escalationMode: "deny"` hardens every escalate path globally. Restrictive
-settings can only block more, never relax security.
-
-`audit` defaults to `true`. Each completed review appends one JSON object to
-the audit path, which is created with — and kept at — mode `0600`: a
-pre-existing audit file with looser permissions is tightened before it
-receives new records (`schemaVersion: 3`): outcome, decision source,
-rationale, risk, authorization, confidence, per-phase latency, reviewer model,
-optional `reviewerOutcome` / `escalationDisposition` (to distinguish an explicit
-deny from fail-closed escalate→deny), optional System One escalation origin,
-and a bounded SSH summary. Remote commands
-are stored as **SHA-256**, never in clear text. Set `audit: false` to disable.
-
-When Jev (System One) returns a valid decision, the record also carries
-`systemOne` with Jev's own scores, even when a reasoning reviewer made the
-final call and the top-level `confidence` and `riskLevel` are that reviewer's.
-It holds the model ID the provider reported, the outcome with its
-probabilities, the choice and confidence of each supporting classification,
-the nine 0–1 safety signals, the consistency checks that failed, and whether
-reasoning was recommended. The model ID is capped at 128 characters and
-redacted like other free text; everything else is numbers and fixed labels,
-never evidence or command text. The field is absent when Jev never ran (a
-deterministic route), when its answer was invalid or its call failed, and on
-V1 hosts when a manual answer superseded the automatic review.
-
-```json
-"systemOne": {
-  "returnedModel": "jev-1.13.0",
-  "outcome": { "choice": "allow", "confidence": 0.55, "probabilities": { "allow": 0.55, "deny": 0.05, "escalate": 0.4 } },
-  "supporting": {
-    "riskLevel": { "choice": "low", "confidence": 0.82 },
-    "userAuthorization": { "choice": "high", "confidence": 0.77 },
-    "scopeAlignment": { "choice": "aligned", "confidence": 0.9 },
-    "evidenceCompleteness": { "choice": "partial", "confidence": 0.61 },
-    "primaryBasis": { "choice": "authorized_reversible_change", "confidence": 0.58 }
-  },
-  "signals": { "materialAuthorization": 0.81, "withinIntentScope": 0.88, "unauthorizedDataLoss": 0.12, "untrustedSensitiveDisclosure": 0.01, "excessiveCredentialAccess": 0.01, "unauthorizedSecurityChange": 0.02, "unauthorizedExternalMutation": 0.03, "essentialEvidenceMissing": 0.27, "absolutePolicyDeny": 0.02 },
-  "contradictions": ["an allow with incomplete evidence lacks strong outcome confidence"],
-  "reasoningRecommended": true
-}
-```
-
-## What you'll see
+A deterministic emergency brake first rejects unmistakable root destruction and direct
+credential export without calling a model. For everything else, the plugin builds bounded
+evidence from the recent transcript, recovered user intent, and read-only enrichment, with
+common credential formats redacted. A tool-free reviewer returns an outcome, risk level,
+authorization level, rationale, and confidence. Invariants in code then decide whether that
+decision can stand: invalid output, low confidence, and risky actions without matching
+authorization escalate instead of being approved.
 
 ```text
 ✓ Review approved · bash · rm -rf /tmp/scratch-cache
 Narrowly scoped temp cleanup; matches user intent.
 ```
 
-While reviewing on V2, the optional TUI shows a compact two-line status strip
-at the bottom, matching the result strip's placement. It includes an animated
-indicator, **Reviewing this permission**, the reviewer model and reasoning
-variant, elapsed time, and the action. Long commands are truncated instead of
-expanding over the conversation. V1 retains its larger overlay covering the
-native approval controls, including **No action needed**.
+## Documentation
 
-Once resolved, both hosts show a compact status strip: one line for the result
-and a second for its rationale, with long text truncated. The review keymap is
-released immediately; the result stays visible for 5 s. Editor availability
-during a pending review depends on the host; the V2 strip is not a keyboard
-lock. On a final escalation in interactive mode, the overlay is removed and
-OpenCode's native approval controls become available with a **manual review
-required** warning. Host interruption, event-stream loss, and fail-closed
-settings can instead deny the request. A broken TUI
-transport **never changes the safety decision**.
+| Page                                       | Contents                                                                 |
+| ------------------------------------------ | ------------------------------------------------------------------------ |
+| [Configuration](docs/CONFIGURATION.md)     | Setup details, all options, config trust layers, headless use, audit log |
+| [Reviewer models](docs/REVIEWER-MODELS.md) | Picking a model, Jev System One, models without structured output        |
+| [How it works](docs/HOW-IT-WORKS.md)       | The review pipeline, TUI states, evidence enrichment                     |
+| [Safety](docs/SAFETY.md)                   | Safety properties and threat model                                       |
+| [Supply chain](docs/SUPPLY-CHAIN.md)       | What the package ships, dependency policy, known advisories              |
+| [Compatibility](docs/COMPATIBILITY.md)     | Supported versions and troubleshooting                                   |
+| [Migration](MIGRATION.md)                  | Moving between OpenCode V1 and V2, rollback                              |
+| [Development](docs/DEVELOPMENT.md)         | Build output, live testing, compatibility matrix, benchmark              |
 
-## How it works
+## Contributing
 
-1. OpenCode V1 emits `permission.asked` for an `ask`-classified action. V2 calls
-   the `permission.evaluate` hook; the plugin preserves decisions already made
-   by the host or other plugins and reviews only requests that remain `ask`.
-2. A deterministic **emergency brake** rejects unmistakable root destruction and
-   direct credential export before any model call. It is wrapper-aware
-   (`sudo`, `doas`, `env`, `command`, `nice`, `nohup`, `systemd-run`, `strace`,
-   `ltrace`, `script -c`, …), including clustered value-taking options
-   (`sudo -nu root …`), so `sudo rm -rf /`,
-   `env VAR=x rm -rf /`, `/bin/rm -rf /`, `sh -c 'rm -rf /'`, `ssh host rm -rf /`,
-   and `busybox rm -rf /` are all caught. A live root glob (`rm -rf /*`) and
-   redirections onto real block devices (`> /dev/sda`, `tee /dev/sda`) are
-   treated as root destruction. Wrapper nesting deeper than a fixed
-   budget (or command lists beyond a fixed size) is not resolved: the brake
-   stays quiet for what it cannot fully see, the capability analysis is marked
-   partial, and automatic approval is blocked, escalating to the user instead.
-3. The plugin builds bounded **evidence**: recent transcript, recovered user
-   intent, and optional read-only enrichment for SSH commands, local
-   interpreter scripts, and Git state. Intent attribution uses a single origin
-   rule: synthetic/host-flagged parts are never human intent, and in a
-   delegated (subagent) session **no** user-role message counts as human
-   authorization — the initial briefing and every later `task_id` follow-up
-   are agent-authored and surface only as labeled delegation context.
-   Recognized common credential formats are redacted from this evidence
-   (`Bearer`, AWS / GitHub / OpenAI / Anthropic / Slack / Google / Stripe /
-   GitLab keys, JWTs, private keys, URL userinfo, cookies, and
-   credential-bearing assignments). Redaction reduces exposure but cannot
-   prove that every secret format has been detected.
-4. A **tool-free reviewer backend** returns
-   `{ outcome, risk_level, user_authorization, rationale, confidence }`.
-   Normal models use schema-validated output or strict text parsing in a scratch
-   session outside the project. The host therefore cannot prepend repository
-   instructions, and a wildcard session rule denies every tool, including MCP
-   tools. If the host refuses isolation, the review fails safe. Jev instead
-   receives trusted policy and untrusted evidence as typed System One state
-   plus fixed questions. Its response is reconciled in code; valid difficult
-   decisions can be delegated to the optional reasoning reviewer, while
-   provider failures never are.
-5. Decisions are enforced with invariants: **risk classified as critical by the
-   reviewer is not auto-approved**,
-   **high risk with low/unknown authorization is escalated**, **medium risk
-   with unknown authorization is escalated**, low confidence is escalated,
-   invalid output is escalated, and reviewer errors and timeouts cannot become
-   approvals. Two
-   deterministic blocks also apply regardless of model confidence: a degraded
-   trusted config (see above) and evidence where a material part of the action
-   itself was elided or truncated — neither can auto-approve. A single
-   enforcement boundary then disposes every internal `escalate` according to
-   `escalationMode` (`manual` → human; `deny` → reject with the original reason).
-   V2 also denies requests invalidated by cancellation, review deadline, or
-   loss of the host event connection.
-6. V1 approvals reply `once` (never `always`); V2 approvals return `allow` from
-   the evaluation hook. Both continue **silently** if the host applies the
-   decision: the
-   tool output is not annotated, so approval rationale never contaminates the
-   primary agent context (rationale still lands in audit, TUI, and debug logs).
-   Denials return a short actionable rationale as tool feedback. A manual reply
-   that arrives mid-review **supersedes** the automatic one (no double reply).
-
-By default final reviewer escalations go to **manual review**. With
-`escalationMode: "deny"`, they become rejections with reasons instead. V2 host
-interruptions and event-stream failures can deny directly in either mode.
-
-## Evidence enrichment
-
-The reviewer never sees the raw filesystem — only bounded, sanitized evidence.
-Enrichment is deliberately conservative and **never makes an approval decision
-by itself** (one narrow deterministic exception exists for SSH, below).
-
-- **SSH commands** are parsed into destination, options, remote command,
-  environment/mutation/secret/stdin signals, and bounded stdin content for the
-  common `cat script | ssh ... python -` pattern. Sensitive paths,
-  credential-like literal content, binary files, unresolved shell expressions,
-  and symlinks escaping approved roots are excluded.
-- **Verified remote shell scripts** have an opt-in command form. Stage the exact
-  script locally inside the workspace or `/tmp/opencode`, then generate the
-  command rather than hand-writing its hash guard:
-
-  ```bash
-  bunx @noppu-labs/opencode-permission-reviewer script command --file /tmp/opencode/deploy.sh --host deploy.example
-  ```
-
-  Ask the agent to execute the printed command. It streams that local file to
-  the host, checks its SHA-256 there **before** running `bash`, and removes the
-  remote temporary copy. Add `--port 2222` or `--shell sh` when needed. The
-  supported command is deliberately exact: extra shell actions, dynamic paths,
-  or a remote-only script are **not** treated as verified. The local source is
-  a copy of the intended executable bytes; if the script comes from Git, stage
-  the blob from a pinned commit locally before generating the command. It is
-  re-read on each review and must remain regular, text-only, secret-free, and
-  at most 64 KiB. A changed file fails the remote hash check even if it changes
-  after permission approval. The plugin never connects to the host to inspect
-  it.
-
-  The first permission review includes the whole script. If that review is
-  approved with sufficient evidence and a script analysis, later reviews in
-  the same conversation can reuse only a compact, in-memory analysis for the
-  same hash, host, interpreter, and configuration (up to one hour). **Each
-  command still receives a fresh authorization decision.** A different script,
-  host, configuration, or expired analysis requires full inspection again. The
-  audit stores the hash and inspection status, never the script body. When an
-  opaque or truncated SSH script is rejected, the agent receives guidance to
-  stage a local copy and generate this form. The CLI and plugin must use the
-  same installed package version.
-
-- **Local interpreter commands** (Python, Node, Bun, shell, Ruby, Perl, and
-  compound commands that first activate an environment) get the same bounded
-  inspection when they name an explicit script. Inline code, modules, stdin
-  programs, dynamic paths, and remote-only SSH arguments are not misidentified
-  as local files.
-- **Package scripts** (`bun run`, `npm run`, `pnpm run`, and `yarn run`) include
-  the selected manifest definition, defined conditional lifecycle hooks, and
-  bounded literal calls to other local scripts. Inspection never executes
-  package code. Cycles, unsupported workspace selection, unavailable files,
-  and expansion limits remain explicit gaps. Running a local script reports
-  possible network access rather than an observed network operation.
-- **Git operations** (`add`, `commit`, `checkout`, `restore`, `rm`, `merge`,
-  `rebase`, and `stash`) get a
-  read-only pre-command snapshot: current branch, files already staged before
-  the command, unstaged/untracked files, planned targets, unresolved
-  shell-expanded paths, and a bounded numstat for changes that would be
-  discarded. Snapshots use fixed non-interactive Git queries with locking and
-  hooks disabled, a two-second timeout, and bounded output. **The repository is
-  never modified.** Repository-configured conversion filters (`clean`,
-  `smudge`, `process`) and diff `textconv` drivers are enumerated before every
-  snapshot and neutralized with config overrides (including dotted names); if
-  the configuration cannot be fully verified — too many filters, or the config
-  scan itself fails — the snapshot is withheld rather than risk executing
-  repository-configured commands. Verification and inspection are still two
-  distinct moments: a filter configured between them is a residual race the
-  snapshot does not claim to eliminate.
-  Merge snapshots identify the in-progress merge index and unresolved paths.
-  Rebase snapshots describe the literal commit range and its presence in local
-  remote-tracking refs; those refs may be stale and never prove publication
-  status. Literal destinations report conservative matches to configured
-  push/fetch URLs, including equivalent GitHub HTTPS and SSH forms. A match is
-  destination identity evidence, not authorization or a trust declaration.
-  Repository or destination overrides that cannot be resolved with the safe
-  inspection commands make the snapshot unavailable.
-
-Only regular text files inside the working directory, the worktree, or
-`/tmp/opencode` can be included. A `cd` inside the reviewed command can move
-the resolution base for relative paths, but it never mints new approved roots:
-`cd /outside && python x.py` resolves in `/outside` and stays blocked. Git
-state inspection is contained to the same roots: a `cd /other/repo && git …`
-or `git -C /other/repo …` yields an explicitly unavailable snapshot instead of
-reading an unrelated repository. Missing, blocked, and truncated executable
-stdin is explicitly identified so the reviewer fails safe.
-
-The **only** deterministic SSH preflight rejection is an executable stdin file
-that still does not exist after a 100 ms recheck — the primary agent gets an
-actionable instruction to create it and retry. Every other SSH case (sensitive,
-binary, blocked, or truncated evidence) remains a reviewer decision.
-
-## Safety properties
-
-- Reviews only `ask` requests: V1 handles `permission.asked`, while V2 handles
-  `permission.evaluate` without replacing an existing host decision.
-- **A decision the model labels critical cannot be auto-approved**, even if its
-  outcome says `allow`. This does not guarantee that every dangerous action is
-  classified correctly by the model.
-- **High-risk actions with low or unknown authorization, and medium-risk
-  actions with unknown authorization, are deterministically escalated** — the
-  model cannot auto-approve them by labeling a contradictory combination.
-- Invalid, low-confidence, or inconsistent output cannot create an approval.
-  Final escalations reach the user or are denied according to `escalationMode`;
-  some V2 host failures deny directly.
-- Known common credential formats are redacted from reviewer evidence. Redaction
-  is defense in depth, not a guarantee that every possible secret is detected.
-- Reviewer sessions cannot request permissions recursively; every tool is
-  denied by a wildcard session permission rule that also covers MCP tools and
-  takes precedence over agent-config allows.
-- The reviewer session runs outside the project directory, so repository
-  instructions (`AGENTS.md` and project-config `instructions`) are not part of
-  its system prompt; if the isolated directory cannot be established, the
-  review cannot auto-approve rather than running with degraded isolation.
-- A narrow deterministic emergency brake rejects unmistakable root destruction
-  (including privilege-prefixed and command-string forms such as
-  `sudo rm -rf /`, `sh -c 'rm -rf /'`, `ssh host rm -rf /`) and direct
-  credential-file export before any model call.
-- A manual reply that arrives while a review is in flight **supersedes** it: the
-  reviewer stops without replying or resurrecting a UI state.
-- Approvals are silent to the primary agent (no tool-result annotation); denials
-  return the rationale as feedback. Rationale remains in audit/TUI/debug.
-- SSH commands and executable stdin receive bounded, untrusted action
-  enrichment; enrichment never makes an approval decision on its own.
-- Long-session user intent is recovered separately from recent operational
-  context; later explicit requests supersede conflicting older ones. V2 reads
-  literal user messages from the persisted message API, including history
-  before compaction. V1 scans bounded recent-history windows up to 2,000
-  messages. Both retain the configured intent count and character budget.
-  Intent appears once in the reviewer prompt; operational reasoning and
-  duplicate tool evidence are omitted, while attachments and distinct results
-  remain visible. Long literal intent retains its beginning and end with an
-  explicit omission marker.
-- Synthetic compaction/control messages are excluded from authorization
-  evidence.
-- Audit failures never affect or relax the safety decision.
-- UI status messages are versioned, request-scoped, bounded, and transported
-  through OpenCode's own workspace TUI event channel.
-
-### Supply chain
-
-- **No code runs at install time.** The package declares no lifecycle
-  scripts, so installing it from npm executes nothing from this repository.
-  Installing from a Git URL or a local path executes nothing either, and is
-  not a supported install method: `dist/` is gitignored, so those installs
-  yield a package without bundles. Use the npm registry; building from source
-  is an explicit `bun install && bun run build`.
-- **The tarball ships no native code.** `@opentui/core` (the host TUI
-  pipeline's renderer) declares optional platform-specific native packages
-  (for example `@opentui/core-linux-x64` on Linux) that npm resolves into the
-  install tree on your machine. Those renderer packages are used by the TUI.
-  The `@opencode/client` dependency also reaches optional
-  `@msgpackr-extract/*` native accelerators through `effect` and `msgpackr`;
-  the consumer install test tracks their platform package names too. The
-  published tarball itself contains only JavaScript, raw TSX sources, and documentation;
-  `tests/package-smoke.test.ts` rejects native addons and shared libraries,
-  `prebuilds/` directories, platform packages, and bundled-dependency payloads
-  in the ship set, and every release publishes a CycloneDX SBOM of the
-  published artifact plus npm provenance for it.
-- **The direct runtime dependency set is frozen and tested.** Adding a
-  dependency (native or not) is a reviewed change: the package smoke test
-  fails until its allowlist is updated in the same commit. The same suite
-  installs the published tarball in an isolated tree and freezes what a
-  consumer actually gets: the platform-specific packages under `@opentui`
-  (rendering only), the optional `@msgpackr-extract` accelerators, the exact
-  `@babel/core` and `solid-js` versions documented below, and an `npm audit`
-  gate that fails on any high or critical advisory other than the documented
-  `seroval` residuals. Root
-  `overrides` in this repository protect the development tree only; npm never
-  applies a dependency's overrides to the installing application, which is
-  why consumer-side guarantees live in tests against the installed tree
-  itself.
-- **Known residual exposure, documented, not fixed.** `@opentui/solid` pins
-  `@babel/core@7.28.0` exactly (every published 0.5.x does), and
-  GHSA-4x5r-pxfx-6jf8 (arbitrary file read via a crafted `sourceMappingURL`
-  comment, low severity) affects `@babel/core <= 7.29.0`. In this package
-  that copy of babel only compiles the TUI sources we ship in the tarball,
-  never repository- or attacker-influenced input, so the advisory's
-  conditions are not met by our usage; it is still reachable in the consumer
-  tree and therefore tracked: the consumer surveillance test pins the
-  installed version, and moving off 7.28.0 is a conscious bump (an
-  `@opentui/solid` release with a fixed pin, or dropping the exact-pin
-  constraint) together with this note. The development tree overrides Babel to
-  7.29.7, but that override cannot reach an npm consumer. Likewise,
-  `@opentui/solid` peer-pins `solid-js@1.9.12` exactly, whose `seroval`
-  dependency carries GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (unsafe
-  `fromJSON` deserialization, fixed in `solid-js` 1.9.16). `seroval` is only
-  imported by the SSR renderer `solid-js/web`, which neither this package nor
-  OpenTUI loads, so the vulnerable code is not reachable at runtime; the
-  consumer surveillance test pins `solid-js`, asserts that nothing imports
-  `solid-js/web`, and admits only those two advisories. Separately, `esbuild`
-  (a build-time dependency here, never shipped) is root-overridden past
-  GHSA-g7r4-m6w7-qqqr; that override intentionally does not reach consumers
-  because consumers never install `esbuild` from this package at all.
-- **The `effect` runtime stays external.** `@opencode-ai/plugin` resolves
-  `effect@4.0.0-beta.83` from the host's own dependency chain for OpenCode V1
-  hosts. It is externalized from our bundles, not shipped or vendored by this
-  package, and deliberately not pinned or overridden to a different version:
-  forcing another version could fork the runtime the V1 host shares with every
-  other plugin.
-
-## Supported versions
-
-| Component             | Supported          | Notes                                                      |
-| --------------------- | ------------------ | ---------------------------------------------------------- |
-| OpenCode V1           | `>=1.18.29 <2`     | Dual object entrypoint; verified with **1.18.34**          |
-| OpenCode V2           | `>=2.0.3 <3`       | Compatibility layer; verified with **2.0.21**              |
-| `@opencode-ai/plugin` | `>=1.18.29 <2`     | Optional V1 peer dependency                                |
-| Bun                   | `>=1.3.0`          | Declared in `engines.bun`; CI runs **1.3.0** and **1.3.5** |
-| TUI overlay           | OpenCode V1 and V2 | Separate host adapters, shared raw TSX presentation        |
-| OS                    | Linux (verified)   | Other operating systems require equivalent live validation |
-
-- **TUI overlay** ships as **raw TSX** (`dist/tui/tui.tsx`). The host compiles
-  it against its embedded Solid/OpenTUI runtime. A prebundled TUI entry loads
-  but never paints. The server half does not depend on the overlay.
-- **Server half** replies through an isolated transport chosen once at startup:
-  public SDK reply with feedback `message` → public reply plus a separate
-  feedback channel → authenticated raw HTTP
-  (`/permission/{requestID}/reply` via `input.client._client.post`) → **refuse
-  startup**. On OpenCode 1.18.x the message-bearing reply is only reachable via
-  the raw transport, so the chain resolves there. That raw field is **not part
-  of OpenCode's public plugin API** and can change without notice. If startup
-  fails with _"authenticated SDK transport is unavailable"_, file an issue
-  rather than downgrading.
-- V2 evaluates pending permissions through `permission.evaluate`. `shell`
-  and `subagent` map to the shared internal `bash` and `task` labels. Input
-  already marked allow or deny is not elevated or reviewed.
-- Full enrichment assumes a Unix-like system (macOS/Linux). On Windows, SSH and
-  Git enrichment degrade gracefully toward fail-safe manual review.
-- **`retainReviewSessions`**: keep it `false` in normal use. Set `true` to retain
-  isolated reviewer sessions for inspection in either host generation.
-- Run `opencode-permission-reviewer doctor` to compare installed versions
-  against the ranges above.
-- A standard OpenCode installation invokes its runtime directly. Custom
-  profile launchers are also supported when they select a supported runtime
-  and provide coherent config, data, state, and cache locations. For the
-  isolated compatibility matrix, point the host variables at the underlying
-  executable instead of a launcher that overrides the harness environment;
-  see [`tests/compatibility`](./tests/compatibility/README.md).
-
-## Troubleshooting
-
-| Symptom                                       | Likely cause                                                                      | Fix                                                                                                                                                                         |
-| --------------------------------------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Every `ask` escalates after a long wait       | Reviewer model not found / provider not configured                                | Check the model ID in the global `permission-reviewer.jsonc`                                                                                                                |
-| Plugin does nothing                           | No `ask` rule in the host permission policy                                       | Set a V1 `"bash": "ask"` rule or a V2 shell permission with `effect: "ask"`                                                                                                 |
-| TUI overlay never appears                     | Wrong TUI config; stale process; or host without Solid/OpenTUI pipeline           | Check V1 `tui.json` or V2 global `cli.json`. The overlay is raw TSX (`dist/tui/tui.tsx`); a prebundled `dist/tui.js` does not render. Fully restart OpenCode after rebuilds |
-| Startup error: "authenticated SDK transport…" | OpenCode V1 outside `>=1.18.29 <2`, or an SDK change that hides the raw transport | Upgrade OpenCode and `@opencode-ai/plugin` into the supported range; report the version in an issue                                                                         |
-| Reviewer host connection unavailable          | Independent V2 server without a registered endpoint                               | Configure the trusted server URL and authentication, then restart                                                                                                           |
-| Reviews always time out                       | `timeoutMs` too low for the model                                                 | Raise `timeoutMs` (up to 600000)                                                                                                                                            |
-| `GIT_STATE_ANALYSIS` shows `spawn git ENOENT` | `git` not on `PATH`                                                               | Install `git`; Git enrichment degrades safely until then                                                                                                                    |
-| Want a version check                          | Host/SDK outside the supported range                                              | Run `opencode --version` and `opencode-permission-reviewer doctor`                                                                                                          |
-| Want to turn it off                           | -                                                                                 | Remove the plugin from the host config and, if installed, V1 `tui.json` or V2 global `cli.json`                                                                             |
-
-Enable `"debug": true` for verbose stderr logs while investigating. TUI load
-errors (`[tui.plugin] …`) are printed on the **TUI process console**, not in
-`~/.local/share/opencode/log/opencode.log`.
-
-## Development
-
-```bash
-bun install
-bun run check          # format + lint + typecheck + tests + build (must pass before any push)
-bun run test:stress    # stress suite only
-bun run test:package   # npm pack ship-set smoke (raw TUI + server bundle)
-```
-
-`bun run build` bundles the server/CLI with tsup, then copies the slim TUI
-source graph into `dist/tui/` as raw TSX (`scripts/copy-tui.ts`). Do not add a
-prebundled TUI entry — it will not render on the host.
-
-The live end-to-end harness in `tests/live-harness.ts` runs against a real
-OpenCode server + model and is **not** part of `bun test`; see
-[`CONTRIBUTING.md`](./CONTRIBUTING.md).
-
-The [synthetic model benchmark](./benchmarks/permission-reviewer/README.md)
-evaluates 600 permission-review cases against the current reviewer prompt and
-core. It is a separate development tool, not part of the npm package or plugin
-runtime. It does not collect OpenCode conversations or execute fixture actions.
-See its [evaluation protocol](./benchmarks/permission-reviewer/docs/METHODOLOGY.md)
-and [results table](./benchmarks/permission-reviewer/RESULTS.md).
-
-## Attribution
-
-The reviewer policy design is inspired by
-[OpenAI Codex Guardian](https://github.com/openai/codex/tree/main/codex-rs/core/src/guardian).
-The wording and implementation are independent. See [`NOTICE`](./NOTICE) for
-full attribution and license details.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately as described in
+[SECURITY.md](SECURITY.md).
 
 ## License
 
-[Apache License 2.0](./LICENSE) © 2026 Warc0s
+Changes made in this fork are released under the [MIT License](LICENSE). Code from the upstream
+project remains under the [Apache License 2.0](LICENSE-APACHE). The reviewer policy is adapted
+from [OpenAI Codex Guardian](https://github.com/openai/codex/tree/c82cb044f3413e6584308d969b94e7a1430711ab/codex-rs/core/src/guardian)
+(Apache-2.0, Copyright OpenAI and contributors); [NOTICE](NOTICE) has the full attribution.
