@@ -4,6 +4,11 @@
 > This is an **unofficial community plugin** for OpenCode. It is not affiliated
 > with or endorsed by [Anomaly](https://anoma.ly).
 
+> [!NOTE]
+> This fork of [warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer)
+> is published to npm as `@noppu-labs/opencode-permission-reviewer`. It carries fixes
+> that are waiting upstream.
+
 > **A tool-free AI reviewer for every `ask` permission.** It reads the request,
 > your policy, and the session context, then **allows, denies with
 > feedback, or escalates to you** — so safe actions don't wait for a keystroke,
@@ -11,8 +16,8 @@
 
 [![OpenCode](https://img.shields.io/badge/OpenCode-%E2%89%A51.18.29-6E56CF)](https://opencode.ai)
 [![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3.0-000000)](https://bun.sh)
-[![npm](https://img.shields.io/npm/v/opencode-permission-reviewer?color=CB3837)](https://www.npmjs.com/package/opencode-permission-reviewer)
-[![Downloads](https://img.shields.io/npm/dw/opencode-permission-reviewer)](https://www.npmjs.org/package/opencode-permission-reviewer)
+[![npm](https://img.shields.io/npm/v/@noppu-labs/opencode-permission-reviewer?color=CB3837)](https://www.npmjs.com/package/@noppu-labs/opencode-permission-reviewer)
+[![Downloads](https://img.shields.io/npm/dw/@noppu-labs/opencode-permission-reviewer)](https://www.npmjs.org/package/@noppu-labs/opencode-permission-reviewer)
 [![License](https://img.shields.io/github/license/Warc0s/opencode-permission-reviewer?color=blue)](./LICENSE)
 [![Checks](https://img.shields.io/github/actions/workflow/status/Warc0s/opencode-permission-reviewer/ci.yml?branch=main&label=checks)](https://github.com/Warc0s/opencode-permission-reviewer/actions/workflows/ci.yml)
 [![Open issues](https://img.shields.io/github/issues/Warc0s/opencode-permission-reviewer?color=555)](https://github.com/Warc0s/opencode-permission-reviewer/issues)
@@ -66,10 +71,10 @@ build when you want to run from a checkout:
 
 ```bash
 # From npm
-bun add opencode-permission-reviewer   # or: npm install opencode-permission-reviewer
+bun add @noppu-labs/opencode-permission-reviewer   # or: npm install @noppu-labs/opencode-permission-reviewer
 
 # From a checkout (development)
-git clone https://github.com/Warc0s/opencode-permission-reviewer.git
+git clone https://github.com/noppu-labs/opencode-permission-reviewer.git
 cd opencode-permission-reviewer
 bun install && bun run build
 ```
@@ -88,7 +93,7 @@ The CLI can register the plugin for you (`--tui` writes V1 `tui.json` or V2 glob
 existing entry):
 
 ```bash
-bunx opencode-permission-reviewer init --host auto --npm --tui --yes
+bunx @noppu-labs/opencode-permission-reviewer init --host auto --npm --tui --yes
 ```
 
 ### Configure OpenCode V1
@@ -102,7 +107,7 @@ npm package name after `bun add` / `npm install`:
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": ["/absolute/path/to/opencode-permission-reviewer"],
-  // or: "plugin": ["opencode-permission-reviewer"],
+  // or: "plugin": ["@noppu-labs/opencode-permission-reviewer"],
   "permission": {
     "bash": "ask", // at least one ask rule, or the plugin is a no-op
   },
@@ -148,13 +153,13 @@ V2 uses `plugins` with object entries. The same package supplies `setup()` for
 the server and a separate TUI adapter. Use `--host v2` to select this format:
 
 ```bash
-bunx opencode-permission-reviewer init --host v2 --npm --tui --yes
+bunx @noppu-labs/opencode-permission-reviewer init --host v2 --npm --tui --yes
 ```
 
 ```jsonc
 // opencode.json
 {
-  "plugins": [{ "package": "opencode-permission-reviewer", "options": {} }],
+  "plugins": [{ "package": "@noppu-labs/opencode-permission-reviewer", "options": {} }],
   "permissions": [{ "action": "shell", "resource": "*", "effect": "ask" }],
 }
 ```
@@ -532,7 +537,7 @@ by itself** (one narrow deterministic exception exists for SSH, below).
   command rather than hand-writing its hash guard:
 
   ```bash
-  bunx opencode-permission-reviewer script command --file /tmp/opencode/deploy.sh --host deploy.example
+  bunx @noppu-labs/opencode-permission-reviewer script command --file /tmp/opencode/deploy.sh --host deploy.example
   ```
 
   Ask the agent to execute the printed command. It streams that local file to
@@ -680,8 +685,9 @@ binary, blocked, or truncated evidence) remains a reviewer decision.
   installs the published tarball in an isolated tree and freezes what a
   consumer actually gets: the platform-specific packages under `@opentui`
   (rendering only), the optional `@msgpackr-extract` accelerators, the exact
-  `@babel/core` version documented below, and an `npm audit` gate that fails
-  on any high or critical advisory. Root
+  `@babel/core` and `solid-js` versions documented below, and an `npm audit`
+  gate that fails on any high or critical advisory other than the documented
+  `seroval` residuals. Root
   `overrides` in this repository protect the development tree only; npm never
   applies a dependency's overrides to the installing application, which is
   why consumer-side guarantees live in tests against the installed tree
@@ -697,7 +703,14 @@ binary, blocked, or truncated evidence) remains a reviewer decision.
   installed version, and moving off 7.28.0 is a conscious bump (an
   `@opentui/solid` release with a fixed pin, or dropping the exact-pin
   constraint) together with this note. The development tree overrides Babel to
-  7.29.7, but that override cannot reach an npm consumer. Separately, `esbuild`
+  7.29.7, but that override cannot reach an npm consumer. Likewise,
+  `@opentui/solid` peer-pins `solid-js@1.9.12` exactly, whose `seroval`
+  dependency carries GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (unsafe
+  `fromJSON` deserialization, fixed in `solid-js` 1.9.16). `seroval` is only
+  imported by the SSR renderer `solid-js/web`, which neither this package nor
+  OpenTUI loads, so the vulnerable code is not reachable at runtime; the
+  consumer surveillance test pins `solid-js`, asserts that nothing imports
+  `solid-js/web`, and admits only those two advisories. Separately, `esbuild`
   (a build-time dependency here, never shipped) is root-overridden past
   GHSA-g7r4-m6w7-qqqr; that override intentionally does not reach consumers
   because consumers never install `esbuild` from this package at all.

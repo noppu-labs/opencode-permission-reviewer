@@ -1,6 +1,6 @@
 {
-  "name": "opencode-permission-reviewer",
-  "version": "2.4.0",
+  "name": "@noppu-labs/opencode-permission-reviewer",
+  "version": "2.4.1",
   "description": "Policy-aware permission reviewer for OpenCode V1 and V2",
   "type": "module",
   "main": "./dist/index.js",
@@ -30,7 +30,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
-    "opencode-permission-reviewer": "./dist/explain.js"
+    "opencode-permission-reviewer": "dist/explain.js"
   },
   "files": [
     "server.js",
@@ -46,13 +46,16 @@
   ],
   "license": "Apache-2.0",
   "author": "Warc0s",
-  "homepage": "https://github.com/warc0s/opencode-permission-reviewer",
+  "homepage": "https://github.com/noppu-labs/opencode-permission-reviewer",
   "repository": {
     "type": "git",
-    "url": "https://github.com/warc0s/opencode-permission-reviewer"
+    "url": "git+https://github.com/noppu-labs/opencode-permission-reviewer.git"
   },
   "bugs": {
-    "url": "https://github.com/warc0s/opencode-permission-reviewer/issues"
+    "url": "https://github.com/noppu-labs/opencode-permission-reviewer/issues"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "keywords": [
     "opencode",
@@ -86,7 +89,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.0",
     "@opencode-ai/plugin": "1.18.35",
-    "@opencode/plugin": "2.0.24",
+    "@opencode/plugin": "2.0.26",
     "@types/bun": "^1.3.0",
     "@types/semver": "7.8.0",
     "eslint": "^10.8.0",
@@ -116,7 +119,7 @@
   },
   "dependencies": {
     "@typesafe-ai/sdk": "0.6.0",
-    "@opencode/client": "2.0.24",
+    "@opencode/client": "2.0.26",
     "jsonc-parser": "3.3.1",
     "semver": "7.8.5",
     "@opentui/core": "0.5.11",
