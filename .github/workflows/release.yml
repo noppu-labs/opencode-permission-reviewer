@@ -43,10 +43,9 @@ on:
 permissions: {}
 
 jobs:
-  # Every pre-commit hook on every file (formatting, lint, tsc, dead code, audit), the same gate
-  # as the CI quality job. Hook repos install mutable tags and unpinned transitive dependencies,
-  # so this runs apart from `build` and with a read-only token. `build` needs it, so publishing
-  # stays gated on it.
+  # Every pre-commit hook on every file plus the gitleaks-tree scan, as in the CI quality job.
+  # Hook repos install mutable tags and unpinned transitive dependencies, so they run here, apart
+  # from `build`, with a read-only token.
   quality:
     name: quality
     runs-on: ubuntu-latest
@@ -93,6 +92,8 @@ jobs:
       - run: uv sync --locked --no-build
 
       - run: uv run --frozen --no-build pre-commit run --all-files --show-diff-on-failure
+
+      - run: uv run --frozen --no-build pre-commit run --hook-stage manual gitleaks-tree --all-files
 
   build:
     needs: quality

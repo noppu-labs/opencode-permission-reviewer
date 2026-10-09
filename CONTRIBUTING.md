@@ -35,7 +35,7 @@ Run the checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-
 the benchmark, which the [development guide](docs/DEVELOPMENT.md) covers.
 
 ```sh
-bun run check           # build, every pre-commit hook on every file, and the full bun test suite
+bun run check           # build, typecheck, every hook on every file, gitleaks-tree, bun test
 bun run test:coverage   # test suite with the coverage threshold check
 ```
 

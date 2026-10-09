@@ -116,7 +116,7 @@
     "test:stress": "bun test tests/stress.test.ts --timeout 30000",
     "test:package": "bun test tests/package-smoke.test.ts --timeout 120000",
     "test:coverage": "bun test --coverage --coverage-reporter lcov --coverage-dir ./coverage && bun scripts/check-coverage.ts",
-    "check": "bun run build && uv run --frozen pre-commit run --all-files && bun test"
+    "check": "bun run build && bun run typecheck && uv run --frozen pre-commit run --all-files && uv run --frozen pre-commit run --hook-stage manual gitleaks-tree --all-files && bun test"
   },
   "dependencies": {
     "@typesafe-ai/sdk": "0.6.0",

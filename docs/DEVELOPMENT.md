@@ -29,12 +29,12 @@ See [Supply chain](./SUPPLY-CHAIN.md) for what that test enforces on dependencie
 
 ## Quality gates
 
-`pre-commit` is the single runner. `bun run check` is the local equivalent of CI: it builds, runs
-every hook on every file, then runs `bun test`. The CI `quality` job runs the same hooks once; the
-`check` job repeats build, typecheck and tests on the minimum and the pinned Bun versions. Set up
-once per clone with `uv sync && uv run pre-commit install`. The release workflow runs the same hooks
-in its own read-only `quality` job, which the artifact-building job needs, so that job only runs
-steps pinned by `bun.lock`.
+`pre-commit` is the single runner. `bun run check` is the local equivalent of CI: it builds and
+type-checks, runs every hook on every file and the whole-tree gitleaks scan, then runs `bun test`.
+The CI `quality` job runs the same hooks once; the `check` job repeats build, typecheck and tests
+on the minimum and the pinned Bun versions. The release workflow runs the same hooks in its own
+read-only `quality` job, which the artifact-building job needs, so that job only runs steps pinned
+by `bun.lock`.
 
 | Tool | What it checks | Settings |
 | --- | --- | --- |
