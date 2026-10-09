@@ -48,7 +48,7 @@ by `bun.lock`.
 | FTA | Maintainability score per file, cap 52 | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
 | `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
-| ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml`, `complexipy-snapshot.json` |
+| ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml` |
 
 `tests/live-fixture` holds deliberate attack fixtures the live harness runs. Every tool excludes it
 (Biome, ruff, bandit, complexipy, vulture, pyrefly, pylint, codespell, knip); keep it out of any
@@ -125,8 +125,7 @@ stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
   it.
 - `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
   dependencies.
-- `pyproject.toml` and `complexipy-snapshot.json`: per-file ruff ignores, pyrefly sub-configs and
-  the functions over the complexipy limit.
+- `pyproject.toml`: per-file ruff ignores and pyrefly sub-configs.
 - `.pre-commit-config.yaml`: pylint length ceilings for the two Python modules over 600 lines.
 
 Don't add to these lists to get a new change through. Fix the finding, or suppress it on the line

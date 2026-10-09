@@ -19,8 +19,6 @@ repos:
         # Run through an interpreter (bun, node, python) or compiled by tsup, never executed in place.
         exclude: ^(benchmarks/permission-reviewer/(cli\.mjs|scripts/build-dataset\.py|tests/plugin-parity\.mjs)|src/cli/explain\.ts)$
       - id: end-of-file-fixer
-        # complexipy rewrites its snapshot without a final newline on every run.
-        exclude: ^complexipy-snapshot\.json$
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: mixed-line-ending

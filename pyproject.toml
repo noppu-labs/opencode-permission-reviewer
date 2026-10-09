@@ -29,8 +29,6 @@ dev = [
 
 # Cognitive complexity (complexipy, run by pre-commit on changed files), capped at 14 as in the
 # sibling repos. A deliberate exception is `# complexipy: ignore (reason)` on the def line.
-# Pending, removed by quality/3-python: complexipy-snapshot.json records the 11 functions over 14
-# and fails on a new one or on a recorded one getting worse.
 [tool.complexipy]
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 max-complexity-allowed = 14

@@ -161,7 +161,6 @@ describe("npm pack ship set", () => {
         f === "knip.jsonc" ||
         f === "pyproject.toml" ||
         f === "uv.lock" ||
-        f === "complexipy-snapshot.json" ||
         f === ".pre-commit-config.yaml" ||
         f === ".editorconfig" ||
         f === ".gitleaks.toml" ||
