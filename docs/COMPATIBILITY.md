@@ -10,6 +10,7 @@ and fixes for common problems.
 | OpenCode V1           | `>=1.18.29 <2`     | Dual object entrypoint; verified with 1.18.34           |
 | OpenCode V2           | `>=2.0.3 <3`       | Compatibility layer; verified with 2.0.21               |
 | `@opencode-ai/plugin` | `>=1.18.29 <2`     | Optional V1 peer dependency                             |
+| `@opencode/plugin`    | `>=2.0.3 <3`       | Optional V2 peer dependency                             |
 | Bun                   | `>=1.3.0`          | Declared in `engines.bun`; CI runs 1.3.0 and 1.3.5      |
 | TUI overlay           | OpenCode V1 and V2 | Separate host adapters, shared raw TSX presentation     |
 | OS                    | Linux (verified)   | Other operating systems need equivalent live validation |
@@ -19,9 +20,10 @@ ranges.
 
 ## TUI overlay
 
-The TUI overlay ships as raw TSX (`dist/tui/tui.tsx`). The host compiles it against its embedded
-Solid/OpenTUI runtime. A prebundled TUI entry loads but never paints. The server half does not
-depend on the overlay.
+The TUI overlay ships as raw TSX (`dist/tui/tui.tsx`). The host compiles it with its own
+Solid/OpenTUI pipeline and rewrites `solid-js` and `@opentui/*` imports onto the host runtime;
+[Development](DEVELOPMENT.md#build-output-dist) explains why it must stay unbundled. The server
+half does not depend on the overlay.
 
 ## V1 reply transport
 
@@ -35,8 +37,8 @@ tries these in order and uses the first that is available:
 
 On OpenCode 1.18.x the message-bearing reply is only reachable through the raw transport, so the
 chain resolves at step 3. That raw field is not part of OpenCode's public plugin API and can
-change without notice. If startup fails with _"authenticated SDK transport is unavailable"_, file
-an issue instead of downgrading.
+change without notice. If startup fails, see
+[Troubleshooting](#startup-error-authenticated-sdk-transport).
 
 ## V2 permission evaluation
 
@@ -47,29 +49,22 @@ elevated nor reviewed.
 ## Platform notes
 
 Full enrichment assumes a Unix-like system (macOS or Linux). On Windows, SSH and Git enrichment
-degrade gracefully toward fail-safe manual review.
-
-Keep `retainReviewSessions` set to `false` in normal use. Set it to `true` to retain isolated
-reviewer sessions for inspection in either host generation. See
-[Configuration](./CONFIGURATION.md).
+degrade toward fail-safe manual review.
 
 ## Launchers and wrappers
 
-A standard OpenCode installation invokes its runtime directly. Custom profile launchers are also
-supported when they select a supported runtime and provide coherent config, data, state, and cache
-locations.
-
-The isolated compatibility matrix is stricter: point the host variables at the underlying
-executable, not at a launcher that overrides the harness environment. See
-[`tests/compatibility`](../tests/compatibility/README.md) and
-[Development](./DEVELOPMENT.md#compatibility-matrix).
+Custom profile launchers work in normal installs when they select a supported runtime and provide
+coherent config, data, state, and cache locations. The isolated compatibility matrix needs the
+underlying executable instead; see [Development](./DEVELOPMENT.md#3-compatibility-matrix).
 
 ## Troubleshooting
 
-### Every `ask` escalates after a long wait
+### Every `ask` escalates
 
 The reviewer model is not found, or its provider is not configured. Check the model ID in the
-global `permission-reviewer.jsonc`.
+global `permission-reviewer.jsonc`. On V2, the plugin looks the model up in the host's catalog
+before each review, so a missing model, or a `variant` the model does not offer, fails at once. On
+V1, the review fails when the host rejects the prompt or `timeoutMs` expires.
 
 ### The plugin does nothing
 
@@ -79,8 +74,7 @@ permission with `effect: "ask"`.
 ### The TUI overlay never appears
 
 The TUI config is wrong, a stale process is running, or the host has no Solid/OpenTUI pipeline.
-Check the V1 `tui.json` or the V2 global `cli.json`. The overlay is raw TSX (`dist/tui/tui.tsx`);
-a prebundled `dist/tui.js` does not render. Fully restart OpenCode after rebuilds.
+Check the V1 `tui.json` or the V2 global `cli.json`, and fully restart OpenCode after rebuilds.
 
 ### Startup error: "authenticated SDK transport…"
 
@@ -99,11 +93,6 @@ authentication, then restart.
 ### `GIT_STATE_ANALYSIS` shows `spawn git ENOENT`
 
 `git` is not on `PATH`. Install `git`; Git enrichment degrades safely until then.
-
-### Checking versions
-
-If the host or SDK may be outside the supported range, run `opencode --version` and
-`opencode-permission-reviewer doctor`.
 
 ### Turning the plugin off
 

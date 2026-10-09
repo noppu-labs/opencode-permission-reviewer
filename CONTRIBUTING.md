@@ -27,7 +27,8 @@ separate pull request, and releases are cut from `main`.
 
 ## Before opening a pull request
 
-Run the same checks CI runs (`.github/workflows/ci.yml`):
+Run the Bun checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-host matrix and
+the benchmark, which the [development guide](docs/DEVELOPMENT.md) covers.
 
 ```sh
 bun run check           # prettier, eslint, build, tsc, and the full bun test suite
@@ -44,9 +45,6 @@ Your pull request should also meet these rules:
   `sk-syntheticcredential...`, documentation IP ranges (`192.0.2.x`, `198.51.100.x`,
   `203.0.113.x`), and `*.invalid` hostnames. Never commit real tokens, keys, personal filesystem
   paths, or internal codenames.
-- A safety change comes with tests that demonstrate the invariant, for example that critical
-  risk can never be approved. This applies to `decision.ts`, `policy.ts`, `emergency-brake.ts`,
-  and the runtime enforcement path.
 - Behavior stays backward compatible unless you are intentionally changing a version pin or an
   enforcement invariant. If you are, say so in the pull request.
 - User-facing strings are in English. The policy and reviewer prompts are English, and runtime
@@ -55,8 +53,10 @@ Your pull request should also meet these rules:
 
 ## Areas that need care
 
-- `src/decision.ts`, `src/policy.ts`, and `src/emergency-brake.ts` encode the safety invariants.
-  Document the reasoning for any change to them.
+- `src/decision.ts`, `src/policy.ts`, `src/emergency-brake.ts`, `src/policy/policy-engine.ts`,
+  the trust boundary in `src/config/loader.ts`, and the runtime enforcement path encode the safety
+  invariants. A change to them needs tests that demonstrate the invariant (for example, that
+  critical risk can never be approved) and the reasoning stated in the pull request.
 - The V1 adapter and isolated reply transport (`src/opencode/v1-adapter.ts`,
   `src/opencode/reply-transport.ts`) reach into OpenCode's authenticated SDK transport. Changes
   there must keep the "refusing unsafe partial startup" behavior.
@@ -65,7 +65,7 @@ Your pull request should also meet these rules:
 - Both real-host pytest harnesses under `tests/compatibility` must keep working. Their profiles
   and synthetic model providers must not inherit user configuration or credentials. Pin host
   versions and integrity, and verify server and TUI loading after a fresh build. See
-  [MIGRATION.md](MIGRATION.md).
+  [`tests/compatibility`](tests/compatibility/README.md).
 - The TUI entry ships as raw TSX. Don't reintroduce a prebundled `dist/tui.js`; the
   [development guide](docs/DEVELOPMENT.md) explains why.
 

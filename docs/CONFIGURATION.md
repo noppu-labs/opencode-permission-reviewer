@@ -1,9 +1,8 @@
 # Configuration
 
 This page covers how to register the plugin on OpenCode V1 and V2, every reviewer option, how
-config layers combine across the trust boundary, and the audit log. For a short setup, see the
-[README](../README.md). For choosing and configuring the reviewer model itself, see
-[Reviewer models](REVIEWER-MODELS.md).
+config layers combine across the trust boundary, and the audit log. For choosing and configuring
+the reviewer model itself, see [Reviewer models](REVIEWER-MODELS.md).
 
 ## Shared reviewer settings
 
@@ -11,13 +10,6 @@ Put reviewer settings in the trusted global file `~/.config/opencode/permission-
 On V1, both the server plugin and the TUI overlay read this file, so you set shared options once
 instead of repeating them in two plugin entries. On V2, the server reads the file and the TUI
 receives effective settings and review status from the server.
-
-The built-in default reviewer is `openai/gpt-6-luna` at `medium` reasoning. To override it:
-
-```jsonc
-// ~/.config/opencode/permission-reviewer.jsonc
-{ "model": "provider/model", "variant": "medium", "timeoutMs": 120000 }
-```
 
 ## OpenCode V1
 
@@ -49,11 +41,7 @@ For the optional TUI overlay, register the plugin in `~/.config/opencode/tui.jso
 
 Restart OpenCode fully after you install or rebuild the plugin. The host imports the plugin once
 at startup, and a live session keeps the previous code in memory, so it will not show a rebuilt
-overlay.
-
-To check that it works, ask the agent to run something safe, such as `printf hello`. An
-auto-approved `ask` resolves itself with `once` and the tool runs normally, without any rationale
-injected into the agent context. Denials still return a short reason the agent can act on.
+overlay. The [README](../README.md#configure) has a quick smoke test.
 
 ## OpenCode V2
 
@@ -98,7 +86,7 @@ Structured output uses a dedicated schema-validated result tool. All operational
 disabled.
 
 `retainReviewSessions: false` removes the auxiliary session after the review, and `true` keeps it
-for inspection.
+for inspection on either host generation. Leave it `false` in normal use.
 
 `reviewBudgetMs` bounds the whole review. Its default is `2 * timeoutMs + 60000`, and retries
 consume this budget.
@@ -112,7 +100,8 @@ raise `confidenceThreshold`.
 
 ## All configuration options
 
-Every option is optional. Numeric and string options are clamped to safe bounds.
+Every option is optional. Numeric options are clamped to the bounds below, and an invalid value
+falls back to the default.
 
 | Option                         | Default                                                   | Bounds / type                       | Description                                                                                   |
 | ------------------------------ | --------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------- |
@@ -120,7 +109,7 @@ Every option is optional. Numeric and string options are clamped to safe bounds.
 | `variant`                      | `medium`                                                  | non-empty string                    | Reasoning variant passed to OpenCode                                                          |
 | `outputFormat`                 | `json_schema`                                             | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)           |
 | `escalationReviewer`           | unset                                                     | trusted object                      | Optional reasoning reviewer for valid but difficult Jev decisions                             |
-| `timeoutMs`                    | `120000`                                                  | `5000` to `600000`                  | Review timeout; put shared V1 settings in the global config                                   |
+| `timeoutMs`                    | `120000`                                                  | `5000` to `600000`                  | Review timeout                                                                                |
 | `reviewBudgetMs`               | `2 * timeoutMs + 60000`                                   | `5000` to `900000`                  | Total budget for one review, including retries                                                |
 | `confidenceThreshold`          | `0.7`                                                     | `0.5` to `1`                        | Minimum confidence to auto-act; below it escalates                                            |
 | `systemOneConfidenceThreshold` | `0.4`                                                     | `0.3` to `1`                        | Calibrated Jev outcome-confidence floor; below it escalates                                   |
@@ -147,9 +136,6 @@ Every option is optional. Numeric and string options are clamped to safe bounds.
 | `policyRules`                  | `[]`                                                      | array                               | Declarative rules (most-restrictive wins); project rules combine with trusted ones            |
 | `askDecisions`                 | `true`                                                    | boolean                             | Show the reviewer what the user answered in agent ask dialogs (scoped authorization evidence) |
 
-`retainReviewSessions` should stay `false` in normal use. Set it to `true` to retain isolated
-reviewer sessions for inspection on either host generation.
-
 ## Config layers and the trust boundary
 
 Config is layered. Each layer overrides the one before it:
@@ -159,8 +145,9 @@ Config is layered. Each layer overrides the one before it:
 3. Untrusted project config, `.opencode/permission-reviewer.jsonc`.
 4. Unknown-origin inline plugin options.
 
-The project layer crosses a trust boundary. It can only tighten security-sensitive fields, and its
-hardening survives even when a trusted layer set the same field.
+The project layer crosses a trust boundary. It cannot set some fields at all, and it can only
+tighten the security-sensitive fields it may set. Its hardening survives even when a trusted layer
+set the same field.
 
 The project layer cannot:
 
@@ -171,15 +158,15 @@ The project layer cannot:
 - Flip `retainReviewSessions`, `askDecisions`, or `debug`.
 - Grant `actorProfiles`.
 - Set `repositoryTrust: "trusted"`.
-- Downgrade a global `enforcementMode: "enforce"`.
+- Set `enforcementMode` in either direction.
 - Relax a trusted `escalationMode: "deny"`, a failure-mode deny knob, `confidenceThreshold`,
   `systemOneConfidenceThreshold`, `systemOneReasoningThreshold`, or `riskPolicy`.
 
-The project layer cannot set the reviewer resource knobs at all: `timeoutMs`, `reviewBudgetMs`,
-and the context budgets `maxContextChars`, `maxEnrichmentChars`, `transcriptMessages`,
-`historyMessages`, `maxSessionDepth`, and their siblings. These knobs decide how long a review runs
-and how much conversation reaches the provider. Changing them is not a monotonic security trade in
-either direction, so only global configuration may move them.
+The project layer cannot set the reviewer resource options at all: `timeoutMs`, `reviewBudgetMs`,
+`maxContextChars`, `maxPartChars`, `maxEnrichmentChars`, `maxIntentChars`, `transcriptMessages`,
+`intentMessages`, `historyMessages`, `maxSessionDepth`, and `maxParentSessions`. They decide how
+long a review runs and how much conversation reaches the provider. Raising them sends more to the
+provider and lowering them hides evidence, so only global configuration may change them.
 
 Project and inline values of the wrong type, including `null`, are ignored. They are never
 normalized back to defaults.
@@ -191,11 +178,13 @@ marks the run as degraded:
 
 - A malformed or unreadable global config.
 - Trusted `policyRules` dropped by validation.
+- An invalid `escalationReviewer`, `enforcementMode`, or `escalationMode` in the global config.
 
 In a degraded run, reviews still run, but automatic approval stays off and everything escalates
 until the file is fixed. The plugin reports the degradation on stderr.
 
-A malformed project file is reported and ignored. The untrusted layer adds nothing anyway.
+A malformed project file is reported and ignored, without degrading the run: the project layer
+can only add restrictions, so losing it never loosens the trusted config.
 
 ## Declarative policy rules
 
@@ -207,12 +196,25 @@ To write a catch-all rule, spell it explicitly: omit `when` entirely, or use
 `"when": { "always": true }`, which is valid only on its own. A catch-all from the trusted global
 config matches everything. Allow rules from the project config are still rejected outright.
 
+## Headless use
+
+Reviews run inside the OpenCode server, and the TUI overlay is optional. The plugin therefore works
+with a headless `opencode serve` and with any client that drives it through the server API. The
+compatibility matrix in CI and the live test harnesses exercise it this way, with no TUI attached.
+
+With no one at a terminal, a manual escalation has nobody to answer it. Use fail-closed mode for
+unattended agents, as described in the next section.
+
+`opencode run` is not covered by the tests. In non-interactive mode it answers pending permission
+requests itself, rejecting them or approving them with `--auto`, so its answer can arrive before a
+review finishes. Check it against your host version before relying on it.
+
 ## Interactive vs autonomous
 
-| Mode                        | Config                     | Behavior                                                                |
-| --------------------------- | -------------------------- | ----------------------------------------------------------------------- |
-| Interactive (default / 1.0) | `escalationMode: "manual"` | Uncertainty escalates to you; OpenCode's native approval UI takes over  |
-| Autonomous / fail-closed    | `escalationMode: "deny"`   | Every final escalation becomes a reject with rationale; no human prompt |
+| Mode                     | Config                     | Behavior                                                                |
+| ------------------------ | -------------------------- | ----------------------------------------------------------------------- |
+| Interactive (default)    | `escalationMode: "manual"` | Uncertainty escalates to you; OpenCode's native approval UI takes over  |
+| Autonomous / fail-closed | `escalationMode: "deny"`   | Every final escalation becomes a reject with rationale; no human prompt |
 
 For unattended agents, set fail-closed mode in the global config, not in the repository:
 
@@ -234,9 +236,6 @@ own case:
   },
 }
 ```
-
-`escalationMode: "deny"` hardens every escalate path globally. Restrictive settings can only block
-more; they never relax security.
 
 ## Audit log
 

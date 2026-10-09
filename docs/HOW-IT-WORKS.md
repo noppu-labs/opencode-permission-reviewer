@@ -54,9 +54,9 @@ It catches all of these:
 A live root glob (`rm -rf /*`) and redirections onto real block devices (`> /dev/sda`,
 `tee /dev/sda`) count as root destruction.
 
-The brake does not resolve wrapper nesting deeper than a fixed budget, or command lists beyond a
-fixed size. For anything it cannot fully see, the brake stays quiet, the capability analysis is
-marked partial, and automatic approval is blocked, so the request escalates to the user.
+Past a fixed analysis budget (input size, wrapper nesting, total commands, or re-lexed text), the
+brake denies the command before any model call. Its reason names the resource limit, not a
+detected destruction, and tells the agent to split the command into smaller steps.
 
 ### 3. Evidence
 
@@ -73,8 +73,8 @@ Intent attribution uses a single origin rule:
 
 Recognized common credential formats are redacted from this evidence: `Bearer`, AWS, GitHub,
 OpenAI, Anthropic, Slack, Google, Stripe, and GitLab keys, JWTs, private keys, URL userinfo,
-cookies, and credential-bearing assignments. Redaction reduces exposure but cannot prove that every
-secret format has been detected.
+cookies, and credential-bearing assignments. [Safety](SAFETY.md#evidence-and-intent) states the
+limits of redaction.
 
 ### 4. Reviewer backend
 
@@ -83,7 +83,8 @@ A tool-free reviewer backend returns a versioned decision with `outcome`, `risk_
 
 Normal models use schema-validated output or strict text parsing in a scratch session outside the
 project. As a result, the host cannot prepend repository instructions, and a wildcard session rule
-denies every tool, including MCP tools. If the host refuses isolation, the review fails safe.
+denies every tool, including MCP tools, except the reviewer's own structured-output result tool in
+`json_schema` mode. If the host refuses isolation, the review fails safe.
 
 Jev receives trusted policy and untrusted evidence as typed System One state plus fixed questions.
 Its response is reconciled in code. Valid difficult decisions can be delegated to the optional
@@ -92,28 +93,11 @@ backends.
 
 ### 5. Enforcement
 
-Decisions are enforced with these invariants:
-
-- Risk the reviewer classifies as critical is not auto-approved.
-- High risk with low or unknown authorization is escalated, and so is medium risk with unknown
-  authorization. These two rules come from the default `riskPolicy` matrix, which trusted global
-  configuration can change.
-- An `allow` the reviewer judged misaligned with the user's intent is escalated.
-- An `allow` at medium or high risk with insufficient evidence is escalated.
-- Low confidence is escalated.
-- Invalid output is escalated.
-- Reviewer errors and timeouts cannot become approvals.
-
-Two deterministic blocks also apply regardless of model confidence, and neither case can
-auto-approve:
-
-- a degraded trusted config (see [Configuration](CONFIGURATION.md))
-- evidence where a material part of the action itself was elided or truncated
-
-A single enforcement boundary then disposes of every internal `escalate` according to
-`escalationMode`: `manual` sends it to a human, and `deny` rejects it with the original reason. V2
-also denies requests invalidated by cancellation, the review deadline, or loss of the host event
-connection.
+Code then enforces the invariants listed in [Safety](SAFETY.md#decisions). A single enforcement
+boundary disposes of every internal `escalate` according to
+[`escalationMode`](CONFIGURATION.md#interactive-vs-autonomous): `manual` sends it to a human, and
+`deny` rejects it with the original reason. V2 also denies requests invalidated by cancellation,
+the review deadline, or loss of the host event connection, in either mode.
 
 ### 6. Reply
 
@@ -122,20 +106,13 @@ both hosts the approval continues silently if the host applies the decision. The
 annotated, so approval rationale never contaminates the primary agent context. The rationale still
 goes to the audit log, the TUI, and debug logs.
 
-Denials return a short, actionable rationale as tool feedback. A manual reply that arrives
-mid-review supersedes the automatic one, so there is no double reply.
-
-### Final escalations
-
-By default, final reviewer escalations go to manual review. With `escalationMode: "deny"`, they
-become rejections with reasons. V2 host interruptions and event-stream failures can deny directly
-in either mode. [Configuration](CONFIGURATION.md) describes `escalationMode`.
+Denials return a short, actionable rationale as tool feedback.
 
 ## Evidence enrichment
 
-The reviewer never sees the raw filesystem, only bounded, sanitized evidence. Enrichment is
-deliberately conservative and never makes an approval decision by itself. The one narrow
-deterministic exception is for SSH; see [SSH preflight rejection](#ssh-preflight-rejection).
+The reviewer sees bounded, sanitized evidence, never the raw filesystem. Enrichment never makes an
+approval decision; the one deterministic exception is the
+[SSH preflight rejection](#ssh-preflight-rejection).
 
 ### SSH commands
 
@@ -158,8 +135,8 @@ Ask the agent to execute the printed command. The command streams the local file
 checks its SHA-256 there before running `bash`, and removes the remote temporary copy. Add
 `--port 2222` or `--shell sh` when needed.
 
-The supported command form is deliberately exact. Extra shell actions, dynamic paths, or a
-remote-only script are not treated as verified.
+Only the exact generated form counts as verified. Extra shell actions, dynamic paths, or a
+remote-only script do not.
 
 The local source is a copy of the intended executable bytes. If the script comes from Git, stage
 the blob from a pinned commit locally before generating the command. The file is re-read on each
@@ -210,9 +187,9 @@ timeout, and bounded output. The repository is never modified.
 Repository-configured conversion filters (`clean`, `smudge`, `process`) and diff `textconv` drivers
 are enumerated before every snapshot and neutralized with config overrides, including dotted names.
 If the configuration cannot be fully verified, because there are too many filters or the config
-scan itself fails, the snapshot is withheld so that no repository-configured command can run.
-Verification and inspection are still two distinct moments: a filter configured between them is a
-residual race the snapshot does not claim to eliminate.
+scan itself fails, the snapshot is withheld rather than risk running repository-configured commands.
+A filter configured between the scan and the snapshot is not caught; this race is known and
+accepted.
 
 Merge snapshots identify the in-progress merge index and unresolved paths. Rebase snapshots describe
 the literal commit range and its presence in local remote-tracking refs. Those refs may be stale

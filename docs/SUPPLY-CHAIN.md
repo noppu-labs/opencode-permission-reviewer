@@ -48,17 +48,16 @@ are tests against the installed tree itself.
 
 ## Known residual exposure
 
-These advisories are documented and tracked, and remain unfixed.
+These advisories remain unfixed in the consumer install tree.
 
 `@opentui/solid` pins `@babel/core@7.28.0` exactly (every published 0.5.x does), and
 GHSA-4x5r-pxfx-6jf8 (arbitrary file read via a crafted `sourceMappingURL` comment, low severity)
-affects `@babel/core <= 7.29.0`. In this package that copy of Babel only compiles the TUI sources
-shipped in the tarball, never repository- or attacker-influenced input, so this package's usage
-does not meet the advisory's conditions. The copy is still reachable in the consumer tree, so the
-consumer surveillance test pins the installed version. Moving off 7.28.0 is a deliberate bump,
-made together with an update to this note, through either an `@opentui/solid` release with a
-fixed pin or dropping the exact-pin constraint. The development tree overrides Babel to 7.29.7,
-but that override cannot reach an npm consumer.
+affects `@babel/core <= 7.29.0`. This package uses that Babel only to compile its own shipped TUI
+sources, never repository- or attacker-influenced input, so the advisory's conditions are not met.
+The copy is still reachable in the consumer tree, so the consumer surveillance test pins the
+installed version. Moving off 7.28.0 needs an `@opentui/solid` release with a fixed pin or
+dropping the exact-pin constraint, and this note changes with it. The development tree overrides
+Babel to 7.29.7, which npm does not apply to consumers.
 
 `@opentui/solid` also peer-pins `solid-js@1.9.12` exactly. Its `seroval` dependency carries
 GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (unsafe `fromJSON` deserialization, fixed in
@@ -75,5 +74,5 @@ never install `esbuild` from this package.
 
 For OpenCode V1 hosts, `@opencode-ai/plugin` resolves `effect@4.0.0-beta.83` from the host's own
 dependency chain. It is externalized from the bundles and is neither shipped nor vendored by this
-package. It is deliberately not pinned or overridden to a different version, because forcing
+package. It is not pinned or overridden to a different version, because forcing
 another version could fork the runtime that the V1 host shares with every other plugin.

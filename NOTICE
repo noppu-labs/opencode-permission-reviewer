@@ -7,7 +7,8 @@ licensed under the Apache License, Version 2.0 (see ./LICENSE-APACHE). Code from
 that project remains under the Apache License, Version 2.0. Changes made in this
 fork are licensed under the MIT License (see ./LICENSE).
 
-The notice below is carried over from the upstream project.
+The notice below comes from the upstream project. Only its last sentence was
+changed, so that it describes the upstream license and points at ./LICENSE-APACHE.
 
 ----------------------------------------------------------------------------
 

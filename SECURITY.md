@@ -33,13 +33,14 @@ correctness. Other plugins loaded into the same OpenCode host can also override 
 
 This project is a fork of
 [warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer).
-If an issue also affects the upstream project, it is worth reporting there as well.
+If an issue also affects the upstream project, report it there as well.
 
 ## Verifying releases
 
 Each release is published to npm with [provenance](https://docs.npmjs.com/generating-provenance-statements),
 and its GitHub Release carries the package tarball, SHA-256 checksums, and a CycloneDX SBOM. To
-check the registry signatures and provenance of an installed copy:
+check the registry signatures and provenance attestations of a copy installed with `npm install`
+or `npm ci` (npm 8.15.0 or later), run this in the installing project:
 
 ```sh
 npm audit signatures

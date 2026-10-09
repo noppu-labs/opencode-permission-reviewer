@@ -2,17 +2,13 @@
 
 This page covers how to choose the reviewer model, how to set up the Jev System One reviewer, and
 how to use models that do not support structured output. For the full option table and config
-layering, see [Configuration](CONFIGURATION.md). Back to the [README](../README.md).
+layering, see [Configuration](CONFIGURATION.md).
 
 ## Choosing the reviewer model
 
 By default the reviewer is a normal OpenCode model invocation with every tool denied at the
 session-permission level, so it can be any model from any provider you have configured. Jev models
 automatically use the typed System One API instead.
-
-On V1, put shared options in the global `permission-reviewer.jsonc`; both the server and the TUI
-read it. On V2, the server reads that file and the TUI receives effective settings from the
-server.
 
 The model options are:
 
@@ -24,11 +20,9 @@ The model options are:
   OpenCode's structured output, which needs provider support. `text` asks the model to emit JSON
   in plain text and parses it locally. Use `text` for models that reject the `json_schema` format,
   such as `opencode-go/deepseek-v4-flash`.
-- `timeoutMs`: the review timeout. On V1, keep it in the shared config.
+- `timeoutMs`: the review timeout.
 
-The default reviewer is `openai/gpt-6-luna` with `medium` reasoning. Override `model` to use any
-other provider and model you have configured. Whichever you pick should follow structured output
-reliably.
+Whichever model you pick should follow structured output reliably.
 
 Model mistakes can cause unsupported approvals as well as unnecessary escalations, so compare both
 safety errors and format validity when you evaluate a model. Higher reasoning variants may cost
@@ -104,8 +98,6 @@ deterministic confidence and consistency checks.
   settings.
 - Provider failures, timeouts, and invalid responses never invoke the second model.
 
-The built-in default reviewer is still Luna.
-
 ### System One thresholds
 
 `systemOneConfidenceThreshold` applies to Jev's outcome confidence, not to the lowest confidence
@@ -146,10 +138,9 @@ re-prompts the reviewer once, mirroring the auto-retry that `json_schema` mode g
 OpenCode. A response that is still invalid is not auto-approved; it escalates or is denied
 according to `escalationMode`.
 
-Parsing is deliberately strict and fails closed. The entire response must be exactly one JSON
-object, optionally wrapped in a single Markdown code fence. Prose around the object, multiple
-objects, multiple fences, or any other ambiguity prevents automatic approval. The parser never
-guesses which candidate the model meant.
+Parsing fails closed. The entire response must be exactly one JSON object, optionally wrapped in a
+single Markdown code fence. Prose around the object, multiple objects, multiple fences, or any
+other ambiguity prevents automatic approval.
 
 Every parsed decision still passes the same strict `parseDecision` validation and
 `enforceDecision` invariants (for example, model-classified critical risk is not approved), so
@@ -157,7 +148,5 @@ text mode cannot approve anything that structured mode would not.
 
 ## Limits of the deterministic gates
 
-This caveat applies to any output format. The deterministic gates check the decision's
-consistency, not its semantic correctness. A reviewer model that misclassifies an unsafe action as
-low risk can produce an unsafe `allow` in either mode, so pick as strong a reviewer model as your
-budget allows. See [Safety](SAFETY.md) for the full safety properties.
+See [Safety](SAFETY.md#threat-model) for what the deterministic gates cannot catch, in either
+output format, and why that argues for as strong a reviewer model as your budget allows.

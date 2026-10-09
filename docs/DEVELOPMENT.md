@@ -1,25 +1,23 @@
 # Development
 
-Guide for developing and maintaining the plugin: the local scripts, how `dist/` is built, the live
-end-to-end tests against real OpenCode hosts, and the synthetic model benchmark. For setup and
-pull request rules, see [CONTRIBUTING](../CONTRIBUTING.md).
-
-## Scripts
-
-```bash
-bun install
-bun run check          # format + lint + typecheck + tests + build (must pass before any push)
-bun run test:stress    # stress suite only
-bun run test:package   # npm pack ship-set smoke (raw TUI + server bundle)
-```
+Guide for developing and maintaining the plugin: how `dist/` is built, the live end-to-end tests
+against real OpenCode hosts, and the synthetic model benchmark. Setup, the `check` scripts, and
+pull request rules are in [CONTRIBUTING](../CONTRIBUTING.md#before-opening-a-pull-request).
 
 ## Build output (`dist/`)
 
-`bun run build` runs tsup to bundle the server and CLI into `dist/index.js` and `dist/explain.js`,
-then runs `bun scripts/copy-tui.ts` to copy the slim TUI source graph into `dist/tui/` as raw TSX.
+`bun run build` runs tsup to bundle the server, the CLI, and the RPC protocol into
+`dist/index.js`, `dist/explain.js`, and `dist/rpc.js`, then runs `bun scripts/copy-tui.ts` to copy
+the slim TUI source graph into `dist/tui/` as raw TSX. The package exports map onto those files:
+
+- Server: `main` and `./server` resolve to `dist/index.js` (bundled).
+- TUI overlay: `./tui` resolves to `dist/tui/tui.tsx` (raw TSX, not a JS bundle).
+- RPC: `./rpc` resolves to `dist/rpc.js`, the read-only V2 protocol that the TUI and CLI use to
+  read review status from the server.
+- CLI: `./cli` and `bin` resolve to `dist/explain.js`.
 
 The TUI must stay unbundled. OpenCode's host compiles plugin `.tsx` with its own Solid/OpenTUI
-pipeline, and a prebundled TUI does not render, so do not add a prebundled TUI entry. When you
+pipeline, and a prebundled TUI entry loads but never renders, so do not add one. When you
 change the TUI, keep the file list in `scripts/copy-tui.ts` in sync with the imports of
 `src/tui.tsx` and its copied modules (no server engine, no `node:` builtins).
 
@@ -37,7 +35,8 @@ The live tests run against real OpenCode hosts and are not part of `bun test`.
 
 `tests/live-harness.ts` runs against a real OpenCode server and model. It speaks the opencode-ai
 API. On a machine where `opencode` on `PATH` is the desktop runtime, which serves only the web
-SPA, start a pinned opencode-ai host from the compatibility tooling instead:
+SPA, start a pinned opencode-ai host from the compatibility tooling instead. The installer fetches
+Linux x64 host binaries only, so this recipe runs on Linux x64:
 
 ```bash
 HOST_GENERATION=v1 bun tests/compatibility/install-hosts.ts
@@ -72,8 +71,9 @@ host uses an isolated home, configuration, provider, and audit file, and no pers
 installation is changed. V1 and V2 have independent pytest modules.
 
 Pass the matrix a direct OpenCode executable, not a profile launcher or wrapper that exports its
-own `HOME`, `XDG_*`, or `OPENCODE_CONFIG*` values. Such a launcher can replace the disposable
-environment the harness creates, which makes an otherwise correct runtime look incompatible. If
+own `HOME`, `XDG_*`, or `OPENCODE_CONFIG*` values. Such a launcher can intentionally replace the
+disposable environment the harness creates, which makes an otherwise correct runtime look
+incompatible. If
 `opencode` on `PATH` is a wrapper, use its underlying runtime executable or the path printed by
 `tests/compatibility/install-hosts.ts`.
 
