@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Changes made in this fork are now licensed under the MIT License. Code from
+  the upstream project remains under the Apache License 2.0, which now ships as
+  `LICENSE-APACHE` alongside `NOTICE`. The package `license` field is
+  `MIT AND Apache-2.0`.
+- Split the README into a short overview and reference pages under `docs/`
+  (configuration, reviewer models, how it works, safety, supply chain,
+  compatibility, development).
+
 ## [2.4.2] - 2026-10-09
 
 ### Added
@@ -150,7 +160,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Jev as a reviewer model choice through OpenCode Zen, TypeSafe AI, or the
   Command Code Provider API. Use Jev alone, or configure a second LLM such as
   Luna for difficult decisions. See the [Jev setup
-  guide](./README.md#jev-system-one-reviewer).
+  guide](./docs/REVIEWER-MODELS.md#jev-system-one-reviewer).
 
 ### Changed
 
