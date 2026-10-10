@@ -87,13 +87,11 @@
     "live-harness.ts",
     "live-host-regressions.ts",
     "live-v2-smoke.ts",
-    "local-script-evidence.test.ts",
     "package-script-evidence.test.ts",
     "package-smoke.test.ts",
     "policy-engine.test.ts",
     "redact.test.ts",
     "shell-lexer.test.ts",
-    "ssh-evidence.test.ts",
     "stress.test.ts",
     "tui-elapsed.test.ts",
     "tui-slot-contract.test.ts",
@@ -102,7 +100,6 @@
     "v1-backend.test.ts",
     "v2-backend.test.ts",
     "v2-connection.test.ts",
-    "v2-server.test.ts",
-    "verified-ssh-script.test.ts"
+    "v2-server.test.ts"
   ]
 }
