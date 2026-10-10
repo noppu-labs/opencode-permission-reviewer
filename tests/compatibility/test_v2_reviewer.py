@@ -12,7 +12,6 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
 
 import pytest
 from hosts import V2_VERSIONS
@@ -77,14 +76,25 @@ def reviewer_provider(model_server):
     }
 
 
-def request(host, path, body=None) -> Any:
+def _open(host, path, body):
     req = urllib.request.Request(
         host["url"] + path,
         data=None if body is None else json.dumps(body).encode(),
         headers={**host["headers"], "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=30) as response:  # nosec B310 # local 127.0.0.1 host under test
-        return json.load(response) if response.status != 204 else None
+    return urllib.request.urlopen(req, timeout=30)  # nosec B310 # local 127.0.0.1 host under test
+
+
+def request(host, path, body=None):
+    with _open(host, path, body) as response:
+        assert response.status != 204, f"{path} answered 204"
+        return json.load(response)
+
+
+def send(host, path, body=None) -> None:
+    with _open(host, path, body) as response:
+        if response.status != 204:
+            json.load(response)  # read to the end: wait routes block on the body, and a bad 200 still fails
 
 
 def delete_session(host, session_id):
@@ -187,13 +197,13 @@ def reviewer_called(model_server):
 def interrupt_review(host, model_server, session_id, wait_prefix):
     """Interrupt the operation while its review is in flight; no tool may complete."""
     model_server["control"]["delay"] = 1
-    request(host, f"/api/session/{session_id}/prompt", {"text": "Print the fixture marker using shell once"})
+    send(host, f"/api/session/{session_id}/prompt", {"text": "Print the fixture marker using shell once"})
     deadline = time.monotonic() + 10
     while time.monotonic() < deadline and not reviewer_called(model_server):
         time.sleep(0.02)
     assert reviewer_called(model_server)
-    request(host, f"/api/session/{session_id}/interrupt", {})
-    request(host, f"{wait_prefix}/{session_id}/wait", {})
+    send(host, f"/api/session/{session_id}/interrupt", {})
+    send(host, f"{wait_prefix}/{session_id}/wait", {})
     context = request(host, f"/api/session/{session_id}/context")
     assert not any(
         part.get("type") == "tool" and part.get("state", {}).get("status") == "completed"
@@ -256,8 +266,8 @@ def assert_allowed_shell_runs(host, wait_prefix):
         },
     )
     operation_id = operation.get("data", operation)["id"]
-    request(host, f"/api/session/{operation_id}/prompt", {"text": "Print the fixture marker with shell exactly once"})
-    request(host, f"{wait_prefix}/{operation_id}/wait", {})
+    send(host, f"/api/session/{operation_id}/prompt", {"text": "Print the fixture marker with shell exactly once"})
+    send(host, f"{wait_prefix}/{operation_id}/wait", {})
     context = request(host, f"/api/session/{operation_id}/context")
     assert "COMPATIBILITY_EXECUTED" in json.dumps(context), context
     assert any(

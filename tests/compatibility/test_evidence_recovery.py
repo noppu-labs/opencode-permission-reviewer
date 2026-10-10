@@ -8,7 +8,6 @@ import urllib.parse
 import urllib.request
 import uuid
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -54,18 +53,27 @@ def host_configs(generation, package, model_server):
     return config, provider
 
 
-def request(host, generation, path, body=None) -> Any:
+def _open(host, generation, path, body):
     query = "?" + urllib.parse.urlencode({"directory": str(host["project"])}) if generation == "v1" else ""
     req = urllib.request.Request(
         host["url"] + path + query,
         data=None if body is None else json.dumps(body).encode(),
         headers={**host["headers"], "Content-Type": "application/json"},
     )
-    with urllib.request.urlopen(req, timeout=45) as response:  # nosec B310 # local 127.0.0.1 host under test
-        if response.status == 204:
-            return None
+    return urllib.request.urlopen(req, timeout=45)  # nosec B310 # local 127.0.0.1 host under test
+
+
+def request(host, generation, path, body=None):
+    with _open(host, generation, path, body) as response:
+        assert response.status != 204, f"{path} answered 204"
         result = json.load(response)
         return result.get("data", result) if isinstance(result, dict) else result
+
+
+def send(host, generation, path, body=None) -> None:
+    with _open(host, generation, path, body) as response:
+        if response.status != 204:
+            json.load(response)  # read to the end: wait routes block on the body, and a bad 200 still fails
 
 
 def wait_prefix(version):
@@ -78,7 +86,7 @@ def seed_v1_history(host):
     session_id = session["id"]
 
     def message(text, synthetic=False):
-        return request(
+        send(
             host,
             "v1",
             f"/session/{session_id}/message",
@@ -109,8 +117,8 @@ def seed_v2_history(host, version):
         },
     )
     session_id = session["id"]
-    request(host, "v2", f"/api/session/{session_id}/prompt", {"text": GOAL})
-    request(host, "v2", f"{wait_prefix(version)}/{session_id}/wait", {})
+    send(host, "v2", f"/api/session/{session_id}/prompt", {"text": GOAL})
+    send(host, "v2", f"{wait_prefix(version)}/{session_id}/wait", {})
     transfer = request(host, "v2", f"{wait_prefix(version)}/{session_id}/export")
     template = next(message for message in transfer["messages"] if message["type"] == "assistant")
     for index in range(225):
@@ -132,10 +140,10 @@ def seed_v2_history(host, version):
 
 def compact_history(host, generation, version, session_id):
     if generation == "v1":
-        request(host, "v1", f"/session/{session_id}/summarize", {"providerID": "fixture", "modelID": "reviewer"})
+        send(host, "v1", f"/session/{session_id}/summarize", {"providerID": "fixture", "modelID": "reviewer"})
     else:
-        request(host, "v2", f"/api/session/{session_id}/compact", {})
-        request(host, "v2", f"{wait_prefix(version)}/{session_id}/wait", {})
+        send(host, "v2", f"/api/session/{session_id}/compact", {})
+        send(host, "v2", f"{wait_prefix(version)}/{session_id}/wait", {})
 
 
 def capture_evidence(source, generation, host, session_id):

@@ -9,7 +9,6 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
-from typing import Any
 
 import pytest
 
@@ -52,7 +51,7 @@ def v1_provider(model_server):
     }
 
 
-def v1_request(host, path, body=None, directory=None, timeout=45) -> Any:
+def v1_request(host, path, body=None, directory=None, timeout=45):
     query = urllib.parse.urlencode({"directory": str(directory or host["project"])})
     req = urllib.request.Request(
         host["url"] + path + "?" + query,
@@ -60,7 +59,7 @@ def v1_request(host, path, body=None, directory=None, timeout=45) -> Any:
         headers={**host["headers"], "Content-Type": "application/json"},
     )
     with urllib.request.urlopen(req, timeout=timeout) as response:  # nosec B310 # local 127.0.0.1 host under test
-        return json.load(response) if response.status != 204 else None
+        return json.load(response)
 
 
 def prompt_marker(host, session_id, directory=None, timeout=45):
