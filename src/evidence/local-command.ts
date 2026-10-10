@@ -1,5 +1,5 @@
 import { basename } from "node:path";
-import { effectiveCommands } from "../shell-lexer.ts";
+import { effectiveCommands } from "../shell-effective-commands.ts";
 
 /** Resolve an executable tail only when its local filesystem scope is preserved. */
 export function localExecutableCommand(

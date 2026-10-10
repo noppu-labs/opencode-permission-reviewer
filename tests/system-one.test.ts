@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { isSystemOneReviewerModel, resolveConfig } from "../src/config.ts";
 import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import { evaluateReview } from "../src/core/review-engine.ts";
@@ -13,7 +14,6 @@ import {
   SYSTEM_ONE_QUESTIONS,
 } from "../src/system-one/review.ts";
 import type {
-  ReviewAuditRecord,
   ReviewEnvelope,
   ReviewExecutionResult,
   ReviewerConfig,

@@ -82,166 +82,6 @@
   // entries cap each file at its current length instead), ordered by the stacked PR that fixes
   // those files and deletes the entry.
   "overrides": [
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/capability/bash-analyzer.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1415
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/cli/explain.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 633
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/cli/init.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 646
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/context.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 628
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/context/actor-resolver.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 722
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/core/review-coordinator.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 708
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/git-evidence.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1386
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/shell-lexer.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1086
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/ssh-evidence.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 725
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["src/types.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 704
-              }
-            }
-          }
-        }
-      }
-    },
     // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
     {
       "includes": ["tests/audit.test.ts"],
@@ -331,7 +171,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1963
+                "maxLines": 1961
               }
             }
           }
@@ -354,16 +194,23 @@
         }
       }
     },
-    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 9 files.
+    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 16 files.
     {
       "includes": [
         "src/capability/bash-analyzer.ts",
+        "src/capability/bash-mutation.ts",
         "src/capability/command-parser.ts",
         "src/capability/heredoc-extractor.ts",
+        "src/evidence-file-reader.ts",
+        "src/git-command-plan.ts",
         "src/git-evidence.ts",
+        "src/git-filter-neutralization.ts",
+        "src/git-remote-targets.ts",
         "src/local-script-evidence.ts",
         "src/package-script-evidence.ts",
+        "src/shell-effective-commands.ts",
         "src/shell-lexer.ts",
+        "src/ssh-command-segments.ts",
         "src/ssh-evidence.ts",
         "src/verified-ssh-script.ts"
       ],
@@ -375,7 +222,7 @@
         }
       }
     },
-    // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 18 files.
+    // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 22 files.
     {
       "includes": [
         "src/audit.ts",
@@ -387,6 +234,10 @@
         "src/context/actor-resolver.ts",
         "src/context/ask-decisions.ts",
         "src/context/evidence-assembler.ts",
+        "src/context/intent-extraction.ts",
+        "src/context/prompt-budget.ts",
+        "src/context/session-lineage.ts",
+        "src/core/review-coordinator-support.ts",
         "src/core/review-coordinator.ts",
         "src/core/review-engine.ts",
         "src/decision.ts",
@@ -405,7 +256,7 @@
         }
       }
     },
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 32 files.
+    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 34 files.
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
@@ -420,7 +271,9 @@
         "benchmarks/permission-reviewer/lib/util.mjs",
         "benchmarks/permission-reviewer/tests/opencode-v1.test.mjs",
         "scripts/check-coverage.ts",
+        "src/cli/doctor-command.ts",
         "src/cli/explain.ts",
+        "src/cli/init-config-files.ts",
         "src/cli/init.ts",
         "src/opencode/event-normalizer.ts",
         "src/opencode/v1/context-reader.ts",

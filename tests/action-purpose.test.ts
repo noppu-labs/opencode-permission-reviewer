@@ -1,10 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import type { IntentBlock, IntentContext } from "../src/actor-context-types.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import { resolveActionPurpose } from "../src/context/action-purpose.ts";
 import { buildEvidence } from "../src/context.ts";
 import type {
-  IntentBlock,
-  IntentContext,
   MessageWithParts,
   PermissionRequest,
   ReviewEnvelope,

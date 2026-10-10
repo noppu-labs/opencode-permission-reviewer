@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
+import type { AskDecision } from "../src/actor-context-types.ts";
 import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
 import {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
 } from "../src/context/ask-decisions.ts";
-import { buildEvidence, renderAskDecisions } from "../src/context.ts";
+import { renderAskDecisions } from "../src/context/evidence-sections.ts";
+import { buildEvidence } from "../src/context.ts";
 import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
-import type { AskDecision, ReviewEnvelope } from "../src/types.ts";
+import type { ReviewEnvelope } from "../src/types.ts";
 import { SK_CREDENTIAL_LONG } from "./fixtures/synthetic-secrets.ts";
 import { runtime as buildRuntime, defined, request } from "./helpers.ts";
 

@@ -10,7 +10,6 @@ import type {
   ReviewEnvelope,
   ReviewExecutionResult,
   ReviewerConfig,
-  SystemOneScores,
 } from "../types.ts";
 import {
   enforceParsedSystemOneReview,
@@ -18,6 +17,7 @@ import {
   SYSTEM_ONE_QUESTIONS,
   type SystemOneState,
 } from "./review.ts";
+import type { SystemOneScores } from "./system-one-types.ts";
 
 export type ReasoningEscalation = (
   envelope: ReviewEnvelope,

@@ -1,29 +1,23 @@
+import {
+  actorEvidenceSections,
+  renderActionPurpose,
+  renderAskDecisions,
+  renderPolicySummary,
+} from "./context/evidence-sections.ts";
+import {
+  elideMiddle,
+  keepMostRecentBlocks,
+  stableJson,
+  truncate,
+} from "./context/prompt-budget.ts";
 import { redactSecrets } from "./redact.ts";
 import type {
-  ActionPurpose,
-  ActorContext,
-  AskDecision,
-  EvidenceCompleteness,
-  IntentBlock,
   MessageWithParts,
   PermissionRequest,
   PermissionToolSource,
-  PolicyTrace,
-  Provenanced,
   ReviewEnvelope,
   ReviewerConfig,
-  SessionLineage,
 } from "./types.ts";
-
-function truncate(value: string, max: number): string {
-  // Redact secrets before measuring/truncating so a credential can never slip
-  // through because its surrounding text was chopped at a budget boundary.
-  const redacted = redactSecrets(value);
-  if (redacted.length <= max) return redacted;
-  const omitted = redacted.length - max;
-  const marker = `\n<truncated characters="${omitted}" />`;
-  return `${redacted.slice(0, Math.max(0, max - marker.length))}${marker.slice(0, max)}`;
-}
 
 /** Tail-preserving truncation for recency-sensitive content: when a budget cut
  *  is unavoidable, the END (most recent content) survives, unlike `truncate`
@@ -35,38 +29,6 @@ function truncateKeepEnd(value: string, max: number): string {
   const marker = `<truncated characters="${omitted}" />\n`;
   const available = Math.max(0, max - marker.length);
   return `${marker.slice(0, max)}${available === 0 ? "" : redacted.slice(-available)}`;
-}
-
-/** Elide the middle of an over-long command, keeping head and tail: the head
- *  names the executable and flags, the tail carries trailing redirections and
- *  compound tails (`… ; rm -rf`), so both ends must reach the reviewer. */
-function elideMiddle(value: string, max: number): string {
-  if (value.length <= max) return value;
-  const omitted = value.length - Math.floor(max * 0.8);
-  const head = Math.floor(max * 0.5);
-  const tail = Math.floor(max * 0.3);
-  return `${value.slice(0, head)}<elided characters="${omitted}" />${value.slice(-tail)}`;
-}
-
-function stableJson(value: unknown, max: number): string {
-  try {
-    const seen = new WeakSet<object>();
-    const text = JSON.stringify(
-      value,
-      (_key, item) => {
-        if (typeof item === "bigint") return item.toString();
-        if (typeof item === "object" && item !== null) {
-          if (seen.has(item)) return "[Circular]";
-          seen.add(item);
-        }
-        return item;
-      },
-      2,
-    );
-    return truncate(text ?? String(value), max);
-  } catch {
-    return truncate(String(value), max);
-  }
 }
 
 function partSummary(
@@ -217,24 +179,6 @@ function userIntentSummary(
       ? ` created=${(message.info.time as Record<string, unknown>).created}`
       : "";
   return `USER_INTENT id=${id}${time}\n${texts.join("\n")}`;
-}
-
-function keepMostRecentBlocks(blocks: string[], maxChars: number): string {
-  const selected: string[] = [];
-  let remaining = maxChars;
-  for (const block of [...blocks].reverse()) {
-    if (remaining <= 0) break;
-    const separator = selected.length === 0 ? 0 : 2;
-    if (remaining <= separator) break;
-    const budget = remaining - separator;
-    const redacted = redactSecrets(block);
-    const bounded =
-      redacted.length <= budget ? redacted : elideMiddle(redacted, budget);
-    if (bounded.length > budget) break;
-    selected.push(bounded);
-    remaining -= bounded.length + separator;
-  }
-  return selected.reverse().join("\n\n");
 }
 
 /** Render the USER_INTENT_HISTORY section. In a delegated session there is no
@@ -393,238 +337,6 @@ export function buildEvidenceResult(
       (envelope.verifiedScript === undefined ||
         text.includes(envelope.verifiedScript.text)),
   };
-}
-
-function renderActionPurpose(
-  purpose: ActionPurpose | undefined,
-  max: number,
-  intentReference = false,
-): string {
-  if (purpose === undefined) {
-    return `ACTION_PURPOSE\n${stableJson({ source: "unavailable", confidence: "unknown" }, max)}`;
-  }
-  return `ACTION_PURPOSE\n${stableJson(
-    {
-      source: purpose.source,
-      confidence: purpose.confidence,
-      ...(purpose.text === undefined
-        ? {}
-        : {
-            text:
-              intentReference && purpose.source === "intent-derived"
-                ? "<see literal intent sections>"
-                : purpose.text,
-          }),
-    },
-    max,
-  )}`;
-}
-
-/** Compact rendering of ask decisions, one line each (UTC time, question,
- *  answer). `undefined` when there is nothing to show so the whole section is
- *  omitted rather than padded with a placeholder. */
-export function renderAskDecisions(
-  decisions: AskDecision[] | undefined,
-): string | undefined {
-  if (decisions === undefined || decisions.length === 0) return;
-  const lines = [];
-  for (const decision of decisions) {
-    const time = new Date(decision.at).toISOString().slice(11, 19);
-    lines.push(`[${time}Z] Q: ${decision.question} A: ${decision.answer}`);
-  }
-  // Keep the most recent lines when the block would exceed the budget.
-  const maxChars = 1_500;
-  while (lines.length > 1 && lines.join("\n").length > maxChars) lines.shift();
-  const joined = lines.join("\n");
-  return joined.length <= maxChars ? joined : joined.slice(0, maxChars);
-}
-
-// --- policy summary section -------------------------------------------------
-
-function renderPolicySummary(
-  trace: PolicyTrace | undefined,
-  max: number,
-): string {
-  if (trace === undefined)
-    return "EFFECTIVE_POLICY_SUMMARY\n<no policy evaluation available />";
-  return `EFFECTIVE_POLICY_SUMMARY\n${stableJson(
-    {
-      hash: trace.effectivePolicyHash,
-      route: trace.finalRoute,
-      mode: trace.mode,
-      matches: trace.matchedRules.map((m) => ({
-        id: m.id,
-        effect: m.effect,
-        reason: m.reason,
-      })),
-    },
-    max,
-  )}`;
-}
-
-// --- actor/lineage/intent prompt sections -----------------------------------
-
-function provValue<T>(p: Provenanced<T> | undefined): T | "unavailable" {
-  return p === undefined ? "unavailable" : p.value;
-}
-
-function renderActor(actor: ActorContext, max: number): string {
-  return stableJson(
-    {
-      agent: provValue(actor.agentName),
-      mode: provValue(actor.mode),
-      profile: provValue(actor.profile),
-      identityCompleteness: actor.identityCompleteness,
-      sessionID: actor.sessionID,
-      parentSessionID: provValue(actor.parentSessionID),
-      rootSessionID: provValue(actor.rootSessionID),
-      delegationDepth: provValue(actor.delegationDepth),
-    },
-    max,
-  );
-}
-
-function renderLineage(lineage: SessionLineage, max: number): string {
-  return stableJson(
-    {
-      origin: lineage.origin ?? "unknown",
-      depth: lineage.depth,
-      rootSessionID: lineage.rootSessionID,
-      cycleDetected: lineage.cycleDetected,
-      truncated: lineage.truncated,
-      missingParents: lineage.missingParents,
-      chain: lineage.nodes.map((n) => ({
-        sessionID: n.sessionID,
-        ...(n.actorName === undefined ? {} : { actor: n.actorName }),
-        ...(n.mode === undefined ? {} : { mode: n.mode }),
-      })),
-    },
-    max,
-  );
-}
-
-function renderIntentBlocks(
-  blocks: IntentBlock[],
-  max: number,
-  limit = blocks.length,
-): string {
-  if (blocks.length === 0) return "<none />";
-  const ordered = [...blocks].sort(
-    (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0),
-  );
-  const seen = new Set<string>();
-  const distinct = ordered
-    .reverse()
-    .filter((block) => {
-      const key = `${block.actor}:${block.text}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit)
-    .reverse();
-  return keepMostRecentBlocks(
-    distinct.map(
-      (block) =>
-        `INTENT actor=${block.actor} session=${block.sessionID} message=${block.messageID}${block.createdAt === undefined ? "" : ` created=${block.createdAt}`}\n${block.text}`,
-    ),
-    max,
-  );
-}
-
-function renderCompleteness(c: EvidenceCompleteness, max: number): string {
-  return stableJson(
-    {
-      overall: c.overall,
-      actor: c.actor,
-      lineage: c.lineage,
-      directUserIntent: c.directUserIntent,
-      delegatedTask: c.delegatedTask,
-      purpose: c.purpose,
-      capability: c.capability,
-      ...(c.reasons.length === 0 ? {} : { reasons: c.reasons }),
-    },
-    max,
-  );
-}
-
-/** Render the capability assessment as a compact JSON block for the reviewer. */
-function renderCapability(
-  cap: import("./types.ts").CapabilityAssessment,
-  max: number,
-): string {
-  return stableJson(
-    {
-      actionClass: cap.actionClass.value,
-      summary: cap.summary,
-      executesCode: cap.executesCode.value,
-      createsAdHocCode: cap.createsAdHocCode.value,
-      invokesPackageLifecycleScripts: cap.invokesPackageLifecycleScripts.value,
-      invokesExistingTestRunner: cap.invokesExistingTestRunner.value,
-      writeEffects: {
-        temporaryWrite: cap.writeEffects.temporaryWrite.value,
-        workspaceWrite: cap.writeEffects.workspaceWrite.value,
-        externalWrite: cap.writeEffects.externalWrite.value,
-        deletion: cap.writeEffects.deletion.value,
-      },
-      network: {
-        observed: cap.network.observed.value,
-        possible: cap.network.possible.value,
-        ...(cap.network.destinations.length === 0
-          ? {}
-          : { destinations: cap.network.destinations }),
-      },
-      process: {
-        childProcesses: cap.process.childProcesses.value,
-        persistence: cap.process.persistence.value,
-        privilegeEscalation: cap.process.privilegeEscalation.value,
-      },
-      remote: {
-        enabled: cap.remote.enabled.value,
-        mutationHint: cap.remote.mutationHint.value,
-      },
-      git: { mutation: cap.git.possible.value },
-      parserCompleteness: cap.parserCompleteness,
-      ...(cap.analysisWarnings.length === 0
-        ? {}
-        : { warnings: cap.analysisWarnings }),
-    },
-    max,
-  );
-}
-
-/** Render the actor-context prompt sections, or a single placeholder when
- *  resolution produced nothing (keeps the prompt compact for unknown actors). */
-function actorEvidenceSections(
-  envelope: ReviewEnvelope,
-  config: ReviewerConfig,
-): string[] {
-  const actor = envelope.actor;
-  const lineage = envelope.lineage;
-  const intent = envelope.intent;
-  const completeness = envelope.evidenceCompleteness;
-  if (actor === undefined || lineage === undefined || intent === undefined) {
-    return ["ACTOR_CONTEXT\n<unavailable />"];
-  }
-  const cap = config.maxPartChars * 2;
-  const sections = [
-    `ACTOR_CONTEXT\n${renderActor(actor, cap)}`,
-    `SESSION_LINEAGE\n${renderLineage(lineage, cap)}`,
-    `DIRECT_USER_INTENT\n${renderIntentBlocks(intent.directUserIntent, config.maxIntentChars, config.intentMessages)}`,
-    `DELEGATED_TASK\n${renderIntentBlocks(intent.delegatedTask, cap)}`,
-    `LOCAL_SESSION_CONTEXT\n${lineage.origin === "human-root" ? "<see DIRECT_USER_INTENT />" : renderIntentBlocks(intent.localSessionIntent, cap, config.intentMessages)}`,
-  ];
-  if (envelope.capability !== undefined) {
-    sections.push(
-      `CAPABILITY_ASSESSMENT\n${renderCapability(envelope.capability, cap)}`,
-    );
-  }
-  if (completeness !== undefined) {
-    sections.push(
-      `EVIDENCE_COMPLETENESS\n${renderCompleteness(completeness, cap)}`,
-    );
-  }
-  return sections;
 }
 
 export function normalizeMessages(value: unknown): MessageWithParts[] {

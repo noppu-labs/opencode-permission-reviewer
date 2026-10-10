@@ -1,3 +1,4 @@
+import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
 import { probeCapabilities } from "../src/opencode/capability-detection.ts";
@@ -6,12 +7,11 @@ import type {
   OpenCodeClientLike,
   RuntimeContext,
 } from "../src/opencode/types.ts";
+import type { SystemOneScores } from "../src/system-one/system-one-types.ts";
 import type {
   PermissionRequest,
-  ReviewAuditRecord,
   ReviewDecision,
   ReviewerConfig,
-  SystemOneScores,
 } from "../src/types.ts";
 import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 

@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { createAuditWriter, readAuditSummary } from "../src/audit.ts";
 import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
+import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import {
   loadResolvedConfig,
@@ -26,22 +27,19 @@ import { resolveActorContext } from "../src/context/actor-resolver.ts";
 import { buildEvidence, buildTranscript } from "../src/context.ts";
 import { enforceDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { includeEvidenceFile } from "../src/evidence-file-reader.ts";
+import { enrichGitEvidence } from "../src/git-evidence.ts";
 import {
   collectConversionKeys,
   conversionNeutralizationArgs,
-  enrichGitEvidence,
-} from "../src/git-evidence.ts";
+} from "../src/git-filter-neutralization.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
 } from "../src/opencode/types.ts";
 import { evaluatePolicy } from "../src/policy/policy-engine.ts";
-import { enrichSshEvidence, includeEvidenceFile } from "../src/ssh-evidence.ts";
-import type {
-  CapabilityAssessment,
-  MessageWithParts,
-  PermissionRequest,
-} from "../src/types.ts";
+import { enrichSshEvidence } from "../src/ssh-evidence.ts";
+import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 

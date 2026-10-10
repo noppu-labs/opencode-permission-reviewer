@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
+import type { ActorContext } from "../actor-context-types.ts";
+import type { CapabilityAssessment } from "../capability/capability-types.ts";
 import type {
-  ActorContext,
-  CapabilityAssessment,
   PolicyCondition,
   PolicyRule,
   PolicyTrace,

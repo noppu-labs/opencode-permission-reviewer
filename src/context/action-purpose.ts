@@ -3,9 +3,8 @@ import type {
   EvidenceConfidence,
   IntentBlock,
   IntentContext,
-  MessageWithParts,
-  PermissionRequest,
-} from "../types.ts";
+} from "../actor-context-types.ts";
+import type { MessageWithParts, PermissionRequest } from "../types.ts";
 
 const PURPOSE_METADATA_KEYS = [
   "purpose",

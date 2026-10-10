@@ -1,14 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import type { ActorContext } from "../src/actor-context-types.ts";
+import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import {
   evaluatePolicy,
   PROFILE_TEMPLATES,
 } from "../src/policy/policy-engine.ts";
-import type {
-  ActorContext,
-  CapabilityAssessment,
-  PolicyRule,
-} from "../src/types.ts";
+import type { PolicyRule } from "../src/types.ts";
 
 function cap(
   overrides: Partial<CapabilityAssessment> = {},

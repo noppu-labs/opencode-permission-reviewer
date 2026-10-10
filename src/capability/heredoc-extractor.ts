@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { invariant } from "../invariant.ts";
-import type { HeredocRecord } from "../types.ts";
+import type { HeredocRecord } from "./capability-types.ts";
 
 /*
  * Heredoc extraction.

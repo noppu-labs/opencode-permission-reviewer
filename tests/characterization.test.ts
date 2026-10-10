@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
+import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
-import type { ReviewAuditRecord } from "../src/types.ts";
 import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 

@@ -10,8 +10,9 @@ import {
 import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
+import type { ReviewAuditRecord } from "./audit-record.ts";
 import { redactSecrets } from "./redact.ts";
-import type { ReviewAuditRecord, ReviewerConfig } from "./types.ts";
+import type { ReviewerConfig } from "./types.ts";
 
 export const DEFAULT_AUDIT_PATH =
   "~/.local/share/opencode/permission-reviewer-audit.jsonl";

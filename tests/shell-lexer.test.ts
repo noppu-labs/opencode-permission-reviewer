@@ -1,8 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import {
   analyzeEffectiveCommands,
-  commandSegments,
   effectiveCommands,
+} from "../src/shell-effective-commands.ts";
+import {
+  commandSegments,
   lexSegments,
   type ShellSegment,
   type ShellToken,
