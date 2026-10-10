@@ -42,7 +42,9 @@ export function createReplyTransport(deps: ReplyTransportDeps): ReplyTransport {
     `permission reply transport ready: path=raw-authenticated capabilities=${JSON.stringify(deps.capabilities)}`,
   );
   return {
-    async reply(input: PermissionReplyInput) {
+    async reply(
+      input: PermissionReplyInput,
+    ): Promise<{ data?: unknown; error?: unknown }> {
       return raw.post({
         url: "/permission/{requestID}/reply",
         path: { requestID: input.requestID },

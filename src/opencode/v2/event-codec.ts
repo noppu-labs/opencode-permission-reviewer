@@ -3,6 +3,7 @@ import {
   AskDecisionRegistry,
   type AskDecisionSource,
 } from "../../context/ask-decisions.ts";
+import type { AskDecision } from "../../types.ts";
 
 type Created = Extract<OpenCodeEvent, { type: "form.created" }>["data"]["form"];
 
@@ -75,7 +76,7 @@ export class V2AskDecisions implements AskDecisionSource {
     });
   }
 
-  recentFor(sessionIDs: string[], limit?: number) {
+  recentFor(sessionIDs: string[], limit?: number): AskDecision[] {
     return this.registry.recentFor(sessionIDs, limit);
   }
 }

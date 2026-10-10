@@ -12,7 +12,8 @@ const symbol = Symbol.for(KEY);
 const globals = globalThis as typeof globalThis & {
   [symbol]: Map<string, Activate> | undefined;
 };
-const activations = globals[symbol] ?? new Map<string, Activate>();
+const activations: Map<string, Activate> =
+  globals[symbol] ?? new Map<string, Activate>();
 globals[symbol] = activations;
 const directories = new Set<string>();
 process.once("exit", () => {

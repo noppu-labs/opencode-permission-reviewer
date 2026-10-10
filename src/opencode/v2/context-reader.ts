@@ -1,4 +1,4 @@
-import type { OpenCodeClient } from "@opencode/client";
+import type { OpenCodeClient, SessionInfo } from "@opencode/client";
 import { selectIntentMessages } from "../../context.ts";
 import type { ContextReader } from "../../core/ports.ts";
 import type { MessageWithParts } from "../../types.ts";
@@ -14,13 +14,17 @@ export function createV2ContextReader(
   signal: AbortSignal,
 ): ContextReader {
   return {
-    async session(sessionID, directory) {
+    async session(sessionID: string, directory: string): Promise<SessionInfo> {
       const session = await ctx.session.get({ sessionID }, { signal });
       if (session.location.directory !== directory)
         throw new Error("Session location mismatch");
       return session;
     },
-    async messages(sessionID, directory, limit) {
+    async messages(
+      sessionID: string,
+      directory: string,
+      limit: number,
+    ): Promise<MessageWithParts[]> {
       const session = await ctx.session.get({ sessionID }, { signal });
       if (session.location.directory !== directory)
         throw new Error("Session location mismatch");
@@ -87,7 +91,11 @@ export function createV2ContextReader(
       }
       return result;
     },
-    async intentMessages(sessionID, directory, limit) {
+    async intentMessages(
+      sessionID: string,
+      directory: string,
+      limit: number,
+    ): Promise<MessageWithParts[]> {
       const session = await ctx.session.get({ sessionID }, { signal });
       if (session.location.directory !== directory)
         throw new Error("Session location mismatch");

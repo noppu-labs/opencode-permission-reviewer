@@ -70,7 +70,7 @@ export async function setupWithServices(
   >();
   const tools = new Map<string, { input: unknown }>();
   const notifications = new Set<Promise<unknown>>();
-  const notify = (operation: () => Promise<unknown>) => {
+  const notify = (operation: () => Promise<unknown>): void => {
     if (notifications.size >= 256) {
       log("Review notification capacity exhausted; notification omitted");
       return;
@@ -88,7 +88,7 @@ export async function setupWithServices(
   let eventStreamHealthy = true;
   let connectionState: "not-probed" | "verified" | "failed" = "not-probed";
   const subscription = new AbortController();
-  const log = (message: string, details?: unknown) =>
+  const log = (message: string, details?: unknown): void =>
     console.error(`[opencode-permission-reviewer] ${message}`, details ?? "");
   const audit = createAuditWriter(config, log);
   const effectiveConfigHash = createHash("sha256")
@@ -136,7 +136,7 @@ export async function setupWithServices(
     }),
   });
   registrations.push(rpc);
-  const publish = async (status: ReviewUiStatus) => {
+  const publish = async (status: ReviewUiStatus): Promise<void> => {
     statuses.set(status.requestID, status);
     if (statuses.size > 256) {
       const removable = [...statuses.keys()].find((id) => !requests.has(id));
@@ -155,7 +155,7 @@ export async function setupWithServices(
       if (config.debug) log("UI event publication failed", String(error));
     });
   };
-  const key = (sessionID: string, messageID: string, id: string) =>
+  const key = (sessionID: string, messageID: string, id: string): string =>
     `${sessionID}:${messageID}:${id}`;
   registrations.push(
     await ctx.tool.hook("execute.before", (event) => {
@@ -258,7 +258,7 @@ export async function setupWithServices(
         let envelope: ReviewEnvelope | undefined;
         let result: ReviewExecutionResult;
         let actionSnapshot: string | undefined;
-        const snapshotAction = () =>
+        const snapshotAction = (): string =>
           JSON.stringify({
             sessionID: input.sessionID,
             action: input.action,
@@ -324,7 +324,7 @@ export async function setupWithServices(
           result = await attempt.wait(
             evaluateReview(request, config, {
               active: () => !disposed && attempt.active(generation),
-              auxiliarySession: (id) => backend.owns(id),
+              auxiliarySession: (id: string) => backend.owns(id),
               collect: async () => {
                 envelope = await assembleEvidence(
                   request,
@@ -343,7 +343,8 @@ export async function setupWithServices(
                   permission.actionEvidenceComplete;
                 return envelope;
               },
-              review: (evidence) => backend.review(evidence, attempt, client),
+              review: (evidence: ReviewEnvelope) =>
+                backend.review(evidence, attempt, client),
               observe: () => {},
             }),
           );

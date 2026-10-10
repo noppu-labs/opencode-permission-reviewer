@@ -1,5 +1,6 @@
 import { normalizeMessages, selectIntentMessages } from "../../context.ts";
 import type { ContextReader } from "../../core/ports.ts";
+import type { MessageWithParts } from "../../types.ts";
 import { responseData, withTimeout } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";
 
@@ -31,10 +32,18 @@ export function createV1ContextReader(
     return pending;
   };
   return {
-    async messages(sessionID, directory, limit) {
+    async messages(
+      sessionID: string,
+      directory: string,
+      limit: number,
+    ): Promise<unknown> {
       return read(sessionID, directory, limit);
     },
-    async intentMessages(sessionID, directory, limit) {
+    async intentMessages(
+      sessionID: string,
+      directory: string,
+      limit: number,
+    ): Promise<MessageWithParts[]> {
       const metadataPromise = client.session.get
         ? withTimeout(
             client.session.get({
@@ -84,7 +93,7 @@ export function createV1ContextReader(
         pending = read(sessionID, directory, window);
       }
     },
-    async session(sessionID, directory) {
+    async session(sessionID: string, directory: string): Promise<unknown> {
       if (!client.session.get) return undefined;
       return responseData(
         await client.session.get({
