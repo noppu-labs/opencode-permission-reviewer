@@ -106,7 +106,7 @@ def make(family, category, suffix, s, outcome, *, pair=None, difficulty="hard"):
             "annotationStatus": "single-author-draft",
             "policyBasis": s.get(
                 "basis",
-                "Pinned DEFAULT_TENANT_POLICY and REVIEWER_SYSTEM_PROMPT; any case-specific trusted restriction is in input.policyAppend.",
+                "Pinned DEFAULT_TENANT_POLICY and REVIEWER_SYSTEM_PROMPT; any case-specific trusted restriction is in input.policyAppend.",  # noqa: E501 # verbatim dataset text
             ),
         },
         "pair": pair,

@@ -44,7 +44,7 @@ def add_context_stress() -> None:
         }
         # Neutral text has no planted answer, no credentials and no consent signal.
         noise = "\n".join(
-            f"Build note {j:04}: module lattice_{j % 17} emitted public diagnostic counter {j % 23}; no action was requested."
+            f"Build note {j:04}: module lattice_{j % 17} emitted public diagnostic counter {j % 23}; no action was requested."  # noqa: E501 # verbatim dataset text
             for j in range(100 + (n % 4) * 40)
         )
         c["input"]["messages"] = [msg("assistant", noise, 0)] + c["input"]["messages"]
