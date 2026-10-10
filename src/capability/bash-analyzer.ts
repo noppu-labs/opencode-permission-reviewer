@@ -1,10 +1,6 @@
 import { invariant } from "../invariant.ts";
 import { shellBasename } from "../shell-lexer.ts";
-import type {
-  CapabilityActionClass,
-  CapabilityAssessment,
-  ParsedCommand,
-} from "../types.ts";
+import type { CapabilityActionClass } from "../types.ts";
 import {
   CREDENTIAL_READERS,
   DELETION_TOOLS,
@@ -44,6 +40,10 @@ import {
   readOnlyToolMutation,
   redirectionWritesPath,
 } from "./bash-mutation.ts";
+import type {
+  CapabilityAssessment,
+  ParsedCommand,
+} from "./capability-types.ts";
 import { isSensitivePathToken } from "./sensitive-paths.ts";
 
 /*

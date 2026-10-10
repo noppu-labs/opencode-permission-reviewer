@@ -95,8 +95,11 @@ const module: { id: string; server: Plugin; setup: typeof setup } = {
 };
 
 export default module;
+export type * from "./actor-context-types.ts";
 // biome-ignore lint/performance/noBarrelFile: package entry for "." and "./server" (dist/index.js); the re-exports are the public API
 export { createAuditWriter, DEFAULT_AUDIT_PATH } from "./audit.ts";
+export type * from "./audit-record.ts";
+export type * from "./capability/capability-types.ts";
 export { loadResolvedConfig } from "./config/loader.ts";
 export { resolveConfig } from "./config.ts";
 export {
@@ -115,6 +118,7 @@ export { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
 export { extractPermissionRequest } from "./opencode/event-normalizer.ts";
 export { redactSecrets } from "./redact.ts";
 export { enrichSshEvidence } from "./ssh-evidence.ts";
+export type * from "./system-one/system-one-types.ts";
 export type * from "./types.ts";
 export {
   createUiStatus,

@@ -9,35 +9,36 @@ import { assert, sha256 } from "./util.mjs";
 const PINNED_BLOBS = {
   "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/context.ts": "4fc171f3bd2a62a77ee84d4e82a1401390d39a20",
+  "src/context.ts": "f25a968f88c686d8d6f85fc4b3109a936569e457",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/config.ts": "0971f2406a3c05cfe6a023a553abb68e15819e7a",
   "src/decision.ts": "9deb30e0b8d300b5caebb6f2856e86e898064121",
-  "src/policy/policy-engine.ts": "b79f910288d2219109f86a42cf7226867610b01a",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/policy/policy-engine.ts": "ba98b0f450b0048781c3e3bfa7ac7715f16526ce",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "3836107673e39eac9c3db9eafcbe1db7bc925ba3",
+  "src/emergency-brake.ts": "0554a444001ead5e3acfc3e7dadc5b10ba36b63a",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "547afd8495ae502d229af5f23722ee686e921848",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/capability/bash-analyzer.ts": "6f702fb0547c49933fbfa61636c91267f59d6968",
+    "1d43fd26ef16f5c5e3d46f17eed1e7420ae6c323",
+  "src/capability/bash-analyzer.ts": "a2c0c27d1ff6527a0dd446a299302e28adca7ec1",
   "src/capability/bash-command-tables.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "74472f20c44bcb39f6fb9ae0711a46c67aa15d50",
-  "src/capability/bash-facts.ts": "52386899274c6a8a55c62a31384a929b77962ca3",
-  "src/capability/bash-mutation.ts": "fcb7dc47047cdc5f928cb7308453318488b24242",
+  "src/capability/bash-facts.ts": "2a7723e74e65354af9c3bf6d35e7b85c88372d56",
+  "src/capability/bash-mutation.ts": "f9863305fd9883a0c7f9d9962fef53bdacd25f27",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-effective-commands.ts": "00266c955648d2259d553a21430398fbcc331061",
   "src/shell-lexer.ts": "863d47fb8ff4cc4b3f941e3678bcb757fa172599",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-lexer-tables.ts": "855a6c8ab93bcd660e7e42610f9a29ffe1c77485",
   "src/capability/heredoc-extractor.ts":
-    "425372f2f01f30477bc5e2a31d420dcfd4105441",
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "46cd5995bcfce8b203ae6471968454501209fe68",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/system-one/review.ts": "b355f8e899ab2904b80e9b8e4f155075a45d22a6",
+  "src/system-one/review.ts": "0d92a58e6befb0bffa66849a8b326c5e9474e437",
 };
 const gitBlob = (bytes) =>
   createHash("sha1") // NOSONAR(S4790) SHA-1 is git's blob-object hash, compared against git blob IDs, not used for security

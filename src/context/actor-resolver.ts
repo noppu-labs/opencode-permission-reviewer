@@ -1,21 +1,23 @@
+import type {
+  ActorContext,
+  EvidenceCompleteness,
+  EvidenceConfidence,
+  IntentBlock,
+  IntentContext,
+  Provenanced,
+  SessionLineage,
+  SessionNode,
+} from "../actor-context-types.ts";
 import type { ContextReader } from "../core/ports.ts";
 import { invariant } from "../invariant.ts";
 import { withTimeout } from "../opencode/transport.ts";
 import type { OpenCodeClientLike } from "../opencode/types.ts";
 import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
 import type {
-  ActorContext,
   ActorProfile,
-  EvidenceCompleteness,
-  EvidenceConfidence,
-  IntentBlock,
-  IntentContext,
   MessageWithParts,
   PermissionRequest,
-  Provenanced,
   ReviewerConfig,
-  SessionLineage,
-  SessionNode,
 } from "../types.ts";
 
 /** Bound for the resolver's metadata SDK calls: a hung session.get/messages

@@ -5,8 +5,8 @@ import {
   type SessionInfo,
   type SessionMessageInfo,
 } from "@opencode/client";
+import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { splitModel } from "../src/config.ts";
-import type { ReviewAuditRecord } from "../src/types.ts";
 
 const baseUrl: string = process.argv[2] ?? "http://127.0.0.1:4096";
 const directory: string =

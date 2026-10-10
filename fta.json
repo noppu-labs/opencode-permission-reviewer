@@ -58,6 +58,7 @@
     "providers.test.mjs",
     "runner.test.mjs",
     "explain.ts",
+    "index.ts",
     "init.ts",
     "reviewer-backend.ts",
     "connection.ts",

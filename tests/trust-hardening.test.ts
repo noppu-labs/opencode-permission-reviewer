@@ -15,6 +15,7 @@ import { join } from "node:path";
 import { promisify } from "node:util";
 import { createAuditWriter, readAuditSummary } from "../src/audit.ts";
 import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
+import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import {
   loadResolvedConfig,
@@ -38,11 +39,7 @@ import type {
 } from "../src/opencode/types.ts";
 import { evaluatePolicy } from "../src/policy/policy-engine.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
-import type {
-  CapabilityAssessment,
-  MessageWithParts,
-  PermissionRequest,
-} from "../src/types.ts";
+import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 

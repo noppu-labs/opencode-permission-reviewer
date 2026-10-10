@@ -1,4 +1,4 @@
-import type { ReviewAuditRecord } from "../types.ts";
+import type { ReviewAuditRecord } from "../audit-record.ts";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
 import type { OpenCodeCapabilities } from "./adapter.ts";
 

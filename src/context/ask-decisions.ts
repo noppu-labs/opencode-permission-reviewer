@@ -1,5 +1,5 @@
+import type { AskDecision } from "../actor-context-types.ts";
 import { redactSecrets } from "../redact.ts";
-import type { AskDecision } from "../types.ts";
 
 /**
  * Captures user answers to agent ask dialogs (the `question` tool) from the

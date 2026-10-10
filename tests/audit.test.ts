@@ -25,8 +25,8 @@ import {
   DEFAULT_AUDIT_PATH,
   readAuditSummary,
 } from "../src/audit.ts";
+import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
-import type { ReviewAuditRecord } from "../src/types.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { defined, systemOneScores } from "./helpers.ts";
 

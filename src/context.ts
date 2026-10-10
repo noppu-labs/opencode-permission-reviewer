@@ -1,18 +1,20 @@
-import { redactSecrets } from "./redact.ts";
 import type {
   ActionPurpose,
   ActorContext,
   AskDecision,
   EvidenceCompleteness,
   IntentBlock,
+  Provenanced,
+  SessionLineage,
+} from "./actor-context-types.ts";
+import { redactSecrets } from "./redact.ts";
+import type {
   MessageWithParts,
   PermissionRequest,
   PermissionToolSource,
   PolicyTrace,
-  Provenanced,
   ReviewEnvelope,
   ReviewerConfig,
-  SessionLineage,
 } from "./types.ts";
 
 function truncate(value: string, max: number): string {
@@ -550,7 +552,7 @@ function renderCompleteness(c: EvidenceCompleteness, max: number): string {
 
 /** Render the capability assessment as a compact JSON block for the reviewer. */
 function renderCapability(
-  cap: import("./types.ts").CapabilityAssessment,
+  cap: import("./capability/capability-types.ts").CapabilityAssessment,
   max: number,
 ): string {
   return stableJson(

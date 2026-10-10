@@ -1,3 +1,4 @@
+import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { invariant } from "./invariant.ts";
 import { analyzeEffectiveCommands } from "./shell-effective-commands.ts";
@@ -10,7 +11,7 @@ import {
   shellBasename,
   tokenCharIsQuoted,
 } from "./shell-lexer.ts";
-import type { PermissionRequest, Redirection } from "./types.ts";
+import type { PermissionRequest } from "./types.ts";
 
 /** One segment with its resolved effective commands, computed once per
  *  request and shared by every detector. */

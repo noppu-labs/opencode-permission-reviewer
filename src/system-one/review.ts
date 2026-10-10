@@ -6,14 +6,16 @@ import type {
   SystemOneResult,
 } from "@typesafe-ai/sdk";
 import { enforceDecision } from "../decision.ts";
+import type {
+  ReviewDecision,
+  ReviewExecutionResult,
+  ReviewerConfig,
+} from "../types.ts";
 import {
   SYSTEM_ONE_BASES as BASES,
-  type ReviewDecision,
-  type ReviewExecutionResult,
-  type ReviewerConfig,
   type SystemOneScores,
   type SystemOneSignals,
-} from "../types.ts";
+} from "./system-one-types.ts";
 
 /** @public Read by the benchmark harness, which loads this file by path
  *  (benchmarks/permission-reviewer/lib/plugin.mjs), so knip sees no import. */

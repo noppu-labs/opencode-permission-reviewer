@@ -5,7 +5,7 @@ import {
   newAnalysisBudget,
   type ShellToken,
 } from "../shell-lexer.ts";
-import type { ParsedCommand, Redirection } from "../types.ts";
+import type { ParsedCommand, Redirection } from "./capability-types.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
 
 /*

@@ -4,11 +4,11 @@ import { homedir } from "node:os";
 import { normalize, resolve, sep } from "node:path";
 import { invariant } from "../invariant.ts";
 import type { ShellToken } from "../shell-lexer.ts";
-import type { Redirection } from "../types.ts";
 import {
   GIT_MUTATION_SUBCOMMANDS,
   MUTATION_VALUE_OPTIONS,
 } from "./bash-command-tables.ts";
+import type { Redirection } from "./capability-types.ts";
 
 /** A remote operand for rsync-style tools: a URL scheme, or an `host:path`
  *  / `user@host:path` shape whose part before the colon is a bare host (no

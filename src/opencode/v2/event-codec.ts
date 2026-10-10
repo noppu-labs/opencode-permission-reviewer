@@ -1,9 +1,9 @@
 import type { OpenCodeEvent } from "@opencode/client";
+import type { AskDecision } from "../../actor-context-types.ts";
 import {
   AskDecisionRegistry,
   type AskDecisionSource,
 } from "../../context/ask-decisions.ts";
-import type { AskDecision } from "../../types.ts";
 
 type Created = Extract<OpenCodeEvent, { type: "form.created" }>["data"]["form"];
 

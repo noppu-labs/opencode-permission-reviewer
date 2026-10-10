@@ -1,4 +1,8 @@
 import { analyzeCapability } from "../capability/bash-analyzer.ts";
+import type {
+  CapabilityAssessment,
+  ParsedCommand,
+} from "../capability/capability-types.ts";
 import { parseCommand } from "../capability/command-parser.ts";
 import {
   buildIntentHistory,
@@ -18,8 +22,6 @@ import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
 import { REVIEWER_PROMPT_VERSION } from "../policy.ts";
 import type { SshAuditSummary } from "../ssh-evidence.ts";
 import type {
-  CapabilityAssessment,
-  ParsedCommand,
   PermissionRequest,
   ReviewEnvelope,
   ReviewerConfig,

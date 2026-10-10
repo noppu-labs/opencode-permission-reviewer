@@ -1,5 +1,6 @@
 import { createHash, randomUUID } from "node:crypto";
 import packageInfo from "../../package.json";
+import type { DecisionSource, ReviewAuditRecord } from "../audit-record.ts";
 import { isSystemOneReviewerModel, reviewBudgetMs } from "../config.ts";
 import type { AskDecisionSource } from "../context/ask-decisions.ts";
 import {
@@ -20,9 +21,7 @@ import {
 import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
 import { REVIEWER_PROMPT_VERSION } from "../policy.ts";
 import type {
-  DecisionSource,
   PermissionRequest,
-  ReviewAuditRecord,
   ReviewDecision,
   ReviewEnvelope,
   ReviewExecutionResult,
