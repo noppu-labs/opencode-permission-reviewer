@@ -22,7 +22,7 @@ const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/;
 
 const SGDISK_ZAP_OPTIONS = new Set(["--zap-all", "-Z", "--zap", "-z"]);
 
-/** Per-executable checks, in the order the brake applies them. */
+/** One check per executable; base names never overlap. */
 const DEVICE_TOOL_CHECKS = new Map<string, DeviceCheck>([
   // tee copies its stdin into every file operand: a real block device
   // operand is a raw overwrite, as unmistakable as shred.
