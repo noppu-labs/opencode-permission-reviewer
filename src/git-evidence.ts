@@ -1,7 +1,7 @@
 import { sourceCommand } from "./evidence/source-command.ts";
 import { plannedActions } from "./git-command-plan.ts";
 import { verifiedInspection } from "./git-inspection-gate.ts";
-import { sanitizeRemoteUrl } from "./git-remote-targets.ts";
+import { sanitizeRemoteUrl } from "./git-remote-identity.ts";
 import { stateRecord } from "./git-state-record.ts";
 import type { PermissionRequest } from "./types.ts";
 

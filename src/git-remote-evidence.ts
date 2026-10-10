@@ -1,10 +1,8 @@
 // Git remote evidence: lists the configured remotes and resolves the plan's remote operands and default remotes against them.
 
 import type { PlannedGitActions } from "./git-command-plan.ts";
-import {
-  type DefaultRemoteRecord,
-  resolveRemoteTargets,
-} from "./git-remote-targets.ts";
+import type { DefaultRemoteRecord } from "./git-default-remote.ts";
+import { resolveRemoteTargets } from "./git-remote-targets.ts";
 import { runGit } from "./git-run.ts";
 
 /** Remote operands only resolve inside the containment envelope, after the
