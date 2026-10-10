@@ -8,7 +8,6 @@
     "node_modules"
   ],
   "exclude_filenames": [
-    "bash-analyzer.ts",
     "bash-mutation.ts",
     "heredoc-extractor.ts",
     "evidence-file-reader.ts",

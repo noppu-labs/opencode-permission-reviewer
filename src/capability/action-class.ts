@@ -1,4 +1,4 @@
-// Action class resolution for a command no classifier claimed: the most specific observed surface wins, first match in a fixed order.
+// Action class claims made by the classifiers, and resolution for a command none claimed: the most specific observed surface wins, first match in a fixed order.
 
 import type { CapabilityActionClass } from "../types.ts";
 import type { CapabilityFacts, ClassConfidence } from "./capability-facts.ts";
@@ -38,4 +38,21 @@ function writeOrReadClass(facts: CapabilityFacts): ResolvedClass {
   if (facts.sawReadOnlyExecutable || (facts.gitObserved && !facts.gitMutation))
     return ["read-only", "medium"];
   return ["unknown", "low"];
+}
+
+/** Set the action class with high confidence, replacing any earlier one. */
+export function claimClass(
+  facts: CapabilityFacts,
+  actionClass: CapabilityActionClass,
+): void {
+  facts.dominantClass = actionClass;
+  facts.classConfidence = "high";
+}
+
+/** Set the action class with high confidence unless one is already set. */
+export function claimUnsetClass(
+  facts: CapabilityFacts,
+  actionClass: CapabilityActionClass,
+): void {
+  if (facts.dominantClass === "unknown") claimClass(facts, actionClass);
 }

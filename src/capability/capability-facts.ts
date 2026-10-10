@@ -1,4 +1,4 @@
-// The fact record analyzeCapability threads through its passes, and the write and class updates they share.
+// The fact record analyzeCapability threads through its passes, and the write-effect update they share.
 
 import type { CapabilityActionClass } from "../types.ts";
 import { classifyPath } from "./bash-mutation.ts";
@@ -80,21 +80,4 @@ export function recordWrite(
   if (cls.temporary) facts.temporaryWrite = true;
   if (cls.workspace) facts.workspaceWrite = true;
   if (cls.external) facts.externalWrite = true;
-}
-
-/** Set the action class with high confidence, replacing any earlier one. */
-export function claimClass(
-  facts: CapabilityFacts,
-  actionClass: CapabilityActionClass,
-): void {
-  facts.dominantClass = actionClass;
-  facts.classConfidence = "high";
-}
-
-/** Set the action class with high confidence unless one is already set. */
-export function claimUnsetClass(
-  facts: CapabilityFacts,
-  actionClass: CapabilityActionClass,
-): void {
-  if (facts.dominantClass === "unknown") claimClass(facts, actionClass);
 }

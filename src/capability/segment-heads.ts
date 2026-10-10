@@ -3,13 +3,14 @@
 import { shellBasename } from "../shell-lexer.ts";
 import type { ShellSegment, ShellToken } from "../shell-token.ts";
 import { commandStart } from "../shell-wrapper-options.ts";
+import { claimUnsetClass } from "./action-class.ts";
 import {
   GIT_MUTATION_SUBCOMMANDS,
   PERSISTENCE_WRAPPERS,
   PRIVILEGE_WRAPPERS,
   SSH_TOOLS,
 } from "./bash-command-tables.ts";
-import { type CapabilityFacts, claimUnsetClass } from "./capability-facts.ts";
+import type { CapabilityFacts } from "./capability-facts.ts";
 
 /** Wrappers the lexer peels (sudo, nohup, ssh, …) must be detected on the
  *  original segment heads, because `effective` starts at the real executable
