@@ -27,6 +27,7 @@ import {
 } from "../src/audit.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import type { ReviewAuditRecord } from "../src/types.ts";
+import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { systemOneScores } from "./helpers.ts";
 
 const execFileAsync = (cmd: string, args: string[]) =>
@@ -469,10 +470,7 @@ describe("audit summary hardening", () => {
 
   test("coerces a non-string actor name instead of throwing in the sort", () => {
     const file = join(directory, "audit.jsonl");
-    const token = [
-      "ghp_",
-      "synthetic0123456789abcdefghijklmnopqrstuvwxyz",
-    ].join("");
+    const token = GITHUB_PAT_ALPHANUMERIC;
     const lines = [
       JSON.stringify({
         timestamp: "2026-01-01T00:00:00.000Z",
@@ -625,10 +623,7 @@ describe("audit writer nested redaction", () => {
   test("policyTrace rule reasons and ask decisions are redacted, structure preserved", async () => {
     const file = join(directory, "audit.jsonl");
     const writer = createAuditWriter({ ...DEFAULT_CONFIG, auditPath: file })!;
-    const token = [
-      "ghp_",
-      "synthetic0123456789abcdefghijklmnopqrstuvwxyz",
-    ].join("");
+    const token = GITHUB_PAT_ALPHANUMERIC;
     await writer(
       record({
         policyTrace: {

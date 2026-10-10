@@ -20,6 +20,7 @@ import {
   ScriptAnalysisRegistry,
   VERIFIED_SCRIPT_LIMIT,
 } from "../src/verified-ssh-script.ts";
+import { SK_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
 import { MockClient, request } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -206,7 +207,7 @@ describe("verified SSH script protocol", () => {
         )
       ).status,
     ).toBe("unavailable");
-    const secret = `api_key = "${"sk-" + "syntheticcredential123456789"}"\n`;
+    const secret = `api_key = "${SK_CREDENTIAL}"\n`;
     await writeFile(path, secret);
     expect(
       (

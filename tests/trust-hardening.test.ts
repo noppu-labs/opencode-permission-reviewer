@@ -38,6 +38,7 @@ import type {
 import { evaluatePolicy } from "../src/policy/policy-engine.ts";
 import { enrichSshEvidence, includeEvidenceFile } from "../src/ssh-evidence.ts";
 import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
+import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { decision, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -762,8 +763,7 @@ describe("trust hardening — audit output boundary", () => {
     const dir = tempDir("reviewer-audit-");
     const file = join(dir, "audit.jsonl");
     try {
-      // Built by concatenation so the literal never matches a scanner pattern.
-      const secret = "ghp_" + "synthetic0123456789abcdefghijklmnopqrstuvwxyz";
+      const secret = GITHUB_PAT_ALPHANUMERIC;
       const config = resolveConfig({ audit: true, auditPath: file });
       const write = createAuditWriter(config);
       expect(write).toBeDefined();

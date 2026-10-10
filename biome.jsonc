@@ -197,27 +197,6 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): security/noSecrets, 9 files.
-    {
-      "includes": [
-        "benchmarks/permission-reviewer/lib/plugin.mjs",
-        "tests/ask-decisions.test.ts",
-        "tests/audit.test.ts",
-        "tests/redact.test.ts",
-        "tests/runtime.test.ts",
-        "tests/ssh-evidence.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/v2-connection.test.ts",
-        "tests/verified-ssh-script.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "security": {
-            "noSecrets": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/4-ts-rules): nursery/useExplicitType, 74 files.
     {
       "includes": [

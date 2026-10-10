@@ -7,11 +7,8 @@ import {
 import { buildEvidence, renderAskDecisions } from "../src/context.ts";
 import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
 import type { AskDecision, ReviewEnvelope } from "../src/types.ts";
+import { SK_CREDENTIAL_LONG } from "./fixtures/synthetic-secrets.ts";
 import { runtime as buildRuntime, request } from "./helpers.ts";
-
-// Synthetic credential fragments are assembled by concatenation so secret
-// scanners never see a continuous literal.
-const SYNTHETIC_TOKEN = "sk-" + "syntheticcredential1234567890abcdef";
 
 function asked(
   id: string,
@@ -148,12 +145,12 @@ describe("AskDecisionRegistry", () => {
   test("question and answer text is redacted at capture time", () => {
     const registry = new AskDecisionRegistry();
     registry.observe(
-      asked("que_1", "ses_main", [`Run with token ${SYNTHETIC_TOKEN}?`]),
+      asked("que_1", "ses_main", [`Run with token ${SK_CREDENTIAL_LONG}?`]),
     );
-    registry.observe(replied("que_1", [[`Yes, use ${SYNTHETIC_TOKEN}`]]));
+    registry.observe(replied("que_1", [[`Yes, use ${SK_CREDENTIAL_LONG}`]]));
     const [first] = registry.recentFor(["ses_main"]);
-    expect(first!.question).not.toContain(SYNTHETIC_TOKEN);
-    expect(first!.answer).not.toContain(SYNTHETIC_TOKEN);
+    expect(first!.question).not.toContain(SK_CREDENTIAL_LONG);
+    expect(first!.answer).not.toContain(SK_CREDENTIAL_LONG);
   });
 
   test("question and answer text is truncated at capture time", () => {

@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 import { extractPermissionRequest } from "../src/opencode/event-normalizer.ts";
 import type { RuntimeContext } from "../src/opencode/types.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
+import { SK_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
 import { decision, MockClient, request, runtime } from "./helpers.ts";
 
 function replyBody(value: unknown): Record<string, unknown> {
@@ -211,10 +212,7 @@ describe("runtime decisions", () => {
       "/tmp/opencode/approval-reviewer-sensitive-",
     );
     const script = `${directory}/script.py`;
-    // Synthetic credential assembled by concatenation so no continuous
-    // secret-shaped literal appears in source (see AGENTS.md).
-    const synthCred = "sk-" + "syntheticcredential123456789";
-    await writeFile(script, `api_key = "${synthCred}"\n`);
+    await writeFile(script, `api_key = "${SK_CREDENTIAL}"\n`);
     try {
       const client = new MockClient();
       client.nextStructured = decision("deny", {

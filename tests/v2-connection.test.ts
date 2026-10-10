@@ -8,6 +8,7 @@ import {
   hostCompatibleFetch,
   validateHostEndpoint,
 } from "../src/opencode/v2/connection.ts";
+import { HTTP_URL_WITH_USERINFO } from "./fixtures/synthetic-secrets.ts";
 
 const hostUrl = "OPENCODE_PERMISSION_REVIEWER_HOST_URL";
 const password = "OPENCODE_PASSWORD";
@@ -54,9 +55,9 @@ function stubMake(impl: () => OpenCodeClient) {
 }
 
 test("explicit V2 host URLs reject embedded credentials and non-loopback HTTP", () => {
-  expect(() =>
-    validateHostEndpoint("http://user:pass@127.0.0.1:4096/"),
-  ).toThrow("without embedded credentials");
+  expect(() => validateHostEndpoint(HTTP_URL_WITH_USERINFO)).toThrow(
+    "without embedded credentials",
+  );
   expect(() => validateHostEndpoint("http://example.invalid:4096/")).toThrow(
     "outside loopback require HTTPS",
   );
