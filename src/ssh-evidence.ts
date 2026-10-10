@@ -6,13 +6,9 @@ import {
   isMissingFile,
   sha256,
 } from "./evidence-file-reader.ts";
-import {
-  catSource,
-  findSshIndex,
-  parseSsh,
-  shellCommandSegmentsWithDirectory,
-} from "./ssh-command-segments.ts";
+import { catSource, findSshIndex, parseSsh } from "./ssh-command-segments.ts";
 import type { PermissionRequest } from "./types.ts";
+import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
 
 export interface SshAuditSummary {
   destination: string;

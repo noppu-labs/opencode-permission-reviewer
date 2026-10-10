@@ -5,8 +5,8 @@ import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import { invariant } from "./invariant.ts";
 import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
 import { effectiveCommands } from "./shell-effective-commands.ts";
-import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
 import type { PermissionRequest } from "./types.ts";
+import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
 
 const MANAGERS = new Set(["bun", "npm", "pnpm", "yarn"]);
 const MAX_SCRIPT_DEPTH = 4;

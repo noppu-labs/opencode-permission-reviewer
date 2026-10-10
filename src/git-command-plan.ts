@@ -15,7 +15,7 @@ import {
   recordRemoteTargets,
   remoteVerbTargets,
 } from "./git-remote-operands.ts";
-import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
+import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
 
 export interface PlannedGitActions {
   relevant: boolean;

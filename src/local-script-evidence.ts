@@ -6,9 +6,9 @@ import {
   includeEvidenceFile,
 } from "./evidence-file-reader.ts";
 import { invariant } from "./invariant.ts";
-import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
 import { analyzeScriptContent } from "./ssh-evidence.ts";
 import type { PermissionRequest } from "./types.ts";
+import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
 
 export interface LocalScriptEnrichmentResult {
   text: string;
