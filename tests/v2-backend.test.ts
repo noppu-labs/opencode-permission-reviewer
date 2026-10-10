@@ -87,7 +87,7 @@ function activeReport(
 }
 
 function remote(url: string): McpServer {
-  return { type: "remote", url } as McpServer;
+  return { type: "remote", url };
 }
 
 type FixtureOptions = {
