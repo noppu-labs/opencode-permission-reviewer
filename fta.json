@@ -10,7 +10,6 @@
   "exclude_filenames": [
     "local-script-evidence.ts",
     "package-script-evidence.ts",
-    "verified-ssh-script.ts",
     "audit.ts",
     "config.ts",
     "loader.ts",

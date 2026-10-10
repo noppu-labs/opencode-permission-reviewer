@@ -37,10 +37,8 @@ import type {
   PermissionToolSource,
   ReviewerConfig,
 } from "../types.ts";
-import {
-  renderVerifiedSshScriptCommand,
-  VERIFIED_SCRIPT_LIMIT,
-} from "../verified-ssh-script.ts";
+import { renderVerifiedSshScriptCommand } from "../verified-ssh-command.ts";
+import { VERIFIED_SCRIPT_LIMIT } from "../verified-ssh-script.ts";
 import { inspectConfigSources, runDoctor } from "./doctor-command.ts";
 import { runInit } from "./init.ts";
 

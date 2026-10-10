@@ -4,7 +4,7 @@ import {
   parseVerifiedSshScriptCommand,
   renderVerifiedSshScriptCommand,
   type VerifiedScriptCommand,
-} from "../src/verified-ssh-script.ts";
+} from "../src/verified-ssh-command.ts";
 import { request } from "./helpers.ts";
 
 const HASH = createHash("sha256").update("echo safe\n").digest("hex");

@@ -1,21 +1,11 @@
 import { createHash } from "node:crypto";
-import { sourceCommand } from "./evidence/source-command.ts";
-import { includeEvidenceFile } from "./evidence-file-reader.ts";
-import type { FileEvidence } from "./file-evidence.ts";
 import { redactSecrets } from "./redact.ts";
-import type { PermissionRequest, ReviewDecision } from "./types.ts";
+import type { ReviewDecision } from "./types.ts";
+import type { VerifiedScriptCommand } from "./verified-ssh-command.ts";
 
 export const VERIFIED_SCRIPT_LIMIT = 64 * 1024;
 const RECEIPT_LIFETIME_MS = 60 * 60 * 1000;
 const RECEIPT_LIMIT = 64;
-
-export interface VerifiedScriptCommand {
-  path: string;
-  destination: string;
-  port?: number;
-  sha256: string;
-  shell: "bash" | "sh";
-}
 
 export interface VerifiedScriptEvidence {
   sha256: string;
@@ -26,74 +16,6 @@ export interface VerifiedScriptEvidence {
   status: "full" | "reused" | "unavailable";
   text: string;
   cacheKey?: string;
-}
-
-/** This exact shell form binds the locally reviewed bytes to the remote ones.
- * The remote hash check runs before the interpreter, even if the file changes
- * between permission review and execution. */
-export function renderVerifiedSshScriptCommand(
-  input: VerifiedScriptCommand,
-): string {
-  const remote =
-    "set -eu; f=$(mktemp /tmp/reviewer-script.XXXXXXXX); " +
-    "cleanup(){ rm -f -- $f; }; trap cleanup EXIT; cat >$f; " +
-    `sum=$(sha256sum $f); test \${sum%% *} = ${input.sha256}; ${input.shell} $f`;
-  return `cat -- ${input.path} | ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5${input.port === undefined ? "" : ` -p ${input.port}`} ${input.destination} '${remote}'`;
-}
-
-export function parseVerifiedSshScriptCommand(
-  request: PermissionRequest,
-): VerifiedScriptCommand | undefined {
-  if (request.permission !== "bash") return;
-  const command = sourceCommand(request).trim();
-  const parts = verifiedCommandParts(command);
-  if (!parts) return;
-  const digest = /\b[a-f0-9]{64}\b/.exec(parts.remote)?.[0];
-  const shell = /; (bash|sh) \$f$/.exec(parts.remote)?.[1] as
-    | "bash"
-    | "sh"
-    | undefined;
-  if (!digest || !shell) return;
-  const parsed = {
-    path: parts.path,
-    destination: parts.destination,
-    ...(parts.port === undefined ? {} : { port: parts.port }),
-    sha256: digest,
-    shell,
-  };
-  return renderVerifiedSshScriptCommand(parsed) === command
-    ? parsed
-    : undefined;
-}
-
-/** The path, port, destination and remote script of a command in the
- *  canonical shape, with a valid port and a destination that is not an
- *  option. */
-function verifiedCommandParts(command: string):
-  | {
-      path: string;
-      port: number | undefined;
-      destination: string;
-      remote: string;
-    }
-  | undefined {
-  const match =
-    /^cat -- ([A-Za-z0-9_./-]+) \| ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5(?: -p ([0-9]{1,5}))? ([A-Za-z0-9_.@-]+) '(.+)'$/.exec(
-      command,
-    );
-  if (!match) return;
-  // Groups 1, 3 and 4 always match; only the port group is optional.
-  const [, path, portText, destination, remote] = match;
-  if (
-    path === undefined ||
-    destination === undefined ||
-    remote === undefined ||
-    destination.startsWith("-")
-  )
-    return;
-  const port = portText === undefined ? undefined : Number(portText);
-  if (port !== undefined && (port < 1 || port > 65535)) return;
-  return { path, port, destination, remote };
 }
 
 export class ScriptAnalysisRegistry {
@@ -160,78 +82,6 @@ export class ScriptAnalysisRegistry {
       return;
     this.remember(evidence.cacheKey, decision.script_analysis);
   }
-}
-
-export async function collectVerifiedSshScript(
-  command: VerifiedScriptCommand,
-  directory: string,
-  worktree: string,
-  scope: string,
-  configHash: string,
-  registry: ScriptAnalysisRegistry,
-): Promise<VerifiedScriptEvidence> {
-  const base = {
-    sha256: command.sha256,
-    destination: command.destination,
-    ...(command.port === undefined ? {} : { port: command.port }),
-    shell: command.shell,
-  };
-  const file = await includeEvidenceFile(
-    command.path,
-    directory,
-    directory,
-    worktree,
-    VERIFIED_SCRIPT_LIMIT,
-  );
-  const reason = unavailableReason(file, command.sha256);
-  if (reason !== undefined) {
-    return {
-      ...base,
-      status: "unavailable",
-      text: `VERIFIED_SSH_SCRIPT\nstatus: unavailable\nreason: ${reason}\nExpected SHA-256: ${command.sha256}`,
-    };
-  }
-  const cacheKey = registry.key(scope, command, configHash);
-  const analysis = registry.get(cacheKey);
-  const bytes = file.size === undefined ? {} : { bytes: file.size };
-  if (analysis !== undefined) {
-    return {
-      ...base,
-      ...bytes,
-      status: "reused",
-      cacheKey,
-      text: `VERIFIED_SSH_SCRIPT\nstatus: previously inspected\nSHA-256: ${command.sha256}\nDestination: ${command.destination}\nInterpreter: ${command.shell}\nPrior model-generated script analysis (not authorization): ${analysis}`,
-    };
-  }
-  return {
-    ...base,
-    ...bytes,
-    status: "full",
-    cacheKey,
-    text: `VERIFIED_SSH_SCRIPT\nstatus: full content\nSHA-256: ${command.sha256}\nDestination: ${command.destination}\nInterpreter: ${command.shell}\nUntrusted script content follows:\n${file.content}\nEND_VERIFIED_SSH_SCRIPT`,
-  };
-}
-
-/** Why the local file cannot stand for the verified script: not fully
- *  included, a different hash, or content the redactor would change. */
-function unavailableReason(
-  file: FileEvidence,
-  expectedSha256: string,
-): string | undefined {
-  const actual = file.content === undefined ? undefined : file.includedSha256;
-  if (
-    file.status !== "included" ||
-    actual !== expectedSha256 ||
-    file.content === undefined ||
-    redactSecrets(file.content) !== file.content
-  ) {
-    return file.status === "included" && actual !== expectedSha256
-      ? "script hash mismatch"
-      : file.status === "included"
-        ? "sensitive content"
-        : file.status;
-  }
-  return undefined;
 }
 
 export function configFingerprint(config: unknown): string {

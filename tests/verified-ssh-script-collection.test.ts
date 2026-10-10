@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { collectVerifiedSshScript } from "../src/verified-script-evidence.ts";
 import {
-  collectVerifiedSshScript,
   ScriptAnalysisRegistry,
   VERIFIED_SCRIPT_LIMIT,
   type VerifiedScriptEvidence,
