@@ -69,11 +69,11 @@ function activationFailure(directory: string): { data: object[] } {
   };
 }
 
-function activeEntry(
+function activeReport(
   directory: string,
   pluginID: string,
-  representation?: ActivationRepresentation,
-): object {
+  { activationRepresentation: representation }: FixtureOptions,
+): { data: object[] } {
   const paths: Record<ActivationRepresentation, string | undefined> = {
     "directory-slash": `${directory}/`,
     "file-url": pathToFileURL(`${directory}/index.js`).href,
@@ -81,11 +81,9 @@ function activeEntry(
     "id-only": undefined,
   };
   const path = representation ? paths[representation] : `${directory}/index.js`;
-  return {
-    id: pluginID,
-    source: path === undefined ? { type: "local" } : { type: "local", path },
-    state: { status: "active" },
-  };
+  const source =
+    path === undefined ? { type: "local" } : { type: "local", path };
+  return { data: [{ id: pluginID, source, state: { status: "active" } }] };
 }
 
 function remote(url: string): McpServer {
@@ -116,7 +114,6 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
   let toolHook!: (event: { sessionID: string; tool: string }) => void;
   let directory = "";
   const directories: string[] = [];
-  const activated = new Set<string>();
   let sessionID = "";
   const sessionIDs: string[] = [];
   const removed = new Set<string>();
@@ -188,10 +185,9 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
       list: async (input: { location: { directory: string } }) => {
         directory = input.location.directory;
         checks++;
-        if (!activated.has(directory)) {
+        if (!directories.includes(directory)) {
           scope.length = 0;
           hostCleanup = await setUp(directory);
-          activated.add(directory);
           directories.push(directory);
           setups++;
         }
@@ -201,11 +197,7 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
         )
           return activationFailure(directory);
         if (options.activationDelayed && checks < 3) return { data: [] };
-        return {
-          data: [
-            activeEntry(directory, pluginID, options.activationRepresentation),
-          ],
-        };
+        return activeReport(directory, pluginID, options);
       },
     },
     model: {
@@ -586,13 +578,18 @@ test("a later MCP addition prevents another review in the shared location", () =
     expect(harness.state().mcpLists).toBe(2);
   }));
 
-test("plugin-added MCP servers are stripped from the isolated location, including after an inert bootstrap reload", () =>
+test("plugin-added MCP servers are stripped from the isolated location", () =>
   withFixture({ pluginMcp: true }, async (harness) => {
     const result = await harness.run();
     expect(result.kind).toBe("allow");
     expect(result.decisionSource).toBe("llm-reviewer");
     expect(harness.state().mcpTransforms).toBe(1);
     expect(harness.state().sessionIDs).toHaveLength(1);
+  }));
+
+test("an inert bootstrap reload keeps stripping MCP after the backend releases it", () =>
+  withFixture({ pluginMcp: true }, async (harness) => {
+    expect((await harness.run()).kind).toBe("allow");
     await harness.backend.dispose();
     await harness.reload();
     expect(harness.state().mcpTransforms).toBe(1);
