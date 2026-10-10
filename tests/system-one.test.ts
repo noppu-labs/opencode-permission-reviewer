@@ -13,6 +13,7 @@ import {
   parseSystemOneReview,
   SYSTEM_ONE_QUESTIONS,
 } from "../src/system-one/review.ts";
+import type { SystemOnePrimaryBasis } from "../src/system-one/system-one-types.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,
@@ -20,7 +21,7 @@ import type {
 } from "../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
-const PRIMARY_BASES = [
+const PRIMARY_BASES: readonly SystemOnePrimaryBasis[] = [
   "authorized_routine",
   "authorized_reversible_change",
   "insufficient_authorization",
@@ -36,7 +37,7 @@ const PRIMARY_BASES = [
 
 const choice = (
   selected: string,
-  keys: string[],
+  keys: readonly string[],
   confidence = 1,
 ): {
   type: string;
@@ -330,13 +331,9 @@ describe("System One reviewer", () => {
           { status: 503 },
         );
       });
-      const backend = new SystemOneReviewerBackend(
-        config,
-        undefined,
-        undefined,
-        failed,
+      const result = await reviewOnce(
+        new SystemOneReviewerBackend(config, undefined, undefined, failed),
       );
-      const result = await reviewOnce(backend);
       expect(calls).toBe(3);
       expect(result.kind).toBe("deny");
       expect(result.decisionSource).toBe("failure-safe");
