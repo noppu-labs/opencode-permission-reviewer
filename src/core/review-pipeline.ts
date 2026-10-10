@@ -68,10 +68,10 @@ async function collectEnvelope(
       : { askDecisions: state.askDecisions }),
   });
   if (!state.attempts.get(request.id)?.active()) return envelope;
-  // Bridge the ssh audit summary from the envelope to the audit() call. The
-  // envelope carries sshAudit for the reviewer prompt; audit() runs after the
-  // model call and reads the per-request bridge so both the success and the
-  // error-path audits observe the same ssh summary.
+  // Bridge the ssh audit summary from the envelope to the audit record. The
+  // envelope carries sshAudit for the reviewer prompt; the audit is written
+  // after the model call and reads the per-request bridge so both the success
+  // and the error-path audits observe the same ssh summary.
   rememberEvidence(state.attempts, request.id, { sshAudit: envelope.sshAudit });
   if (envelope.actor !== undefined)
     rememberEvidence(state.attempts, request.id, { actor: envelope.actor });

@@ -262,9 +262,10 @@ describe("characterization gaps (baseline prereq)", () => {
   });
 
   test("audit on the error path still carries the ssh summary after collectEnvelope ran", async () => {
-    // collectEnvelope runs and populates the ssh bridge; afterwards safeReply
-    // throws (non-404 transport failure), so process() rejects and the catch
-    // branch writes an audit. That audit must still include the ssh summary —
+    // collectEnvelope runs and populates the ssh bridge; afterwards
+    // sendPermissionReply throws (non-404 transport failure), so process()
+    // rejects and the catch branch writes an audit. That audit must still
+    // include the ssh summary —
     // parity we must preserve when the coordinator moves.
     const client = new MockClient();
     client.replyError = { message: "permission transport down" };
