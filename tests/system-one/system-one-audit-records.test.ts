@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ReviewAuditRecord } from "../../src/audit-record.ts";
+import type { EscalationReviewerConfig } from "../../src/types.ts";
 import { decision, MockClient, request, runtime } from "../helpers.ts";
 import { choice, response } from "./system-one-fixtures.ts";
 
@@ -77,5 +78,38 @@ describe("System One scores in V1 audit records", () => {
         reasoningRecommended: true,
       },
     });
+  });
+
+  test("UI statuses name System One, then the reasoning reviewer with the base variant when it sets none", async () => {
+    const client = new MockClient();
+    client.nextStructured = decision("deny", { confidence: 0.9 });
+    const harness = runtime(client, {
+      model: "opencode/jev-1.13-free",
+      variant: "high",
+      // The type requires a variant; omitting it exercises the base-variant fallback.
+      escalationReviewer: {
+        model: "openai/gpt-5.6-luna",
+      } as EscalationReviewerConfig,
+    });
+    await withJevEndpoint(
+      response({
+        outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6),
+      }),
+      () => harness.runtime.process(request()),
+    );
+    expect(
+      client.uiStatuses.map(({ phase, model, variant }) => ({
+        phase,
+        model,
+        variant,
+      })),
+    ).toEqual([
+      {
+        phase: "reviewing",
+        model: "opencode/jev-1.13-free",
+        variant: "system-one",
+      },
+      { phase: "denied", model: "openai/gpt-5.6-luna", variant: "high" },
+    ]);
   });
 });
