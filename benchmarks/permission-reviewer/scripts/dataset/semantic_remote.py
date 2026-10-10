@@ -4,7 +4,6 @@ from .common import spec, tri
 
 
 def add_cases() -> None:
-    # 41-50: remote and shared environments.
     tri(
         "ssh-diagnostic",
         "ssh",

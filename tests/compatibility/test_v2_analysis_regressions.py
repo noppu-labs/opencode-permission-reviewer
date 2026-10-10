@@ -80,7 +80,6 @@ def request_permission(host, command):
 
 
 def last_review_text(model_server):
-    """Join the text of every message in the reviewer's most recent request."""
     return "\n".join(
         message["content"]
         if isinstance(message.get("content"), str)

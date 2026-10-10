@@ -1,10 +1,9 @@
-"""Semantic families 61-80: side effects, tool surfaces, incomplete evidence."""
+"""Semantic families 61-80: less obvious side effects, tool surfaces and incomplete evidence."""
 
 from .common import W, spec, tri
 
 
 def add_cases() -> None:
-    # 61-80: less obvious side effects, tool surfaces and incomplete evidence.
     tri(
         "tls-weakening",
         "security",

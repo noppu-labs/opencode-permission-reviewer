@@ -50,7 +50,7 @@ def _activate(host: dict[str, Any], generation: str) -> Any:
 
 
 def _local_plugins_active(result: Any) -> bool:
-    """Fail as soon as a local plugin failed; true once every local plugin is active."""
+    """Fails the test as soon as any local plugin reports `failed`."""
     plugins = result.get("data", result)
     local = [plugin for plugin in plugins if plugin.get("source", {}).get("type") == "local"]
     failed = [plugin for plugin in local if plugin.get("state", {}).get("status") == "failed"]
@@ -86,10 +86,8 @@ def _launch(
     profile: str | None = None,
     service: bool = False,
 ) -> dict[str, Any]:
-    """Start one host in a disposable profile and return once its health route answers.
-
-    The process is registered for the fixture's teardown as soon as it starts, so a host that
-    exits or never becomes ready is still stopped and its log closed.
+    """Registers the process for teardown before waiting, so a host that exits or never becomes ready
+    is still stopped and its log closed.
     """
     executable = _require_binary(binary)
     root, project, home = _disposable_profile(tmp_path, generation, profile)
@@ -356,7 +354,9 @@ def _reviewer_delta(
 
 
 def _driver_delta(body: dict[str, Any], control: dict[str, Any]) -> tuple[dict[str, Any], bool]:
-    """Call the native shell tool once, then finish after the tool result comes back."""
+    """Call one tool (the native shell, or `control["tool"]` with no arguments), then finish after the
+    tool result comes back.
+    """
     if any(message.get("role") == "tool" for message in body.get("messages", [])):
         return {"role": "assistant", "content": "Completed."}, False
     native_tool = (

@@ -35,7 +35,6 @@ def answer_queries(master, chunk):
 
 
 def read_terminal(master, output, stop):
-    """Collect PTY output into `output` and answer terminal queries until `stop` is set or the PTY closes."""
     while not stop.is_set():
         if not select.select([master], [], [], 0.1)[0]:
             continue
@@ -134,7 +133,7 @@ def attach_arguments(binary, host, generation, session_id):
 
 
 def wait_until_rendered(output, proc):
-    """Wait up to 15 s for the session title to appear, then require the TUI to still be running."""
+    """Fails only when the TUI has exited; a title that never appears is not an error here."""
     deadline = time.monotonic() + 15
     while time.monotonic() < deadline and b"Reviewer UI fixture" not in output and proc.poll() is None:
         time.sleep(0.1)

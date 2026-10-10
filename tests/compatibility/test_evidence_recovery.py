@@ -24,7 +24,6 @@ RESTRICTION = "SYNTHETIC_USER_RESTRICTION: do not push or delete any files."
 
 
 def host_configs(generation, package, model_server):
-    """Return the project config and the global provider config for one host generation."""
     model = {"name": "Fixture", "limit": {"context": 64000, "output": 1000}}
     if generation == "v1":
         config = {"plugin": [package], "permission": {"bash": "ask"}}
@@ -82,7 +81,6 @@ def wait_prefix(version):
 
 
 def seed_v1_history(host):
-    """Post the goal, 225 synthetic steps and the restriction without replies; return the session id."""
     session = request(host, "v1", "/session", {"title": "Literal intent fixture"})
     session_id = session["id"]
 

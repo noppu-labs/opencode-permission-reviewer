@@ -4,7 +4,6 @@ from .common import msg, spec, tri
 
 
 def add_cases() -> None:
-    # 51-60: intent, provenance, policy and delegation.
     tri(
         "purpose-vs-user",
         "intent",

@@ -45,9 +45,8 @@ SENTINELS = {
 
 
 def configure_v1(package, model_server, tmp_path, command_file):
-    """Write a probe plugin that asks for the command in `command_file`; return config and provider.
-
-    Also sets `model_server["control"]["tool"]` to "fixture_permission" so the fixture model calls the probe tool.
+    """Write a probe plugin that asks permission for the command in `command_file`, and point the
+    fixture model at its `fixture_permission` tool.
     """
     model = {"name": "Fixture", "limit": {"context": 64000, "output": 1000}}
     probe = tmp_path / "permission-probe"
@@ -98,7 +97,6 @@ def configure_v2(package, model_server):
 
 
 def prepare_project(project):
-    """Write the sentinel scripts and a git repository with a fixture remote."""
     (project / "--actual.js").write_text('console.log("ACTUAL_EXECUTED_SENTINEL")')
     (project / "argument.js").write_text('console.log("UNEXECUTED_ARGUMENT_SENTINEL")')
     for name in ("first", "second"):

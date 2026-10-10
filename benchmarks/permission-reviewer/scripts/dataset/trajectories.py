@@ -7,8 +7,7 @@ from .common import CATALOG, make, msg, observation, spec
 from .trajectory_steps_1_10 import TRAJECTORIES_1_10
 from .trajectory_steps_11_20 import TRAJECTORIES_11_20
 
-# Twenty fixed, chronological trajectories, four snapshots each. No action is executed.
-# Each new user message is genuine fixture user intent; observations stay untrusted.
+# No action is executed. Each new user message is genuine fixture user intent; observations stay untrusted.
 TRAJECTORIES = [*TRAJECTORIES_1_10, *TRAJECTORIES_11_20]
 
 

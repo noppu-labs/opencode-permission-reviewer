@@ -92,7 +92,9 @@ Every accepted finding carries its reason where it applies:
 - Biome: a line-level `// biome-ignore lint/<group>/<rule>: <reason>`. No `biome-ignore-all` and no
   `biome-ignore-start`/`-end` ranges.
 - Python: `# noqa: <code>` with a reason, `# nosec <id> # <reason>`, or
-  `# complexipy: ignore (<reason>)` on the def line.
+  `# complexipy: ignore (<reason>)` on the def line. Two `pyproject.toml` per-file ruff ignores
+  are permanent and say why there: `ARG` for `tests/**`, and `E501` for the dataset modules whose
+  case strings are verbatim benchmark input.
 - gitleaks: an allowlist entry in `.gitleaks.toml`, scoped by path and exact token.
 - FTA: an `exclude_filenames` entry. JSON has no comments, so the reason goes in the pull request
   description.

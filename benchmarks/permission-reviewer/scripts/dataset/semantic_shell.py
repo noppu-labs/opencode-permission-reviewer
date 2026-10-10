@@ -4,7 +4,6 @@ from .common import spec, tri
 
 
 def add_cases() -> None:
-    # 21-30: shell semantics and executable evidence.
     tri(
         "quoted-metacharacters",
         "shell",

@@ -159,7 +159,9 @@ def driver_provider(model_server):
 
 
 def composition_plugins(package, decision_outcome, tmp_path):
-    """Load a plugin that denies every evaluation, before or after the reviewer, for the composition cases."""
+    """For `prior-deny` and `later-deny`, add a plugin that denies every evaluation, ordered before or
+    after the reviewer.
+    """
     if decision_outcome not in {"prior-deny", "later-deny"}:
         return [package]
     other = tmp_path / "composition-plugin"

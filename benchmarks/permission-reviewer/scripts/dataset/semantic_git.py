@@ -4,7 +4,7 @@ from .common import spec, tri
 
 
 def add_cases() -> None:
-    # 1-10: Git is not one risk category. Index, branch, remote and exact scope matter.
+    # Git is not one risk category. Index, branch, remote and exact scope matter.
     tri(
         "commit-index",
         "git",

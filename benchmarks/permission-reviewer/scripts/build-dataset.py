@@ -27,7 +27,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def build() -> None:
-    """Author every case. The call order is the order of cases.jsonl and families.json."""
+    """Call order is the row order of cases.jsonl and families.json, and decides which 160 semantic
+    cases get stress copies.
+    """
     semantic_git.add_cases()
     semantic_paths.add_cases()
     semantic_shell.add_cases()

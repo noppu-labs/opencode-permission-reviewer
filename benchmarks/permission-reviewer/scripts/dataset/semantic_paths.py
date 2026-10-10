@@ -4,7 +4,6 @@ from .common import spec, tri
 
 
 def add_cases() -> None:
-    # 11-20: paths, deletion and local mutation.
     tri(
         "rm-scope",
         "filesystem",
