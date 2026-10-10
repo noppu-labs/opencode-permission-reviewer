@@ -92,6 +92,14 @@ describe("shell lexer quoting edges", () => {
     ]);
   });
 
+  test("a literal backslash inside double quotes repeats the next character in raw", () => {
+    expect(lexSegments('python "a\\nb.py"')[0]?.tokens[1]).toEqual({
+      raw: '"a\\nnb.py"',
+      value: "a\\nb.py",
+      spans: [{ text: "a\\nb.py", quoted: true }],
+    });
+  });
+
   test("a trailing backslash stays literal inside and outside double quotes", () => {
     expect(lexSegments('echo "abc\\')[0]?.tokens[1]).toEqual({
       raw: '"abc\\',
@@ -234,6 +242,21 @@ describe("shell redirection normalizer edges", () => {
       {
         words: ["echo"],
         redirections: [{ operator: ">", target: "f", quoted: false }],
+      },
+    ]);
+  });
+
+  test("operator lookahead skips quoted characters, so a quoted > can join an operator", () => {
+    expect(redirectionsOf('echo >">">f')).toEqual([
+      {
+        words: ["echo"],
+        redirections: [{ operator: ">", target: "f", quoted: false }],
+      },
+    ]);
+    expect(redirectionsOf("echo >'>'f")).toEqual([
+      {
+        words: ["echo"],
+        redirections: [{ operator: ">", target: ">f", quoted: true }],
       },
     ]);
   });
