@@ -1,4 +1,4 @@
-// Module-level helpers of the review coordinator: the logger shape, the request action hash and the review audit writer.
+// Review audit writing for the coordinator: the audit record builder, its action hash, the shared logger shape and the attempt-registration invariant message.
 import { createHash } from "node:crypto";
 import packageInfo from "../../package.json";
 import type { DecisionSource, ReviewAuditRecord } from "../audit-record.ts";
@@ -28,13 +28,13 @@ function actionHash(request: PermissionRequest): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
-/** process() registers the attempt before its first await and deletes it only
- *  in its finally block, after closing it; handle() runs one process() per
- *  request ID. The asserted lookups below all run inside that window. */
+/** `ReviewCoordinator.process()` registers the attempt before its first await
+ *  and deletes it only in its finally block, after closing it; `handle()`
+ *  runs one `process()` per request ID. Every lookup asserted with this
+ *  message runs inside that window. */
 export const ATTEMPT_REGISTERED =
   "process() keeps the review attempt registered until it returns";
 
-/** The coordinator state the audit writer reads. */
 interface ReviewAuditScope {
   ctx: RuntimeContext;
   config: ReviewerConfig;
@@ -62,10 +62,9 @@ export async function writeReviewAudit(
   const evidence = attempt.evidence.evidenceCompleteness;
   const verifiedScript = attempt.evidence.verifiedScript;
   const askDecisions = attempt.evidence.askDecisions;
-  // Infer the source when a path did not set it explicitly (the process()
-  // catch builds an escalate with no decision): a result still carrying a
-  // reviewer decision is an LLM outcome; everything else without an explicit
-  // source is a fail-safe escalation.
+  // Fallback for a result whose path set no `decisionSource`: one still
+  // carrying a reviewer decision is an LLM outcome, anything else a fail-safe
+  // escalation.
   const decisionSource: DecisionSource =
     result.decisionSource ??
     (decision === undefined ? "failure-safe" : "llm-reviewer");
