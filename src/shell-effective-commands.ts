@@ -11,7 +11,6 @@
  */
 
 import { elementAt } from "./element-at.ts";
-import { invariant } from "./invariant.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
@@ -67,22 +66,44 @@ export function analyzeEffectiveCommands(
   segment: ShellSegment,
   budget?: AnalysisBudget,
 ): EffectiveCommandsAnalysis {
-  const out: ShellToken[][] = [];
-  const redirections: ShellRedirection[][] = [];
-  const state = { truncated: false };
-  const b = budget ?? newAnalysisBudget();
-  walk(segment.tokens, out, redirections, [], 0, state, b);
-  return { commands: out, redirections, truncated: state.truncated };
+  const sink: WalkSink = {
+    commands: [],
+    redirections: [],
+    truncated: false,
+    budget: budget ?? newAnalysisBudget(),
+  };
+  walk(segment.tokens, sink, [], 0);
+  return {
+    commands: sink.commands,
+    redirections: sink.redirections,
+    truncated: sink.truncated,
+  };
 }
+
+/** Where every level of one walk collects its effective commands. */
+interface WalkSink {
+  commands: ShellToken[][];
+  redirections: ShellRedirection[][];
+  truncated: boolean;
+  budget: AnalysisBudget;
+}
+
+/** One level of the walk: the redirections its commands carry, inherited
+ *  ones first, and its command-string re-entry depth. */
+interface WalkLevel {
+  sink: WalkSink;
+  redirections: ShellRedirection[];
+  depth: number;
+}
+
+const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
+const NO_VALUE_OPTIONS: ReadonlySet<string> = new Set();
 
 function walk(
   tokens: ShellToken[],
-  out: ShellToken[][],
-  redirectionOut: ShellRedirection[][],
+  sink: WalkSink,
   inheritedRedirections: ShellRedirection[],
   depth: number,
-  state: { truncated: boolean },
-  budget: AnalysisBudget,
 ): void {
   // Depth and expansion budget: recursion here is driven by the (untrusted)
   // command text, so both bounds are hard stops, not tuning knobs. Hitting
@@ -90,246 +111,204 @@ function walk(
   // collected commands do not cover the whole command.
   if (
     depth > MAX_WALK_DEPTH ||
-    out.length >= MAX_EFFECTIVE_COMMANDS ||
-    budget.remainingCommands <= 0
+    sink.commands.length >= MAX_EFFECTIVE_COMMANDS ||
+    sink.budget.remainingCommands <= 0
   ) {
-    state.truncated = true;
+    sink.truncated = true;
     return;
   }
   const normalized = normalizeShellRedirections(tokens);
-  tokens = normalized.tokens;
-  const commandRedirections = [
-    ...inheritedRedirections,
-    ...normalized.redirections,
-  ];
-  let i = 0;
-  while (i < tokens.length && SHELL_KEYWORDS.has(tokens[i]?.value ?? ""))
-    i += 1;
+  const words = normalized.tokens;
+  const level: WalkLevel = {
+    sink,
+    redirections: [...inheritedRedirections, ...normalized.redirections],
+    depth,
+  };
+  let i: number | undefined = commandStart(words);
+  while (i !== undefined && i < words.length) i = peel(words, i, level);
+}
 
-  // Consume leading VAR=value assignments (env-style, only at the head).
+/** Skip leading keywords, then leading VAR=value assignments (env-style,
+ *  only at the head). */
+function commandStart(words: ShellToken[]): number {
+  let i = 0;
   while (
-    i < tokens.length &&
-    /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i]?.value ?? "")
+    i < words.length &&
+    SHELL_KEYWORDS.has(elementAt(words, i, "tokens").value)
   )
     i += 1;
+  while (
+    i < words.length &&
+    ASSIGNMENT.test(elementAt(words, i, "tokens").value)
+  )
+    i += 1;
+  return i;
+}
 
-  while (i < tokens.length) {
-    const tok = tokens[i];
-    invariant(tok, "tokens[i] is in bounds");
-    if (tok.value === "--") {
-      break;
-    }
-    const base = basename(tok.value);
-    if (base === "env") {
-      // `env -S 'command string'` (or unquoted: `env -S cmd args…`) carries a
-      // parsed command line, and any operands after the string are appended to
-      // it. The option may be clustered (`env -iS 'rm -rf /'`), where getopt
-      // takes the string from the rest of the cluster or, when S ends the
-      // cluster, from the next token. Recurse into the concatenation so
-      // `env -S rm -rf /` and `env -iS rm -rf /` are both caught.
-      const s = findEnvSCommand(tokens, i + 1);
-      if (s !== null && s.script.length > 0) {
-        const tail = tokens
-          .slice(s.tailIndex)
-          .map((t) => t.value)
-          .join(" ");
-        const reanalyzed = tail ? `${s.script} ${tail}` : s.script;
-        budget.remainingReanalysisChars -= reanalyzed.length;
-        if (budget.remainingReanalysisChars < 0) {
-          state.truncated = true;
-          return;
-        }
-        for (const sub of lexSegments(reanalyzed))
-          walk(
-            sub.tokens,
-            out,
-            redirectionOut,
-            commandRedirections,
-            depth + 1,
-            state,
-            budget,
-          );
-        return;
-      }
-    }
-    if (base === "timeout") {
-      // timeout [OPTION]... DURATION COMMAND [ARG]...: unlike the generic
-      // wrappers, a mandatory non-option DURATION operand sits between the
-      // options and the command, so skip options, then exactly one duration
-      // token, then recurse into the real command tail. With no command left
-      // (plain `timeout 5` just errors) there is nothing to peel to.
-      const valueOpts = VALUE_OPTIONS.timeout ?? new Set<string>();
-      let j = i + 1;
-      while (j < tokens.length) {
-        const token = tokens[j];
-        invariant(token, "tokens[j] is in bounds");
-        const opt = token.value;
-        if (opt === "--") {
-          j += 1;
-          break;
-        }
-        if (opt.startsWith("-") && opt.length > 1) {
-          j = skipWrapperOption(opt, j, valueOpts);
-          continue;
-        }
-        break;
-      }
-      if (j < tokens.length) j += 1;
-      if (j < tokens.length)
-        walk(
-          tokens.slice(j),
-          out,
-          redirectionOut,
-          commandRedirections,
-          depth + 1,
-          state,
-          budget,
-        );
-      return;
-    }
-    if (TRANSPARENT_WRAPPERS.has(base)) {
-      const valueOpts = VALUE_OPTIONS[base] ?? new Set<string>();
-      i += 1;
-      while (i < tokens.length) {
-        const token = tokens[i];
-        invariant(token, "tokens[i] is in bounds");
-        const opt = token.value;
-        if (opt === "--") {
-          i += 1;
-          break;
-        }
-        // Env-style VAR=value arguments that follow a wrapper (e.g. `env FOO=bar …`).
-        if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(opt)) {
-          i += 1;
-          continue;
-        }
-        if (opt.startsWith("-") && opt.length > 1) {
-          i = skipWrapperOption(opt, i, valueOpts);
-          continue;
-        }
-        break;
-      }
-      continue;
-    }
-    if (base === "script") {
-      // `script -c/--command '…'` runs a command string through a shell;
-      // without it, script just starts an interactive session and there is
-      // nothing to peel.
-      const command = findCommandString(tokens, i + 1);
-      if (command !== null) {
-        budget.remainingReanalysisChars -= command.length;
-        if (budget.remainingReanalysisChars < 0) {
-          state.truncated = true;
-          return;
-        }
-        for (const sub of lexSegments(command))
-          walk(
-            sub.tokens,
-            out,
-            redirectionOut,
-            commandRedirections,
-            depth + 1,
-            state,
-            budget,
-          );
-        return;
-      }
-    }
-    if (SHELL_BINARIES.has(base) || SU_BINARIES.has(base)) {
-      const script = findCommandString(
-        tokens,
-        i + 1,
-        SHELL_BINARIES.has(base) && base !== "fish",
-      );
-      if (script !== null) {
-        budget.remainingReanalysisChars -= script.length;
-        if (budget.remainingReanalysisChars < 0) {
-          state.truncated = true;
-          return;
-        }
-        for (const sub of lexSegments(script))
-          walk(
-            sub.tokens,
-            out,
-            redirectionOut,
-            commandRedirections,
-            depth + 1,
-            state,
-            budget,
-          );
-        return;
-      }
-    }
-    if (base === "ssh") {
-      const rest = consumeSshRemote(tokens, i + 1);
-      if (rest.length > 0) {
-        const remote = rest.map((t) => t.value).join(" ");
-        budget.remainingReanalysisChars -= remote.length;
-        if (budget.remainingReanalysisChars < 0) {
-          state.truncated = true;
-          return;
-        }
-        for (const sub of lexSegments(remote))
-          walk(
-            sub.tokens,
-            out,
-            redirectionOut,
-            commandRedirections,
-            depth + 1,
-            state,
-            budget,
-          );
-      }
-      return;
-    }
-    if (base === "busybox") {
-      if (i + 1 < tokens.length)
-        walk(
-          tokens.slice(i + 1),
-          out,
-          redirectionOut,
-          commandRedirections,
-          depth + 1,
-          state,
-          budget,
-        );
-      return;
-    }
-    if (base === "chroot") {
-      // chroot [OPTION]... NEWROOT [COMMAND [ARG]...]: skip options, then the
-      // NEWROOT token, then recurse into the real command tail.
-      let j = i + 1;
-      while (j < tokens.length) {
-        const token = tokens[j];
-        invariant(token, "tokens[j] is in bounds");
-        const opt = token.value;
-        if (opt === "--") {
-          j += 1;
-          break;
-        }
-        if (opt.startsWith("-") && opt.length > 1) {
-          j += 1;
-          continue;
-        }
-        break;
-      }
-      if (j + 1 < tokens.length)
-        walk(
-          tokens.slice(j + 1),
-          out,
-          redirectionOut,
-          commandRedirections,
-          depth + 1,
-          state,
-          budget,
-        );
-      return;
-    }
-    out.push(tokens.slice(i));
-    redirectionOut.push(commandRedirections);
-    budget.remainingCommands -= 1;
+/** Resolve the word at `i`. Returns the index to resume at after a
+ *  transparent wrapper, or `undefined` once this level is done. */
+function peel(
+  words: ShellToken[],
+  i: number,
+  level: WalkLevel,
+): number | undefined {
+  const word = elementAt(words, i, "tokens").value;
+  if (word === "--") return undefined;
+  const base = basename(word);
+  if (base === "env" && reanalyzeIfPresent(envSplitString(words, i), level))
+    return undefined;
+  if (base === "timeout") {
+    // timeout [OPTION]... DURATION COMMAND [ARG]...: unlike the generic
+    // wrappers, a mandatory non-option DURATION operand sits between the
+    // options and the command, so skip options, then exactly one duration
+    // token, then recurse into the real command tail. With no command left
+    // (plain `timeout 5` just errors) there is nothing to peel to.
+    const duration = skipOptions(words, i + 1, valueOptionsOf("timeout"));
+    walkTail(words, duration + 1, level);
+    return undefined;
+  }
+  if (TRANSPARENT_WRAPPERS.has(base))
+    return skipWrapperArguments(words, i + 1, valueOptionsOf(base));
+  peelCommand(words, i, base, level);
+  return undefined;
+}
+
+/** The checks after the transparent wrappers, in order: a command string,
+ *  an operand tail, or the effective command itself. */
+function peelCommand(
+  words: ShellToken[],
+  i: number,
+  base: string,
+  level: WalkLevel,
+): void {
+  // `script -c/--command '…'` runs a command string through a shell;
+  // without it, script just starts an interactive session and there is
+  // nothing to peel.
+  if (
+    base === "script" &&
+    reanalyzeIfPresent(findCommandString(words, i + 1), level)
+  )
+    return;
+  if (reanalyzeIfPresent(suOrShellCommandString(words, i, base), level)) return;
+  if (base === "ssh") {
+    const rest = consumeSshRemote(words, i + 1);
+    if (rest.length > 0) reanalyze(rest.map((t) => t.value).join(" "), level);
     return;
   }
+  if (base === "busybox") {
+    walkTail(words, i + 1, level);
+    return;
+  }
+  if (base === "chroot") {
+    // chroot [OPTION]... NEWROOT [COMMAND [ARG]...]: skip options, then the
+    // NEWROOT token, then recurse into the real command tail.
+    const newRoot = skipOptions(words, i + 1, NO_VALUE_OPTIONS);
+    walkTail(words, newRoot + 1, level);
+    return;
+  }
+  const { sink } = level;
+  sink.commands.push(words.slice(i));
+  sink.redirections.push(level.redirections);
+  sink.budget.remainingCommands -= 1;
+}
+
+/** `env -S 'command string'` (or unquoted: `env -S cmd args…`) carries a
+ *  parsed command line, and any operands after the string are appended to
+ *  it. The option may be clustered (`env -iS 'rm -rf /'`), where getopt
+ *  takes the string from the rest of the cluster or, when S ends the
+ *  cluster, from the next token. The concatenation is what gets re-analyzed,
+ *  so `env -S rm -rf /` and `env -iS rm -rf /` are both caught. `null` when
+ *  there is no non-empty split string. */
+function envSplitString(words: ShellToken[], i: number): string | null {
+  const s = findEnvSCommand(words, i + 1);
+  if (s === null || s.script.length === 0) return null;
+  const tail = words
+    .slice(s.tailIndex)
+    .map((t) => t.value)
+    .join(" ");
+  return tail ? `${s.script} ${tail}` : s.script;
+}
+
+/** The `-c` script of a shell or su invocation, or `null` when `base` is
+ *  neither or carries none. */
+function suOrShellCommandString(
+  words: ShellToken[],
+  i: number,
+  base: string,
+): string | null {
+  if (!SHELL_BINARIES.has(base) && !SU_BINARIES.has(base)) return null;
+  return findCommandString(
+    words,
+    i + 1,
+    SHELL_BINARIES.has(base) && base !== "fish",
+  );
+}
+
+/** Re-analyze `text` when there is one; reports whether it did. */
+function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
+  if (text === null) return false;
+  reanalyze(text, level);
+  return true;
+}
+
+/** Re-lex a command string and walk each of its segments one level deeper.
+ *  Its length is charged to the re-analysis budget first. */
+function reanalyze(text: string, level: WalkLevel): void {
+  const { sink } = level;
+  sink.budget.remainingReanalysisChars -= text.length;
+  if (sink.budget.remainingReanalysisChars < 0) {
+    sink.truncated = true;
+    return;
+  }
+  for (const sub of lexSegments(text))
+    walk(sub.tokens, sink, level.redirections, level.depth + 1);
+}
+
+/** Walk the operand tail from `start` one level deeper, if any is left. */
+function walkTail(words: ShellToken[], start: number, level: WalkLevel): void {
+  if (start < words.length)
+    walk(words.slice(start), level.sink, level.redirections, level.depth + 1);
+}
+
+function valueOptionsOf(wrapper: string): ReadonlySet<string> {
+  return VALUE_OPTIONS[wrapper] ?? NO_VALUE_OPTIONS;
+}
+
+/** Skip options up to the first operand, or past a `--`, and return its
+ *  index. */
+function skipOptions(
+  words: ShellToken[],
+  start: number,
+  valueOpts: ReadonlySet<string>,
+): number {
+  let j = start;
+  while (j < words.length) {
+    const opt = elementAt(words, j, "tokens").value;
+    if (opt === "--") return j + 1;
+    if (!opt.startsWith("-") || opt.length <= 1) return j;
+    j = skipWrapperOption(opt, j, valueOpts);
+  }
+  return j;
+}
+
+/** Skip a transparent wrapper's options and the env-style VAR=value
+ *  arguments that may follow it (e.g. `env FOO=bar …`), and return the index
+ *  of the wrapped command. */
+function skipWrapperArguments(
+  words: ShellToken[],
+  start: number,
+  valueOpts: ReadonlySet<string>,
+): number {
+  let i = start;
+  while (i < words.length) {
+    const opt = elementAt(words, i, "tokens").value;
+    if (opt === "--") return i + 1;
+    if (ASSIGNMENT.test(opt)) i += 1;
+    else if (opt.startsWith("-") && opt.length > 1)
+      i = skipWrapperOption(opt, i, valueOpts);
+    else return i;
+  }
+  return i;
 }
 
 /** Short-option clusters follow getopt semantics: a value-taking letter takes
@@ -341,7 +320,7 @@ function walk(
 function skipWrapperOption(
   opt: string,
   index: number,
-  valueOpts: Set<string>,
+  valueOpts: ReadonlySet<string>,
 ): number {
   if (valueOpts.has(opt)) return index + 2;
   if (opt.startsWith("--")) return index + 1;
