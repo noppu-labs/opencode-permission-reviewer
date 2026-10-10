@@ -12,6 +12,7 @@
     "system-one.test.ts",
     "trust-hardening.test.ts",
     "bash-analyzer.ts",
+    "bash-mutation.ts",
     "heredoc-extractor.ts",
     "git-evidence.ts",
     "local-script-evidence.ts",

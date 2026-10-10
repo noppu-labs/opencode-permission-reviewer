@@ -23,7 +23,12 @@ const PINNED_BLOBS = {
   "src/capability/command-parser.ts":
     "05ce6822ccf0614b6d0dc6837681b9c7e660d0cd",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/capability/bash-analyzer.ts": "1a2104e4e392a8d463d963bdb58df331b2784d68",
+  "src/capability/bash-analyzer.ts": "6f702fb0547c49933fbfa61636c91267f59d6968",
+  "src/capability/bash-command-tables.ts":
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "74472f20c44bcb39f6fb9ae0711a46c67aa15d50",
+  "src/capability/bash-facts.ts": "52386899274c6a8a55c62a31384a929b77962ca3",
+  "src/capability/bash-mutation.ts": "fcb7dc47047cdc5f928cb7308453318488b24242",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-lexer.ts": "f9c3486ba78600925ea98aea0e86f113a78c07e4",
   "src/capability/heredoc-extractor.ts":
