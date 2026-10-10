@@ -1,4 +1,4 @@
-import { DECISION_SCHEMA } from "./decision.ts";
+import { DECISION_SCHEMA } from "./decision-schema.ts";
 import { redactSecrets } from "./redact.ts";
 import type { ReviewerOutputFormat } from "./types.ts";
 

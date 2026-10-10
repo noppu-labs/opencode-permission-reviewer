@@ -1,8 +1,6 @@
 import type {
   EvidenceSufficiency,
   ReviewDecision,
-  ReviewExecutionResult,
-  ReviewerConfig,
   ScopeAlignment,
 } from "./types.ts";
 
@@ -72,46 +70,61 @@ export function parseDecisionFromText(
   return parseDecision(extractJsonFromText(text));
 }
 
+function isMember(members: ReadonlySet<string>, value: unknown): boolean {
+  return typeof value === "string" && members.has(value);
+}
+
+function hasValidVerdict(value: Record<string, unknown>): boolean {
+  return (
+    isMember(OUTCOMES, value.outcome) &&
+    isMember(RISKS, value.risk_level) &&
+    isMember(AUTHORIZATIONS, value.user_authorization)
+  );
+}
+
+/** The trimmed rationale when it is a string of 3 to 2000 characters. */
+function validRationale(value: unknown): string | undefined {
+  if (typeof value !== "string") return;
+  const rationale = value.trim();
+  if (rationale.length < 3 || rationale.length > 2_000) return;
+  return rationale;
+}
+
+function isValidConfidence(value: unknown): value is number {
+  return (
+    typeof value === "number" &&
+    Number.isFinite(value) &&
+    value >= 0 &&
+    value <= 1
+  );
+}
+
+function isValidScriptAnalysis(value: unknown): value is string | undefined {
+  return (
+    value === undefined ||
+    (typeof value === "string" && value.length >= 20 && value.length <= 1500)
+  );
+}
+
+function hasValidAssessment(value: Record<string, unknown>): boolean {
+  return (
+    isMember(SCOPE_ALIGNMENTS, value.scope_alignment) &&
+    isMember(EVIDENCE_SUFFICIENCY, value.evidence_completeness)
+  );
+}
+
 export function parseDecision(value: unknown): ReviewDecision | undefined {
   if (!isRecord(value)) return;
   // The current schema is version 2. A model output that omits the version
   // (or carries a different one) is rejected outright and routed to a human;
   // it never silently degrades to a guessed decision.
   if (value.version !== DECISION_SCHEMA_VERSION) return;
-  if (typeof value.outcome !== "string" || !OUTCOMES.has(value.outcome)) return;
-  if (typeof value.risk_level !== "string" || !RISKS.has(value.risk_level))
-    return;
-  if (
-    typeof value.user_authorization !== "string" ||
-    !AUTHORIZATIONS.has(value.user_authorization)
-  )
-    return;
-  if (typeof value.rationale !== "string") return;
-  const rationale = value.rationale.trim();
-  if (rationale.length < 3 || rationale.length > 2_000) return;
-  if (
-    typeof value.confidence !== "number" ||
-    !Number.isFinite(value.confidence)
-  )
-    return;
-  if (value.confidence < 0 || value.confidence > 1) return;
-  if (
-    value.script_analysis !== undefined &&
-    (typeof value.script_analysis !== "string" ||
-      value.script_analysis.length < 20 ||
-      value.script_analysis.length > 1500)
-  )
-    return;
-  if (
-    typeof value.scope_alignment !== "string" ||
-    !SCOPE_ALIGNMENTS.has(value.scope_alignment)
-  )
-    return;
-  if (
-    typeof value.evidence_completeness !== "string" ||
-    !EVIDENCE_SUFFICIENCY.has(value.evidence_completeness)
-  )
-    return;
+  if (!hasValidVerdict(value)) return;
+  const rationale = validRationale(value.rationale);
+  if (rationale === undefined) return;
+  if (!isValidConfidence(value.confidence)) return;
+  if (!isValidScriptAnalysis(value.script_analysis)) return;
+  if (!hasValidAssessment(value)) return;
 
   return {
     version: DECISION_SCHEMA_VERSION,
@@ -129,169 +142,4 @@ export function parseDecision(value: unknown): ReviewDecision | undefined {
   };
 }
 
-export function enforceDecision(
-  decision: ReviewDecision,
-  config: ReviewerConfig,
-): ReviewExecutionResult {
-  const reviewerOutcome = decision.outcome;
-
-  // Confidence limits automatic approval; a validated denial stays a denial.
-  if (decision.outcome === "deny") {
-    return {
-      kind: "deny",
-      decision,
-      reason: decision.rationale,
-      reviewerOutcome,
-    };
-  }
-
-  if (decision.risk_level === "critical") {
-    return {
-      kind: "escalate",
-      decision,
-      reason:
-        "Reviewer returned a non-denial for critical risk; manual review required.",
-      reviewerOutcome,
-    };
-  }
-
-  // The auto-allow confidence floor is the stricter of the two configured
-  // thresholds; riskPolicy.minimumConfidence must not be silently ignorable.
-  const effectiveThreshold = Math.max(
-    config.confidenceThreshold,
-    config.riskPolicy.minimumConfidence,
-  );
-  if (decision.confidence < effectiveThreshold) {
-    return {
-      kind: "escalate",
-      decision,
-      reason: `Reviewer confidence ${decision.confidence.toFixed(2)} is below ${effectiveThreshold.toFixed(2)}.`,
-      reviewerOutcome,
-    };
-  }
-
-  // Deterministic risk×authorization gate, now driven by the configurable
-  // riskPolicy matrix. This only ever RESTRICTS an `allow`: the model's
-  // `deny`/`escalate` outcomes are always preserved. The default matrix
-  // reproduces the previous hard-coded behavior exactly.
-  if (decision.outcome === "allow") {
-    const { risk_level: risk, user_authorization: auth } = decision;
-    const permitted = config.riskPolicy.allow[risk];
-    if (permitted === undefined || !permitted.includes(auth)) {
-      return {
-        kind: "escalate",
-        decision,
-        reason: `Reviewer allow for ${risk} risk with ${auth} user authorization; manual review required.`,
-        reviewerOutcome,
-      };
-    }
-
-    // Schema v2 gate: a request the reviewer judged misaligned with the
-    // recovered user/delegated intent is never auto-allowed.
-    if (decision.scope_alignment === "misaligned") {
-      return {
-        kind: "escalate",
-        decision,
-        reason:
-          "Reviewer judged the request misaligned with the stated intent; manual review required.",
-        reviewerOutcome,
-      };
-    }
-
-    // Schema v2 gate: for medium-or-higher risk, insufficient evidence
-    // prevents auto-allow (the reviewer cannot confidently judge).
-    if (
-      (risk === "medium" || risk === "high") &&
-      decision.evidence_completeness === "insufficient"
-    ) {
-      return {
-        kind: "escalate",
-        decision,
-        reason: `Reviewer judged evidence insufficient for ${risk} risk; manual review required.`,
-        reviewerOutcome,
-      };
-    }
-
-    return {
-      kind: "allow",
-      decision,
-      reason: decision.rationale,
-      reviewerOutcome,
-    };
-  }
-  return {
-    kind: "escalate",
-    decision,
-    reason: decision.rationale,
-    reviewerOutcome,
-  };
-}
-
 export const DECISION_SCHEMA_VERSION = 2;
-
-export const DECISION_SCHEMA = {
-  type: "object",
-  additionalProperties: false,
-  required: [
-    "version",
-    "outcome",
-    "risk_level",
-    "user_authorization",
-    "scope_alignment",
-    "evidence_completeness",
-    "rationale",
-    "confidence",
-  ],
-  properties: {
-    version: {
-      type: "number",
-      enum: [DECISION_SCHEMA_VERSION],
-      description: "Structured-decision schema version. Must be exactly 2.",
-    },
-    outcome: {
-      type: "string",
-      enum: ["allow", "deny", "escalate"],
-      description:
-        "allow executes once, deny rejects, escalate leaves the request for a human",
-    },
-    risk_level: {
-      type: "string",
-      enum: ["low", "medium", "high", "critical"],
-    },
-    user_authorization: {
-      type: "string",
-      enum: ["high", "medium", "low", "unknown"],
-    },
-    rationale: {
-      type: "string",
-      minLength: 3,
-      maxLength: 2000,
-      description:
-        "One concise sentence explaining the main reason for the decision",
-    },
-    confidence: {
-      type: "number",
-      minimum: 0,
-      maximum: 1,
-    },
-    scope_alignment: {
-      type: "string",
-      enum: ["aligned", "partial", "misaligned", "unknown"],
-      description:
-        "How well the request aligns with the recovered user or delegated intent: aligned (within scope), partial (tangential), misaligned (outside scope), unknown (insufficient context).",
-    },
-    evidence_completeness: {
-      type: "string",
-      enum: ["sufficient", "partial", "insufficient", "unknown"],
-      description:
-        "Whether the evidence was sufficient to decide: sufficient, partial (some gaps), insufficient (major gaps), unknown.",
-    },
-    script_analysis: {
-      type: "string",
-      minLength: 20,
-      maxLength: 1500,
-      description:
-        "Optional factual analysis of a fully supplied verified script. Describe effects and uncertainty, never user authorization or an approval.",
-    },
-  },
-} as const;

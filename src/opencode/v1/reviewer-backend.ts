@@ -3,12 +3,9 @@ import { join } from "node:path";
 import { splitModel } from "../../config.ts";
 import { buildEvidenceResult } from "../../context.ts";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
-import {
-  DECISION_SCHEMA,
-  enforceDecision,
-  parseDecision,
-  parseDecisionFromText,
-} from "../../decision.ts";
+import { parseDecision, parseDecisionFromText } from "../../decision.ts";
+import { enforceDecision } from "../../decision-gates.ts";
+import { DECISION_SCHEMA } from "../../decision-schema.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import { formatFailureReason } from "../../failure-reason.ts";
 import {

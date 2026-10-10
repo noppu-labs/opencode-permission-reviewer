@@ -8,11 +8,8 @@ import { z } from "zod";
 import { splitModel } from "../../config.ts";
 import { buildEvidenceResult } from "../../context.ts";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
-import {
-  enforceDecision,
-  parseDecision,
-  parseDecisionFromText,
-} from "../../decision.ts";
+import { parseDecision, parseDecisionFromText } from "../../decision.ts";
+import { enforceDecision } from "../../decision-gates.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import { formatFailureReason } from "../../failure-reason.ts";
 import {

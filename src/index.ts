@@ -107,7 +107,9 @@ export {
   DISMISSED_ANSWER,
 } from "./context/ask-decisions.ts";
 export { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
-export { DECISION_SCHEMA, enforceDecision, parseDecision } from "./decision.ts";
+export { parseDecision } from "./decision.ts";
+export { enforceDecision } from "./decision-gates.ts";
+export { DECISION_SCHEMA } from "./decision-schema.ts";
 export { emergencyBrakeReason } from "./emergency-brake.ts";
 export {
   applyEscalationDisposition,

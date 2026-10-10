@@ -5,7 +5,7 @@ import type {
   Questions,
   SystemOneResult,
 } from "@typesafe-ai/sdk";
-import { enforceDecision } from "../decision.ts";
+import { enforceDecision } from "../decision-gates.ts";
 import type {
   ReviewDecision,
   ReviewExecutionResult,

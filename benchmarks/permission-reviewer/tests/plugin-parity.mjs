@@ -19,6 +19,9 @@ const adapter = await openPlugin(repo, {
 const coreDecision = await import(
   pathToFileURL(resolve(repo, "src/decision.ts")).href
 );
+const coreGates = await import(
+  pathToFileURL(resolve(repo, "src/decision-gates.ts")).href
+);
 const context = await import(
   pathToFileURL(resolve(repo, "src/context.ts")).href
 );
@@ -52,7 +55,7 @@ for (const c of data.cases) {
     // biome-ignore lint/performance/noAwaitInLoops: checks each outcome against the same prepared case in turn so the first failing assertion names the outcome that diverged
     const result = await adapter.finish(p, parsed);
     assert.deepEqual(result.gated, {
-      ...coreDecision.enforceDecision(parsed, p.config),
+      ...coreGates.enforceDecision(parsed, p.config),
       decisionSource: "llm-reviewer",
     });
     if (p.actionEvidenceComplete === false && result.effective.kind === "allow")

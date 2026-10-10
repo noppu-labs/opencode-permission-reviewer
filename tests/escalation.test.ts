@@ -4,7 +4,7 @@ import {
   DEFAULT_RISK_POLICY,
   resolveConfig,
 } from "../src/config.ts";
-import { enforceDecision } from "../src/decision.ts";
+import { enforceDecision } from "../src/decision-gates.ts";
 import {
   applyEscalationDisposition,
   resolveEscalationDisposition,

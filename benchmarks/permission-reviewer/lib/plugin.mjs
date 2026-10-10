@@ -7,7 +7,7 @@ import { assert, sha256 } from "./util.mjs";
 
 // Git blob hashes of the security-critical files actually inspected for this kit.
 const PINNED_BLOBS = {
-  "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
+  "src/policy.ts": "69522b8244cc041dfedbfaf4690706624b2aab80",
   "src/context.ts": "490836e9cfaca23e0f229fd2d0baad7cf542d048",
   "src/context/evidence-sections.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -15,7 +15,11 @@ const PINNED_BLOBS = {
   "src/context/prompt-budget.ts": "3b169365cc335698751533a86b6040fb2ff39c6a",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/config.ts": "0971f2406a3c05cfe6a023a553abb68e15819e7a",
-  "src/decision.ts": "9deb30e0b8d300b5caebb6f2856e86e898064121",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/decision.ts": "bdd5f4503e71639a282a0e58bf85fec8457b74e2",
+  "src/decision-gates.ts": "993f989c8d9c3d9b9b649c379aa5239c2a5abbd0",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/decision-schema.ts": "e60339d6fb71ac232b79c1261a02aae265f05852",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/policy/policy-engine.ts": "ba98b0f450b0048781c3e3bfa7ac7715f16526ce",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -75,7 +79,7 @@ const PINNED_BLOBS = {
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/system-one/review.ts": "0d92a58e6befb0bffa66849a8b326c5e9474e437",
+  "src/system-one/review.ts": "643331f47dc86cf4d105814c493f4aa3eb1912e0",
   "src/capability/capability-facts.ts":
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
@@ -235,6 +239,8 @@ export async function openPlugin(
     context,
     config,
     decision,
+    decisionGates,
+    decisionSchema,
     escalation,
     engine,
     parser,
@@ -245,6 +251,8 @@ export async function openPlugin(
     load("src/context.ts"),
     load("src/config.ts"),
     load("src/decision.ts"),
+    load("src/decision-gates.ts"),
+    load("src/decision-schema.ts"),
     load("src/escalation.ts"),
     load("src/core/review-engine.ts"),
     load("src/capability/command-parser.ts"),
@@ -382,7 +390,7 @@ export async function openPlugin(
     });
   return {
     snapshot,
-    schema: decision.DECISION_SCHEMA,
+    schema: decisionSchema.DECISION_SCHEMA,
     promptVersion: policy.REVIEWER_PROMPT_VERSION,
     parse: (text) => decision.parseDecisionFromText(text),
     parseObject: (obj) => decision.parseDecision(obj),
@@ -431,7 +439,7 @@ export async function openPlugin(
         system,
         user,
         evidence: evidence.text,
-        schema: decision.DECISION_SCHEMA,
+        schema: decisionSchema.DECISION_SCHEMA,
         systemOne: { state, questions: systemOne.SYSTEM_ONE_QUESTIONS },
         reachable: reached,
         bypass: reached ? null : preflight,
@@ -446,7 +454,7 @@ export async function openPlugin(
                 system,
                 user,
                 format: model?.format ?? "text",
-                schema: decision.DECISION_SCHEMA,
+                schema: decisionSchema.DECISION_SCHEMA,
               }),
         evidenceHash: sha256(evidence.text),
         actionEvidenceComplete: envelope.actionEvidenceComplete,
@@ -464,7 +472,7 @@ export async function openPlugin(
               decisionSource: "system-one-reviewer",
             }
           : {
-              ...decision.enforceDecision(parsed, prepared.config),
+              ...decisionGates.enforceDecision(parsed, prepared.config),
               decisionSource: "llm-reviewer",
             };
       } else
