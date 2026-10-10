@@ -14,6 +14,7 @@ import type {
 } from "../types.ts";
 import { prov } from "./provenance.ts";
 import { METADATA_TIMEOUT_MS } from "./session-lineage.ts";
+import { isSyntheticIntentPart } from "./synthetic-parts.ts";
 
 // --- parent/root message fetch for intent extraction ------------------------
 
@@ -44,18 +45,6 @@ function normalizeFetched(raw: unknown): MessageWithParts[] {
 
 // --- intent extraction ------------------------------------------------------
 
-/** Host-authored text injected into a user-role message is never human
- *  authorization. Provenance comes from the part's own `synthetic`/`ignored`
- *  flags when the host sets them; the text-pattern check below is only a
- *  fallback for hosts that do not. */
-function isSyntheticPart(part: Record<string, unknown>): boolean {
-  if (part.type !== "text" || typeof part.text !== "string") return false;
-  if (part.synthetic === true || part.ignored === true) return true;
-  return /^\s*(Magic Compact:|You have \d+ weighted tokens left)/.test(
-    part.text,
-  );
-}
-
 function messageCreatedAt(message: MessageWithParts): number | undefined {
   const time = message.info.time as Record<string, unknown> | undefined;
   return typeof time === "object" &&
@@ -68,7 +57,7 @@ function messageCreatedAt(message: MessageWithParts): number | undefined {
 function userTextOf(message: MessageWithParts): string | undefined {
   if (message.info.role !== "user") return undefined;
   for (const part of message.parts as Array<Record<string, unknown>>) {
-    if (isSyntheticPart(part)) continue;
+    if (isSyntheticIntentPart(part)) continue;
     if (typeof part.text === "string" && part.text.trim()) {
       return part.text;
     }

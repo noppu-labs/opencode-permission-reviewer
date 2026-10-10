@@ -9,8 +9,6 @@
   ],
   "exclude_filenames": [
     "audit.ts",
-    "context.ts",
-    "evidence-sections.ts",
     "actor-resolver.ts",
     "intent-extraction.ts",
     "session-lineage.ts",

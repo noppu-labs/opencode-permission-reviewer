@@ -8,7 +8,6 @@ import {
   buildIntentHistory,
   buildTranscript,
   normalizeMessages,
-  pendingPermissionSection,
 } from "../context.ts";
 import type { ContextReader } from "../core/ports.ts";
 import { GitEvidenceProvider } from "../evidence/git-provider.ts";
@@ -35,6 +34,7 @@ import {
 import { resolveActionPurpose } from "./action-purpose.ts";
 import { resolveActorContext } from "./actor-resolver.ts";
 import type { AskDecisionSource } from "./ask-decisions.ts";
+import { pendingPermissionSection } from "./pending-permission.ts";
 
 export interface EvidenceAssemblyContext {
   client: OpenCodeClientLike | ContextReader;

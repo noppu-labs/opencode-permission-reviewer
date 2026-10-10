@@ -23,6 +23,18 @@ export function elideMiddle(value: string, max: number): string {
   return `${value.slice(0, head)}<elided characters="${omitted}" />${value.slice(-tail)}`;
 }
 
+/** Tail-preserving truncation for recency-sensitive content: when a budget cut
+ *  is unavoidable, the END (most recent content) survives, unlike `truncate`
+ *  which keeps the head. */
+export function truncateKeepEnd(value: string, max: number): string {
+  const redacted = redactSecrets(value);
+  if (redacted.length <= max) return redacted;
+  const omitted = redacted.length - max;
+  const marker = `<truncated characters="${omitted}" />\n`;
+  const available = Math.max(0, max - marker.length);
+  return `${marker.slice(0, max)}${available === 0 ? "" : redacted.slice(-available)}`;
+}
+
 export function stableJson(value: unknown, max: number): string {
   try {
     const seen = new WeakSet<object>();
@@ -54,13 +66,19 @@ export function keepMostRecentBlocks(
     if (remaining <= 0) break;
     const separator = selected.length === 0 ? 0 : 2;
     if (remaining <= separator) break;
-    const budget = remaining - separator;
-    const redacted = redactSecrets(block);
-    const bounded =
-      redacted.length <= budget ? redacted : elideMiddle(redacted, budget);
-    if (bounded.length > budget) break;
+    const bounded = boundedBlock(block, remaining - separator);
+    if (bounded === undefined) break;
     selected.push(bounded);
     remaining -= bounded.length + separator;
   }
   return selected.reverse().join("\n\n");
+}
+
+/** The block redacted and, when over budget, middle-elided; `undefined` when
+ *  even the elided block does not fit. */
+function boundedBlock(block: string, budget: number): string | undefined {
+  const redacted = redactSecrets(block);
+  const bounded =
+    redacted.length <= budget ? redacted : elideMiddle(redacted, budget);
+  return bounded.length > budget ? undefined : bounded;
 }

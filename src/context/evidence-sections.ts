@@ -1,16 +1,15 @@
 // Reviewer prompt section renderers: action purpose, ask decisions, policy summary and the actor-context sections.
 
-import type {
-  ActionPurpose,
-  ActorContext,
-  AskDecision,
-  EvidenceCompleteness,
-  IntentBlock,
-  Provenanced,
-  SessionLineage,
-} from "../actor-context-types.ts";
+import type { ActionPurpose, AskDecision } from "../actor-context-types.ts";
 import type { PolicyTrace, ReviewEnvelope, ReviewerConfig } from "../types.ts";
-import { keepMostRecentBlocks, stableJson } from "./prompt-budget.ts";
+import {
+  renderActor,
+  renderCompleteness,
+  renderIntentBlocks,
+  renderLineage,
+} from "./actor-sections.ts";
+import { renderCapability } from "./capability-section.ts";
+import { stableJson } from "./prompt-budget.ts";
 
 export function renderActionPurpose(
   purpose: ActionPurpose | undefined,
@@ -80,134 +79,6 @@ export function renderPolicySummary(
 }
 
 // --- actor/lineage/intent prompt sections -----------------------------------
-
-function provValue<T>(p: Provenanced<T> | undefined): T | "unavailable" {
-  return p === undefined ? "unavailable" : p.value;
-}
-
-function renderActor(actor: ActorContext, max: number): string {
-  return stableJson(
-    {
-      agent: provValue(actor.agentName),
-      mode: provValue(actor.mode),
-      profile: provValue(actor.profile),
-      identityCompleteness: actor.identityCompleteness,
-      sessionID: actor.sessionID,
-      parentSessionID: provValue(actor.parentSessionID),
-      rootSessionID: provValue(actor.rootSessionID),
-      delegationDepth: provValue(actor.delegationDepth),
-    },
-    max,
-  );
-}
-
-function renderLineage(lineage: SessionLineage, max: number): string {
-  return stableJson(
-    {
-      origin: lineage.origin ?? "unknown",
-      depth: lineage.depth,
-      rootSessionID: lineage.rootSessionID,
-      cycleDetected: lineage.cycleDetected,
-      truncated: lineage.truncated,
-      missingParents: lineage.missingParents,
-      chain: lineage.nodes.map((n) => ({
-        sessionID: n.sessionID,
-        ...(n.actorName === undefined ? {} : { actor: n.actorName }),
-        ...(n.mode === undefined ? {} : { mode: n.mode }),
-      })),
-    },
-    max,
-  );
-}
-
-function renderIntentBlocks(
-  blocks: IntentBlock[],
-  max: number,
-  limit = blocks.length,
-): string {
-  if (blocks.length === 0) return "<none />";
-  const ordered = [...blocks].sort(
-    (a, b) => (a.createdAt ?? 0) - (b.createdAt ?? 0),
-  );
-  const seen = new Set<string>();
-  const distinct = ordered
-    .reverse()
-    .filter((block) => {
-      const key = `${block.actor}:${block.text}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    })
-    .slice(0, limit)
-    .reverse();
-  return keepMostRecentBlocks(
-    distinct.map(
-      (block) =>
-        `INTENT actor=${block.actor} session=${block.sessionID} message=${block.messageID}${block.createdAt === undefined ? "" : ` created=${block.createdAt}`}\n${block.text}`,
-    ),
-    max,
-  );
-}
-
-function renderCompleteness(c: EvidenceCompleteness, max: number): string {
-  return stableJson(
-    {
-      overall: c.overall,
-      actor: c.actor,
-      lineage: c.lineage,
-      directUserIntent: c.directUserIntent,
-      delegatedTask: c.delegatedTask,
-      purpose: c.purpose,
-      capability: c.capability,
-      ...(c.reasons.length === 0 ? {} : { reasons: c.reasons }),
-    },
-    max,
-  );
-}
-
-function renderCapability(
-  cap: import("../capability/capability-types.ts").CapabilityAssessment,
-  max: number,
-): string {
-  return stableJson(
-    {
-      actionClass: cap.actionClass.value,
-      summary: cap.summary,
-      executesCode: cap.executesCode.value,
-      createsAdHocCode: cap.createsAdHocCode.value,
-      invokesPackageLifecycleScripts: cap.invokesPackageLifecycleScripts.value,
-      invokesExistingTestRunner: cap.invokesExistingTestRunner.value,
-      writeEffects: {
-        temporaryWrite: cap.writeEffects.temporaryWrite.value,
-        workspaceWrite: cap.writeEffects.workspaceWrite.value,
-        externalWrite: cap.writeEffects.externalWrite.value,
-        deletion: cap.writeEffects.deletion.value,
-      },
-      network: {
-        observed: cap.network.observed.value,
-        possible: cap.network.possible.value,
-        ...(cap.network.destinations.length === 0
-          ? {}
-          : { destinations: cap.network.destinations }),
-      },
-      process: {
-        childProcesses: cap.process.childProcesses.value,
-        persistence: cap.process.persistence.value,
-        privilegeEscalation: cap.process.privilegeEscalation.value,
-      },
-      remote: {
-        enabled: cap.remote.enabled.value,
-        mutationHint: cap.remote.mutationHint.value,
-      },
-      git: { mutation: cap.git.possible.value },
-      parserCompleteness: cap.parserCompleteness,
-      ...(cap.analysisWarnings.length === 0
-        ? {}
-        : { warnings: cap.analysisWarnings }),
-    },
-    max,
-  );
-}
 
 /** Render the actor-context prompt sections, or a single placeholder when
  *  resolution produced nothing (keeps the prompt compact for unknown actors). */

@@ -8,11 +8,24 @@ import { assert, sha256 } from "./util.mjs";
 // Git blob hashes of the security-critical files actually inspected for this kit.
 const PINNED_BLOBS = {
   "src/policy.ts": "69522b8244cc041dfedbfaf4690706624b2aab80",
-  "src/context.ts": "490836e9cfaca23e0f229fd2d0baad7cf542d048",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/context.ts": "e328d5e958f93377a98036188391422c0551dac3",
   "src/context/evidence-sections.ts":
+    "9fc5c436c2193c15bc67792cabc73983505f52b3",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/context/prompt-budget.ts": "36dd6eedf5817478a64eeb5829b8db117082a67c",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/context/actor-sections.ts": "df48b253d9deb19a73cb661ba7131f8a4772558a",
+  "src/context/capability-section.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "3e4714cc711443749a897f0f57068ad258f54438",
-  "src/context/prompt-budget.ts": "3b169365cc335698751533a86b6040fb2ff39c6a",
+    "f2b1e6b9a5937ff8ad421cef0dd869b028a83e68",
+  "src/context/evidence-layout.ts": "35e438dbcdd4b59be5e8829da6293c1ae203799b",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/context/intent-history.ts": "4f8ef5419a5ccbbbd37a47d93ffe9e265006d85a",
+  "src/context/message-summary.ts": "80977fe2e1c286142247e71f7ce0875742451b62",
+  "src/context/pending-permission.ts":
+    "97ba73673a05a5a9d118098b266b1f6177ea2ad0",
+  "src/context/synthetic-parts.ts": "a04fb16cdb80f13503b9eb301f25f2a628dc3c0e",
   "src/config.ts": "c580e3b071ca5e992a1777c53ab6069ecd7c8ab4",
   "src/config-fields.ts": "ad5aa5bcee0d873c523a8b903bf43ed676fabe01",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
