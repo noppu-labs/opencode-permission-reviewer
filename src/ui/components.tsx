@@ -1,6 +1,7 @@
 /** @jsxImportSource @opentui/solid */
 
-import type { ColorInput } from "@opentui/core";
+import type { ColorInput, MouseEvent } from "@opentui/core";
+import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
 
@@ -19,9 +20,10 @@ export function ReviewProgress(props: {
   theme: () => ReviewTheme;
   status: ReviewUiStatus;
   frame: () => number;
-}) {
-  const singleLine = (value: string) => value.replace(/[\r\n\t]+/g, " ");
-  const elapsed = () => {
+}): JSX.Element {
+  const singleLine = (value: string): string =>
+    value.replace(/[\r\n\t]+/g, " ");
+  const elapsed = (): string => {
     props.frame();
     return `${(Math.max(0, Date.now() - props.status.emittedAt) / 1_000).toFixed(1)}s`;
   };
@@ -77,9 +79,9 @@ export function ReviewOverlay(props: {
   status: ReviewUiStatus;
   /** Spinner signal, read inside text children so only those update per tick. */
   frame: () => number;
-}) {
+}): JSX.Element {
   const theme = props.theme;
-  const elapsed = () => {
+  const elapsed = (): string => {
     // Reading the tick signal inside the text child is what re-renders it every
     // 250ms: Date.now() and status.emittedAt are plain values, so a text that
     // reads no signal is evaluated once at mount and freezes.
@@ -102,11 +104,11 @@ export function ReviewOverlay(props: {
       border={["left"]}
       borderColor={theme().info}
       flexDirection="column"
-      onMouseDown={(event) => {
+      onMouseDown={(event: MouseEvent): void => {
         event.preventDefault();
         event.stopPropagation();
       }}
-      onMouseUp={(event) => {
+      onMouseUp={(event: MouseEvent): void => {
         event.preventDefault();
         event.stopPropagation();
       }}
@@ -151,9 +153,9 @@ export function ReviewOverlay(props: {
 export function ReviewResult(props: {
   theme: () => ReviewTheme;
   status: ReviewUiStatus;
-}) {
+}): JSX.Element {
   const theme = props.theme;
-  const appearance = () => {
+  const appearance = (): { color: ColorInput; icon: string; title: string } => {
     if (props.status.phase === "unknown") {
       return {
         color: theme().textMuted,
@@ -174,7 +176,8 @@ export function ReviewResult(props: {
     }
     return { color: theme().error, icon: "✕", title: "Review blocked" };
   };
-  const singleLine = (value: string) => value.replace(/[\r\n\t]+/g, " ");
+  const singleLine = (value: string): string =>
+    value.replace(/[\r\n\t]+/g, " ");
 
   return (
     <box

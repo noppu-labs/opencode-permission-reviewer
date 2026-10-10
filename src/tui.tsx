@@ -1,5 +1,7 @@
 /** @jsxImportSource @opentui/solid */
+import type { PluginOptions } from "@opencode-ai/plugin";
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui";
+import type { JSX } from "solid-js";
 import { createSignal, Show } from "solid-js";
 import { loadResolvedConfig } from "./config/loader.ts";
 import { reviewBudgetMs } from "./config.ts";
@@ -40,7 +42,10 @@ function notifyManual(api: TuiPluginApi, status: ReviewUiStatus): void {
   });
 }
 
-export const tui: TuiPlugin = async (api, options) => {
+export const tui: TuiPlugin = async (
+  api: TuiPluginApi,
+  options: PluginOptions | undefined,
+) => {
   const config = loadResolvedConfig(options);
   const state = new ReviewUiState({
     model: config.model,
@@ -54,19 +59,19 @@ export const tui: TuiPlugin = async (api, options) => {
   // own scope renders exactly once at boot and never updates again.
   const [revision, setRevision] = createSignal(0);
   const [frame, setFrame] = createSignal(0);
-  const touch = () => {
+  const touch = (): void => {
     syncMode();
     setRevision((value) => value + 1);
   };
 
-  const active = () => {
+  const active = (): ReviewUiStatus | undefined => {
     const sessionID = routeSessionID(api);
     if (!sessionID) return;
     return state.activeFor(sessionID, (id) => parentSessionID(api, id));
   };
 
   let popMode: (() => void) | undefined;
-  const syncMode = () => {
+  const syncMode = (): void => {
     const status = active();
     const wanted = status?.phase === "reviewing";
     if (wanted && popMode === undefined) {
@@ -117,7 +122,7 @@ export const tui: TuiPlugin = async (api, options) => {
   api.slots.register({
     order: 1_000,
     slots: {
-      app() {
+      app(): JSX.Element {
         // Load-bearing direct read: it subscribes the slot's render pass to
         // every state transition (touch), so the factory re-runs and renders
         // the current status. The spinner frame is deliberately NOT read here
@@ -128,7 +133,7 @@ export const tui: TuiPlugin = async (api, options) => {
         syncMode();
         return (
           <Show when={status?.phase === "reviewing" ? status : undefined} keyed>
-            {(current) => (
+            {(current: ReviewUiStatus) => (
               <ReviewOverlay
                 theme={() => api.theme.current}
                 status={current}
@@ -138,7 +143,7 @@ export const tui: TuiPlugin = async (api, options) => {
           </Show>
         );
       },
-      app_bottom() {
+      app_bottom(): JSX.Element {
         revision();
         const status = active();
         syncMode();
@@ -153,7 +158,7 @@ export const tui: TuiPlugin = async (api, options) => {
             }
             keyed
           >
-            {(current) => (
+            {(current: ReviewUiStatus) => (
               <ReviewResult theme={() => api.theme.current} status={current} />
             )}
           </Show>
@@ -163,7 +168,7 @@ export const tui: TuiPlugin = async (api, options) => {
   });
 };
 
-const module = {
+const module: { id: string; tui: TuiPlugin; setup: typeof setupTuiV2 } = {
   id: "opencode-permission-reviewer",
   tui,
   setup: setupTuiV2,
