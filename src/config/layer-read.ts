@@ -72,10 +72,9 @@ function unreadable(path: string, error: unknown): ConfigLayer {
   );
 }
 
-/** Read at most the capped bytes through the open descriptor. A missing file
- *  is the common case (status "missing", no warning); anything else that
- *  prevents honoring the layer degrades to the same warn-and-ignore outcome
- *  the loader already uses for malformed files. Never throws. */
+/** Read at most the capped bytes through the open descriptor; anything but a
+ *  missing file that stops the read becomes a `read-error` layer. Never
+ *  throws. */
 function readLayerText(path: string): LayerText {
   let fd: number | undefined;
   try {

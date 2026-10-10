@@ -5,16 +5,15 @@ import type {
 } from "./types.ts";
 
 /**
- * The escalation reason for an `allow` the risk policy does not let through,
- * or `undefined` when the allow stands.
+ * The escalation reason for an `allow` that the risk matrix or a schema v2
+ * gate blocks, or `undefined` when the allow stands.
  */
 function allowGateReason(
   decision: ReviewDecision,
   config: ReviewerConfig,
 ): string | undefined {
   // Deterministic risk×authorization gate, driven by the configurable
-  // riskPolicy matrix. The default matrix reproduces the previous hard-coded
-  // behavior exactly.
+  // riskPolicy matrix.
   const { risk_level: risk, user_authorization: auth } = decision;
   const permitted = config.riskPolicy.allow[risk];
   if (permitted === undefined || !permitted.includes(auth)) {
@@ -60,8 +59,8 @@ function gateReason(
     return `Reviewer confidence ${decision.confidence.toFixed(2)} is below ${effectiveThreshold.toFixed(2)}.`;
   }
 
-  // The gates only ever RESTRICT an `allow`: the model's `escalate` outcome
-  // is always preserved.
+  // The risk-matrix and schema v2 gates apply to an `allow` only; an
+  // `escalate` keeps the model's outcome.
   if (decision.outcome !== "allow") return undefined;
   return allowGateReason(decision, config);
 }

@@ -26,7 +26,7 @@ export function actionCompleteness(
 
   // Whether the action under review reached the rendered evidence in full
   // (no elided command middle, no truncated PENDING_PERMISSION section). The
-  // coordinator blocks automatic approval when this is false.
+  // engine's allow gate blocks automatic approval when this is false.
   const { actionEvidenceComplete } = pendingPermissionSection(request, config);
   if (!actionEvidenceComplete)
     reasons.push("pending action was elided or truncated in the evidence");

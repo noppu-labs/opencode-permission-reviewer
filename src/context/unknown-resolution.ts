@@ -23,7 +23,7 @@ export interface ActorResolution {
   completeness: EvidenceCompleteness;
 }
 
-/** Fallback used when resolution fails outright. Exposed for tests. */
+/** Fallback used when resolution fails outright. */
 export function unknownResolution(
   request: PermissionRequest,
   error: unknown,
