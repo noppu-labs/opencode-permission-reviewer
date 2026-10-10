@@ -3,11 +3,9 @@
 // cycle, depth and record bounds.
 
 import { dirname } from "node:path";
+import type { EvidenceScope } from "./evidence/provider.ts";
 import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
-import {
-  type EvidenceScope,
-  ManifestCache,
-} from "./package-manifest-search.ts";
+import { ManifestCache } from "./package-manifest-search.ts";
 import { scriptCalls } from "./package-script-calls.ts";
 import type { ScriptInvocation } from "./package-script-invocation.ts";
 import {

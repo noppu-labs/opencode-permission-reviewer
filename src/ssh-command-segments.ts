@@ -12,26 +12,27 @@ export function findSshIndex(tokens: ReadonlyArray<string>): number {
   return tokens.findIndex((token) => commandName(token) === "ssh");
 }
 
-interface SshOptions {
-  port?: string | undefined;
-  identityFile?: string | undefined;
-  strictHostKeyChecking?: string | undefined;
+export interface SshInvocation {
+  destination: string;
+  host: string;
+  user?: string;
+  port?: string;
+  identityFile?: string;
+  strictHostKeyChecking?: string;
+  remoteCommand: string;
 }
+
+/** The value options scanned before the destination; a value can be missing. */
+type SshOptions = {
+  [K in "port" | "identityFile" | "strictHostKeyChecking"]?:
+    | SshInvocation[K]
+    | undefined;
+};
 
 export function parseSsh(
   tokens: ReadonlyArray<string>,
   sshIndex: number,
-):
-  | {
-      destination: string;
-      host: string;
-      user?: string;
-      port?: string;
-      identityFile?: string;
-      strictHostKeyChecking?: string;
-      remoteCommand: string;
-    }
-  | undefined {
+): SshInvocation | undefined {
   const { destination, index, options } = scanSshArguments(tokens, sshIndex);
   if (!destination) return;
   const at = destination.lastIndexOf("@");

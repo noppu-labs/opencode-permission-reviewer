@@ -38,7 +38,7 @@ const PINNED_BLOBS = {
   "src/capability/bash-mutation.ts": "faa0c8d39af857f106d66fed2d54f03ca08acd5a",
   "src/shell-effective-commands.ts": "66e9183f50e24ff07424ffa211ded46dca6ba4ce",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/effective-command-walk.ts": "a9618c8de7a3d6528c55132de68be7d4f0c27842",
+  "src/effective-command-walk.ts": "b6aee5acba4cd76897d05e16ce31d399f83e6074",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-wrapper-options.ts": "9926f878a195ab02df4cc2f22568b83565cef2e9",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -56,11 +56,10 @@ const PINNED_BLOBS = {
   "src/shell-redirection-operators.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "579703335deab3052f2b1f8b39d34cea10266ba2",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-lex-state.ts": "72eac1619909d2b3806d41d91d6674e75a43acb2",
+  "src/shell-lex-state.ts": "a44b5716ccba161d751bcc1be39aaf1ffd05e92e",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-quote-scan.ts": "30acc8301b6b44bc45b742bfcfe7ae536958e0da",
-  "src/shell-scanner.ts": "41d5f6c340f3c1bbac2201177d3db600d71e2a35",
+  "src/shell-scanner.ts": "f95ccb4dfbe52845197d51ca531e2751fa0372cf",
   "src/ssh-value-options.ts": "79b1030f4e03d09415238c06cdb0acffdbda2bee",
   "src/capability/heredoc-extractor.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -68,8 +67,7 @@ const PINNED_BLOBS = {
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/system-one/review.ts": "0d92a58e6befb0bffa66849a8b326c5e9474e437",
   "src/capability/capability-facts.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "aad5d34ac80dc387c916775445e2841076eabfaa",
+    "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "0f97918b43dbe5c9e8a730b30aa50ee037614e5c",

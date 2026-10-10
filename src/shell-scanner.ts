@@ -14,6 +14,7 @@ import {
   appendValue,
   flushSegment,
   flushToken,
+  type LexBudget,
   type LexState,
 } from "./shell-lex-state.ts";
 import {
@@ -118,7 +119,7 @@ function lexUnquoted(lex: LexState, c: string): void {
  */
 export function lexSegments(
   command: string,
-  state?: { tokensRemaining: number },
+  state?: LexBudget,
 ): ShellSegment[] {
   const lex: LexState = {
     command,

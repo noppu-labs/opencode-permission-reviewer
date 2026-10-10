@@ -1,11 +1,15 @@
+import type { EvidenceScope } from "./evidence/provider.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
 import { type FileEvidence, sha256 } from "./file-evidence.ts";
-import { findSshIndex, parseSsh } from "./ssh-command-segments.ts";
-import { type SshInvocation, sshRecord } from "./ssh-record.ts";
+import {
+  findSshIndex,
+  parseSsh,
+  type SshInvocation,
+} from "./ssh-command-segments.ts";
+import { sshRecord } from "./ssh-record.ts";
 import {
   deterministicDenial,
   pipelineProducer,
-  type StdinReadScope,
   stdinEvidence,
 } from "./ssh-stdin-source.ts";
 import type { PermissionRequest } from "./types.ts";
@@ -40,7 +44,7 @@ export async function enrichSshEvidence(
   // so a stdin source resolves where the producing command runs, not against
   // the ssh segment's directory.
   const segments = shellCommandSegmentsWithDirectory(command, directory);
-  const scope: StdinReadScope = { directory, worktree, maxChars };
+  const scope: EvidenceScope = { directory, worktree, maxChars };
   const records: Array<Record<string, unknown>> = [];
   const audit: SshAuditSummary[] = [];
   const preflightDenials: string[] = [];

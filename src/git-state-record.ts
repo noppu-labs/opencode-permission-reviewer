@@ -1,12 +1,11 @@
 // Git state record: the available snapshot of a contained repository, built from its status and the plan's demands.
 
 import { boundedList, type PlannedGitActions } from "./git-command-plan.ts";
+import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
 import type { Inspection } from "./git-inspection-gate.ts";
 import { remoteRecord } from "./git-remote-evidence.ts";
 import { rewriteEvidence } from "./git-rewrite-evidence.ts";
 import { runGit } from "./git-run.ts";
-
-const UNRESOLVED_EXPANSION = /[$`*?{}<>]/;
 
 function unresolved(values: string[]): string[] {
   return values.filter((value) => UNRESOLVED_EXPANSION.test(value));

@@ -4,6 +4,7 @@
 
 import { lstat } from "node:fs/promises";
 import { dirname, join } from "node:path";
+import type { EvidenceScope } from "./evidence/provider.ts";
 import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import type { FileEvidence } from "./file-evidence.ts";
 
@@ -49,12 +50,6 @@ function parsedManifest(path: string, content: string): ManifestEvidence {
       reason: "manifest is not valid JSON",
     };
   }
-}
-
-export interface EvidenceScope {
-  directory: string;
-  worktree: string;
-  maxChars: number;
 }
 
 async function manifestEvidence(

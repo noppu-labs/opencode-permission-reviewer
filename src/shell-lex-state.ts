@@ -2,19 +2,25 @@
 
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
 
+type ShellSpan = NonNullable<ShellToken["spans"]>[number];
+
+export interface LexBudget {
+  tokensRemaining: number;
+}
+
 /** Mutable scan state shared by the character handlers in shell-scanner.ts
  *  and shell-quote-scan.ts. `index` is the next character of `command` to
  *  read. */
 export interface LexState {
   command: string;
-  budget: { tokensRemaining: number } | undefined;
+  budget: LexBudget | undefined;
   index: number;
   segments: ShellSegment[];
   tokens: ShellToken[];
   value: string;
   raw: string;
   hasToken: boolean;
-  spans: Array<{ text: string; quoted: boolean }>;
+  spans: ShellSpan[];
   inSingle: boolean;
   inDouble: boolean;
   lastSeparator: string | undefined;

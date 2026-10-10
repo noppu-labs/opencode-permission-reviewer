@@ -1,6 +1,7 @@
 // Git remote operands: the remotes, URLs and default-remote annotations a network subcommand or `git remote` verb names.
 
 import { elementAt } from "./element-at.ts";
+import type { PlannedGitActions } from "./git-command-plan.ts";
 import { NETWORK_VALUE_OPTIONS } from "./git-network-options.ts";
 
 /** Verbs of `git remote` that operate on a named remote as their next
@@ -115,7 +116,7 @@ const MAX_DEFAULT_REMOTES = 4;
 
 /** Adds a subcommand's remote targets to the plan, within its bounds. */
 export function recordRemoteTargets(
-  result: { remoteCandidates: string[]; needsDefaultRemote: string[] },
+  result: Pick<PlannedGitActions, "remoteCandidates" | "needsDefaultRemote">,
   targets: RemoteTargets,
 ): void {
   for (const candidate of targets.candidates) {

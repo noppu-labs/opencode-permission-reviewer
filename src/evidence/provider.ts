@@ -16,11 +16,14 @@ export interface EvidenceFragment {
   durationMs?: number;
 }
 
-export interface EvidenceProviderInput {
-  request: PermissionRequest;
+export interface EvidenceScope {
   directory: string;
   worktree: string;
   maxChars: number;
+}
+
+export interface EvidenceProviderInput extends EvidenceScope {
+  request: PermissionRequest;
 }
 
 /**

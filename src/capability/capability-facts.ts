@@ -1,9 +1,13 @@
 // The fact record analyzeCapability threads through its passes, and the write-effect update they share.
 
+import type { EvidenceConfidence } from "../actor-context-types.ts";
 import type { CapabilityActionClass } from "../types.ts";
 import { classifyPath } from "./bash-mutation.ts";
 
-export type ClassConfidence = "high" | "medium" | "low";
+export type ClassConfidence = Extract<
+  EvidenceConfidence,
+  "high" | "medium" | "low"
+>;
 
 /** Facts accumulated across the analyzer's passes. Every boolean starts
  *  false and is only ever set to true. `dominantClass` and `classConfidence`

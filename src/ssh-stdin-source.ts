@@ -2,16 +2,11 @@
 // preflight denial when it is missing.
 
 import { isAbsolute } from "node:path";
+import type { EvidenceScope } from "./evidence/provider.ts";
 import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import { type FileEvidence, isMissingFile } from "./file-evidence.ts";
 import { catSource } from "./ssh-command-segments.ts";
 import type { ShellCommandSegmentWithDirectory } from "./working-directory-segments.ts";
-
-export interface StdinReadScope {
-  directory: string;
-  worktree: string;
-  maxChars: number;
-}
 
 // The pipeline producer runs where IT runs, not where ssh runs: a group
 // like `(cd sub && cat p.py) | ssh …` reads the stdin file from sub even
@@ -34,7 +29,7 @@ export function pipelineProducer(
 export async function stdinEvidence(
   segment: ShellCommandSegmentWithDirectory,
   producer: ShellCommandSegmentWithDirectory | undefined,
-  scope: StdinReadScope,
+  scope: EvidenceScope,
 ): Promise<FileEvidence | undefined> {
   const stdinPath =
     segment.preceding === "|" && producer

@@ -3,6 +3,7 @@
 import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
+import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
@@ -30,10 +31,7 @@ import { sshRemoteCommand } from "./ssh-remote-command.ts";
 const MAX_WALK_DEPTH = 32;
 
 /** Where every level of one walk collects its effective commands. */
-export interface WalkSink {
-  commands: ShellToken[][];
-  redirections: ShellRedirection[][];
-  truncated: boolean;
+export interface WalkSink extends EffectiveCommandsAnalysis {
   budget: AnalysisBudget;
 }
 

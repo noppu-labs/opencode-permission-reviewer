@@ -2,9 +2,7 @@
 
 import { commandSignals, stdinSignals } from "./evidence-signals.ts";
 import type { FileEvidence } from "./file-evidence.ts";
-import type { parseSsh } from "./ssh-command-segments.ts";
-
-export type SshInvocation = NonNullable<ReturnType<typeof parseSsh>>;
+import type { SshInvocation } from "./ssh-command-segments.ts";
 
 export function sshRecord(
   parsed: SshInvocation,
