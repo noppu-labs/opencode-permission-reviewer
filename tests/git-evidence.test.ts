@@ -40,7 +40,7 @@ async function repository(): Promise<string> {
 
 afterEach(async () => {
   for (const directory of temporaryDirectories.splice(0)) {
-    // biome-ignore lint/performance/noAwaitInLoops: nested fixtures push overlapping paths, so parallel removals would race and an already-deleted child would fail the suite
+    // biome-ignore lint/performance/noAwaitInLoops: fixtures nest (a repository inside another fixture), so removing them one at a time keeps two recursive removals from walking the same tree
     await rm(directory, { recursive: true, force: true });
   }
 });
@@ -137,7 +137,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
         stdout: "pipe",
         stderr: "pipe",
       });
-      // biome-ignore lint/performance/noAwaitInLoops: each case spawns a bun child that runs git through a fake executable whose output is set per case; run one at a time
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns a bun child process; run one at a time so process start-up load stays flat under CI
       const [exitCode, text] = await Promise.all([
         child.exited,
         new Response(child.stdout).text(),
