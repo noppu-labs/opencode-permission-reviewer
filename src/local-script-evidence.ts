@@ -1,12 +1,15 @@
 import { basename, resolve } from "node:path";
+import { elementAt } from "./element-at.ts";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
 import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import { analyzeScriptContent } from "./evidence-signals.ts";
 import type { FileEvidence } from "./file-evidence.ts";
-import { invariant } from "./invariant.ts";
 import type { PermissionRequest } from "./types.ts";
-import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
+import {
+  type ShellCommandSegmentWithDirectory,
+  shellCommandSegmentsWithDirectory,
+} from "./working-directory-segments.ts";
 
 export interface LocalScriptEnrichmentResult {
   text: string;
@@ -195,73 +198,126 @@ function matchesOption(token: string, options: Set<string>): boolean {
   return [...options].some((option) => token.startsWith(`${option}=`));
 }
 
+// One planner step: stop with the target found so far, or move on, skipping
+// `skip` extra tokens consumed as an option value.
+type ScanStep =
+  | { done: true; target: string | undefined }
+  | { done: false; skip: number };
+
+const STOP: ScanStep = { done: true, target: undefined };
+const NEXT: ScanStep = { done: false, skip: 0 };
+const CONSUME_VALUE: ScanStep = { done: false, skip: 1 };
+
+interface ScanState {
+  fileTargetPending: boolean;
+  optionsEnded: boolean;
+}
+
+function isInformationFlag(token: string, interpreter: string): boolean {
+  return (
+    ["--help", "--version"].includes(token) ||
+    (["node", "bun", "deno", "tsx"].includes(interpreter) && token === "-v") ||
+    (["python", "python3"].includes(interpreter) && token === "-V")
+  );
+}
+
+// A dash spell can mean inline code for one runtime and a valued option for
+// another (deno -c is --config, node -c is --check): the interpreter spec wins.
+function runsInlineCode(
+  token: string,
+  spec: InterpreterSpec | undefined,
+): boolean {
+  const inlineOption = [...INLINE_CODE_OPTIONS].find((option) =>
+    option.startsWith("--")
+      ? token === option || token.startsWith(`${option}=`)
+      : token.startsWith(option),
+  );
+  return inlineOption !== undefined && !spec?.valueOptions?.has(inlineOption);
+}
+
+function stopsBeforeTarget(
+  token: string,
+  interpreter: string,
+  spec: InterpreterSpec | undefined,
+): boolean {
+  return (
+    isInformationFlag(token, interpreter) ||
+    token === "-" ||
+    runsInlineCode(token, spec) ||
+    token.startsWith("-m") ||
+    (spec?.bailOptions !== undefined && matchesOption(token, spec.bailOptions))
+  );
+}
+
+// The step for a token seen before `--`, or undefined when it is an operand.
+function optionStep(
+  token: string,
+  interpreter: string,
+  spec: InterpreterSpec | undefined,
+): ScanStep | undefined {
+  if (stopsBeforeTarget(token, interpreter, spec)) return STOP;
+  if (spec?.noConsumeOptions?.has(token)) return NEXT;
+  if (OPTIONS_WITH_VALUE.has(token) || spec?.valueOptions?.has(token))
+    return CONSUME_VALUE;
+  if (token.startsWith("-")) return NEXT;
+  return;
+}
+
+function operandTarget(
+  token: string,
+  spec: InterpreterSpec | undefined,
+  fileTargetPending: boolean,
+): string | undefined {
+  if (/[$`*?{}<>]/.test(token)) return;
+  // The first non-option operand after a file-target subcommand is
+  // decisive: a path-like token is the executed file, anything else is a
+  // manifest script or package reference.
+  if (fileTargetPending) return pathLikeFileTarget(token) ? token : undefined;
+  if (spec?.directRequiresPathLike && !pathLikeFileTarget(token)) return;
+  if (spec?.nonFileSubcommands?.has(token)) return;
+  return token;
+}
+
+function scanStep(
+  token: string,
+  interpreter: string,
+  spec: InterpreterSpec | undefined,
+  state: ScanState,
+): ScanStep {
+  if (!state.optionsEnded) {
+    if (token === "--") {
+      state.optionsEnded = true;
+      return NEXT;
+    }
+    const step = optionStep(token, interpreter, spec);
+    if (step !== undefined) return step;
+  } else if (token === "-") return STOP;
+  if (spec?.fileTargetSubcommands?.has(token) && !state.fileTargetPending) {
+    state.fileTargetPending = true;
+    return NEXT;
+  }
+  return {
+    done: true,
+    target: operandTarget(token, spec, state.fileTargetPending),
+  };
+}
+
 function scriptPath(
   tokens: string[],
   interpreterIndex: number,
   interpreter: string,
 ): string | undefined {
   const spec = INTERPRETER_SPECS[interpreter];
-  let fileTargetPending = false;
-  let optionsEnded = false;
+  const state: ScanState = { fileTargetPending: false, optionsEnded: false };
   for (let index = interpreterIndex + 1; index < tokens.length; index += 1) {
-    const token = tokens[index];
-    invariant(token !== undefined, "tokens[index] is in bounds");
-    if (token === "--" && !optionsEnded) {
-      optionsEnded = true;
-      continue;
-    }
-    if (
-      !optionsEnded &&
-      (["--help", "--version"].includes(token) ||
-        (["node", "bun", "deno", "tsx"].includes(interpreter) &&
-          token === "-v") ||
-        (["python", "python3"].includes(interpreter) && token === "-V"))
-    )
-      return;
-    const inlineOption = [...INLINE_CODE_OPTIONS].find((option) =>
-      option.startsWith("--")
-        ? token === option || token.startsWith(`${option}=`)
-        : token.startsWith(option),
+    const step = scanStep(
+      elementAt(tokens, index, "tokens"),
+      interpreter,
+      spec,
+      state,
     );
-    // A dash spell can mean inline code for one runtime and a valued option
-    // for another (deno -c is --config, node -c is --check): the interpreter
-    // spec wins.
-    if (
-      token === "-" ||
-      (!optionsEnded &&
-        inlineOption !== undefined &&
-        !spec?.valueOptions?.has(inlineOption)) ||
-      (!optionsEnded && token.startsWith("-m"))
-    ) {
-      return;
-    }
-    if (
-      !optionsEnded &&
-      spec?.bailOptions !== undefined &&
-      matchesOption(token, spec.bailOptions)
-    )
-      return;
-    if (!optionsEnded && spec?.noConsumeOptions?.has(token)) continue;
-    if (
-      !optionsEnded &&
-      (OPTIONS_WITH_VALUE.has(token) || spec?.valueOptions?.has(token))
-    ) {
-      index += 1;
-      continue;
-    }
-    if (!optionsEnded && token.startsWith("-")) continue;
-    if (spec?.fileTargetSubcommands?.has(token) && !fileTargetPending) {
-      fileTargetPending = true;
-      continue;
-    }
-    if (/[$`*?{}<>]/.test(token)) return;
-    // The first non-option operand after a file-target subcommand is
-    // decisive: a path-like token is the executed file, anything else is a
-    // manifest script or package reference.
-    if (fileTargetPending) return pathLikeFileTarget(token) ? token : undefined;
-    if (spec?.directRequiresPathLike && !pathLikeFileTarget(token)) return;
-    if (spec?.nonFileSubcommands?.has(token)) return;
-    return token;
+    if (step.done) return step.target;
+    index += step.skip;
   }
   return;
 }
@@ -293,6 +349,66 @@ function recordFor(
   };
 }
 
+interface InterpreterScript {
+  interpreter: string;
+  path: string;
+}
+
+function interpreterScript(tokens: string[]): InterpreterScript | undefined {
+  const command = localExecutableCommand(tokens)?.tokens;
+  const executable = command?.[0];
+  if (
+    command === undefined ||
+    executable === undefined ||
+    !INTERPRETERS.has(basename(executable))
+  )
+    return;
+  const interpreter = basename(executable);
+  const path = scriptPath(command, 0, interpreter);
+  return path ? { interpreter, path } : undefined;
+}
+
+// A relative script after an unresolved cd has no known location.
+function unlocated(
+  segment: ShellCommandSegmentWithDirectory,
+  path: string,
+): boolean {
+  return segment.directory === undefined && !path.startsWith("/");
+}
+
+function scriptKey(
+  script: InterpreterScript,
+  segment: ShellCommandSegmentWithDirectory,
+  directory: string,
+): string {
+  return `${script.interpreter}\0${unlocated(segment, script.path) ? `unresolved:${script.path}` : resolve(segment.directory ?? directory, script.path)}`;
+}
+
+function unlocatedEvidence(
+  path: string,
+  segment: ShellCommandSegmentWithDirectory,
+): FileEvidence {
+  return {
+    source: "file",
+    path,
+    status: "unavailable",
+    reason: segment.directoryReason ?? "working directory is unresolved",
+  };
+}
+
+function localScriptText(
+  records: Array<Record<string, unknown>>,
+  maxChars: number,
+): string {
+  if (records.length === 0) return "";
+  const serialized = JSON.stringify(records, null, 2);
+  const bounded =
+    serialized.length <= maxChars
+      ? serialized
+      : `${serialized.slice(0, maxChars)}\n<local_script_enrichment_truncated characters="${serialized.length - maxChars}" />`;
+  return `LOCAL_SCRIPT_ANALYSIS\n${bounded}`;
+}
+
 export async function enrichLocalScriptEvidence(
   request: PermissionRequest,
   directory: string,
@@ -308,45 +424,23 @@ export async function enrichLocalScriptEvidence(
   const seen = new Set<string>();
 
   for (const segment of segments) {
-    const command = localExecutableCommand(segment.tokens)?.tokens;
-    const executable = command?.[0];
-    if (
-      command === undefined ||
-      executable === undefined ||
-      !INTERPRETERS.has(basename(executable))
-    )
-      continue;
-    const interpreter = basename(executable);
-    const path = scriptPath(command, 0, interpreter);
-    if (!path) continue;
-    const key = `${interpreter}\0${segment.directory === undefined && !path.startsWith("/") ? `unresolved:${path}` : resolve(segment.directory ?? directory, path)}`;
+    const script = interpreterScript(segment.tokens);
+    if (script === undefined) continue;
+    const key = scriptKey(script, segment, directory);
     if (seen.has(key)) continue;
     seen.add(key);
-    const file =
-      segment.directory === undefined && !path.startsWith("/")
-        ? {
-            source: "file" as const,
-            path,
-            status: "unavailable" as const,
-            reason:
-              segment.directoryReason ?? "working directory is unresolved",
-          }
-        : // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one script evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records are appended in command order
-          await includeEvidenceFile(
-            path,
-            segment.directory ?? directory,
-            directory,
-            worktree,
-            maxChars,
-          );
-    records.push(recordFor(interpreter, file.path, file));
+    const file = unlocated(segment, script.path)
+      ? unlocatedEvidence(script.path, segment)
+      : // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one script evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records are appended in command order
+        await includeEvidenceFile(
+          script.path,
+          segment.directory ?? directory,
+          directory,
+          worktree,
+          maxChars,
+        );
+    records.push(recordFor(script.interpreter, file.path, file));
   }
 
-  if (records.length === 0) return { text: "" };
-  const serialized = JSON.stringify(records, null, 2);
-  const bounded =
-    serialized.length <= maxChars
-      ? serialized
-      : `${serialized.slice(0, maxChars)}\n<local_script_enrichment_truncated characters="${serialized.length - maxChars}" />`;
-  return { text: `LOCAL_SCRIPT_ANALYSIS\n${bounded}` };
+  return { text: localScriptText(records, maxChars) };
 }
