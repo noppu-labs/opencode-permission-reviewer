@@ -554,9 +554,9 @@ describe("capability analyzer - credential reads", () => {
     "rm ~/.ssh/id_rsa",
     "cp .env /tmp/backup",
     "cat notes.txt",
-    "cat > .env",
-    "cat < $HOME/.env",
-    "cat my.env",
+    "cat > .env", // an output redirect to a credential path is a write
+    "cat < $HOME/.env", // a dynamic input-redirect target stays unknown
+    "cat my.env", // basename anchoring: my.env is not .env
   ])("does not claim a credential read: %s", (command) => {
     const a = assess(command);
     expect(a.credentialRead.value).toBe("unknown");
@@ -572,7 +572,7 @@ describe("capability analyzer - credential reads", () => {
   test.each([
     "cat .env.local",
     "cat ~/.config/gh/hosts.yml",
-    "cat .env > /tmp/out",
+    "cat .env > /tmp/out", // a genuine read survives an output redirect
     // Accepted hint semantics: a bare sensitive basename matches anywhere,
     // even without proof that this specific file holds secrets.
     "cat data/credentials",
