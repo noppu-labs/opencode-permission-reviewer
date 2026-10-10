@@ -121,6 +121,193 @@ export function tokenCharIsQuoted(token: ShellToken, index: number): boolean {
   return false;
 }
 
+/** Mutable scan state shared by the per-character handlers below. `index`
+ *  is the next character of `command` to read. */
+interface LexState {
+  command: string;
+  budget: { tokensRemaining: number } | undefined;
+  index: number;
+  segments: ShellSegment[];
+  tokens: ShellToken[];
+  value: string;
+  raw: string;
+  hasToken: boolean;
+  spans: Array<{ text: string; quoted: boolean }>;
+  inSingle: boolean;
+  inDouble: boolean;
+  lastSeparator: string | undefined;
+  outOfTokens: boolean;
+}
+
+function appendValue(lex: LexState, text: string, quoted: boolean): void {
+  if (text.length === 0) return;
+  const last = lex.spans.at(-1);
+  if (last !== undefined && last.quoted === quoted) last.text += text;
+  else lex.spans.push({ text, quoted });
+  lex.value += text;
+}
+
+function flushToken(lex: LexState): void {
+  if (!lex.hasToken) return;
+  lex.tokens.push({ raw: lex.raw, value: lex.value, spans: lex.spans });
+  lex.value = "";
+  lex.raw = "";
+  lex.spans = [];
+  lex.hasToken = false;
+  if (lex.budget !== undefined) {
+    lex.budget.tokensRemaining -= 1;
+    if (lex.budget.tokensRemaining <= 0) lex.outOfTokens = true;
+  }
+}
+
+function flushSegment(lex: LexState, endedBy?: string): void {
+  flushToken(lex);
+  // Paren separators survive as empty marker segments even without tokens:
+  // the directory tracker needs every open/close event, and dropping the
+  // empties left nested closes unbalanced (`( cd x; (a) ) b` restored the
+  // wrong state after the group). Other empty flushes stay dropped.
+  if (lex.tokens.length > 0 || endedBy === "(" || endedBy === ")") {
+    lex.segments.push({
+      tokens: lex.tokens,
+      ...(endedBy === undefined ? {} : { endedBy }),
+      ...(lex.lastSeparator === undefined
+        ? {}
+        : { precededBy: lex.lastSeparator }),
+    });
+    lex.tokens = [];
+  }
+}
+
+function lexSingleQuoted(lex: LexState, c: string): void {
+  lex.raw += c;
+  if (c === "'") lex.inSingle = false;
+  else appendValue(lex, c, true);
+  lex.index += 1;
+}
+
+function lexDoubleQuotedEscape(lex: LexState): void {
+  const next = lex.command.charAt(lex.index + 1);
+  lex.raw += next;
+  // Inside double quotes bash only unescapes $ ` " \ and the newline
+  // (a line continuation). A backslash before any other character,
+  // including `n`, stays a literal backslash in the value.
+  if (next === "\n" || next === "\r") {
+    lex.index += 2;
+    return;
+  }
+  if ('$`"\\'.includes(next)) {
+    appendValue(lex, next, true);
+    lex.index += 2;
+    return;
+  }
+  appendValue(lex, "\\", true);
+  lex.index += 1;
+}
+
+function lexDoubleQuoted(lex: LexState, c: string): void {
+  lex.raw += c;
+  if (c === '"') {
+    lex.inDouble = false;
+    lex.index += 1;
+  } else if (c === "\\" && lex.index + 1 < lex.command.length) {
+    lexDoubleQuotedEscape(lex);
+  } else {
+    appendValue(lex, c, true);
+    lex.index += 1;
+  }
+}
+
+function openQuote(lex: LexState, c: string): void {
+  if (c === "'") lex.inSingle = true;
+  else lex.inDouble = true;
+  lex.raw += c;
+  lex.hasToken = true;
+  lex.index += 1;
+}
+
+function appendUnquoted(lex: LexState, c: string): void {
+  appendValue(lex, c, false);
+  lex.raw += c;
+  lex.hasToken = true;
+  lex.index += 1;
+}
+
+// Redirection operators may contain characters that are command separators
+// elsewhere. Keep `&>`, `2>&1`, and `>|file` inside the token so the
+// redirection normalizer below can interpret them as one shell construct
+// instead of inventing extra commands.
+function gluesToRedirection(lex: LexState, c: string): boolean {
+  if (c === "&" && lex.command[lex.index + 1] === ">") return true;
+  if (c !== "&" && c !== "|") return false;
+  return (
+    lex.value.endsWith(">") &&
+    !tokenCharIsQuoted(
+      { raw: lex.raw, value: lex.value, spans: lex.spans },
+      lex.value.length - 1,
+    )
+  );
+}
+
+function lexSeparator(lex: LexState, c: string): void {
+  // Capture the operator identity (including doubled `||`/`&&`) so
+  // evidence consumers can reason about how segments relate.
+  let endedBy = c === "\n" || c === "\r" ? ";" : c;
+  if ((c === "|" || c === "&") && lex.command[lex.index + 1] === c) {
+    endedBy = `${c}${c}`;
+    lex.index += 1;
+  }
+  flushSegment(lex, endedBy);
+  lex.lastSeparator = endedBy;
+  lex.index += 1;
+}
+
+function skipComment(lex: LexState): void {
+  // Line comment: consume until newline (newline itself closes the segment).
+  while (lex.index < lex.command.length && lex.command[lex.index] !== "\n")
+    lex.index += 1;
+}
+
+function lexEscape(lex: LexState): void {
+  const next = lex.command.charAt(lex.index + 1);
+  lex.raw += `\\${next}`;
+  // Backslash-newline is a line continuation outside quotes: both
+  // characters vanish, so `r\<newline>m` lexes as the token `rm`.
+  if (next !== "\n" && next !== "\r") {
+    appendValue(lex, next, true);
+    lex.hasToken = true;
+  }
+  lex.index += 2;
+}
+
+function lexUnquoted(lex: LexState, c: string): void {
+  if (c === "'" || c === '"') {
+    openQuote(lex, c);
+    return;
+  }
+  if (gluesToRedirection(lex, c)) {
+    appendUnquoted(lex, c);
+    return;
+  }
+  if (SEPARATORS.has(c)) {
+    lexSeparator(lex, c);
+    return;
+  }
+  if (WHITESPACE.has(c)) {
+    flushToken(lex);
+    lex.index += 1;
+    return;
+  }
+  if (c === "#" && !lex.hasToken) {
+    skipComment(lex);
+    return;
+  }
+  if (c === "\\" && lex.index + 1 < lex.command.length) {
+    lexEscape(lex);
+    return;
+  }
+  appendUnquoted(lex, c);
+}
+
 /**
  * Tokenize `command` into logical segments (one per sub-command separated by
  * `;`, `|`, `&`, or newline) with quote-aware, comment-aware grouping.
@@ -132,168 +319,30 @@ export function lexSegments(
   command: string,
   state?: { tokensRemaining: number },
 ): ShellSegment[] {
-  const segments: ShellSegment[] = [];
-  let tokens: ShellToken[] = [];
-  let value = "";
-  let raw = "";
-  let hasToken = false;
-  let spans: Array<{ text: string; quoted: boolean }> = [];
-  let inSingle = false;
-  let inDouble = false;
-  let lastSeparator: string | undefined;
-  let outOfTokens = false;
-
-  const appendValue = (text: string, quoted: boolean): void => {
-    if (text.length === 0) return;
-    const last = spans.at(-1);
-    if (last !== undefined && last.quoted === quoted) last.text += text;
-    else spans.push({ text, quoted });
-    value += text;
+  const lex: LexState = {
+    command,
+    budget: state,
+    index: 0,
+    segments: [],
+    tokens: [],
+    value: "",
+    raw: "",
+    hasToken: false,
+    spans: [],
+    inSingle: false,
+    inDouble: false,
+    lastSeparator: undefined,
+    outOfTokens: false,
   };
-
-  const flushToken = (): void => {
-    if (hasToken) {
-      tokens.push({ raw, value, spans });
-      value = "";
-      raw = "";
-      spans = [];
-      hasToken = false;
-      if (state !== undefined) {
-        state.tokensRemaining -= 1;
-        if (state.tokensRemaining <= 0) outOfTokens = true;
-      }
-    }
-  };
-  const flushSegment = (endedBy?: string): void => {
-    flushToken();
-    // Paren separators survive as empty marker segments even without tokens:
-    // the directory tracker needs every open/close event, and dropping the
-    // empties left nested closes unbalanced (`( cd x; (a) ) b` restored the
-    // wrong state after the group). Other empty flushes stay dropped.
-    if (tokens.length > 0 || endedBy === "(" || endedBy === ")") {
-      segments.push({
-        tokens,
-        ...(endedBy === undefined ? {} : { endedBy }),
-        ...(lastSeparator === undefined ? {} : { precededBy: lastSeparator }),
-      });
-      tokens = [];
-    }
-  };
-
-  let i = 0;
-  while (i < command.length) {
-    if (outOfTokens) break;
-    const c = command.charAt(i);
-    if (inSingle) {
-      raw += c;
-      if (c === "'") inSingle = false;
-      else appendValue(c, true);
-      i += 1;
-      continue;
-    }
-    if (inDouble) {
-      raw += c;
-      if (c === '"') {
-        inDouble = false;
-      } else if (c === "\\" && i + 1 < command.length) {
-        const next = command.charAt(i + 1);
-        raw += next;
-        // Inside double quotes bash only unescapes $ ` " \ and the newline
-        // (a line continuation). A backslash before any other character,
-        // including `n`, stays a literal backslash in the value.
-        if (next === "\n" || next === "\r") {
-          i += 2;
-          continue;
-        }
-        if ('$`"\\'.includes(next)) {
-          appendValue(next, true);
-          i += 2;
-          continue;
-        }
-        appendValue("\\", true);
-        i += 1;
-        continue;
-      } else {
-        appendValue(c, true);
-      }
-      i += 1;
-      continue;
-    }
-    if (c === "'") {
-      inSingle = true;
-      raw += c;
-      hasToken = true;
-      i += 1;
-      continue;
-    }
-    if (c === '"') {
-      inDouble = true;
-      raw += c;
-      hasToken = true;
-      i += 1;
-      continue;
-    }
-    // Redirection operators may contain characters that are command
-    // separators elsewhere. Keep `&>`, `2>&1`, and `>|file` inside the token
-    // so the redirection normalizer below can interpret them as one shell
-    // construct instead of inventing extra commands.
-    if (
-      (c === "&" &&
-        (command[i + 1] === ">" ||
-          (value.endsWith(">") &&
-            !tokenCharIsQuoted({ raw, value, spans }, value.length - 1)))) ||
-      (c === "|" &&
-        value.endsWith(">") &&
-        !tokenCharIsQuoted({ raw, value, spans }, value.length - 1))
-    ) {
-      appendValue(c, false);
-      raw += c;
-      hasToken = true;
-      i += 1;
-      continue;
-    }
-    if (SEPARATORS.has(c)) {
-      // Capture the operator identity (including doubled `||`/`&&`) so
-      // evidence consumers can reason about how segments relate.
-      let endedBy = c === "\n" || c === "\r" ? ";" : c;
-      if ((c === "|" || c === "&") && command[i + 1] === c) {
-        endedBy = `${c}${c}`;
-        i += 1;
-      }
-      flushSegment(endedBy);
-      lastSeparator = endedBy;
-      i += 1;
-      continue;
-    }
-    if (WHITESPACE.has(c)) {
-      flushToken();
-      i += 1;
-      continue;
-    }
-    if (c === "#" && !hasToken) {
-      // Line comment: consume until newline (newline itself closes the segment).
-      while (i < command.length && command[i] !== "\n") i += 1;
-      continue;
-    }
-    if (c === "\\" && i + 1 < command.length) {
-      const next = command.charAt(i + 1);
-      raw += `\\${next}`;
-      // Backslash-newline is a line continuation outside quotes: both
-      // characters vanish, so `r\<newline>m` lexes as the token `rm`.
-      if (next !== "\n" && next !== "\r") {
-        appendValue(next, true);
-        hasToken = true;
-      }
-      i += 2;
-      continue;
-    }
-    appendValue(c, false);
-    raw += c;
-    hasToken = true;
-    i += 1;
+  while (lex.index < command.length) {
+    if (lex.outOfTokens) break;
+    const c = command.charAt(lex.index);
+    if (lex.inSingle) lexSingleQuoted(lex, c);
+    else if (lex.inDouble) lexDoubleQuoted(lex, c);
+    else lexUnquoted(lex, c);
   }
-  if (!outOfTokens) flushSegment();
-  return segments;
+  if (!lex.outOfTokens) flushSegment(lex);
+  return lex.segments;
 }
 
 /** Bounded lexing pass: refuses oversized input up front and stops at the
