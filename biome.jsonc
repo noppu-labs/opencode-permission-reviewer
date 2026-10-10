@@ -100,22 +100,6 @@
     },
     // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
     {
-      "includes": ["tests/capability.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 618
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
       "includes": ["tests/git-evidence.test.ts"],
       "linter": {
         "rules": {
