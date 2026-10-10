@@ -1,15 +1,14 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
 import type { ClientResponse } from "../../src/opencode/types.ts";
+import { decision, MockClient, request, runtime } from "../helpers.ts";
 import {
-  decision,
   type HeldCalls,
   holdCalls,
-  MockClient,
-  request,
-  runtime,
-} from "../helpers.ts";
-import { manualReply, phases, replyBody } from "./runtime-fixtures.ts";
+  manualReply,
+  phases,
+  replyBody,
+} from "./runtime-fixtures.ts";
 
 type PromptResolver = (value: { data: Record<string, unknown> }) => void;
 type MessagesResolver = (value: ClientResponse<unknown>) => void;
