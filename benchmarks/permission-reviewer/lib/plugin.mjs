@@ -8,8 +8,10 @@ import { assert, sha256 } from "./util.mjs";
 // Git blob hashes of the security-critical files actually inspected for this kit.
 const PINNED_BLOBS = {
   "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/context.ts": "f25a968f88c686d8d6f85fc4b3109a936569e457",
+  "src/context.ts": "490836e9cfaca23e0f229fd2d0baad7cf542d048",
+  "src/context/evidence-sections.ts":
+    "fb22c1c4ec78ff063760b09f13e6921fe0e86da3",
+  "src/context/prompt-budget.ts": "3b169365cc335698751533a86b6040fb2ff39c6a",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/config.ts": "0971f2406a3c05cfe6a023a553abb68e15819e7a",
   "src/decision.ts": "9deb30e0b8d300b5caebb6f2856e86e898064121",

@@ -382,7 +382,7 @@
         }
       }
     },
-    // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 18 files.
+    // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 19 files.
     {
       "includes": [
         "src/audit.ts",
@@ -394,6 +394,7 @@
         "src/context/actor-resolver.ts",
         "src/context/ask-decisions.ts",
         "src/context/evidence-assembler.ts",
+        "src/context/prompt-budget.ts",
         "src/core/review-coordinator.ts",
         "src/core/review-engine.ts",
         "src/decision.ts",

@@ -5,7 +5,8 @@ import {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
 } from "../src/context/ask-decisions.ts";
-import { buildEvidence, renderAskDecisions } from "../src/context.ts";
+import { renderAskDecisions } from "../src/context/evidence-sections.ts";
+import { buildEvidence } from "../src/context.ts";
 import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
 import type { ReviewEnvelope } from "../src/types.ts";
 import { SK_CREDENTIAL_LONG } from "./fixtures/synthetic-secrets.ts";

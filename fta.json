@@ -30,6 +30,7 @@
     "config.ts",
     "loader.ts",
     "context.ts",
+    "evidence-sections.ts",
     "actor-resolver.ts",
     "ask-decisions.ts",
     "evidence-assembler.ts",
