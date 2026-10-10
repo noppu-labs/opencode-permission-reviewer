@@ -25,6 +25,47 @@ export function toJsonl(rows: readonly unknown[]): string {
   return `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
 }
 
+export type HeldCalls<R> = {
+  resolvers: R[];
+  held: (count: number) => Promise<void>;
+};
+
+/**
+ * Collects the resolvers of calls a mock holds open. `held(count)` settles once `count` calls
+ * are held and fails after 2 s, well inside the 5 s test timeout, so a call that never arrives
+ * fails with a message instead of a bare timeout.
+ */
+export function holdCalls<R>(
+  what: string,
+): HeldCalls<R> & { hold: (resolve: R) => void } {
+  const resolvers: R[] = [];
+  const waiters = new Set<() => void>();
+  const hold = (resolve: R): void => {
+    resolvers.push(resolve);
+    for (const wake of waiters) wake();
+  };
+  const held = (count: number): Promise<void> =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        waiters.delete(wake);
+        reject(
+          new Error(
+            `only ${resolvers.length} of ${count} ${what} reached the held call`,
+          ),
+        );
+      }, 2000);
+      const wake = (): void => {
+        if (resolvers.length < count) return;
+        waiters.delete(wake);
+        clearTimeout(timer);
+        resolve();
+      };
+      waiters.add(wake);
+      wake();
+    });
+  return { resolvers, held, hold };
+}
+
 export function decision(
   outcome: ReviewDecision["outcome"],
   overrides: Partial<ReviewDecision> = {},

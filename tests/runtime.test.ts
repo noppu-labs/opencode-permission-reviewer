@@ -8,7 +8,15 @@ import type { ClientResponse, RuntimeContext } from "../src/opencode/types.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
 import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 import { SK_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
-import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
+import {
+  decision,
+  defined,
+  type HeldCalls,
+  holdCalls,
+  MockClient,
+  request,
+  runtime,
+} from "./helpers.ts";
 
 function replyBody(value: unknown): Record<string, unknown> {
   return ((value as Record<string, unknown>).body ?? {}) as Record<
@@ -20,30 +28,20 @@ function replyBody(value: unknown): Record<string, unknown> {
 const execFileAsync = promisify(execFile);
 
 type PromptResolver = (value: { data: Record<string, unknown> }) => void;
-type MessagesResolver = (value: { data?: unknown; error?: unknown }) => void;
+type MessagesResolver = (value: ClientResponse<unknown>) => void;
 
-/** Holds every reviewer prompt open until the test resolves it. */
-function holdPrompts(
-  client: MockClient,
-  onHeld?: (held: number) => void,
-): PromptResolver[] {
-  const resolvers: PromptResolver[] = [];
+function holdPrompts(client: MockClient): HeldCalls<PromptResolver> {
+  const calls = holdCalls<PromptResolver>("reviewer prompts");
   client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-    new Promise((resolve) => {
-      resolvers.push(resolve);
-      onHeld?.(resolvers.length);
-    });
-  return resolvers;
+    new Promise((resolve) => calls.hold(resolve));
+  return calls;
 }
 
-/** Holds every transcript fetch open until the test resolves it. */
-function holdMessages(client: MockClient): MessagesResolver[] {
-  const resolvers: MessagesResolver[] = [];
+function holdMessages(client: MockClient): HeldCalls<MessagesResolver> {
+  const calls = holdCalls<MessagesResolver>("transcript fetches");
   client.messagesImpl = (): Promise<ClientResponse<unknown>> =>
-    new Promise((resolve) => {
-      resolvers.push(resolve);
-    });
-  return resolvers;
+    new Promise((resolve) => calls.hold(resolve));
+  return calls;
 }
 
 function manualReply(
@@ -545,11 +543,11 @@ describe("runtime decisions", () => {
 
   test("a manual reject during the model call supersedes the review (no double reply)", async () => {
     const client = new MockClient();
-    const resolvers = holdPrompts(client);
+    const { resolvers, held } = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
     // Let the reviewer reach the model call, then have the human reject.
-    await new Promise((r) => setTimeout(r, 5));
+    await held(1);
     manualReply(harness, "per_1", "reject");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("allow") } } });
@@ -563,10 +561,10 @@ describe("runtime decisions", () => {
 
   test("a manual allow during the model call supersedes the review (no duplicate once)", async () => {
     const client = new MockClient();
-    const resolvers = holdPrompts(client);
+    const { resolvers, held } = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
-    await new Promise((r) => setTimeout(r, 5));
+    await held(1);
     manualReply(harness, "per_1", "once");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("deny") } } });
@@ -577,13 +575,7 @@ describe("runtime decisions", () => {
 
   test("a manual reply for one request does not cancel a sibling review in the same session", async () => {
     const client = new MockClient();
-    let bothHeld = (): void => {};
-    const bothAtModel = new Promise<void>((resolve) => {
-      bothHeld = resolve;
-    });
-    const resolvers = holdPrompts(client, (held) => {
-      if (held === 2) bothHeld();
-    });
+    const { resolvers, held } = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(
       request({ id: "per_1", tool: { messageID: "m1", callID: "c1" } }),
@@ -592,7 +584,7 @@ describe("runtime decisions", () => {
       request({ id: "per_2", tool: { messageID: "m2", callID: "c2" } }),
     );
     // Evidence collection time varies by runner, so wait for both model calls.
-    await bothAtModel;
+    await held(2);
     manualReply(harness, "per_2", "reject");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("allow") } } });
@@ -617,10 +609,10 @@ describe("runtime decisions", () => {
 
   test("a manual reject during the model call also supersedes an escalate outcome (no manual resurrection)", async () => {
     const client = new MockClient();
-    const resolvers = holdPrompts(client);
+    const { resolvers, held } = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
-    await new Promise((r) => setTimeout(r, 5));
+    await held(1);
     manualReply(harness, "per_1", "reject");
     // Low-confidence allow becomes an escalate; the manual reply must still win.
     for (const resolve of resolvers)
@@ -657,10 +649,10 @@ describe("runtime decisions", () => {
 
   test("a manual reply during transcript collection skips the model call entirely", async () => {
     const client = new MockClient();
-    const msgResolvers = holdMessages(client);
+    const { resolvers: msgResolvers, held } = holdMessages(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
-    await new Promise((r) => setTimeout(r, 5));
+    await held(1);
     // The human answers while the transcript fetch is still pending.
     manualReply(harness, "per_1", "reject");
     for (const resolve of msgResolvers) resolve({ data: client.messageData });
@@ -674,10 +666,10 @@ describe("runtime decisions", () => {
 
   test("a transcript failure after a manual reply does not resurrect the manual phase", async () => {
     const client = new MockClient();
-    const msgResolvers = holdMessages(client);
+    const { resolvers: msgResolvers, held } = holdMessages(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
-    await new Promise((r) => setTimeout(r, 5));
+    await held(1);
     manualReply(harness, "per_1", "reject");
     // Now the transcript fetch fails; the error path must NOT re-emit "manual".
     for (const resolve of msgResolvers)
