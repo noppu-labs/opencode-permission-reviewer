@@ -1,13 +1,14 @@
 import { emergencyBrakeReason } from "../emergency-brake.ts";
 import { applyEscalationDisposition } from "../escalation.ts";
-import { sourceCommand } from "../evidence/source-command.ts";
 import { evaluatePolicy } from "../policy/policy-engine.ts";
 import type {
   PermissionRequest,
+  PolicyTrace,
   ReviewEnvelope,
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
+import { gateReviewedResult } from "./review-result-gates.ts";
 
 export interface ReviewEnginePorts {
   collect(request: PermissionRequest): Promise<ReviewEnvelope>;
@@ -23,12 +24,26 @@ export async function evaluateReview(
   config: ReviewerConfig,
   ports: ReviewEnginePorts,
 ): Promise<ReviewExecutionResult> {
-  const superseded = (): ReviewExecutionResult => ({
+  const early = beforeCollect(request, ports);
+  if (early !== undefined) return early;
+  const envelope = await ports.collect(request);
+  const routed = beforeReview(envelope, config, ports);
+  if (routed !== undefined) return routed;
+  const result = await ports.review(envelope);
+  if (!ports.active()) return superseded();
+  return gateReviewedResult(request, config, envelope, result);
+}
+
+function superseded(): ReviewExecutionResult {
+  return {
     kind: "escalate",
     reason: "Request already answered manually; automatic review superseded.",
     decisionSource: "manual-superseded",
-  });
-  const deny = (reason: string, emergency: boolean): ReviewExecutionResult => ({
+  };
+}
+
+function deny(reason: string, emergency: boolean): ReviewExecutionResult {
+  return {
     kind: "deny",
     reason,
     decision: {
@@ -42,7 +57,27 @@ export async function evaluateReview(
       confidence: 1,
     },
     decisionSource: emergency ? "emergency-brake" : "deterministic-policy",
-  });
+  };
+}
+
+/** Deterministic escalation, disposed by the configured escalation mode. */
+function escalate(
+  reason: string,
+  config: ReviewerConfig,
+): ReviewExecutionResult {
+  return applyEscalationDisposition(
+    { kind: "escalate", reason, decisionSource: "deterministic-policy" },
+    config,
+    "general",
+  );
+}
+
+/** The supersede, reviewer-session and emergency-brake checks that run before
+ *  any evidence is collected. */
+function beforeCollect(
+  request: PermissionRequest,
+  ports: ReviewEnginePorts,
+): ReviewExecutionResult | undefined {
   if (!ports.active()) return superseded();
   if (ports.auxiliarySession(request.sessionID)) {
     return deny(
@@ -52,7 +87,16 @@ export async function evaluateReview(
   }
   const brake = emergencyBrakeReason(request);
   if (brake) return deny(brake, true);
-  const envelope = await ports.collect(request);
+  return undefined;
+}
+
+/** The preflight denial, the policy trace (observed before any route returns)
+ *  and the static-analysis gate, in that order, before the model runs. */
+function beforeReview(
+  envelope: ReviewEnvelope,
+  config: ReviewerConfig,
+  ports: ReviewEnginePorts,
+): ReviewExecutionResult | undefined {
   if (envelope.preflightDenial) return deny(envelope.preflightDenial, false);
   if (!ports.active()) return superseded();
   const trace = evaluatePolicy(
@@ -63,98 +107,40 @@ export async function evaluateReview(
   );
   envelope.policyTrace = trace;
   ports.observe(envelope);
-  if (config.enforcementMode === "enforce" && trace.finalRoute !== "review") {
-    if (trace.finalRoute === "deny") {
-      return deny(
-        `Declarative policy route: deny. ${trace.matchedRules.map((m) => m.reason).join("; ")}`,
-        false,
-      );
-    }
-    if (trace.finalRoute === "manual") {
-      return applyEscalationDisposition(
-        {
-          kind: "escalate",
-          reason: `Declarative policy route: manual. ${trace.matchedRules.map((m) => m.reason).join("; ")}`,
-          decisionSource: "deterministic-policy",
-        },
-        config,
-        "general",
-      );
-    }
-  }
+  const routed = enforcedRoute(trace, config);
+  if (routed !== undefined) return routed;
   if (!ports.active()) return superseded();
   // Static-analysis limits gate BEFORE the model runs: a command whose
   // structure could not be fully analyzed must not spend a review (and a
   // simulated model allow must not bypass the protection). The reviewer is
   // skipped entirely and the request escalates deterministically.
   if (envelope.parsedCommand?.analysisTruncated === true) {
-    return applyEscalationDisposition(
-      {
-        kind: "escalate",
-        reason:
-          "Automatic approval is blocked: the command structure exceeded the static analysis depth or expansion budget, so deterministic analysis only covered part of the action.",
-        decisionSource: "deterministic-policy",
-      },
+    return escalate(
+      "Automatic approval is blocked: the command structure exceeded the static analysis depth or expansion budget, so deterministic analysis only covered part of the action.",
       config,
-      "general",
     );
   }
-  let result = await ports.review(envelope);
-  if (!ports.active()) return superseded();
-  if (result.kind === "allow") {
-    const degraded = config.configDegraded;
-    const reason =
-      degraded !== undefined && degraded.length > 0
-        ? `Automatic approval is disabled: the reviewer configuration is degraded (${degraded.join("; ")}). Fix the trusted config to restore auto-approval.`
-        : envelope.actionEvidenceComplete === false
-          ? "Automatic approval is blocked: a material part of the pending action was elided or truncated in the reviewer evidence, so the model judged an incomplete view of the action."
-          : undefined;
-    if (reason !== undefined) {
-      result = applyEscalationDisposition(
-        {
-          kind: "escalate",
-          reason,
-          ...(result.decision === undefined
-            ? {}
-            : { decision: result.decision }),
-          ...(result.reviewSessionID === undefined
-            ? {}
-            : { reviewSessionID: result.reviewSessionID }),
-          ...(result.reviewerModel === undefined
-            ? {}
-            : { reviewerModel: result.reviewerModel }),
-          ...(result.reviewerEscalatedFrom === undefined
-            ? {}
-            : { reviewerEscalatedFrom: result.reviewerEscalatedFrom }),
-          ...(result.systemOne === undefined
-            ? {}
-            : { systemOne: result.systemOne }),
-          decisionSource: "deterministic-policy",
-        },
-        config,
-        "general",
-      );
-    }
+  return undefined;
+}
+
+/** In enforce mode a deny or manual route is final; review and allow routes
+ *  still go to the reviewer. */
+function enforcedRoute(
+  trace: PolicyTrace,
+  config: ReviewerConfig,
+): ReviewExecutionResult | undefined {
+  if (config.enforcementMode !== "enforce") return undefined;
+  if (trace.finalRoute === "deny") {
+    return deny(
+      `Declarative policy route: deny. ${trace.matchedRules.map((m) => m.reason).join("; ")}`,
+      false,
+    );
   }
-  const disposed =
-    result.kind === "escalate" && result.escalationDisposition === undefined
-      ? applyEscalationDisposition(result, config, "general")
-      : result;
-  const needsScriptGuidance =
-    request.permission === "bash" &&
-    /\bssh\b/.test(sourceCommand(request)) &&
-    (envelope.verifiedScript?.status === "unavailable" ||
-      envelope.sshAudit.some((entry) =>
-        ["truncated", "unavailable", "blocked", "unresolved"].includes(
-          entry.stdinStatus ?? "",
-        ),
-      ) ||
-      /(?:(?:script|guion).{0,120}(?:truncat|truncad|unavailable|incomplet|not inspect|no.{0,20}inspeccion)|(?:truncat|truncad|incomplet).{0,120}(?:script|guion))/i.test(
-        disposed.reason,
-      ));
-  if (disposed.kind === "allow" || !needsScriptGuidance) return disposed;
-  return {
-    ...disposed,
-    reason: `${disposed.reason} To inspect this script, stage its exact bytes locally and generate a hash-checked SSH command with opencode-permission-reviewer script command --file PATH --host HOST.`,
-  };
+  if (trace.finalRoute === "manual") {
+    return escalate(
+      `Declarative policy route: manual. ${trace.matchedRules.map((m) => m.reason).join("; ")}`,
+      config,
+    );
+  }
+  return undefined;
 }

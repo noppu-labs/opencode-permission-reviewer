@@ -49,8 +49,9 @@ const PINNED_BLOBS = {
   "src/policy/profile-templates.ts": "a88bfdeb093dba5e7b18c68ed26560efd853045b",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/escalation.ts": "eb7d21b7e1c138315c303a45585a342adef26d44",
+  "src/core/review-engine.ts": "fd9f024d04ad81efd1c639a46df1d32114e1a485",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
+  "src/core/review-result-gates.ts": "2b5c4a8df4e9e0968a9bbe6332f6d3770625357d",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/emergency-brake.ts": "0589f1c4c3a42c911228ed3db8a67b536bca25a5",
   "src/brake-arguments.ts": "4f9e33b37e7a631f058ab9f1663c513151de1593",
