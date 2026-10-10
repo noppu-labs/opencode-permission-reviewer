@@ -363,7 +363,7 @@ export const GIT_MUTATION_SUBCOMMANDS = new Set([
 ]);
 
 /** `git branch` options that make it list branches instead of changing one. */
-export const BRANCH_LIST_OPTIONS = [
+export const BRANCH_LIST_OPTIONS: readonly string[] = [
   "-a",
   "--all",
   "-r",
@@ -384,7 +384,7 @@ export const BRANCH_LIST_OPTIONS = [
 ];
 
 /** `git tag` options that make it list tags instead of changing one. */
-export const TAG_LIST_OPTIONS = [
+export const TAG_LIST_OPTIONS: readonly string[] = [
   "-l",
   "--list",
   "--contains",
@@ -398,7 +398,7 @@ export const TAG_LIST_OPTIONS = [
 ];
 
 /** `git config` options and subcommands that only read configuration. */
-export const CONFIG_READ_OPTIONS = [
+export const CONFIG_READ_OPTIONS: readonly string[] = [
   "--list",
   "-l",
   "--get",

@@ -6,7 +6,9 @@
  *  OPTIONAL value (`--force-with-lease`, `--rebase`, `--signed`, …) are
  *  deliberately absent: git requires `=` for those, and skipping the next
  *  token would swallow the remote instead. */
-export const NETWORK_VALUE_OPTIONS: Record<string, Set<string>> = {
+export const NETWORK_VALUE_OPTIONS: Readonly<
+  Record<string, ReadonlySet<string>>
+> = {
   push: new Set(["-o", "--push-option", "--receive-pack", "--exec", "--repo"]),
   fetch: new Set([
     "--depth",

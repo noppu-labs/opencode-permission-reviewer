@@ -22,19 +22,19 @@ const BUN_SUBCOMMANDS = new Set([
 
 export interface InterpreterSpec {
   // Subcommands whose first non-option operand executes a local file.
-  fileTargetSubcommands?: Set<string>;
+  fileTargetSubcommands?: ReadonlySet<string>;
   // Options that consume the next token as their value; the value is never
   // the script target.
-  valueOptions?: Set<string>;
+  valueOptions?: ReadonlySet<string>;
   // Tokens that OPTIONS_WITH_VALUE consumes for other interpreters but this
   // runtime treats as non-consuming flags (their value syntax is `=`, or they
   // are repeated permission shorts).
-  noConsumeOptions?: Set<string>;
+  noConsumeOptions?: ReadonlySet<string>;
   // Options after which the executed file cannot be determined reliably;
   // gathering nothing beats attaching the wrong file.
-  bailOptions?: Set<string>;
+  bailOptions?: ReadonlySet<string>;
   // Subcommands whose operand is never a local file.
-  nonFileSubcommands?: Set<string>;
+  nonFileSubcommands?: ReadonlySet<string>;
   // A subcommand-less invocation still executes a file operand: require the
   // path-like shape so unrecognized subcommands gather nothing.
   directRequiresPathLike?: boolean;
@@ -70,7 +70,7 @@ const NODE_VALUE_OPTIONS = new Set([
   "--heapsnapshot-signal",
 ]);
 
-export const INTERPRETER_SPECS: Record<string, InterpreterSpec> = {
+export const INTERPRETER_SPECS: Readonly<Record<string, InterpreterSpec>> = {
   node: {
     valueOptions: NODE_VALUE_OPTIONS,
   },

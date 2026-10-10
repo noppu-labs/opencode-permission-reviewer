@@ -4,7 +4,12 @@
 import { basename } from "node:path";
 import { elementAt } from "./element-at.ts";
 
-export const MANAGERS = new Set(["bun", "npm", "pnpm", "yarn"]);
+export const MANAGERS: ReadonlySet<string> = new Set([
+  "bun",
+  "npm",
+  "pnpm",
+  "yarn",
+]);
 
 export interface ScriptInvocation {
   manager: string;

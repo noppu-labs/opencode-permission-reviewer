@@ -50,7 +50,7 @@ function networkOption(
   tokens: string[],
   cursor: number,
   subcommand: string,
-  valueOpts: Set<string>,
+  valueOpts: ReadonlySet<string>,
 ): { last: number; repoOverride?: string } {
   const token = elementAt(tokens, cursor, "tokens");
   if (token === "--repo" && cursor + 1 < tokens.length)

@@ -14,7 +14,7 @@ const INLINE_CODE_OPTIONS = new Set([
   "--stdin",
 ]);
 
-export const OPTIONS_WITH_VALUE = new Set([
+export const OPTIONS_WITH_VALUE: ReadonlySet<string> = new Set([
   "-W",
   "-X",
   "-r",
@@ -26,7 +26,7 @@ export const OPTIONS_WITH_VALUE = new Set([
   "-m",
 ]);
 
-function matchesOption(token: string, options: Set<string>): boolean {
+function matchesOption(token: string, options: ReadonlySet<string>): boolean {
   if (options.has(token)) return true;
   return [...options].some((option) => token.startsWith(`${option}=`));
 }
