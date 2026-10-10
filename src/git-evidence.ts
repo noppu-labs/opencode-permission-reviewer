@@ -852,7 +852,7 @@ async function resolveRemoteTargets(
       const remoteRoles =
         pushIdentity === undefined && fetchIdentity === undefined
           ? []
-          : // biome-ignore lint/performance/noAwaitInLoops: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
+          : // biome-ignore lint/performance/noAwaitInLoops: the outer candidate loop stays sequential: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
             await Promise.all(
               configuredNames
                 .slice(0, MAX_RESOLVED_REMOTES)

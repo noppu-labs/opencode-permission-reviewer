@@ -313,7 +313,7 @@ async function main() {
     const lines = [];
     for (const c of cases)
       for (const model of models) {
-        // biome-ignore lint/performance/noAwaitInLoops: render writes requests.jsonl in case-then-model order and prepares one case through the plugin's preflight at a time, matching the order a run reads them back
+        // biome-ignore lint/performance/noAwaitInLoops: adapter.prepare is in-process work on fixture envelopes (collect returns the fixture, evidence is built synchronously, no file, git or network I/O), so running cases x models concurrently would overlap nothing; the loop builds requests.jsonl lines in case-then-model order
         const p = await adapter.prepare(modelInput(c), model);
         lines.push(
           JSON.stringify({

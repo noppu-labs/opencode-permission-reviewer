@@ -333,7 +333,7 @@ export async function enrichLocalScriptEvidence(
             reason:
               segment.directoryReason ?? "working directory is unresolved",
           }
-        : // biome-ignore lint/performance/noAwaitInLoops: reads one interpreter script at a time, appending records in command order after the seen-key dedup of earlier segments
+        : // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one script evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records are appended in command order
           await includeEvidenceFile(
             path,
             segment.directory ?? directory,

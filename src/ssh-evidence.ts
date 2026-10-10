@@ -671,7 +671,7 @@ export async function enrichSshEvidence(
                 producer.directoryReason ??
                 "working directory of the pipeline producer is unresolved",
             }
-          : // biome-ignore lint/performance/noAwaitInLoops: reads one ssh segment's stdin file at a time, appending records, audit entries and preflight denials in command order (the denial text is joined in that order)
+          : // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one stdin evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records, audit entries and preflight denials are appended in command order
             await includeEvidenceFile(
               stdinPath,
               producer?.directory ?? segment.directory ?? directory,

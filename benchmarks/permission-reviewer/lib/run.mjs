@@ -308,7 +308,7 @@ export async function runBenchmark({
         saved.push(recovered);
         saved.sort((a, b) => a.ordinal - b.ordinal);
         journalByKey.set(e.key, saved);
-        // biome-ignore lint/performance/noAwaitInLoops: appends each recovered attempt to the attempt journal in startedCalls order through one writer, so journal lines are never interleaved
+        // biome-ignore lint/performance/noAwaitInLoops: the attempt journal is an fsynced crash-recovery log; each recovered attempt is durably written, in startedCalls order, before the next one is recorded
         await attemptWriter.write(recovered);
       }
     }

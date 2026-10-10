@@ -48,7 +48,7 @@ async function sourceSnapshot(repo) {
           `Source symlink is not supported for a reproducible snapshot: ${relative}`,
         );
       if (d.isDirectory())
-        // biome-ignore lint/performance/noAwaitInLoops: the depth-first walk inserts into files in sorted path order, which the snapshot records as-is, and it must throw at the first symlink before reading any later entry
+        // biome-ignore lint/performance/noAwaitInLoops: the walk must throw at the first symlink before reading any later entry; it also fills the returned files map in sorted depth-first order, which the written snapshot shows (sourceSha256 is key-sorted and does not depend on it)
         await walk(join(dir, d.name), relative);
       else if (/\.(ts|tsx|js|json)$/.test(d.name))
         files[`src/${relative}`] = sha256(
