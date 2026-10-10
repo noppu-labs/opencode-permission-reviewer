@@ -8,7 +8,7 @@ interface SplitArguments {
 
 /** A word that reads as an option: a leading `-` with more after it. A lone
  *  `-` is an operand. */
-function isOptionWord(value: string): boolean {
+export function isOptionWord(value: string): boolean {
   return value.startsWith("-") && value.length > 1;
 }
 

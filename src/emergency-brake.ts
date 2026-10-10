@@ -1,4 +1,5 @@
 import { commandName, splitArguments } from "./brake-arguments.ts";
+import { isRootFind } from "./brake-find-root.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import type { Redirection } from "./capability/capability-types.ts";
@@ -93,71 +94,8 @@ function isRootRm(command: ShellToken[]): boolean {
   );
 }
 
-/**
- * `find / … -delete` and `find / … -exec rm -rf {} …` reach root through the
- * find expression rather than through a literal `rm` operand, so the rm lexer
- * above does not see them. Detect them directly: when the search root resolves
- * to `/` and the expression deletes its results, the destruction is unmistakable.
- */
 function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
-  for (const { effective } of analyzed) {
-    for (const tokens of effective) {
-      const first = tokens[0];
-      if (first === undefined) continue;
-      if (shellBasename(first.value) !== "find") continue;
-      let root: ShellToken | null = null;
-      let hasDelete = false;
-      let hasExecRm = false;
-      for (let i = 1; i < tokens.length; i += 1) {
-        const token = tokens[i];
-        invariant(token, "tokens[i] is in bounds");
-        const value = token.value;
-        // The search root is the first non-flag operand; everything after it
-        // belongs to the expression. Flags that take a value (e.g. `-maxdepth`)
-        // are not modelled here, so `find -maxdepth 1 / …` is a false negative
-        // (rare and safe) — we never falsely trip.
-        if (root === null) {
-          if (value === "-D") {
-            i += 1;
-            continue;
-          }
-          if (value.startsWith("-") && value.length > 1) continue;
-          if (value === "--") continue;
-          root = token;
-          continue;
-        }
-        if (value === "-delete") hasDelete = true;
-        if (
-          value === "-exec" ||
-          value === "-execdir" ||
-          value === "-ok" ||
-          value === "-okdir"
-        ) {
-          // First non-placeholder token after -exec is the executable; if it is
-          // `rm` with recursive+force flags, find destroys its matches.
-          let j = i + 1;
-          let executable = tokens[j];
-          while (
-            executable !== undefined &&
-            (executable.value === "{" || executable.value === "}")
-          ) {
-            j += 1;
-            executable = tokens[j];
-          }
-          if (
-            executable !== undefined &&
-            shellBasename(executable.value) === "rm"
-          ) {
-            const { recursive, force } = hasRmFlags(tokens.slice(j));
-            if (recursive && force) hasExecRm = true;
-          }
-        }
-      }
-      if (root !== null && targetsRoot(root) && (hasDelete || hasExecRm))
-        return true;
-    }
-  }
-  return false;
+  return analyzed.some(({ effective }) => effective.some(isRootFind));
 }
 
 /**

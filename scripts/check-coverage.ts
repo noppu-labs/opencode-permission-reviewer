@@ -25,6 +25,7 @@ const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/policy.ts",
   "src/policy/policy-engine.ts",
   "src/emergency-brake.ts",
+  "src/brake-find-root.ts",
   "src/brake-arguments.ts",
   "src/brake-rm-flags.ts",
   "src/brake-root-target.ts",

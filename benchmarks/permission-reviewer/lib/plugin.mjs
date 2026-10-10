@@ -22,11 +22,12 @@ const PINNED_BLOBS = {
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "6aa039e37f3f297d5ee03584d8e34b5300529394",
-  "src/brake-arguments.ts": "0d45fc6d9199c37cc85065dd186ad8c8bcfdd573",
+  "src/emergency-brake.ts": "f3c13dc83ef25b417720e165b61ddc5c086cc7ed",
+  "src/brake-arguments.ts": "4f9e33b37e7a631f058ab9f1663c513151de1593",
   "src/brake-rm-flags.ts": "3087c9dd1ca174e23ccb7caea5445d94da93cd32",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-root-target.ts": "17c8a09bff9cb9653b332728c637785ddaee7c63",
+  "src/brake-find-root.ts": "ee3184c98f08b35bc763ceb12d0bc377b7e5416e",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
