@@ -32,12 +32,9 @@ type PluginEntry =
   | [string, Record<string, unknown>]
   | { package: string; options?: Record<string, unknown> };
 
-/** Apply precomputed file plans. Each plan is re-resolved against the current
- *  file before its write: the filesystem may have changed between planning
- *  and applying (concurrent edit, new file), and a drifted plan refuses that
- *  file's write instead of acting on stale assumptions. Returns the process
- *  exit code. Exported so unit tests can drive it with stale plans and cover
- *  the drift guards without racing the CLI. */
+/** Each plan is re-resolved against the current file before its write, so a
+ *  file edited or created since planning refuses its write instead of acting
+ *  on stale assumptions. Returns the process exit code. */
 export function applyPlannedWrites(
   plans: FilePlan[],
   entry: PluginEntry,
@@ -63,7 +60,6 @@ export function applyPlannedWrites(
       );
       return 1;
     }
-    // append or create
     if (fresh.backup !== undefined && existsSync(plan.path)) {
       console.error(`  backup: ${writeBackup(plan.path, fresh.backup)}`);
     }

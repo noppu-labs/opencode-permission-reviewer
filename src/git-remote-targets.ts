@@ -356,7 +356,7 @@ export async function resolveRemoteTargets(
   return {
     targets,
     // Unique candidates beyond the resolution cap, including the one that
-    // tripped it: the earlier `seen`-based count missed exactly that one.
+    // tripped it.
     omitted: Math.max(
       0,
       new Set(planned.remoteCandidates).size - targets.length,

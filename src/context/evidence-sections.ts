@@ -165,7 +165,6 @@ function renderCompleteness(c: EvidenceCompleteness, max: number): string {
   );
 }
 
-/** Render the capability assessment as a compact JSON block for the reviewer. */
 function renderCapability(
   cap: import("../capability/capability-types.ts").CapabilityAssessment,
   max: number,

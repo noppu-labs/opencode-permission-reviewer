@@ -5,8 +5,6 @@ import type {
   Provenanced,
 } from "../actor-context-types.ts";
 
-// --- provenance helpers -----------------------------------------------------
-
 export function prov<T>(
   value: T,
   source: Provenanced<T>["source"],
