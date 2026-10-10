@@ -49,4 +49,4 @@ export interface RuntimeContext {
 }
 
 // Re-export for convenience.
-export type { ReviewUiStatus };
+export type { ReviewUiStatus } from "../ui-protocol.ts";

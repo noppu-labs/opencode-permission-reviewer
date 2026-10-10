@@ -29,12 +29,10 @@
   // removes it by fixing the code. Keep this list in step with the PR description.
   // quality/4-ts-rules: delete the dead exports and the dead file, or use them.
   "ignoreIssues": {
-    "src/opencode/v2-adapter.ts": ["files"],
     "src/audit.ts": ["types"],
     "src/context.ts": ["exports"],
     "src/core/contracts.ts": ["types"],
     "src/opencode/types.ts": ["types"],
-    "src/runtime.ts": ["types"],
     "src/shell-lexer.ts": ["exports", "types"],
     "src/ssh-evidence.ts": ["exports"],
     "src/system-one/review.ts": ["exports"],

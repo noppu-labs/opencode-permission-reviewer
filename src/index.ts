@@ -2,12 +2,12 @@ import type { Plugin } from "@opencode-ai/plugin";
 import { createAuditWriter } from "./audit.ts";
 import { loadResolvedConfig } from "./config/loader.ts";
 import { AskDecisionRegistry } from "./context/ask-decisions.ts";
+import { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
 import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
 import { withTimeout } from "./opencode/transport.ts";
 import type { RuntimeContext } from "./opencode/types.ts";
 import { createV1Adapter } from "./opencode/v1-adapter.ts";
 import { setup } from "./opencode/v2/server.ts";
-import { ApprovalReviewerRuntime } from "./runtime.ts";
 
 export const server: Plugin = async (input, options) => {
   // V1 does not report whether plugin options came from global or project
@@ -93,6 +93,7 @@ const module = {
 };
 
 export default module;
+// biome-ignore lint/performance/noBarrelFile: package entry for "." and "./server" (dist/index.js); the re-exports are the public API
 export { createAuditWriter, DEFAULT_AUDIT_PATH } from "./audit.ts";
 export { loadResolvedConfig } from "./config/loader.ts";
 export { resolveConfig } from "./config.ts";
@@ -100,6 +101,7 @@ export {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
 } from "./context/ask-decisions.ts";
+export { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
 export { DECISION_SCHEMA, enforceDecision, parseDecision } from "./decision.ts";
 export { emergencyBrakeReason } from "./emergency-brake.ts";
 export {
@@ -110,7 +112,6 @@ export { enrichGitEvidence } from "./git-evidence.ts";
 export { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
 export { extractPermissionRequest } from "./opencode/event-normalizer.ts";
 export { redactSecrets } from "./redact.ts";
-export { ApprovalReviewerRuntime } from "./runtime.ts";
 export { enrichSshEvidence } from "./ssh-evidence.ts";
 export type * from "./types.ts";
 export {

@@ -5,7 +5,7 @@ import {
   DISMISSED_ANSWER,
 } from "../src/context/ask-decisions.ts";
 import { buildEvidence, renderAskDecisions } from "../src/context.ts";
-import { ApprovalReviewerRuntime } from "../src/runtime.ts";
+import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
 import type { AskDecision, ReviewEnvelope } from "../src/types.ts";
 import { runtime as buildRuntime, request } from "./helpers.ts";
 

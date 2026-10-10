@@ -133,35 +133,6 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): performance/noBarrelFile, 6 files.
-    {
-      "includes": [
-        "rpc.js",
-        "server.js",
-        "src/index.ts",
-        "src/opencode/v2-adapter.ts",
-        "src/runtime.ts",
-        "tui.tsx"
-      ],
-      "linter": {
-        "rules": {
-          "performance": {
-            "noBarrelFile": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): style/noExportedImports, 2 files.
-    {
-      "includes": ["src/opencode/types.ts", "src/tui.tsx"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExportedImports": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/4-ts-rules): style/noNonNullAssertion, 52 files.
     {
       "includes": [

@@ -3,11 +3,9 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { extractPermissionRequest } from "../src/opencode/event-normalizer.ts";
+import type { RuntimeContext } from "../src/opencode/types.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
-import {
-  extractPermissionRequest,
-  type RuntimeContext,
-} from "../src/runtime.ts";
 import { decision, MockClient, request, runtime } from "./helpers.ts";
 
 function replyBody(value: unknown): Record<string, unknown> {
