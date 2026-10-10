@@ -8,7 +8,6 @@
     "node_modules"
   ],
   "exclude_filenames": [
-    "heredoc-extractor.ts",
     "evidence-file-reader.ts",
     "git-command-plan.ts",
     "git-evidence.ts",

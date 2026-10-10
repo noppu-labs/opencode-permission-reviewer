@@ -81,10 +81,9 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 11 files.
+    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 10 files.
     {
       "includes": [
-        "src/capability/heredoc-extractor.ts",
         "src/evidence-file-reader.ts",
         "src/git-command-plan.ts",
         "src/git-evidence.ts",
