@@ -8,8 +8,8 @@ import { mutationOperands } from "../src/capability/mutation-operands.ts";
 import { readOnlyToolMutation } from "../src/capability/read-only-tool-mutations.ts";
 import type { ShellToken } from "../src/shell-token.ts";
 
-// Characterisation of the capability mutation-helper branches no other test
-// reaches. Each row pins the current output, odd ones included.
+// Characterisation of the capability mutation-helper branches. Each row asserts
+// the current output.
 
 function words(command: string): ShellToken[] {
   return command.split(" ").map((value) => ({ value, raw: value }));
@@ -100,7 +100,7 @@ describe("classifyPath", () => {
       "/w",
       { temporary: false, workspace: false, external: true },
     ],
-    // POSIX normalize turns `C:/../x` into the relative `x`: unclassified.
+    // `C:/../x` has no path class.
     ["C:/../x", "/w", "/w", none],
     [
       "/w/other",

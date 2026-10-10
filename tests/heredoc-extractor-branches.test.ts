@@ -2,9 +2,9 @@ import { describe, expect, test } from "bun:test";
 import type { HeredocRecord } from "../src/capability/capability-types.ts";
 import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
 
-// Characterisation of extractHeredocs branches no other test reaches: the
-// scanner's quoting, comment and arithmetic states, every delimiter-word form
-// and the ANSI-C escapes. Each row pins the current output, odd ones included.
+// Characterisation of extractHeredocs branches: the scanner's quoting, comment
+// and arithmetic states, every delimiter-word form and the ANSI-C escapes. Each
+// row asserts the current output.
 
 /** The extraction with each placeholder hash masked as `#`. Each masked hash
  *  is first checked against its record's body digest, in order. */

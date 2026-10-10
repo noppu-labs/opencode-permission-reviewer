@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type { ParsedCommand } from "../src/capability/capability-types.ts";
 import { capabilityProfile } from "./capability-profile.ts";
 
-// Characterisation of analyzeCapability branches no other test reaches. Each
-// row pins the class, the summary and every fact whose value is `true`.
+// Characterisation of analyzeCapability branches. Each row asserts the class,
+// the summary and every fact whose value is `true`.
 
 const NET =
   "network.observed,network.possible,network.observedAccess,network.possibleAccess";
@@ -91,8 +91,7 @@ describe("analyzeCapability effective commands", () => {
 });
 
 describe("analyzeCapability credential operands", () => {
-  // A quoted redirect operator is a literal argument, yet it still hides the
-  // operand after it.
+  // Each row asserts the credential facts reported for a cat operand list.
   test.each([
     ["cat -n ~/.ssh/id_rsa", "credentialRead"],
     ["cat -- .env", "credentialRead"],

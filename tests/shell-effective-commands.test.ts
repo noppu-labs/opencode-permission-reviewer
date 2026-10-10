@@ -68,7 +68,7 @@ describe("effective-command walk: ssh, chroot and timeout operands", () => {
   test("ssh skips options on either side of the host", () => {
     expect(commandsOf("ssh -p22 host rm")).toEqual([["rm"]]);
     expect(commandsOf("ssh host -t rm")).toEqual([["rm"]]);
-    // `--` before the host ends option parsing, so the host is read as the command.
+    // With `--` before the host, the effective command starts at the host operand.
     expect(commandsOf("ssh -- host rm -rf /")).toEqual([
       ["host", "rm", "-rf", "/"],
     ]);
@@ -77,7 +77,7 @@ describe("effective-command walk: ssh, chroot and timeout operands", () => {
   test("chroot and timeout skip options before their operand", () => {
     expect(commandsOf("chroot -- /r rm")).toEqual([["rm"]]);
     expect(commandsOf("chroot --userspec=u /r rm")).toEqual([["rm"]]);
-    // chroot options never take a separate value, so `u` is read as NEWROOT.
+    // The walk resolves this form to the effective command `/r rm`.
     expect(commandsOf("chroot --userspec u /r rm")).toEqual([["/r", "rm"]]);
     expect(commandsOf("timeout -- 5 rm")).toEqual([["rm"]]);
   });

@@ -42,7 +42,7 @@ describe("effective-command walk: env split string", () => {
     expect(commandsOf("env -S '' rm -rf /")).toEqual([["rm", "-rf", "/"]]);
     expect(commandsOf("env -- rm -rf /")).toEqual([["rm", "-rf", "/"]]);
     expect(commandsOf("env FOO=bar rm")).toEqual([["rm"]]);
-    // A lone `-` ends the -S search and is then taken as the executable.
+    // `env - rm` resolves to the effective command `- rm`.
     expect(commandsOf("env - rm")).toEqual([["-", "rm"]]);
   });
 });
