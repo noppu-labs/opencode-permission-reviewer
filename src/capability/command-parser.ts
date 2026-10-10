@@ -1,10 +1,7 @@
 import { invariant } from "../invariant.ts";
 import { analyzeEffectiveCommands } from "../shell-effective-commands.ts";
-import {
-  lexSegmentsBounded,
-  newAnalysisBudget,
-  type ShellToken,
-} from "../shell-lexer.ts";
+import { lexSegmentsBounded, newAnalysisBudget } from "../shell-lexer.ts";
+import type { ShellToken } from "../shell-token.ts";
 import type { ParsedCommand, Redirection } from "./capability-types.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
 

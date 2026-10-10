@@ -1,7 +1,8 @@
 // Provenanced fact builders and command-shape probes for the bash capability analyzer.
 
 import type { Provenanced } from "../actor-context-types.ts";
-import { type ShellToken, shellBasename } from "../shell-lexer.ts";
+import { shellBasename } from "../shell-lexer.ts";
+import type { ShellToken } from "../shell-token.ts";
 import { INTERPRETERS } from "./bash-command-tables.ts";
 
 /** Command substitution (`$(...)` or backticks) makes analysis opaque. */

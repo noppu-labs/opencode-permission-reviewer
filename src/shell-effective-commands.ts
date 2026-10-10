@@ -1,5 +1,5 @@
 /*
- * Effective-command walk over the segments shell-lexer.ts produces: peels
+ * Effective-command walk over the segments shell-scanner.ts produces: peels
  * wrappers and destructures command-string forms (`sh -c`, `su -c`,
  * `env -S`, `ssh host cmd`, `busybox applet`, `chroot root cmd`,
  * `timeout duration cmd`). The emergency brake, the capability parser and the
@@ -14,13 +14,8 @@ import { invariant } from "./invariant.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
-  lexSegments,
   MAX_EFFECTIVE_COMMANDS,
   newAnalysisBudget,
-  normalizeShellRedirections,
-  type ShellRedirection,
-  type ShellSegment,
-  type ShellToken,
 } from "./shell-lexer.ts";
 import {
   ENV_VALUE_OPTIONS,
@@ -30,6 +25,12 @@ import {
   TRANSPARENT_WRAPPERS,
   VALUE_OPTIONS,
 } from "./shell-lexer-tables.ts";
+import {
+  normalizeShellRedirections,
+  type ShellRedirection,
+} from "./shell-redirections.ts";
+import { lexSegments } from "./shell-scanner.ts";
+import type { ShellSegment, ShellToken } from "./shell-token.ts";
 import { sshValueOption } from "./ssh-value-options.ts";
 
 /** Ceiling on command-string re-entry (`sh -c`, `env -S`, ssh, busybox,

@@ -6,11 +6,13 @@ import {
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
+  shellBasename,
+} from "./shell-lexer.ts";
+import {
   type ShellSegment,
   type ShellToken,
-  shellBasename,
   tokenCharIsQuoted,
-} from "./shell-lexer.ts";
+} from "./shell-token.ts";
 import type { PermissionRequest } from "./types.ts";
 
 /** One segment with its resolved effective commands, computed once per

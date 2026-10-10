@@ -3,14 +3,13 @@ import {
   analyzeEffectiveCommands,
   effectiveCommands,
 } from "../src/shell-effective-commands.ts";
+import { commandSegments, shellBasename } from "../src/shell-lexer.ts";
+import { lexSegments } from "../src/shell-scanner.ts";
 import {
-  commandSegments,
-  lexSegments,
   type ShellSegment,
   type ShellToken,
-  shellBasename,
   tokenCharIsQuoted,
-} from "../src/shell-lexer.ts";
+} from "../src/shell-token.ts";
 import { defined } from "./helpers.ts";
 
 function values(tokens: { value: string }[]): string[] {

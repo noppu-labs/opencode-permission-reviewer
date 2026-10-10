@@ -3,7 +3,7 @@
 import { homedir } from "node:os";
 import { normalize, resolve, sep } from "node:path";
 import { invariant } from "../invariant.ts";
-import type { ShellToken } from "../shell-lexer.ts";
+import type { ShellToken } from "../shell-token.ts";
 import {
   GIT_MUTATION_SUBCOMMANDS,
   MUTATION_VALUE_OPTIONS,

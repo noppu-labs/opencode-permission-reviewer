@@ -53,9 +53,9 @@ export interface ParsedCommand {
   /** The command after heredoc bodies were replaced with placeholders. */
   sanitizedCommand: string;
   /** Lexed segments of the sanitized command. */
-  segments: import("../shell-lexer.ts").ShellSegment[];
+  segments: import("../shell-token.ts").ShellSegment[];
   /** Effective commands (wrappers peeled) per segment. */
-  effective: import("../shell-lexer.ts").ShellToken[][];
+  effective: import("../shell-token.ts").ShellToken[][];
   /** Redirections grouped by segment index. */
   redirections: Redirection[][];
   /** Heredocs extracted before lexing. */

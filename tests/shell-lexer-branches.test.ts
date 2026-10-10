@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { lexSegmentsBounded } from "../src/shell-lexer.ts";
 import {
-  lexSegments,
-  lexSegmentsBounded,
   normalizeShellRedirections,
   type ShellRedirection,
-  type ShellToken,
-} from "../src/shell-lexer.ts";
+} from "../src/shell-redirections.ts";
+import { lexSegments } from "../src/shell-scanner.ts";
+import type { ShellToken } from "../src/shell-token.ts";
 
 function plain(text: string): ShellToken {
   return { raw: text, value: text, spans: [{ text, quoted: false }] };

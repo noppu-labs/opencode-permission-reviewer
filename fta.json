@@ -18,7 +18,6 @@
     "local-script-evidence.ts",
     "package-script-evidence.ts",
     "shell-effective-commands.ts",
-    "shell-lexer.ts",
     "ssh-command-segments.ts",
     "ssh-evidence.ts",
     "verified-ssh-script.ts",
