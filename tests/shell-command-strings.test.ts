@@ -59,6 +59,12 @@ describe("effective-command walk: -c command strings", () => {
     expect(commandsOf("su root")).toEqual([["su", "root"]]);
     expect(commandsOf("su -- root")).toEqual([["su", "--", "root"]]);
     expect(commandsOf("su -- -c rm")).toEqual([["su", "--", "-c", "rm"]]);
+    expect(commandsOf("script -q -c 'rm -rf /' log")).toEqual([
+      ["rm", "-rf", "/"],
+    ]);
+    expect(commandsOf("script -c")).toEqual([["script", "-c"]]);
+    expect(commandsOf("script --command")).toEqual([["script", "--command"]]);
+    expect(commandsOf("script -qc")).toEqual([["script", "-qc"]]);
     expect(commandsOf("fish -c -x 'rm'")).toEqual([["-x"]]);
   });
 

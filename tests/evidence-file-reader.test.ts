@@ -86,6 +86,22 @@ describe("evidence file reads: path checks", () => {
       /^\/proc\/self\/fd\/\d+$/,
     );
   });
+
+  test("an in-root symlink opens its realpath target and reports the requested path", async () => {
+    const target = join(fixture.directory, "real.py");
+    await writeFile(target, "print(1)\n");
+    await symlink(target, join(fixture.directory, "script.py"));
+    const openSpy = fixture.track(spyOn(fsPromises, "open"));
+    const result = await fixture.read("script.py");
+    expect(openSpy.mock.calls).toEqual([
+      [
+        target,
+        constants.O_RDONLY | constants.O_NOFOLLOW | constants.O_NONBLOCK,
+      ],
+    ]);
+    expect(result.status).toBe("included");
+    expect(result.path).toBe(join(fixture.directory, "script.py"));
+  });
 });
 
 describe("evidence file reads: descriptor realpath checks", () => {

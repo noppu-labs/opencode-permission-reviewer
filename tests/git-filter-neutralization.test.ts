@@ -1,10 +1,20 @@
-import { afterAll, expect, test } from "bun:test";
+import { afterAll, beforeAll, expect, test } from "bun:test";
 import { appendFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { filterNeutralizationArgs } from "../src/git-filter-neutralization.ts";
 import { git, removeRepositories, repository } from "./git-remote-fixtures.ts";
 
-afterAll(removeRepositories);
+// The scan reads the global git config too, so a developer's own filters or
+// textconv drivers would leak into the exact args asserted below.
+const globalConfig: string | undefined = process.env.GIT_CONFIG_GLOBAL;
+beforeAll(() => {
+  process.env.GIT_CONFIG_GLOBAL = "/dev/null";
+});
+afterAll(async () => {
+  if (globalConfig === undefined) delete process.env.GIT_CONFIG_GLOBAL;
+  else process.env.GIT_CONFIG_GLOBAL = globalConfig;
+  await removeRepositories();
+});
 
 test("concurrent scans of one directory share a promise that is dropped once it settles", async () => {
   const directory = await repository(false);
