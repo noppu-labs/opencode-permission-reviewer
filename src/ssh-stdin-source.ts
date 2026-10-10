@@ -2,11 +2,8 @@
 // preflight denial when it is missing.
 
 import { isAbsolute } from "node:path";
-import {
-  type FileEvidence,
-  includeEvidenceFile,
-  isMissingFile,
-} from "./evidence-file-reader.ts";
+import { includeEvidenceFile } from "./evidence-file-reader.ts";
+import { type FileEvidence, isMissingFile } from "./file-evidence.ts";
 import { catSource } from "./ssh-command-segments.ts";
 import type { ShellCommandSegmentWithDirectory } from "./working-directory-segments.ts";
 

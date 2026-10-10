@@ -1,6 +1,6 @@
 // Heuristic hint flags for evidence: a remote ssh command, and script content sent to an interpreter.
 
-import type { FileEvidence } from "./evidence-file-reader.ts";
+import type { FileEvidence } from "./file-evidence.ts";
 
 export function commandSignals(
   remoteCommand: string,

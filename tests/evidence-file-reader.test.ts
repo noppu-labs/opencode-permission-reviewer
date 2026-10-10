@@ -3,7 +3,7 @@ import { constants } from "node:fs";
 import * as fsPromises from "node:fs/promises";
 import { mkdir, symlink, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { FileEvidence } from "../src/evidence-file-reader.ts";
+import type { FileEvidence } from "../src/file-evidence.ts";
 import { useReaderFixture } from "./evidence-reader-fixtures.ts";
 
 const fixture = useReaderFixture();

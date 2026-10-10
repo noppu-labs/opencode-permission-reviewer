@@ -1,7 +1,7 @@
 // Git inspection gate: contains the planned directory and repository root in the approved roots, neutralizes filters, and reads status.
 
 import { realpath } from "node:fs/promises";
-import { approvedEvidenceRoots, isWithinRoot } from "./evidence-file-reader.ts";
+import { approvedEvidenceRoots, isWithinRoot } from "./evidence-path-policy.ts";
 import type { PlannedGitActions } from "./git-command-plan.ts";
 import { filterNeutralizationArgs } from "./git-filter-neutralization.ts";
 import { runGit } from "./git-run.ts";

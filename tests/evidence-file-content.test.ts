@@ -2,7 +2,7 @@ import { describe, expect, spyOn, test } from "bun:test";
 import * as fsPromises from "node:fs/promises";
 import { writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import type { FileEvidence } from "../src/evidence-file-reader.ts";
+import type { FileEvidence } from "../src/file-evidence.ts";
 import { sha256Hex, useReaderFixture } from "./evidence-reader-fixtures.ts";
 
 const fixture = useReaderFixture();

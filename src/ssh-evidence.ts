@@ -1,5 +1,5 @@
 import { sourceCommand } from "./evidence/source-command.ts";
-import { type FileEvidence, sha256 } from "./evidence-file-reader.ts";
+import { type FileEvidence, sha256 } from "./file-evidence.ts";
 import { findSshIndex, parseSsh } from "./ssh-command-segments.ts";
 import { type SshInvocation, sshRecord } from "./ssh-record.ts";
 import {

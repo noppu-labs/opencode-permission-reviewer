@@ -9,7 +9,7 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { approvedEvidenceRoots } from "../src/evidence-file-reader.ts";
+import { approvedEvidenceRoots } from "../src/evidence-path-policy.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import { shellCommandSegmentsWithDirectory } from "../src/working-directory-segments.ts";

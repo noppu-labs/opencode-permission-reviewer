@@ -1,7 +1,7 @@
 // One ssh segment's evidence record: the parsed invocation, hint signals and its stdin.
 
-import type { FileEvidence } from "./evidence-file-reader.ts";
 import { commandSignals, stdinSignals } from "./evidence-signals.ts";
+import type { FileEvidence } from "./file-evidence.ts";
 import type { parseSsh } from "./ssh-command-segments.ts";
 
 export type SshInvocation = NonNullable<ReturnType<typeof parseSsh>>;

@@ -1,11 +1,9 @@
 import { basename, resolve } from "node:path";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
-import {
-  type FileEvidence,
-  includeEvidenceFile,
-} from "./evidence-file-reader.ts";
+import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import { analyzeScriptContent } from "./evidence-signals.ts";
+import type { FileEvidence } from "./file-evidence.ts";
 import { invariant } from "./invariant.ts";
 import type { PermissionRequest } from "./types.ts";
 import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";

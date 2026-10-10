@@ -3,10 +3,8 @@ import { createHash } from "node:crypto";
 import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
-  type FileEvidence,
-  includeEvidenceFile,
-} from "../src/evidence-file-reader.ts";
+import { includeEvidenceFile } from "../src/evidence-file-reader.ts";
+import type { FileEvidence } from "../src/file-evidence.ts";
 
 export interface ReaderFixture {
   /** The approved root: session directory and worktree at once. */
