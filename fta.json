@@ -32,6 +32,8 @@
     "context.ts",
     "evidence-sections.ts",
     "actor-resolver.ts",
+    "intent-extraction.ts",
+    "session-lineage.ts",
     "ask-decisions.ts",
     "evidence-assembler.ts",
     "review-coordinator.ts",
