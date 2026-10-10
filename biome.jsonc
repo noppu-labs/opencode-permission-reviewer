@@ -84,22 +84,6 @@
   "overrides": [
     // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
     {
-      "includes": ["tests/audit.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 661
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
       "includes": ["tests/runtime.test.ts"],
       "linter": {
         "rules": {

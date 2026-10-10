@@ -43,6 +43,31 @@ function auditWriter(
   return defined(createAuditWriter(...args), "audit writer");
 }
 
+/** An enabled writer for `auditPath`; `logger` receives append failures. */
+function writerFor(
+  auditPath: string,
+  logger?: Parameters<typeof createAuditWriter>[1],
+): ReturnType<typeof auditWriter> {
+  return auditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath }, logger);
+}
+
+/** A writer whose logger collects every reported failure detail. */
+function loggingWriter(auditPath: string): {
+  logs: unknown[];
+  writeAudit: ReturnType<typeof auditWriter>;
+} {
+  const logs: unknown[] = [];
+  const writeAudit = writerFor(auditPath, (_msg, details) =>
+    logs.push(details),
+  );
+  return { logs, writeAudit };
+}
+
+/** The single record a fresh audit file holds. */
+async function readOnlyRecord(path: string): Promise<ReviewAuditRecord> {
+  return JSON.parse((await readFile(path, "utf8")).trim()) as ReviewAuditRecord;
+}
+
 function record(overrides: Partial<ReviewAuditRecord> = {}): ReviewAuditRecord {
   return {
     timestamp: new Date().toISOString(),
@@ -54,6 +79,29 @@ function record(overrides: Partial<ReviewAuditRecord> = {}): ReviewAuditRecord {
     reason: "narrow safe command",
     ...overrides,
   };
+}
+
+/** One serialized audit line, newline-terminated. */
+function recordLine(overrides: Partial<ReviewAuditRecord>): string {
+  return `${JSON.stringify(record(overrides))}\n`;
+}
+
+/** The out-of-window record both tail-window tests plant at offset 0. */
+const headLine = recordLine({
+  requestID: "per_head",
+  outcome: "allow",
+  permission: "bash",
+  timestamp: "2020-01-01T00:00:00.000Z",
+});
+
+/** Create `file` sparsely from `[data, offset]` writes. */
+function writeSparse(file: string, writes: [string, number][]): void {
+  const fd = openSync(file, "w");
+  try {
+    for (const [data, position] of writes) writeAt(fd, data, position);
+  } finally {
+    closeSync(fd);
+  }
 }
 
 /** Write a string at an absolute file offset, looping to completion. Lets
@@ -94,11 +142,7 @@ describe("audit writer", () => {
 
   test("appends one JSONL line per record with mode 0600", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await writeAudit(record({ requestID: "per_a" }));
     await writeAudit(record({ requestID: "per_b" }));
     const content = await readFile(auditPath, "utf8");
@@ -116,11 +160,7 @@ describe("audit writer", () => {
 
   test("preserves System One scores through the sanitiser", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     const scores = {
       ...systemOneScores(),
       contradictions: ["a supporting classification has very low confidence"],
@@ -135,9 +175,7 @@ describe("audit writer", () => {
         systemOne: scores,
       }),
     );
-    const parsed = JSON.parse(
-      (await readFile(auditPath, "utf8")).trim(),
-    ) as ReviewAuditRecord;
+    const parsed = await readOnlyRecord(auditPath);
     expect(parsed.systemOne).toEqual(scores);
     expect(parsed.reviewerEscalatedFrom).toEqual({
       model: "opencode/jev-1.13-free",
@@ -147,11 +185,7 @@ describe("audit writer", () => {
 
   test("bounds and redacts the provider-reported System One model ID", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     const token = `ghp_${"A".repeat(36)}`;
     const scores = {
       ...systemOneScores(),
@@ -172,11 +206,7 @@ describe("audit writer", () => {
 
   test("lazily creates nested directories", async () => {
     const auditPath = join(directory, "nested", "deep", "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await writeAudit(record());
     const content = await readFile(auditPath, "utf8");
     expect(content.trim().length).toBeGreaterThan(0);
@@ -184,15 +214,10 @@ describe("audit writer", () => {
 
   test("bounds CRLF/newlines to spaces and truncates to 2000 chars", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     const longReason = `a\r\nb\nc${"x".repeat(3_000)}`;
     await writeAudit(record({ reason: longReason }));
-    const line = (await readFile(auditPath, "utf8")).trim();
-    const parsed = JSON.parse(line) as ReviewAuditRecord;
+    const parsed = await readOnlyRecord(auditPath);
     expect(parsed.reason).not.toContain("\n");
     expect(parsed.reason).not.toContain("\r");
     expect(parsed.reason.length).toBeLessThanOrEqual(2_001); // 2000 + ellipsis
@@ -201,29 +226,17 @@ describe("audit writer", () => {
 
   test("short reason is preserved (CRLF -> space normalization)", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await writeAudit(record({ reason: "line1\r\nline2\nline3" }));
-    const line = (await readFile(auditPath, "utf8")).trim();
-    const parsed = JSON.parse(line) as ReviewAuditRecord;
-    expect(parsed.reason).toBe("line1 line2 line3");
+    expect((await readOnlyRecord(auditPath)).reason).toBe("line1 line2 line3");
   });
 
   test("trims whitespace and preserves exact 2000 char boundary", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     const exactly2000 = "a".repeat(2_000);
     await writeAudit(record({ reason: `  ${exactly2000}  ` }));
-    const parsed = JSON.parse(
-      (await readFile(auditPath, "utf8")).trim(),
-    ) as ReviewAuditRecord;
+    const parsed = await readOnlyRecord(auditPath);
     expect(parsed.reason).toBe(exactly2000);
     expect(parsed.reason.length).toBe(2_000);
   });
@@ -232,11 +245,7 @@ describe("audit writer", () => {
     // Use a directory path as auditPath so appendFile fails with EISDIR.
     await mkdir(join(directory, "dir-as-file"));
     const auditPath = join(directory, "dir-as-file");
-    const logs: unknown[] = [];
-    const writeAudit = auditWriter(
-      { ...DEFAULT_CONFIG, audit: true, auditPath },
-      (_msg, details) => logs.push(details),
-    );
+    const { logs, writeAudit } = loggingWriter(auditPath);
     await expect(writeAudit(record())).resolves.toBeUndefined();
     expect(logs.length).toBeGreaterThan(0);
   });
@@ -247,11 +256,7 @@ describe("audit writer", () => {
     const blocker = join(directory, "blocker");
     await writeFile(blocker, "x");
     const auditPath = join(blocker, "nested", "audit.jsonl");
-    const details: unknown[] = [];
-    const writeAudit = auditWriter(
-      { ...DEFAULT_CONFIG, audit: true, auditPath },
-      (_msg, info) => details.push(info),
-    );
+    const { logs: details, writeAudit } = loggingWriter(auditPath);
     await expect(
       writeAudit(record({ requestID: "per_lost_1" })),
     ).resolves.toBeUndefined();
@@ -263,25 +268,14 @@ describe("audit writer", () => {
     expect(details.length).toBeGreaterThanOrEqual(2);
     await rm(blocker, { force: true });
     await writeAudit(record({ requestID: "per_recovered" }));
-    const parsed = JSON.parse(
-      (await readFile(auditPath, "utf8")).trim(),
-    ) as ReviewAuditRecord;
-    expect(parsed.requestID).toBe("per_recovered");
+    expect((await readOnlyRecord(auditPath)).requestID).toBe("per_recovered");
   });
 
   test("a symlinked audit path is rejected without throwing and the target is untouched", async () => {
     const target = join(directory, "target.jsonl");
     await writeFile(target, "");
     await symlink(target, join(directory, "audit.jsonl"));
-    const logs: unknown[] = [];
-    const writeAudit = auditWriter(
-      {
-        ...DEFAULT_CONFIG,
-        audit: true,
-        auditPath: join(directory, "audit.jsonl"),
-      },
-      (_msg, details) => logs.push(details),
-    );
+    const { logs, writeAudit } = loggingWriter(join(directory, "audit.jsonl"));
     await expect(writeAudit(record())).resolves.toBeUndefined();
     expect(logs.length).toBeGreaterThan(0);
     // The record is lost rather than written through the link.
@@ -291,11 +285,7 @@ describe("audit writer", () => {
   test("a non-regular audit path is rejected without throwing", async () => {
     // A character device opens fine but fails the regular-file check, the
     // same path a FIFO or socket takes after a successful non-blocking open.
-    const logs: unknown[] = [];
-    const writeAudit = auditWriter(
-      { ...DEFAULT_CONFIG, audit: true, auditPath: "/dev/null" },
-      (_msg, details) => logs.push(details),
-    );
+    const { logs, writeAudit } = loggingWriter("/dev/null");
     await expect(writeAudit(record())).resolves.toBeUndefined();
     expect(logs.length).toBeGreaterThan(0);
   });
@@ -348,11 +338,7 @@ console.log("DONE")`,
     const auditPath = join(directory, "audit.jsonl");
     await writeFile(auditPath, "");
     await chmod(auditPath, 0o644);
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await writeAudit(record({ requestID: "per_keep" }));
     const handle = await open(auditPath, "r");
     try {
@@ -369,11 +355,7 @@ console.log("DONE")`,
 
   test("mode 0600 is re-asserted when the file is loosened between appends", async () => {
     const auditPath = join(directory, "audit-loosened.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await writeAudit(record({ requestID: "loose_1" }));
     // An external process loosens the file mid-life.
     await chmod(auditPath, 0o644);
@@ -400,29 +382,15 @@ console.log("DONE")`,
     // We cannot write to real ~ in test, but we can verify that `~` and `~/...`
     // are resolved (not treated as relative) — by checking the writer is created
     // and that it does not synchronously throw. We do not actually write to ~.
-    const writerTilde = createAuditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath: "~",
-    });
-    expect(writerTilde).toBeDefined();
-    const writerHome = createAuditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath: "~/approval-reviewer-test-noop.jsonl",
-    });
-    expect(writerHome).toBeDefined();
+    expect(writerFor("~")).toBeDefined();
+    expect(writerFor("~/approval-reviewer-test-noop.jsonl")).toBeDefined();
     // Ensure DEFAULT_AUDIT_PATH uses ~ prefix convention.
     expect(DEFAULT_AUDIT_PATH.startsWith("~")).toBe(true);
   });
 
   test("concurrent writes are serialized via mkdir once", async () => {
     const auditPath = join(directory, "audit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await Promise.all([
       writeAudit(record({ requestID: "per_1" })),
       writeAudit(record({ requestID: "per_2" })),
@@ -438,16 +406,9 @@ console.log("DONE")`,
 
   test("absolute non-tilde path is resolved", async () => {
     const auditPath = join(directory, "explicit.jsonl");
-    const writeAudit = auditWriter({
-      ...DEFAULT_CONFIG,
-      audit: true,
-      auditPath,
-    });
+    const writeAudit = writerFor(auditPath);
     await writeAudit(record({ requestID: "per_x" }));
-    const parsed = JSON.parse(
-      (await readFile(auditPath, "utf8")).trim(),
-    ) as ReviewAuditRecord;
-    expect(parsed.requestID).toBe("per_x");
+    expect((await readOnlyRecord(auditPath)).requestID).toBe("per_x");
   });
 });
 
@@ -525,34 +486,18 @@ describe("audit summary hardening", () => {
     // the first tail line, so the partial-line strip only eats garbage.
     const CAP = 64 * 1024 * 1024;
     const file = join(directory, "audit.jsonl");
-    const headLine = `${JSON.stringify(
-      record({
-        requestID: "per_head",
-        outcome: "allow",
-        permission: "bash",
-        timestamp: "2020-01-01T00:00:00.000Z",
+    const tailLines = [1, 2, 3].map((i) =>
+      recordLine({
+        requestID: `per_tail_${i}`,
+        outcome: "deny",
+        permission: "read",
+        timestamp: `2026-05-0${i}T00:00:00.000Z`,
       }),
-    )}\n`;
-    const tailLines = [1, 2, 3].map(
-      (i) =>
-        `${JSON.stringify(
-          record({
-            requestID: `per_tail_${i}`,
-            outcome: "deny",
-            permission: "read",
-            timestamp: `2026-05-0${i}T00:00:00.000Z`,
-          }),
-        )}\n`,
     );
-    const tailStart = CAP + 1024;
-    const tailBlock = `\n${tailLines.join("")}`;
-    const fd = openSync(file, "w");
-    try {
-      writeAt(fd, headLine, 0);
-      writeAt(fd, tailBlock, tailStart);
-    } finally {
-      closeSync(fd);
-    }
+    writeSparse(file, [
+      [headLine, 0],
+      [`\n${tailLines.join("")}`, CAP + 1024],
+    ]);
     const summary = readAuditSummary(file);
     expect(summary.exists).toBe(true);
     expect(summary.truncated).toBe(true);
@@ -573,46 +518,30 @@ describe("audit summary hardening", () => {
     // of stripping it as a partial line.
     const CAP = 64 * 1024 * 1024;
     const file = join(directory, "audit.jsonl");
-    const headLine = `${JSON.stringify(
-      record({
-        requestID: "per_head",
-        outcome: "allow",
-        permission: "bash",
-        timestamp: "2020-01-01T00:00:00.000Z",
+    const boundaryLine = recordLine({
+      requestID: "per_boundary",
+      outcome: "allow",
+      permission: "write",
+      timestamp: "2026-06-01T00:00:00.000Z",
+    });
+    const tailLines = [1, 2].map((i) =>
+      recordLine({
+        requestID: `per_tail_${i}`,
+        outcome: "deny",
+        permission: "read",
+        timestamp: `2026-06-0${i + 1}T00:00:00.000Z`,
       }),
-    )}\n`;
-    const boundaryLine = `${JSON.stringify(
-      record({
-        requestID: "per_boundary",
-        outcome: "allow",
-        permission: "write",
-        timestamp: "2026-06-01T00:00:00.000Z",
-      }),
-    )}\n`;
-    const tailLines = [1, 2].map(
-      (i) =>
-        `${JSON.stringify(
-          record({
-            requestID: `per_tail_${i}`,
-            outcome: "deny",
-            permission: "read",
-            timestamp: `2026-06-0${i + 1}T00:00:00.000Z`,
-          }),
-        )}\n`,
     );
     const tailStart = CAP + 4096;
     const tailBlock = `\n${tailLines.join("")}`;
     const size = tailStart + Buffer.byteLength(tailBlock, "utf8");
     const offset = size - CAP;
-    const fd = openSync(file, "w");
-    try {
-      writeAt(fd, headLine, 0);
-      writeAt(fd, tailBlock, tailStart);
-      writeAt(fd, "\n", offset - 1);
-      writeAt(fd, boundaryLine, offset);
-    } finally {
-      closeSync(fd);
-    }
+    writeSparse(file, [
+      [headLine, 0],
+      [tailBlock, tailStart],
+      ["\n", offset - 1],
+      [boundaryLine, offset],
+    ]);
     const summary = readAuditSummary(file);
     expect(summary.exists).toBe(true);
     expect(summary.truncated).toBe(true);
