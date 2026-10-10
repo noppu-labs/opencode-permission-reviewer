@@ -382,8 +382,16 @@ console.log("DONE")`,
     // We cannot write to real ~ in test, but we can verify that `~` and `~/...`
     // are resolved (not treated as relative) — by checking the writer is created
     // and that it does not synchronously throw. We do not actually write to ~.
-    expect(writerFor("~")).toBeDefined();
-    expect(writerFor("~/approval-reviewer-test-noop.jsonl")).toBeDefined();
+    expect(
+      createAuditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath: "~" }),
+    ).toBeDefined();
+    expect(
+      createAuditWriter({
+        ...DEFAULT_CONFIG,
+        audit: true,
+        auditPath: "~/approval-reviewer-test-noop.jsonl",
+      }),
+    ).toBeDefined();
     // Ensure DEFAULT_AUDIT_PATH uses ~ prefix convention.
     expect(DEFAULT_AUDIT_PATH.startsWith("~")).toBe(true);
   });
