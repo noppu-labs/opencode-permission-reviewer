@@ -31,7 +31,6 @@
     "init.ts",
     "init-config-files.ts",
     "reviewer-backend.ts",
-    "connection.ts",
     "server.ts",
     "tui.tsx",
     "ui-protocol.ts",

@@ -1,14 +1,10 @@
 import { Buffer } from "node:buffer";
-import { readFile } from "node:fs/promises";
-import { homedir } from "node:os";
-import { join } from "node:path";
 import { OpenCode, type OpenCodeClient } from "@opencode/client";
 import { ReviewerRpc } from "../../ui/rpc.ts";
-
-interface ServiceEndpoint {
-  url: string;
-  password: string;
-}
+import {
+  readRegisteredService,
+  type ServiceEndpoint,
+} from "./service-registration.ts";
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
@@ -27,96 +23,59 @@ export function validateHostEndpoint(url: string): URL {
   return endpoint;
 }
 
+const SESSION_WAIT = /^\/api\/experimental\/session\/([^/]+)\/wait$/;
+
+function requestUrl(input: RequestInfo | URL): string {
+  return input instanceof Request ? input.url : input.toString();
+}
+
+/** Wait on the current route, retrying the legacy one when the host has no
+ *  experimental wait endpoint. */
+async function waitWithLegacyRoute(
+  delegate: typeof globalThis.fetch,
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  url: URL,
+  sessionID: string | undefined,
+): Promise<Response> {
+  const response = await delegate(
+    input instanceof Request ? input.clone() : input,
+    init,
+  );
+  if (response.status !== 404 && response.status !== 405) return response;
+  await response.body?.cancel().catch(() => {});
+  url.pathname = `/api/session/${sessionID}/wait`;
+  return delegate(
+    input instanceof Request ? new Request(url, input) : url,
+    init,
+  );
+}
+
 export function hostCompatibleFetch(
   delegate: typeof globalThis.fetch = globalThis.fetch,
 ): typeof globalThis.fetch {
   return (async (input: RequestInfo | URL, init?: RequestInit) => {
-    const source = input instanceof Request ? input.url : input.toString();
-    const url = new URL(source);
-    const session = url.pathname.match(
-      /^\/api\/experimental\/session\/([^/]+)\/wait$/,
-    );
+    const url = new URL(requestUrl(input));
+    const session = url.pathname.match(SESSION_WAIT);
     if (!session) return delegate(input, init);
-    const response = await delegate(
-      input instanceof Request ? input.clone() : input,
-      init,
-    );
-    if (response.status !== 404 && response.status !== 405) return response;
-    await response.body?.cancel().catch(() => {});
-    url.pathname = `/api/session/${session[1]}/wait`;
-    return delegate(
-      input instanceof Request ? new Request(url, input) : url,
-      init,
-    );
+    return waitWithLegacyRoute(delegate, input, init, url, session[1]);
   }) as typeof globalThis.fetch;
 }
 
-function assertLiveProcess(pid: number): void {
-  if (!Number.isSafeInteger(pid) || pid <= 0)
-    throw new Error(
-      "Reviewer service registration contains an invalid process ID",
-    );
-  try {
-    process.kill(pid, 0);
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code !== "EPERM")
-      throw new Error(
-        "Reviewer service registration belongs to a process that is not running",
-        {
-          cause: error,
-        },
-      );
-  }
-}
-
-async function readRegisteredService(
+/** The registered service, accepted only on a loopback origin. */
+async function registeredLoopbackService(
   version: string,
 ): Promise<ServiceEndpoint | undefined> {
-  const path = join(
-    process.env.XDG_STATE_HOME ?? join(homedir(), ".local", "state"),
-    "opencode",
-    "service.json",
-  );
-  const text = await readFile(path, "utf8").catch(
-    (error: NodeJS.ErrnoException) => {
-      if (error.code === "ENOENT") return undefined;
-      throw error;
-    },
-  );
-  if (text === undefined) return undefined;
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch {
-    throw new Error("Reviewer service registration is not valid JSON");
-  }
-  if (typeof value !== "object" || value === null)
-    throw new Error("Reviewer service registration is invalid");
-  const info = value as {
-    version?: unknown;
-    url?: unknown;
-    pid?: unknown;
-    password?: unknown;
-  };
-  if (info.version !== version)
-    throw new Error(
-      "Reviewer service registration does not match this host version",
-    );
-  if (typeof info.url !== "string")
-    throw new Error("Reviewer service registration does not contain a URL");
-  if (typeof info.password !== "string" || info.password.length === 0)
-    throw new Error(
-      "Reviewer service registration does not contain authentication",
-    );
-  assertLiveProcess(info.pid as number);
-  const endpoint = validateHostEndpoint(info.url);
+  const service = await readRegisteredService(version);
+  if (!service) return undefined;
+  const endpoint = validateHostEndpoint(service.url);
   if (!LOOPBACK_HOSTS.has(endpoint.hostname))
     throw new Error("Reviewer registered service must use a loopback address");
   if (endpoint.pathname !== "/" || endpoint.search || endpoint.hash)
     throw new Error(
       "Reviewer registered service URL must be a loopback origin",
     );
-  return { url: endpoint.href, password: info.password };
+  return { url: endpoint.href, password: service.password };
 }
 
 function makeClient(endpoint: ServiceEndpoint): OpenCodeClient {
@@ -148,7 +107,7 @@ export async function connectV2Host(
       );
     client = makeClient({ url: endpoint.href, password });
   } else {
-    const endpoint = await readRegisteredService(version);
+    const endpoint = await registeredLoopbackService(version);
     if (!endpoint)
       throw new Error(
         "Reviewer host connection unavailable: use the registered service or configure OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD",

@@ -81,7 +81,7 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 30 files.
+    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 29 files.
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
@@ -103,7 +103,6 @@
         "src/opencode/event-normalizer.ts",
         "src/opencode/v1/context-reader.ts",
         "src/opencode/v1/reviewer-backend.ts",
-        "src/opencode/v2/connection.ts",
         "src/opencode/v2/context-reader.ts",
         "src/opencode/v2/reviewer-backend.ts",
         "src/opencode/v2/server.ts",
