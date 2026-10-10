@@ -13,10 +13,12 @@ import {
 import { buildEvidenceResult } from "../src/context.ts";
 import { evaluateReview } from "../src/core/review-engine.ts";
 import type { ReviewEnvelope } from "../src/types.ts";
+import { collectVerifiedSshScript } from "../src/verified-script-evidence.ts";
 import {
-  collectVerifiedSshScript,
   parseVerifiedSshScriptCommand,
   renderVerifiedSshScriptCommand,
+} from "../src/verified-ssh-command.ts";
+import {
   ScriptAnalysisRegistry,
   VERIFIED_SCRIPT_LIMIT,
 } from "../src/verified-ssh-script.ts";

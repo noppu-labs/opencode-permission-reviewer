@@ -21,7 +21,7 @@ import type {
   OpenCodeClientLike,
 } from "../src/opencode/types.ts";
 import type { ReviewExecutionResult } from "../src/types.ts";
-import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-script.ts";
+import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
 import { decision, request } from "./helpers.ts";
 
 const root: string = await mkdtemp(join(tmpdir(), "reviewer-host-regression-"));

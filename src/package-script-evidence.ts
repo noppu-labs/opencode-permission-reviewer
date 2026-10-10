@@ -1,101 +1,60 @@
-import { lstat } from "node:fs/promises";
-import { basename, dirname, join } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
-import { includeEvidenceFile } from "./evidence-file-reader.ts";
-import { invariant } from "./invariant.ts";
-import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
-import { effectiveCommands } from "./shell-effective-commands.ts";
-import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
+import { scriptCalls } from "./package-script-calls.ts";
+import { ScriptExpansion } from "./package-script-expansion.ts";
+import {
+  MAX_SCRIPT_RECORDS,
+  type ScriptRecord,
+} from "./package-script-records.ts";
 import type { PermissionRequest } from "./types.ts";
+import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
 
-const MANAGERS = new Set(["bun", "npm", "pnpm", "yarn"]);
-const MAX_SCRIPT_DEPTH = 4;
-const MAX_SCRIPT_RECORDS = 16;
-
-interface ScriptInvocation {
-  manager: string;
-  script: string;
-  arguments: string[];
-  unresolved?: string;
+function serializeRecords(records: ScriptRecord[]): string {
+  return JSON.stringify(
+    {
+      coverage:
+        "manifest definitions and literal local calls only; imported code and runtime configuration may add effects",
+      status:
+        records.length >= MAX_SCRIPT_RECORDS ||
+        records.some((record) => record.status !== "included")
+          ? "partial"
+          : "included",
+      ...(records.length >= MAX_SCRIPT_RECORDS
+        ? { expansionLimitReached: true }
+        : {}),
+      records,
+    },
+    null,
+    2,
+  );
 }
 
-interface ScriptRecord {
-  manager: string;
-  script: string;
-  directory?: string;
-  manifest?: string;
-  phase?: string;
-  command?: string;
-  arguments?: string[];
-  status: "included" | "unavailable" | "blocked" | "truncated" | "cycle";
-  reason?: string;
-  referencedCode?: string;
-}
-
-interface ManifestEvidence {
-  path: string;
-  scripts?: Record<string, unknown>;
-  reason?: string;
-  status: ScriptRecord["status"];
-}
-
-function invocation(tokens: string[]): ScriptInvocation | undefined {
-  const manager = basename(tokens[0] ?? "");
-  if (!MANAGERS.has(manager)) return;
-  let cursor = 1;
-  let ambiguous = false;
-  const skipOptions = (): void => {
-    while (tokens[cursor]?.startsWith("-")) {
-      const option = tokens[cursor++];
-      invariant(
-        option !== undefined,
-        "the loop condition read a token at this cursor",
-      );
-      if (
-        /^(?:--(?:cwd|prefix|workspace|workspaces|filter)|-F|-C)(?:=|$)/.test(
-          option,
-        )
-      )
-        ambiguous = true;
-      if (
-        ["--cwd", "--prefix", "--workspace", "--filter", "-F", "-C"].includes(
-          option,
-        )
-      )
-        cursor++;
-    }
-  };
-  skipOptions();
-  const subcommand = tokens[cursor];
-  if (manager === "bun" && subcommand !== "run") return;
-  if (subcommand === "run" || subcommand === "run-script") {
-    cursor++;
-    skipOptions();
+function boundedText(records: ScriptRecord[], maxChars: number): string {
+  // Records are only popped while more than one remains, so `first` stays
+  // records[0] from here on.
+  const [first] = records;
+  if (first === undefined) return "";
+  let text = serializeRecords(records);
+  // Drop whole records before shortening a record, retaining explicit gaps.
+  while (text.length > maxChars && records.length > 1) {
+    records.pop();
+    first.status = "truncated";
+    first.reason = "additional script evidence exceeded the character budget";
+    text = serializeRecords(records);
   }
-  const script =
-    subcommand === "run" || subcommand === "run-script"
-      ? tokens[cursor]
-      : ["test", "start", "stop", "restart"].includes(subcommand ?? "")
-        ? subcommand
-        : undefined;
-  if (
-    !script ||
-    script.startsWith("-") ||
-    /[/$`*?{}<>]/.test(script) ||
-    /\.[cm]?[jt]sx?$/.test(script)
-  )
-    return;
-  return {
-    manager,
-    script,
-    arguments: tokens.slice(cursor + 1),
-    ...(ambiguous
-      ? {
-          unresolved:
-            "runtime directory or workspace selection is not resolved",
-        }
-      : {}),
-  };
+  if (text.length > maxChars) {
+    delete first.referencedCode;
+    if (first.command !== undefined)
+      first.command = first.command.slice(0, Math.max(0, maxChars - 1_000));
+    first.status = "truncated";
+    first.reason = "script evidence exceeded the character budget";
+    text = serializeRecords(records);
+  }
+  if (text.length > maxChars)
+    text = JSON.stringify({
+      status: "truncated",
+      reason: "script evidence exceeded the character budget",
+    });
+  return `PACKAGE_SCRIPT_ANALYSIS\n${text}`;
 }
 
 /** Read manifest definitions and literal local calls; never execute package code. */
@@ -106,264 +65,19 @@ export async function enrichPackageScriptEvidence(
   maxChars: number,
 ): Promise<{ text: string }> {
   if (request.permission !== "bash") return { text: "" };
-  const records: ScriptRecord[] = [];
-  const active = new Set<string>();
-  const calls = (tokens: string[]): ScriptInvocation[] => {
-    const managerIndex = tokens.findIndex((token) =>
-      MANAGERS.has(basename(token)),
-    );
-    const prefix = managerIndex < 0 ? tokens : tokens.slice(0, managerIndex);
-    if (
-      prefix.some((token) =>
-        [
-          "ssh",
-          "chroot",
-          "docker",
-          "podman",
-          "kubectl",
-          "nsenter",
-          "sudo",
-          "su",
-          "runuser",
-          "systemd-run",
-        ].includes(basename(token)),
-      )
-    )
-      return [];
-    const redirected = prefix.some(
-      (token) => token === "-C" || token.startsWith("--chdir"),
-    );
-    const commands = effectiveCommands({
-      tokens: tokens.map((value) => ({ raw: value, value })),
-    }).map((command) => command.map((token) => token.value));
-    const changesDirectory =
-      redirected ||
-      commands.some((command) =>
-        ["cd", "pushd", "popd"].includes(command[0] ?? ""),
-      );
-    return commands.flatMap((command) => {
-      const call = invocation(command);
-      return call
-        ? [
-            {
-              ...call,
-              ...(changesDirectory
-                ? {
-                    unresolved:
-                      "wrapped script working directory is unresolved",
-                  }
-                : {}),
-            },
-          ]
-        : [];
-    });
-  };
-  const manifests = new Map<string, Promise<ManifestEvidence>>();
-  const manifest = (cwd: string): Promise<ManifestEvidence> => {
-    const existing = manifests.get(cwd);
-    if (existing) return existing;
-    const pending = (async (): Promise<ManifestEvidence> => {
-      let cursor = cwd;
-      for (let depth = 0; depth < 8; depth++) {
-        const path = join(cursor, "package.json");
-        // biome-ignore lint/performance/noAwaitInLoops: walks up one parent directory per step and returns at the nearest package.json, so a farther manifest must not be read before a closer one is ruled out
-        const exists = await lstat(path)
-          .then(() => true)
-          .catch(() => false);
-        if (exists) {
-          const file = await includeEvidenceFile(
-            path,
-            cwd,
-            directory,
-            worktree,
-            Math.min(64_000, Math.max(maxChars, 8_000)),
-          );
-          if (file.status !== "included" || file.content === undefined)
-            return {
-              path,
-              status: file.status,
-              reason: file.reason ?? "manifest content was not fully available",
-            };
-          try {
-            const json: unknown = JSON.parse(file.content);
-            const scripts =
-              typeof json === "object" && json !== null && "scripts" in json
-                ? json.scripts
-                : undefined;
-            return {
-              path,
-              status: "included" as const,
-              ...(typeof scripts === "object" &&
-              scripts !== null &&
-              !Array.isArray(scripts)
-                ? { scripts: scripts as Record<string, unknown> }
-                : {}),
-            };
-          } catch {
-            return {
-              path,
-              status: "unavailable" as const,
-              reason: "manifest is not valid JSON",
-            };
-          }
-        }
-        const parent = dirname(cursor);
-        if (parent === cursor) break;
-        cursor = parent;
-      }
-      return {
-        path: join(cwd, "package.json"),
-        status: "unavailable" as const,
-        reason: "no manifest found in the bounded parent search",
-      };
-    })();
-    manifests.set(cwd, pending);
-    return pending;
-  };
-  const visit = async (
-    call: ScriptInvocation,
-    cwd: string | undefined,
-    depth: number,
-    phase = "requested",
-  ): Promise<void> => {
-    if (records.length >= MAX_SCRIPT_RECORDS) return;
-    const base = {
-      manager: call.manager,
-      script: call.script,
-      arguments: call.arguments,
-      phase,
-    };
-    if (cwd === undefined || call.unresolved) {
-      records.push({
-        ...base,
-        status: "unavailable",
-        reason: call.unresolved ?? "script working directory is unresolved",
-      });
-      return;
-    }
-    const pkg = await manifest(cwd);
-    if (
-      !pkg.scripts ||
-      !Object.hasOwn(pkg.scripts, call.script) ||
-      typeof pkg.scripts[call.script] !== "string"
-    ) {
-      records.push({
-        ...base,
-        directory: cwd,
-        manifest: pkg.path,
-        status: pkg.status === "included" ? "unavailable" : pkg.status,
-        reason: pkg.reason ?? "requested manifest script is not defined",
-      });
-      return;
-    }
-    const key = `${pkg.path}\0${call.script}`;
-    if (active.has(key) || depth > MAX_SCRIPT_DEPTH) {
-      records.push({
-        ...base,
-        directory: cwd,
-        manifest: pkg.path,
-        status: active.has(key) ? "cycle" : "truncated",
-        reason: "script expansion reached a cycle or depth limit",
-      });
-      return;
-    }
-    active.add(key);
-    const command = pkg.scripts[call.script] as string;
-    const pkgDirectory = dirname(pkg.path);
-    const record: ScriptRecord = {
-      ...base,
-      directory: pkgDirectory,
-      manifest: pkg.path,
-      command,
-      status: "included",
-    };
-    records.push(record);
-    // Defined lifecycle hooks are evidence of possible execution, not a claim
-    // that runtime flags or configuration necessarily enable them.
-    if (phase === "requested") {
-      for (const prefix of ["pre", "post"]) {
-        const name = prefix + call.script;
-        if (Object.hasOwn(pkg.scripts, name))
-          // biome-ignore lint/performance/noAwaitInLoops: the pre hook must be expanded before the post hook; each visit appends to the shared records list and active-cycle set, so overlapping visits would reorder records and race the cycle check
-          await visit(
-            { manager: call.manager, script: name, arguments: [] },
-            pkgDirectory,
-            depth + 1,
-            `conditional-${prefix}`,
-          );
-      }
-    }
-    if (records.length < MAX_SCRIPT_RECORDS) {
-      const local = await enrichLocalScriptEvidence(
-        { ...request, metadata: { command }, patterns: [command] },
-        pkgDirectory,
-        worktree,
-        Math.min(maxChars, 8_000),
-      );
-      if (local.text) record.referencedCode = local.text;
-      for (const segment of shellCommandSegmentsWithDirectory(
-        command,
-        pkgDirectory,
-      )) {
-        for (const child of calls(segment.tokens)) {
-          // biome-ignore lint/performance/noAwaitInLoops: expands child script calls in command order into the shared records list, active-cycle set and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the cycle and budget checks
-          await visit(child, segment.directory, depth + 1);
-        }
-      }
-    }
-    active.delete(key);
-  };
+  const expansion = new ScriptExpansion(request, {
+    directory,
+    worktree,
+    maxChars,
+  });
   for (const segment of shellCommandSegmentsWithDirectory(
     sourceCommand(request),
     directory,
   )) {
-    for (const call of calls(segment.tokens)) {
+    for (const call of scriptCalls(segment.tokens)) {
       // biome-ignore lint/performance/noAwaitInLoops: expands top-level script calls in command order into the shared records list and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the budget check
-      await visit(call, segment.directory, 0);
+      await expansion.visit(call, segment.directory, 0);
     }
   }
-  // Records are only popped while more than one remains, so `first` stays
-  // records[0] from here on.
-  const [first] = records;
-  if (first === undefined) return { text: "" };
-  const serialize = (): string =>
-    JSON.stringify(
-      {
-        coverage:
-          "manifest definitions and literal local calls only; imported code and runtime configuration may add effects",
-        status:
-          records.length >= MAX_SCRIPT_RECORDS ||
-          records.some((record) => record.status !== "included")
-            ? "partial"
-            : "included",
-        ...(records.length >= MAX_SCRIPT_RECORDS
-          ? { expansionLimitReached: true }
-          : {}),
-        records,
-      },
-      null,
-      2,
-    );
-  let text = serialize();
-  // Drop whole records before shortening a record, retaining explicit gaps.
-  while (text.length > maxChars && records.length > 1) {
-    records.pop();
-    first.status = "truncated";
-    first.reason = "additional script evidence exceeded the character budget";
-    text = serialize();
-  }
-  if (text.length > maxChars) {
-    delete first.referencedCode;
-    if (first.command !== undefined)
-      first.command = first.command.slice(0, Math.max(0, maxChars - 1_000));
-    first.status = "truncated";
-    first.reason = "script evidence exceeded the character budget";
-    text = serialize();
-  }
-  if (text.length > maxChars)
-    text = JSON.stringify({
-      status: "truncated",
-      reason: "script evidence exceeded the character budget",
-    });
-  return { text: `PACKAGE_SCRIPT_ANALYSIS\n${text}` };
+  return { text: boundedText(expansion.records, maxChars) };
 }

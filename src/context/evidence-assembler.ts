@@ -26,10 +26,10 @@ import type {
   ReviewEnvelope,
   ReviewerConfig,
 } from "../types.ts";
+import { collectVerifiedSshScript } from "../verified-script-evidence.ts";
+import { parseVerifiedSshScriptCommand } from "../verified-ssh-command.ts";
 import {
-  collectVerifiedSshScript,
   configFingerprint,
-  parseVerifiedSshScriptCommand,
   ScriptAnalysisRegistry,
 } from "../verified-ssh-script.ts";
 import { resolveActionPurpose } from "./action-purpose.ts";

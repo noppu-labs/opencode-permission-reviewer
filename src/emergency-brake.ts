@@ -6,11 +6,13 @@ import {
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
+  shellBasename,
+} from "./shell-lexer.ts";
+import {
   type ShellSegment,
   type ShellToken,
-  shellBasename,
   tokenCharIsQuoted,
-} from "./shell-lexer.ts";
+} from "./shell-token.ts";
 import type { PermissionRequest } from "./types.ts";
 
 /** One segment with its resolved effective commands, computed once per
@@ -29,11 +31,12 @@ interface AnalyzedSegment {
  * ambiguous is left to the reviewer.
  *
  * Root destruction is detected with a quote-aware, wrapper-aware shell lexer
- * (see shell-lexer.ts) so that privilege prefixes (`sudo`, `doas`, `env`,
- * `command`, …), absolute binary paths (`/bin/rm`, `/usr/bin/rm`), combined or
- * separated flags (`-rf`, `-r -f`, `--recursive --force`), end-of-options
- * (`--`), and command-string forms (`sh -c '…'`, `su -c …`, `ssh host …`,
- * `busybox rm …`, `chroot root …`) are peeled before judging the executable.
+ * (see shell-scanner.ts and shell-effective-commands.ts) so that privilege
+ * prefixes (`sudo`, `doas`, `env`, `command`, …), absolute binary paths
+ * (`/bin/rm`, `/usr/bin/rm`), combined or separated flags (`-rf`, `-r -f`,
+ * `--recursive --force`), end-of-options (`--`), and command-string forms
+ * (`sh -c '…'`, `su -c …`, `ssh host …`, `busybox rm …`, `chroot root …`)
+ * are peeled before judging the executable.
  *
  * It deliberately does NOT expand variables, globs, command substitutions, or
  * heredocs. Those remain the reviewer's job; the brake only catches literal,

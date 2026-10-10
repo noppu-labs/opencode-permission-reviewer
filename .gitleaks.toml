@@ -10,3 +10,10 @@ targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''^tests/fixtures/synthetic-secrets\.ts$''']
 regexes = ['''^(sksynthetic1234567890abcdef(1234567890)?)$''']
+
+[[allowlists]]
+description = "The parity check's git blob SHA-1 pin for src/shell-token.ts; generic-api-key fires because the key says \"token\"; re-pinning shell-token.ts updates this hash in the same commit"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^benchmarks/permission-reviewer/lib/plugin\.mjs$''']
+regexes = ['''^b3b12c1046ff0b94a41d9a175a5475dc19a17865$''']
