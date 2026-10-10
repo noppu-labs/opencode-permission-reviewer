@@ -1,8 +1,6 @@
-import { invariant } from "../invariant.ts";
 import { shellBasename } from "../shell-lexer.ts";
-import { SHELL_KEYWORDS } from "../shell-lexer-tables.ts";
+import { resolveActionClass } from "./action-class.ts";
 import {
-  CREDENTIAL_READERS,
   DELETION_TOOLS,
   FILE_MUTATION_TOOLS,
   FILE_WRITE_TOOLS,
@@ -27,13 +25,14 @@ import {
   gitSubcommandMutates,
   gitSubcommandOf,
   hasWriteRedirect,
-  isLiteralPathValue,
   isRemoteMutationOperand,
   mutationOperands,
   readOnlyToolMutation,
   redirectionWritesPath,
 } from "./bash-mutation.ts";
 import {
+  type AnalysisRoots,
+  type CapabilityFacts,
   claimClass,
   claimUnsetClass,
   newCapabilityFacts,
@@ -42,9 +41,12 @@ import {
 import { assessmentFrom } from "./capability-report.ts";
 import type {
   CapabilityAssessment,
+  HeredocRecord,
   ParsedCommand,
+  Redirection,
 } from "./capability-types.ts";
-import { isSensitivePathToken } from "./sensitive-paths.ts";
+import { classifySegmentHeads } from "./segment-heads.ts";
+import { classifyCredentialReads } from "./sensitive-path-reads.ts";
 
 /*
  * Bash capability analyzer.
@@ -75,50 +77,7 @@ export function analyzeCapability(
     parsed.heredocs.map((h) => h.outputTarget).filter(Boolean) as string[],
   );
 
-  // Wrappers the lexer peels (sudo, nohup, ssh, …) must be detected on the
-  // original segment heads, because `effective` starts at the real executable
-  // after peeling. We walk segments skipping shell keywords and VAR=value
-  // assignments exactly like the lexer does.
-  for (const segment of parsed.segments) {
-    let k = 0;
-    while (
-      k < segment.tokens.length &&
-      SHELL_KEYWORDS.has(segment.tokens[k]?.value ?? "")
-    )
-      k += 1;
-    while (
-      k < segment.tokens.length &&
-      /^[A-Za-z_][A-Za-z0-9_]*=/.test(segment.tokens[k]?.value ?? "")
-    ) {
-      k += 1;
-    }
-    const headToken = segment.tokens[k];
-    if (headToken !== undefined) {
-      const head = shellBasename(headToken.value);
-      if (PRIVILEGE_WRAPPERS.has(head)) {
-        facts.privilegeEscalation = true;
-        facts.childProcesses = true;
-      }
-      if (PERSISTENCE_WRAPPERS.has(head)) {
-        facts.persistence = true;
-        facts.childProcesses = true;
-      }
-      if (SSH_TOOLS.has(head)) {
-        facts.remoteEnabled = true;
-        facts.childProcesses = true;
-        // A remote command that mutates is a remote-mutation hint. The remote
-        // command may be a single quoted token (`ssh host 'rm -rf /'`), so split
-        // each tail token on whitespace before searching for mutation signals.
-        const tail = segment.tokens
-          .slice(k + 1)
-          .flatMap((t) => t.value.split(/\s+/));
-        if (tail.some((v) => GIT_MUTATION_SUBCOMMANDS.has(v) || v === "rm")) {
-          facts.remoteMutation = true;
-        }
-        claimUnsetClass(facts, "remote-operation");
-      }
-    }
-  }
+  classifySegmentHeads(parsed.segments, facts);
 
   for (const cmd of parsed.effective) {
     const first = cmd[0];
@@ -340,105 +299,35 @@ export function analyzeCapability(
     // our lexer but `setsid`/`nohup` cover the common persistence cases.
   }
 
-  // Deterministic credential reads: a known file reader with a literal
-  // credential path operand, or any command with a literal credential path as
-  // an input (`<`) redirect target. Wrappers are already peeled in
-  // `effective`, so `sudo cat ...` arrives here as `cat ...`. Facts accumulate
-  // with OR across every command in the chain.
-  for (const [index, cmd] of parsed.effective.entries()) {
-    const first = cmd[0];
-    if (first === undefined) continue;
-    const base = shellBasename(first.value);
-    const redirects = parsed.redirections[index] ?? [];
-    for (const r of redirects) {
-      if (r.operator !== "<") continue;
-      if (!isLiteralPathValue(r.target)) continue;
-      if (isSensitivePathToken(r.target)) facts.credentialRead = true;
-    }
-    if (!CREDENTIAL_READERS.has(base)) continue;
-    for (let i = 1; i < cmd.length; i += 1) {
-      const token = cmd[i];
-      const previous = cmd[i - 1];
-      invariant(token && previous, "cmd[i - 1] and cmd[i] are in bounds");
-      const value = token.value;
-      // A token following a redirect operator is that redirect's target, not
-      // a path operand: `cat > .env` writes the file, it does not read it.
-      const prev = previous.value;
-      if (prev === "<" || prev === ">" || prev === ">>" || prev === "<<")
-        continue;
-      if (/^[0-9]*[<>]/.test(prev)) continue;
-      if (value === "--") continue;
-      if (value.startsWith("-") && value.length > 1) continue;
-      if (value === "<" || value === ">" || value === ">>" || value === "<<")
-        continue;
-      if (value.startsWith("<") || value.startsWith(">")) continue;
-      if (!isLiteralPathValue(value)) continue;
-      if (isSensitivePathToken(value)) facts.credentialRead = true;
-    }
-  }
-
-  // Redirections across all commands.
-  for (const segRedirects of parsed.redirections) {
-    if (hasWriteRedirect(segRedirects)) {
-      for (const r of segRedirects) {
-        if (!redirectionWritesPath(r)) continue;
-        recordWrite(facts, r.target, roots);
-      }
-    }
-  }
-
-  // Heredoc that writes to a file is a write effect.
-  for (const h of parsed.heredocs) {
-    if (h.outputTarget !== undefined) {
-      recordWrite(facts, h.outputTarget, roots);
-    }
-  }
-
-  // Action class resolution: prefer the most specific observed surface.
-  if (facts.dominantClass === "unknown") {
-    if (facts.deletion) {
-      facts.dominantClass = "destruction";
-      facts.classConfidence = "high";
-    } else if (facts.gitMutation) {
-      facts.dominantClass = "git-mutation";
-      facts.classConfidence = "high";
-    } else if (facts.externalWrite) {
-      facts.dominantClass = "external-write";
-      facts.classConfidence = "high";
-    } else if (facts.createsAdHocCode || facts.executesCode) {
-      facts.dominantClass = "code-execution";
-      facts.classConfidence = facts.createsAdHocCode ? "high" : "medium";
-    } else if (facts.invokesPackageLifecycle) {
-      facts.dominantClass = "package-management";
-      facts.classConfidence = "high";
-    } else if (facts.persistence) {
-      facts.dominantClass = "persistence";
-      facts.classConfidence = "high";
-    } else if (facts.privilegeEscalation) {
-      facts.dominantClass = "privilege-escalation";
-      facts.classConfidence = "high";
-    } else if (facts.workspaceWrite) {
-      facts.dominantClass = "workspace-write";
-      facts.classConfidence = "medium";
-    } else if (facts.temporaryWrite) {
-      facts.dominantClass = "temporary-write";
-      facts.classConfidence = "high";
-    } else if (facts.sawUnknownExecutable) {
-      // An unrecognized executable is present: report unknown rather than
-      // read-only. Absence of detected effects is not evidence of absence.
-      facts.dominantClass = "unknown";
-      facts.classConfidence = "low";
-    } else if (
-      facts.sawReadOnlyExecutable ||
-      (facts.gitObserved && !facts.gitMutation)
-    ) {
-      facts.dominantClass = "read-only";
-      facts.classConfidence = "medium";
-    } else {
-      facts.dominantClass = "unknown";
-      facts.classConfidence = "low";
-    }
-  }
+  classifyCredentialReads(parsed, facts);
+  recordRedirectionWrites(parsed.redirections, facts, roots);
+  recordHeredocWrites(parsed.heredocs, facts, roots);
+  resolveActionClass(facts);
 
   return assessmentFrom(parsed, facts);
+}
+
+/** Redirections across all commands. */
+function recordRedirectionWrites(
+  redirections: Redirection[][],
+  facts: CapabilityFacts,
+  roots: AnalysisRoots,
+): void {
+  for (const segRedirects of redirections) {
+    if (!hasWriteRedirect(segRedirects)) continue;
+    for (const r of segRedirects) {
+      if (redirectionWritesPath(r)) recordWrite(facts, r.target, roots);
+    }
+  }
+}
+
+/** A heredoc that writes to a file is a write effect. */
+function recordHeredocWrites(
+  heredocs: HeredocRecord[],
+  facts: CapabilityFacts,
+  roots: AnalysisRoots,
+): void {
+  for (const h of heredocs) {
+    if (h.outputTarget !== undefined) recordWrite(facts, h.outputTarget, roots);
+  }
 }

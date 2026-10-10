@@ -3,7 +3,7 @@
 import type { CapabilityActionClass } from "../types.ts";
 import { classifyPath } from "./bash-mutation.ts";
 
-type ClassConfidence = "high" | "medium" | "low";
+export type ClassConfidence = "high" | "medium" | "low";
 
 /** Facts accumulated across the analyzer's passes. Every boolean starts
  *  false and is only ever set to true. `dominantClass` and `classConfidence`
