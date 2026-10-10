@@ -17,8 +17,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- config trust boundary ----------------------------------------------------
-
 describe("trust hardening — project config cannot weaken trusted layers", () => {
   test("null project values do not reset trusted confidenceThreshold or riskPolicy", () => {
     const globalDir = tempDir("reviewer-global-");

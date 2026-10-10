@@ -10,8 +10,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- evidence truncation ------------------------------------------------------------
-
 describe("trust hardening — evidence truncation", () => {
   const config = resolveConfig({
     maxContextChars: 4_000,
@@ -56,8 +54,6 @@ describe("trust hardening — evidence truncation", () => {
     expect(evidence).toContain("rm -rf /tmp/scratch-final-step");
   });
 });
-
-// --- elided action evidence blocks approval ---------------------------------------------
 
 describe("trust hardening — elided action evidence blocks automatic approval", () => {
   test("an LLM allow for a command whose middle was elided escalates instead", async () => {

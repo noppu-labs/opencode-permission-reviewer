@@ -7,8 +7,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- emergency brake -------------------------------------------------------------
-
 describe("trust hardening — emergency brake secret export", () => {
   test("quoted mentions of network tools and secrets do not trip the brake", () => {
     expect(

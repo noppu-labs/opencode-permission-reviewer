@@ -27,14 +27,11 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- git evidence filter neutralization -------------------------------------------
-
 describe("trust hardening — git evidence does not execute repository filters", () => {
   test("a configured clean filter never runs during evidence collection", async () => {
     const directory = tempDir("reviewer-gitfilter-");
     try {
       const run = await initGitRepo(directory);
-      // Filter writes a marker file when executed.
       await run(["config", "filter.pwn.clean", "touch filter-ran-marker; cat"]);
       writeFileSync(join(directory, ".gitattributes"), "* filter=pwn\n");
       writeFileSync(join(directory, "data.txt"), "AAAA\n");
@@ -59,8 +56,6 @@ describe("trust hardening — git evidence does not execute repository filters",
     }
   }, 20_000);
 });
-
-// --- git filter neutralization: dotted names, limits, no cross-time cache --------------
 
 describe("trust hardening — git conversion-filter neutralization edge cases", () => {
   async function initRepoWithFilter(
@@ -168,8 +163,6 @@ describe("trust hardening — git conversion-filter neutralization edge cases", 
     }
   }, 30_000);
 });
-
-// --- git filter neutralization: names with spaces or equals ------------------------
 
 describe("trust hardening — git conversion-filter names with spaces or equals", () => {
   test("a filter name containing a space is parsed and neutralized", () => {

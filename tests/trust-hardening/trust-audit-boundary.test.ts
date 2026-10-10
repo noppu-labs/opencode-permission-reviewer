@@ -12,8 +12,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- audit boundary ------------------------------------------------------------------
-
 describe("trust hardening — audit output boundary", () => {
   test("readAuditSummary tolerates a record with actor null", () => {
     const file = join(tempDir("reviewer-audit-"), "audit.jsonl");

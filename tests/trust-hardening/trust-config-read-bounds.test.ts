@@ -19,8 +19,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- project config layer: non-regular and oversized reads -------------------------------
-
 describe("trust hardening — project config layer reads are bounded", () => {
   test("a symlinked project config is ignored with a warning instead of followed", () => {
     const projectDir = tempDir("reviewer-config-link-");

@@ -13,8 +13,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- actor provenance -----------------------------------------------------------------
-
 function actorClient(
   sessions: Record<
     string,

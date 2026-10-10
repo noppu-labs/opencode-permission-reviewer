@@ -15,8 +15,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- capability analyzer --------------------------------------------------------
-
 describe("trust hardening — capability classification", () => {
   test("npm test executes repository code, not read-only", () => {
     const a = assess("npm test");
@@ -73,8 +71,6 @@ describe("trust hardening — capability classification", () => {
     expect(trace.matchedRules.map((m) => m.id)).toContain("both");
   });
 });
-
-// --- analyzer: mutating forms of read-only tools and absolute normalization --------------
 
 describe("trust hardening — read-only tools in mutating forms", () => {
   test("find -delete is a deletion, not read-only", () => {

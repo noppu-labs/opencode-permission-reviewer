@@ -17,8 +17,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- reviewer isolation -------------------------------------------------------------------
-
 describe("trust hardening — reviewer session isolation", () => {
   test("the reviewer session runs in an isolated directory with a wildcard tool deny", async () => {
     const client = new MockClient();
@@ -31,7 +29,6 @@ describe("trust hardening — reviewer session isolation", () => {
       body?: { parentID?: string };
       query?: { directory?: string };
     };
-    // Isolated directory (not the project directory), no cross-instance parent.
     expect(create.query?.directory).toContain("tmp-reviewer-isolated");
     expect(create.query?.directory).not.toBe("/workspace/project");
     expect(create.body?.parentID).toBeUndefined();

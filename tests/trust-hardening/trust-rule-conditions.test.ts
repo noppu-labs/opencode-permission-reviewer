@@ -22,8 +22,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- rule condition validation --------------------------------------------------
-
 describe("trust hardening — rule condition validation", () => {
   test.each([
     [
@@ -103,8 +101,6 @@ describe("trust hardening — rule condition validation", () => {
   });
 });
 
-// --- decision threshold ---------------------------------------------------------
-
 describe("trust hardening — riskPolicy.minimumConfidence is enforced", () => {
   test("an allow below minimumConfidence escalates even above confidenceThreshold", () => {
     const config = resolveConfig({
@@ -127,8 +123,6 @@ describe("trust hardening — riskPolicy.minimumConfidence is enforced", () => {
     expect(result.kind).toBe("escalate");
   });
 });
-
-// --- universal rules and degraded trusted config ----------------------------------------
 
 describe("trust hardening — universal rules and fail-closed trusted config", () => {
   test("omitting when (or always:true) makes a rule universal and it matches everything", () => {
@@ -258,8 +252,6 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
     }
   });
 });
-
-// --- condition enum validation fails closed -------------------------------------
 
 describe("trust hardening - condition enum typos fail closed", () => {
   const badConditions: Array<[string, Record<string, unknown>]> = [

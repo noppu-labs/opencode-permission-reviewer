@@ -10,8 +10,6 @@ afterEach(() => {
   setGlobalConfigPathForTests(undefined);
 });
 
-// --- ssh evidence working directory ----------------------------------------------
-
 describe("trust hardening — ssh stdin resolution after cd", () => {
   test("cd subdir && cat file | ssh resolves the file in subdir, not the initial cwd", async () => {
     const root = tempDir("reviewer-ssh-");
@@ -56,8 +54,6 @@ describe("trust hardening — ssh stdin resolution after cd", () => {
     }
   });
 });
-
-// --- ssh file evidence: FIFO and intermediate symlinks -------------------------------------
 
 describe("trust hardening — ssh stdin file evidence resilience", () => {
   test("a FIFO at the stdin path returns quickly instead of blocking the review", async () => {
