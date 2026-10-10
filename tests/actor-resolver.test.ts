@@ -7,7 +7,11 @@ import type {
   ClientResponse,
   OpenCodeClientLike,
 } from "../src/opencode/types.ts";
-import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
+import type {
+  MessageWithParts,
+  PermissionRequest,
+  ReviewerConfig,
+} from "../src/types.ts";
 
 // --- mock client ------------------------------------------------------------
 
@@ -41,7 +45,9 @@ function buildClient(opts: MockOptions = {}): OpenCodeClientLike {
     tool: { ids: async () => ({ data: [] }) },
   };
   if (!opts.getUnavailable) {
-    client.session.get = async (options: unknown) => {
+    client.session.get = async (
+      options: unknown,
+    ): Promise<ClientResponse<unknown>> => {
       const id = readPathId(options);
       const meta = id === undefined ? undefined : sessions[id]?.meta;
       if (meta === undefined) {
@@ -100,7 +106,7 @@ function userMessage(id: string, text: string): MessageWithParts {
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import { defined } from "./helpers.ts";
 
-const cfg = {
+const cfg: ReviewerConfig = {
   ...DEFAULT_CONFIG,
   actorProfiles: {},
 };

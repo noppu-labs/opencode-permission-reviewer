@@ -3,6 +3,7 @@ import { DEFAULT_CONFIG } from "../src/config.ts";
 import { resolveActionPurpose } from "../src/context/action-purpose.ts";
 import { buildEvidence } from "../src/context.ts";
 import type {
+  IntentBlock,
   IntentContext,
   MessageWithParts,
   PermissionRequest,
@@ -21,7 +22,7 @@ function intent(partial: Partial<IntentContext> = {}): IntentContext {
   };
 }
 
-function block(text: string, sessionID = "ses_parent") {
+function block(text: string, sessionID = "ses_parent"): IntentBlock {
   return {
     sessionID,
     messageID: "msg_1",

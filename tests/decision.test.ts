@@ -179,7 +179,7 @@ describe("decision parsing and invariants", () => {
   });
 
   test("full allow matrix (every risk×authorization cell)", () => {
-    const expectAllow = (risk: string, auth: string) => {
+    const expectAllow = (risk: string, auth: string): void => {
       const result = enforceDecision(
         decision("allow", {
           risk_level: risk as never,
@@ -193,7 +193,7 @@ describe("decision parsing and invariants", () => {
         kind: "allow",
       });
     };
-    const expectEscalate = (risk: string, auth: string) => {
+    const expectEscalate = (risk: string, auth: string): void => {
       const result = enforceDecision(
         decision("allow", {
           risk_level: risk as never,

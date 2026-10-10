@@ -9,6 +9,25 @@ import type { ReviewExecutionResult } from "../src/types.ts";
 import { config, decision, defined, systemOneScores } from "./helpers.ts";
 
 type Input = Parameters<typeof normalizeV2Permission>[0] & { message?: string };
+type ServerRpc = {
+  identity(): Promise<string>;
+  status(): Promise<Record<string, unknown>>;
+  snapshot(): Promise<{ reviews: unknown[] }>;
+};
+interface ServerFixture {
+  evaluate: (value: Input) => Promise<void>;
+  input: (sessionID?: string) => Input;
+  rpc: ServerRpc;
+  directory: string;
+  reviews: () => number;
+  registrationDisposals: () => number;
+  endEvents: () => void;
+  event: (sessionID: string, location?: string) => void;
+  tool: (name: string, event: unknown) => void;
+  dispose: () => Promise<void>;
+  records: () => Promise<Record<string, unknown>[]>;
+  cleanup: () => Promise<void>;
+}
 
 async function fixture(
   options: {
@@ -18,23 +37,19 @@ async function fixture(
     budget?: number;
     hostVersion?: string;
   } = {},
-) {
+): Promise<ServerFixture> {
   const directory = await mkdtemp(join(tmpdir(), "reviewer-server-contract-"));
   const auditPath = join(directory, "audit.jsonl");
   let evaluate!: (input: Input) => Promise<void>;
-  let rpc!: {
-    identity(): Promise<string>;
-    status(): Promise<Record<string, unknown>>;
-    snapshot(): Promise<{ reviews: unknown[] }>;
-  };
+  let rpc!: ServerRpc;
   let resume: (() => void) | undefined;
   const events: OpenCodeEvent[] = [];
   let ended = false;
   let reviews = 0;
   let registrationDisposals = 0;
   const toolHooks = new Map<string, (event: unknown) => void>();
-  const registration = () => ({
-    dispose: async () => {
+  const registration = (): { dispose: () => Promise<void> } => ({
+    dispose: async (): Promise<void> => {
       registrationDisposals++;
     },
   });
@@ -45,7 +60,10 @@ async function fixture(
     rpc: {
       register: async (_definition: unknown, handlers: typeof rpc) => {
         rpc = handlers;
-        return { events: { emit: async () => {} }, ...registration() };
+        return {
+          events: { emit: async (): Promise<void> => {} },
+          ...registration(),
+        };
       },
     },
     tool: {
@@ -69,7 +87,7 @@ async function fixture(
     },
     event: {
       subscribe: async function* ({ signal }: { signal: AbortSignal }) {
-        const wake = () => resume?.();
+        const wake = (): void => resume?.();
         signal.addEventListener("abort", wake);
         try {
           while (!signal.aborted && !ended) {
@@ -138,17 +156,17 @@ async function fixture(
     effect: "ask",
   });
   return {
-    evaluate: (value: Input) => evaluate(value),
+    evaluate: (value: Input): Promise<void> => evaluate(value),
     input,
     rpc,
     directory,
-    reviews: () => reviews,
-    registrationDisposals: () => registrationDisposals,
-    endEvents: () => {
+    reviews: (): number => reviews,
+    registrationDisposals: (): number => registrationDisposals,
+    endEvents: (): void => {
       ended = true;
       resume?.();
     },
-    event: (sessionID: string, location = directory) => {
+    event: (sessionID: string, location = directory): void => {
       events.push({
         type: "session.execution.interrupted",
         data: { sessionID },
@@ -156,14 +174,14 @@ async function fixture(
       } as OpenCodeEvent);
       resume?.();
     },
-    tool: (name: string, event: unknown) => toolHooks.get(name)?.(event),
+    tool: (name: string, event: unknown): void => toolHooks.get(name)?.(event),
     dispose,
-    records: async () =>
+    records: async (): Promise<Record<string, unknown>[]> =>
       (await readFile(auditPath, "utf8"))
         .trim()
         .split("\n")
         .map((line) => JSON.parse(line) as Record<string, unknown>),
-    cleanup: async () => {
+    cleanup: async (): Promise<void> => {
       await dispose();
       await rm(directory, { recursive: true, force: true });
     },

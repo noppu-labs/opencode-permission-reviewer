@@ -1,4 +1,4 @@
-import { afterEach, expect, mock, test } from "bun:test";
+import { afterEach, expect, type Mock, mock, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -15,7 +15,10 @@ const hostUrl = "OPENCODE_PERMISSION_REVIEWER_HOST_URL";
 const password = "OPENCODE_PASSWORD";
 const legacyPassword = "OPENCODE_SERVER_PASSWORD";
 const stateHome = "XDG_STATE_HOME";
-const originalEnv = {
+const originalEnv: Record<
+  typeof hostUrl | typeof password | typeof legacyPassword | typeof stateHome,
+  string | undefined
+> = {
   [hostUrl]: process.env[hostUrl],
   [password]: process.env[password],
   [legacyPassword]: process.env[legacyPassword],
@@ -38,7 +41,10 @@ function fakeClient(actualIdentity: string): OpenCodeClient {
 /** The bundled client exposes `make` as an accessor, which bun's spyOn
  *  cannot mock and whose setter ignores assignments; redefining the
  *  property works and the original descriptor restores cleanly. */
-function stubMake(impl: () => OpenCodeClient) {
+function stubMake(impl: () => OpenCodeClient): {
+  make: Mock<() => OpenCodeClient>;
+  restore: () => void;
+} {
   const descriptor = defined(
     Object.getOwnPropertyDescriptor(OpenCode, "make"),
     "OpenCode.make descriptor",
@@ -52,7 +58,7 @@ function stubMake(impl: () => OpenCodeClient) {
   });
   return {
     make,
-    restore: () => {
+    restore: (): void => {
       Object.defineProperty(OpenCode, "make", descriptor);
     },
   };

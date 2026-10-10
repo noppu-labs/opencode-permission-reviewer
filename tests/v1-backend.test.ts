@@ -16,14 +16,38 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ReviewAttempt } from "../src/core/review-attempt.ts";
-import type { RuntimeContext } from "../src/opencode/types.ts";
+import type {
+  ClientResponse,
+  OpenCodeClientLike,
+  RuntimeContext,
+} from "../src/opencode/types.ts";
 import { V1ReviewerBackend } from "../src/opencode/v1/reviewer-backend.ts";
-import type { ReviewEnvelope, ReviewerConfig } from "../src/types.ts";
+import type {
+  ReviewDecision,
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+} from "../src/types.ts";
 import { config, defined, request } from "./helpers.ts";
 
 /** A V1 fixture mirroring `v2-backend.test.ts`: the client exposes only the V1
  *  surface (session/tool/mcp.status) and the backend runs against a scratch
  *  isolation base so the real HOME is never touched. */
+interface V1Fixture {
+  backend: V1ReviewerBackend;
+  client: OpenCodeClientLike;
+  base: string;
+  run: (attempt?: ReviewAttempt) => Promise<ReviewExecutionResult>;
+  state: () => {
+    directories: string[];
+    sessionIDs: string[];
+    prompts: number;
+    mcpStatuses: number;
+    removed: Set<string>;
+  };
+  cleanup: () => Promise<void>;
+}
+
 function fixture(
   options: {
     format?: ReviewerConfig["outputFormat"];
@@ -34,7 +58,7 @@ function fixture(
     inventory?: unknown;
     timeoutMs?: number;
   } = {},
-) {
+): V1Fixture {
   const base =
     options.base ?? mkdtempSync(join(tmpdir(), "reviewer-v1-isolation-"));
   const directories: string[] = [];
@@ -83,7 +107,7 @@ function fixture(
     mcp: options.withoutMcp
       ? undefined
       : {
-          status: async () => {
+          status: async (): Promise<ClientResponse<unknown>> => {
             mcpStatuses++;
             if (options.mcpError)
               return { error: { message: "mcp status unavailable" } };
@@ -141,7 +165,9 @@ function fixture(
     backend,
     client,
     base,
-    run: async (attempt = new ReviewAttempt("generation_fixture", 5000)) => {
+    run: async (
+      attempt = new ReviewAttempt("generation_fixture", 5000),
+    ): Promise<ReviewExecutionResult> => {
       try {
         return await backend.review(envelope, attempt);
       } finally {
@@ -149,14 +175,14 @@ function fixture(
       }
     },
     state: () => ({ directories, sessionIDs, prompts, mcpStatuses, removed }),
-    cleanup: async () => {
+    cleanup: async (): Promise<void> => {
       await backend.waitForIdle();
       if (existsSync(base)) await rm(base, { recursive: true, force: true });
     },
   };
 }
 
-function decision(outcome: "allow" | "deny" | "escalate") {
+function decision(outcome: "allow" | "deny" | "escalate"): ReviewDecision {
   return {
     version: 2,
     outcome,
@@ -437,8 +463,9 @@ test("a symlinked isolation directory fails closed without writing outside it", 
 
 test("an MCP transport timeout fails closed before creating a session", async () => {
   const harness = fixture({ timeoutMs: 30 });
-  defined(harness.client.mcp, "mcp client").status = async () =>
-    new Promise(() => {});
+  defined(harness.client.mcp, "mcp client").status = async (): Promise<
+    ClientResponse<Record<string, unknown>>
+  > => new Promise(() => {});
   try {
     expect((await harness.run()).kind).toBe("escalate");
     expect(harness.state().sessionIDs).toHaveLength(0);

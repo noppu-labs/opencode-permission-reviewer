@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
 const CWD = `${import.meta.dir}/..`;
-const PACKAGE_NAME = (
+const PACKAGE_NAME: string = (
   JSON.parse(readFileSync(join(CWD, "package.json"), "utf8")) as {
     name: string;
   }
@@ -363,7 +363,7 @@ describe("npm install dedupe shape", () => {
 
     // Tree-wide scan: exactly one solid-js package directory anywhere.
     const solidDirs: string[] = [];
-    const walk = (dir: string) => {
+    const walk = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         if (
           !entry.isDirectory() ||
@@ -470,7 +470,7 @@ describe("npm install dedupe shape", () => {
     const platformPattern =
       /(?:-|--)(?:linux|darwin|win32|android|freebsd|netbsd|openbsd|sunos|aix|arm|arm64|x64|x86|ia32|ppc64|riscv64|s390x|musl|glibc|android-arm(?:64)?|fuchsia)(?:$|[/-])/;
     const natives: string[] = [];
-    const walkNatives = (dir: string, scope?: string) => {
+    const walkNatives = (dir: string, scope?: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         if (
           !entry.isDirectory() ||
@@ -531,7 +531,7 @@ describe("npm install dedupe shape", () => {
     ) as { version: string };
     expect(solidPkg.version).toBe("1.9.12");
     const ssrImporters: string[] = [];
-    const findSsrImports = (dir: string) => {
+    const findSsrImports = (dir: string): void => {
       for (const entry of readdirSync(dir, { withFileTypes: true })) {
         const full = join(dir, entry.name);
         if (entry.isDirectory()) {

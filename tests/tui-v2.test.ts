@@ -135,7 +135,7 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
           subscribe: async function* (
             _name: string,
             { signal }: { signal: AbortSignal },
-          ) {
+          ): AsyncGenerator<unknown, void, unknown> {
             const channel: Channel = { queue: [], ended: false };
             channels.push(channel);
             const wake = () => channel.wake?.();
@@ -163,7 +163,7 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     width: 100,
     height: 24,
   });
-  const waitForFrame = async (text: string, present = true) => {
+  const waitForFrame = async (text: string, present = true): Promise<void> => {
     const deadline = Date.now() + 3000;
     do {
       // biome-ignore lint/performance/noAwaitInLoops: polls the rendered frame until the text appears or the deadline passes

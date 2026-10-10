@@ -47,7 +47,7 @@ async function captureOverlay(): Promise<CapturedApi> {
   const toasts: Array<{ title?: string }> = [];
   let factories: Partial<Record<"app" | "app_bottom", () => unknown>> = {};
 
-  let dispose = () => {};
+  let dispose = (): void => {};
   const api = {
     lifecycle: {
       onDispose: (fn: () => void) => {
@@ -57,7 +57,7 @@ async function captureOverlay(): Promise<CapturedApi> {
     },
     route: {
       current: { name: "session", params: { sessionID: "ses_main" } },
-      register: () => () => {},
+      register: () => (): void => {},
       navigate: () => {},
     },
     theme: {
@@ -139,7 +139,7 @@ function factoryAttempt(
 function statusEvent(
   phase: "approved" | "denied" | "manual",
   overrides: Record<string, unknown> = {},
-) {
+): { properties: { command: string } } {
   const status = createUiStatus(request(), phase, {
     model: "test-model",
     variant: "high",

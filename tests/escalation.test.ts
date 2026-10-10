@@ -9,6 +9,7 @@ import {
   applyEscalationDisposition,
   resolveEscalationDisposition,
 } from "../src/escalation.ts";
+import type { ClientResponse } from "../src/opencode/types.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
@@ -286,7 +287,8 @@ describe("runtime escalationMode deny", () => {
 
   test("reviewer timeout becomes reject when onReviewerFailure is deny", async () => {
     const client = new MockClient();
-    client.promptImpl = () => new Promise(() => {});
+    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
+      new Promise(() => {});
     const harness = runtime(client, {
       timeoutMs: 10,
       riskPolicy: { ...DEFAULT_RISK_POLICY, onReviewerFailure: "deny" },
@@ -302,7 +304,8 @@ describe("runtime escalationMode deny", () => {
 
   test("escalationMode deny converts timeout without needing category knobs", async () => {
     const client = new MockClient();
-    client.promptImpl = () => new Promise(() => {});
+    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
+      new Promise(() => {});
     const harness = runtime(client, { timeoutMs: 10, escalationMode: "deny" });
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("deny");
@@ -385,7 +388,8 @@ describe("runtime escalationMode deny", () => {
 
   test("audit on timeout deny has no invented decision fields or reviewerOutcome", async () => {
     const client = new MockClient();
-    client.promptImpl = () => new Promise(() => {});
+    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
+      new Promise(() => {});
     const harness = runtime(client, { timeoutMs: 10, escalationMode: "deny" });
     await harness.runtime.process(request());
     const audits = (
@@ -441,7 +445,7 @@ describe("runtime escalationMode deny", () => {
     const client = new MockClient();
     const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
       [];
-    client.promptImpl = () =>
+    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
       new Promise((resolve) => {
         resolvers.push(resolve);
       });
@@ -477,7 +481,9 @@ describe("runtime escalationMode deny", () => {
 
   test("prompt includes ACTION_PURPOSE section", async () => {
     const client = new MockClient();
-    client.promptImpl = async (options) => {
+    client.promptImpl = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       const text = defined(
         (options as { body: { parts: Array<{ text: string }> } }).body.parts[0],
         "prompt part",

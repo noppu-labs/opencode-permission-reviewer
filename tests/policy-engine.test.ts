@@ -8,6 +8,7 @@ import type {
   ActorContext,
   CapabilityAssessment,
   PolicyRule,
+  ReviewerConfig,
 } from "../src/types.ts";
 
 function cap(
@@ -177,7 +178,7 @@ function actor(profile: string): ActorContext {
   };
 }
 
-const config = DEFAULT_CONFIG;
+const config: ReviewerConfig = DEFAULT_CONFIG;
 
 describe("policy engine — basics", () => {
   test("empty rules yield review route with no matches", () => {

@@ -269,7 +269,7 @@ describe("redactSecrets — credential formats", () => {
   });
 
   test("redacts private_key / passphrase / credential assignments", () => {
-    const val = (c: string) => c.repeat(8);
+    const val = (c: string): string => c.repeat(8);
     expect(redactSecrets(`private_key=${val("a")}`)).not.toContain("aaaaaaaa");
     expect(redactSecrets(`ssh_private_key=${val("b")}`)).not.toContain(
       "bbbbbbbb",

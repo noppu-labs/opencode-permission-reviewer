@@ -8,6 +8,7 @@ import {
   selectIntentMessages,
 } from "../src/context.ts";
 import type { ContextReader } from "../src/core/ports.ts";
+import type { ClientResponse } from "../src/opencode/types.ts";
 import { createV1ContextReader } from "../src/opencode/v1/context-reader.ts";
 import { createV2ContextReader } from "../src/opencode/v2/context-reader.ts";
 import type { MessageWithParts } from "../src/types.ts";
@@ -55,7 +56,9 @@ test("legacy reader recovers authorization beyond the transcript and shares conc
     })),
     user("latest", "Continue", 2),
   ];
-  client.messagesImpl = async (input) => {
+  client.messagesImpl = async (
+    input: unknown,
+  ): Promise<ClientResponse<unknown>> => {
     const limit = (input as { query: { limit: number } }).query.limit;
     await Promise.resolve();
     return { data: messages.slice(-limit) };
@@ -80,7 +83,9 @@ test("legacy reader recovers authorization beyond the transcript and shares conc
 
 test("legacy recovery stops at its scan bound instead of reading an unbounded session", async () => {
   const client = new MockClient();
-  client.messagesImpl = async (input) => ({
+  client.messagesImpl = async (
+    input: unknown,
+  ): Promise<ClientResponse<unknown>> => ({
     data: Array.from(
       { length: (input as { query: { limit: number } }).query.limit },
       (_, i) => ({
@@ -106,7 +111,7 @@ test("legacy recovery stops at its scan bound instead of reading an unbounded se
 
 test("legacy fork history predating session creation cannot authorize a new action", async () => {
   const client = new MockClient();
-  client.session.get = async () => ({
+  client.session.get = async (): Promise<ClientResponse<unknown>> => ({
     data: { id: "fork", time: { created: 100 } },
   });
   client.messageData = [
@@ -125,8 +130,9 @@ test("legacy fork history predating session creation cannot authorize a new acti
 test("legacy message failures are observed while session metadata is still pending", async () => {
   const client = new MockClient();
   let release!: (value: { data: { id: string } }) => void;
-  client.session.get = () => new Promise((resolve) => (release = resolve));
-  client.messagesImpl = async () => {
+  client.session.get = (): Promise<ClientResponse<unknown>> =>
+    new Promise((resolve) => (release = resolve));
+  client.messagesImpl = async (): Promise<never> => {
     throw new Error("Literal history unavailable");
   };
   try {

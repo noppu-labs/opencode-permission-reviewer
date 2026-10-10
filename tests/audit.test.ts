@@ -30,7 +30,7 @@ import type { ReviewAuditRecord } from "../src/types.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { defined, systemOneScores } from "./helpers.ts";
 
-const execFileAsync = (cmd: string, args: string[]) =>
+const execFileAsync = (cmd: string, args: string[]): Promise<void> =>
   new Promise<void>((resolve, reject) => {
     execFileCallback(cmd, args, (error) => (error ? reject(error) : resolve()));
   });

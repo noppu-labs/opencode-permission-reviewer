@@ -95,7 +95,7 @@ describe("audit report", () => {
     const dir = mkdtempSync(join(tmpdir(), "reviewer-aud-"));
     try {
       const file = join(dir, "audit.jsonl");
-      const v2 = (overrides: Record<string, unknown>) =>
+      const v2 = (overrides: Record<string, unknown>): string =>
         JSON.stringify({
           schemaVersion: 2,
           timestamp: "2026-01-01T00:00:00.000Z",

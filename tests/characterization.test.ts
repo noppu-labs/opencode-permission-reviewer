@@ -1,7 +1,9 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
 import { DEFAULT_CONFIG } from "../src/config.ts";
+import type { ClientResponse } from "../src/opencode/types.ts";
 import type { ReviewAuditRecord } from "../src/types.ts";
+import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 beforeAll(async () => {
@@ -13,7 +15,9 @@ describe("characterization gaps (baseline prereq)", () => {
     const harness = runtime();
     const permission = request();
     const reply = harness.ctx.permissionReply;
-    harness.ctx.permissionReply = async (options) => {
+    harness.ctx.permissionReply = async (
+      options: unknown,
+    ): Promise<ClientResponse<unknown>> => {
       harness.runtime.handlePermissionReply({
         type: "permission.replied",
         properties: {
@@ -114,7 +118,7 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("publishUiStatus throwing is also fail-safe (existing guarantee, explicit)", async () => {
     const client = new MockClient();
-    client.publishUiStatus = async (status) => {
+    client.publishUiStatus = async (status: ReviewUiStatus): Promise<never> => {
       client.uiStatuses.push(status);
       throw new Error("no TUI attached");
     };
@@ -137,7 +141,9 @@ describe("characterization gaps (baseline prereq)", () => {
   test("session.prompt missing data escalates (response.data undefined path)", async () => {
     const client = new MockClient();
     // Force session.prompt to return { data: undefined } — responseData will throw "returned no data"
-    client.promptImpl = async (options) => {
+    client.promptImpl = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       client.prompts.push(options);
       return { data: undefined as unknown as Record<string, unknown> };
     };
@@ -149,7 +155,9 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("session.prompt with no structured field escalates as invalid output", async () => {
     const client = new MockClient();
-    client.promptImpl = async (options) => {
+    client.promptImpl = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       client.prompts.push(options);
       return { data: { info: {} } };
     };
@@ -161,7 +169,9 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("session.prompt with info missing entirely escalates as invalid output", async () => {
     const client = new MockClient();
-    client.promptImpl = async (options) => {
+    client.promptImpl = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       client.prompts.push(options);
       return { data: {} };
     };
@@ -173,7 +183,9 @@ describe("characterization gaps (baseline prereq)", () => {
   test("session.create returning non-string id escalates and does not leak session", async () => {
     const client = new MockClient();
     // Override to return a numeric id.
-    client.session.create = async (options: unknown) => {
+    client.session.create = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       client.creates.push(options);
       return { data: { id: 123 as unknown as string } };
     };
@@ -189,7 +201,9 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("session.create returning undefined id escalates", async () => {
     const client = new MockClient();
-    client.session.create = async (options: unknown) => {
+    client.session.create = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       client.creates.push(options);
       return { data: {} as Record<string, unknown> };
     };
@@ -200,7 +214,9 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("tool.ids failure via direct override still escalates", async () => {
     const client = new MockClient();
-    client.tool.ids = async (options?: unknown) => {
+    client.tool.ids = async (
+      options?: unknown,
+    ): Promise<ClientResponse<string[]>> => {
       client.toolQueries.push(options);
       return { error: { message: "tool discovery broken" } };
     };
@@ -222,7 +238,9 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("text mode with a response lacking text parts escalates", async () => {
     const client = new MockClient();
-    client.promptImpl = async () => ({
+    client.promptImpl = async (): Promise<
+      ClientResponse<Record<string, unknown>>
+    > => ({
       data: { info: { id: "msg_review", role: "assistant" } },
     });
     const result = await runtime(client, {

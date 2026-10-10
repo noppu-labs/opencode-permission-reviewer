@@ -7,6 +7,7 @@ import { parseDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
+import type { ClientResponse } from "../src/opencode/types.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import {
   createUiStatus,
@@ -28,7 +29,9 @@ describe("stress and adversarial robustness", () => {
   test("processes 1,000 concurrent independent reviews exactly once", async () => {
     const client = new MockClient();
     let index = 0;
-    client.promptImpl = async () => {
+    client.promptImpl = async (): Promise<
+      ClientResponse<Record<string, unknown>>
+    > => {
       const current = index;
       index += 1;
       return {

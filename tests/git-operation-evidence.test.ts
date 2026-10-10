@@ -9,9 +9,9 @@ import { request } from "./helpers.ts";
 
 const exec = promisify(execFile);
 const directories: string[] = [];
-const git = async (directory: string, ...args: string[]) =>
+const git = async (directory: string, ...args: string[]): Promise<string> =>
   (await exec("git", args, { cwd: directory })).stdout.trim();
-async function repository() {
+async function repository(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "reviewer-git-operation-"));
   directories.push(directory);
   await git(directory, "init", "-b", "dev");
@@ -29,7 +29,8 @@ afterEach(async () => {
       .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
-async function evidence(directory: string, command: string) {
+// biome-ignore lint/suspicious/noExplicitAny: returns the JSON.parse result as-is (any), and the tests read nested evidence fields by dot path
+async function evidence(directory: string, command: string): Promise<any> {
   const result = await enrichGitEvidence(
     request({ metadata: { command }, patterns: [command] }),
     directory,

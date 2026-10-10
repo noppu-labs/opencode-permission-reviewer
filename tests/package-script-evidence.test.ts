@@ -8,7 +8,7 @@ import { enrichPackageScriptEvidence } from "../src/package-script-evidence.ts";
 import { request } from "./helpers.ts";
 
 const directories: string[] = [];
-async function fixture(scripts: Record<string, string>) {
+async function fixture(scripts: Record<string, string>): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "reviewer-package-evidence-"));
   directories.push(directory);
   await writeFile(join(directory, "package.json"), JSON.stringify({ scripts }));
@@ -21,7 +21,11 @@ afterEach(async () => {
       .map((directory) => rm(directory, { recursive: true, force: true })),
   );
 });
-async function evidence(directory: string, command: string, maxChars = 24000) {
+async function evidence(
+  directory: string,
+  command: string,
+  maxChars = 24000,
+): Promise<string> {
   return (
     await enrichPackageScriptEvidence(
       request({ patterns: [command], metadata: { command } }),

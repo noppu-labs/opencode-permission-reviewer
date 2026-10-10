@@ -92,7 +92,7 @@ test("helper caps cause depth and total length and never throws", () => {
 
 test("v1 reviewer backend failure keeps deny and failure-safe with cause", async () => {
   const client = new MockClient();
-  client.promptImpl = async () => {
+  client.promptImpl = async (): Promise<never> => {
     throw clientError();
   };
   const harness = runtime(client, { escalationMode: "deny" });
@@ -112,7 +112,7 @@ test("v1 reviewer backend failure keeps deny and failure-safe with cause", async
 
 test("review coordination failure audits deny with phase and cause", async () => {
   const client = new MockClient();
-  client.messagesImpl = async () => {
+  client.messagesImpl = async (): Promise<never> => {
     throw clientError();
   };
   const harness = runtime(client, { escalationMode: "deny" });
@@ -195,7 +195,9 @@ test("v2 permission review hook failure denies with phase and cause", async () =
   let resume: (() => void) | undefined;
   let ended = false;
   const events: OpenCodeEvent[] = [];
-  const registration = () => ({ dispose: async () => {} });
+  const registration = (): { dispose: () => Promise<void> } => ({
+    dispose: async () => {},
+  });
   const ctx = {
     app: { version: "2.0.3" },
     options: {},
