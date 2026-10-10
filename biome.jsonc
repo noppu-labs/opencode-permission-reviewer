@@ -219,7 +219,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 725
+                "maxLines": 726
               }
             }
           }
@@ -354,7 +354,7 @@
         }
       }
     },
-    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 10 files.
+    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 11 files.
     {
       "includes": [
         "src/capability/bash-analyzer.ts",
@@ -364,6 +364,7 @@
         "src/git-evidence.ts",
         "src/local-script-evidence.ts",
         "src/package-script-evidence.ts",
+        "src/shell-effective-commands.ts",
         "src/shell-lexer.ts",
         "src/ssh-evidence.ts",
         "src/verified-ssh-script.ts"

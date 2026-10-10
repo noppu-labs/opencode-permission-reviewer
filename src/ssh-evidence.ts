@@ -4,7 +4,8 @@ import { lstat, open, readlink, realpath } from "node:fs/promises";
 import { basename, isAbsolute, resolve, sep } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
 import { invariant } from "./invariant.ts";
-import { commandSegments, sshValueOption } from "./shell-lexer.ts";
+import { commandSegments } from "./shell-lexer.ts";
+import { sshValueOption } from "./shell-lexer-tables.ts";
 import type { PermissionRequest } from "./types.ts";
 
 const O_RDONLY: number =

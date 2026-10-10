@@ -1,6 +1,6 @@
 import { invariant } from "../invariant.ts";
+import { analyzeEffectiveCommands } from "../shell-effective-commands.ts";
 import {
-  analyzeEffectiveCommands,
   lexSegmentsBounded,
   newAnalysisBudget,
   type ShellToken,

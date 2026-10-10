@@ -18,10 +18,10 @@ const PINNED_BLOBS = {
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "5e0cdfb6d51c4edcd68faa31df0c4f084da4de0b",
+  "src/emergency-brake.ts": "3836107673e39eac9c3db9eafcbe1db7bc925ba3",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "05ce6822ccf0614b6d0dc6837681b9c7e660d0cd",
+    "547afd8495ae502d229af5f23722ee686e921848",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/capability/bash-analyzer.ts": "6f702fb0547c49933fbfa61636c91267f59d6968",
   "src/capability/bash-command-tables.ts":
@@ -30,7 +30,10 @@ const PINNED_BLOBS = {
   "src/capability/bash-facts.ts": "52386899274c6a8a55c62a31384a929b77962ca3",
   "src/capability/bash-mutation.ts": "fcb7dc47047cdc5f928cb7308453318488b24242",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-lexer.ts": "f9c3486ba78600925ea98aea0e86f113a78c07e4",
+  "src/shell-effective-commands.ts": "00266c955648d2259d553a21430398fbcc331061",
+  "src/shell-lexer.ts": "863d47fb8ff4cc4b3f941e3678bcb757fa172599",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/shell-lexer-tables.ts": "855a6c8ab93bcd660e7e42610f9a29ffe1c77485",
   "src/capability/heredoc-extractor.ts":
     "425372f2f01f30477bc5e2a31d420dcfd4105441",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

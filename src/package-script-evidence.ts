@@ -3,7 +3,7 @@ import { basename, dirname, join } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
 import { invariant } from "./invariant.ts";
 import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
-import { effectiveCommands } from "./shell-lexer.ts";
+import { effectiveCommands } from "./shell-effective-commands.ts";
 import {
   includeEvidenceFile,
   shellCommandSegmentsWithDirectory,
