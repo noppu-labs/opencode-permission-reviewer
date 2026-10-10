@@ -14,12 +14,8 @@ import { readFileSync } from "node:fs";
  * runs `explain` against stdin/`--event`, matching the original behavior.
  */
 import { parseArgs } from "node:util";
-import {
-  type AuditSummary,
-  expandHome,
-  readAuditSummary,
-  resolveAuditPath,
-} from "../audit.ts";
+import { expandHome, readAuditSummary, resolveAuditPath } from "../audit.ts";
+import type { AuditSummary } from "../audit-summary.ts";
 import { analyzeCapability } from "../capability/bash-analyzer.ts";
 import { parseCommand } from "../capability/command-parser.ts";
 import { loadResolvedConfig } from "../config/loader.ts";
