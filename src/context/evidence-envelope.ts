@@ -30,7 +30,9 @@ export interface GatheredEvidence {
   parsed: ParsedCommand | undefined;
   capability: CapabilityAssessment | undefined;
   fragments: EvidenceFragment[];
-  timings: { contextMs: number; enrichmentMs: number };
+  timings: Required<
+    Pick<NonNullable<ReviewEnvelope["timings"]>, "contextMs" | "enrichmentMs">
+  >;
 }
 
 export function envelopeFrom(gathered: GatheredEvidence): ReviewEnvelope {

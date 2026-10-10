@@ -20,16 +20,19 @@ const O_NONBLOCK: number =
  *  other unreadable layer (warned about and ignored). */
 const CONFIG_READ_CAP_BYTES = 1024 * 1024;
 
-type LayerStatus = "missing" | "ok" | "read-error" | "malformed";
-
-export interface ConfigLayer {
-  raw: Record<string, unknown>;
-  status: LayerStatus;
-  /** Set when the file exists but could not be interpreted; a silently
-   *  unreadable trusted layer must be visible, not indistinguishable from an
-   *  absent one. */
-  warning?: string;
-}
+export type ConfigLayer =
+  | {
+      raw: Record<string, unknown>;
+      status: "missing" | "ok";
+      warning?: undefined;
+    }
+  | {
+      raw: Record<string, unknown>;
+      status: "read-error" | "malformed";
+      /** A silently unreadable trusted layer must be visible, not
+       *  indistinguishable from an absent one. */
+      warning: string;
+    };
 
 type LayerText = ConfigLayer | { status: "ok"; text: string };
 

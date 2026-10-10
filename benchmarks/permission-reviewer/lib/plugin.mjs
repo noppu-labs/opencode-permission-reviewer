@@ -112,11 +112,12 @@ const PINNED_BLOBS = {
     "25bf718c2a774da4c4fd5e2780e0d392d770594a",
   "src/system-one/system-one-choices.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "12239331d84093c74cc68b603556e46084990b8b",
+    "e1109fea7cec6d649b2f14f269c86cd27d56ad37",
   "src/system-one/system-one-consistency.ts":
     "9658f16a6a3ab91e63506906ab41113d5fa77615",
   "src/system-one/system-one-verdict.ts":
-    "0b67da13822fccdccb4073c14e131cd88b5b7e74",
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "cda97035dfdbe291a11540290d1e235e116480c5",
   "src/capability/capability-facts.ts":
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":

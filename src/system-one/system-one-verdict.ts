@@ -5,6 +5,7 @@ import type { ReviewDecision, ReviewerConfig } from "../types.ts";
 import type { ParsedAnswers } from "./system-one-answers.ts";
 import { systemOneContradictions } from "./system-one-consistency.ts";
 import type {
+  SystemOneChoiceScore,
   SystemOnePrimaryBasis,
   SystemOneScores,
 } from "./system-one-types.ts";
@@ -46,10 +47,9 @@ function recommendsReasoning(
   );
 }
 
-const score = <T extends string>(parsed: {
-  choice: T;
-  confidence: number;
-}): { choice: T; confidence: number } => ({
+const score = <T extends string>(
+  parsed: SystemOneChoiceScore<T>,
+): SystemOneChoiceScore<T> => ({
   choice: parsed.choice,
   confidence: parsed.confidence,
 });

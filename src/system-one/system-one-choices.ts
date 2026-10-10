@@ -1,11 +1,11 @@
 // Validation of one Jev choice answer: a known option, a confidence, and
 // probabilities over exactly the options that sum to 1 and favour the choice.
 
-export interface ParsedChoice<T extends string> {
-  choice: T;
-  confidence: number;
+import type { SystemOneChoiceScore } from "./system-one-types.ts";
+
+export type ParsedChoice<T extends string> = SystemOneChoiceScore<T> & {
   probabilities: Record<T, number>;
-}
+};
 
 export function isPlainObject(
   value: unknown,

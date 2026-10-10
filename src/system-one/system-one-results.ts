@@ -8,7 +8,7 @@ import type { SystemOneScores } from "./system-one-types.ts";
 /** The reasoning reviewer a difficult Jev decision was handed to. */
 export interface ReasoningHandoff {
   model: string;
-  escalatedFrom: { model: string; reason: string };
+  escalatedFrom: NonNullable<ReviewExecutionResult["reviewerEscalatedFrom"]>;
 }
 
 /** Jev's own enforced result, credited to Jev with its scores. */
