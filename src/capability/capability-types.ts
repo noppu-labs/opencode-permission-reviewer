@@ -3,12 +3,10 @@
 import type { Provenanced } from "../actor-context-types.ts";
 import type { CapabilityActionClass } from "../types.ts";
 
-// ---------------------------------------------------------------------------
-// Capability analysis. The analyzer produces these facts from the bash
-// command using the existing shell lexer; each fact is evidence for the reviewer
-// prompt, never a final safety decision. Fields default to "unknown" when no
-// detector covers them yet.
-// ---------------------------------------------------------------------------
+// Capability facts are evidence for the reviewer prompt and inputs to the
+// declarative policy routes, which decide only under
+// `enforcementMode: "enforce"`; fields stay "unknown" when no detector
+// covers them.
 
 /** How completely the command could be statically analyzed. */
 export type ParserCompleteness =

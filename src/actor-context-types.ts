@@ -2,14 +2,10 @@
 
 import type { ActorProfile } from "./types.ts";
 
-// ---------------------------------------------------------------------------
-// Agent-aware context data model.
-//
-// These types carry actor/lineage/intent evidence alongside a permission
-// request. They flow into the reviewer prompt (as evidence sections) and the
-// audit record (additive fields) WITHOUT changing enforcement: the v1 decision
-// schema and enforceDecision are untouched (observe-only by default).
-// ---------------------------------------------------------------------------
+// Observe-only by default: these types reach the reviewer prompt and the
+// audit record, and drive declarative policy routes only under
+// `enforcementMode: "enforce"`; the decision schema and `enforceDecision`
+// never read them.
 
 /** Reliability of a derived fact. */
 export type EvidenceConfidence =
