@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "audit.ts",
-    "evidence-assembler.ts",
     "review-coordinator.ts",
     "review-coordinator-support.ts",
     "review-engine.ts",
