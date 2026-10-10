@@ -209,6 +209,7 @@ async function walkLineage(
       break;
     }
     visited.add(cursor.parentID);
+    // biome-ignore lint/performance/noAwaitInLoops: walks the session ancestry one parent at a time; the next parentID is only known from the session fetched in this step
     const parent = await fetchSession(client, cursor.parentID, directory);
     if (!parent) {
       missingParents.push(cursor.parentID);

@@ -349,6 +349,7 @@ export class V2ReviewerBackend {
           attempt.signal,
           AbortSignal.timeout(this.config.timeoutMs),
         ]);
+        // biome-ignore lint/performance/noAwaitInLoops: re-prompts the same exclusively owned reviewer session only after the previous answer was invalid, appending a correction to the prompt; prompts on one session must not overlap
         const admitted = await attempt.wait(
           client.session.prompt(
             { sessionID: id, text: pending.prompt },
@@ -442,6 +443,7 @@ export class V2ReviewerBackend {
         if (createIssued) {
           for (let retry = 0; retry < 2 && !cleanupConfirmed; retry++) {
             try {
+              // biome-ignore lint/performance/noAwaitInLoops: cleanup retry; each pass interrupts, removes and re-checks the reviewer session and runs again only while the previous pass left cleanup unconfirmed
               await client.session.interrupt(
                 { sessionID: id },
                 { signal: AbortSignal.timeout(2000) },
@@ -501,6 +503,7 @@ async function waitForIsolationActive(
 ): Promise<void> {
   const root = resolve(directory);
   for (;;) {
+    // biome-ignore lint/performance/noAwaitInLoops: polls the host plugin inventory every 100 ms until the isolation bootstrap reports active or failed; each poll runs only after the previous one saw it pending
     const plugins = await client.plugin.list(
       { location: { directory } },
       { signal },

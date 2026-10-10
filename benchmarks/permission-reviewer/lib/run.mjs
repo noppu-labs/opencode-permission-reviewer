@@ -92,10 +92,10 @@ async function harnessHash() {
       .filter((x) => x.endsWith(".mjs"))
       .map((x) => `lib/${x}`),
   ].sort(); // NOSONAR(S2871) orders the reads only; stable() sorts the keys again before hashing
-  const hashes = {};
-  for (const path of files)
-    hashes[path] = sha256(await readFile(resolve(root, path), "utf8"));
-  return sha256(hashes);
+  const texts = await Promise.all(
+    files.map((path) => readFile(resolve(root, path), "utf8")),
+  );
+  return sha256(Object.fromEntries(files.map((p, i) => [p, sha256(texts[i])])));
 }
 export async function runBenchmark({
   cases,
@@ -308,6 +308,7 @@ export async function runBenchmark({
         saved.push(recovered);
         saved.sort((a, b) => a.ordinal - b.ordinal);
         journalByKey.set(e.key, saved);
+        // biome-ignore lint/performance/noAwaitInLoops: appends each recovered attempt to the attempt journal in startedCalls order through one writer, so journal lines are never interleaved
         await attemptWriter.write(recovered);
       }
     }
@@ -393,6 +394,7 @@ export async function runBenchmark({
               cfg.minRequestDelayMs,
               cfg.maxRequestDelayMs + 1,
             );
+            // biome-ignore lint/performance/noAwaitInLoops: per-job retry loop; the randomized delay between provider requests is the rate limit, and each retry depends on the previous attempt's outcome
             await eventWriter.write({
               event: "request-wait",
               key,
@@ -503,6 +505,7 @@ export async function runBenchmark({
         // Preparation/programming errors stop the run. Do not disguise harness defects as model failures.
         let row;
         try {
+          // biome-ignore lint/performance/noAwaitInLoops: each worker takes the next job from the shared queue cursor only after its previous job finished; the number of workers is the run's provider concurrency limit
           row = await execute(job);
         } catch (error) {
           abort.abort(error);

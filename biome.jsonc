@@ -82,23 +82,9 @@
   // entries cap each file at its current length instead), ordered by the stacked PR that fixes
   // those files and deletes the entry.
   "overrides": [
-    // Pending (quality/4-ts-rules): performance/noAwaitInLoops, 39 files.
+    // Pending (quality/4-ts-rules): performance/noAwaitInLoops, 25 files.
     {
       "includes": [
-        "benchmarks/permission-reviewer/cli.mjs",
-        "benchmarks/permission-reviewer/lib/opencode-v1.mjs",
-        "benchmarks/permission-reviewer/lib/plugin.mjs",
-        "benchmarks/permission-reviewer/lib/providers.mjs",
-        "benchmarks/permission-reviewer/lib/run.mjs",
-        "benchmarks/permission-reviewer/tests/live-opencode-v1.mjs",
-        "benchmarks/permission-reviewer/tests/plugin-parity.mjs",
-        "src/context/actor-resolver.ts",
-        "src/git-evidence.ts",
-        "src/local-script-evidence.ts",
-        "src/opencode/v1/context-reader.ts",
-        "src/opencode/v2/reviewer-backend.ts",
-        "src/package-script-evidence.ts",
-        "src/ssh-evidence.ts",
         "tests/characterization.test.ts",
         "tests/cli-init.test.ts",
         "tests/compatibility/capture-contracts.ts",
@@ -292,7 +278,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 721
+                "maxLines": 722
               }
             }
           }
@@ -324,7 +310,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1368
+                "maxLines": 1370
               }
             }
           }
@@ -356,7 +342,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 723
+                "maxLines": 725
               }
             }
           }

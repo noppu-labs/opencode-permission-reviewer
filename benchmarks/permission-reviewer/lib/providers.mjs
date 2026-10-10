@@ -313,6 +313,7 @@ async function boundedText(response, maxBytes) {
   const chunks = [];
   let size = 0;
   while (true) {
+    // biome-ignore lint/performance/noAwaitInLoops: a stream reader yields chunks one read at a time, and the size cap must cancel the stream before the next chunk is pulled
     const { done, value } = await reader.read();
     if (done) break;
     size += value.byteLength;

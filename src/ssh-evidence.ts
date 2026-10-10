@@ -456,6 +456,7 @@ async function includeFileOnce(
       // bytes than the size claims.
       let bytesRead = 0;
       while (bytesRead < buffer.length) {
+        // biome-ignore lint/performance/noAwaitInLoops: each read fills the buffer from the offset where the previous read stopped, and a zero-byte read ends the loop at EOF
         const { bytesRead: count } = await handle.read(
           buffer,
           bytesRead,
@@ -670,7 +671,8 @@ export async function enrichSshEvidence(
                 producer.directoryReason ??
                 "working directory of the pipeline producer is unresolved",
             }
-          : await includeEvidenceFile(
+          : // biome-ignore lint/performance/noAwaitInLoops: reads one ssh segment's stdin file at a time, appending records, audit entries and preflight denials in command order (the denial text is joined in that order)
+            await includeEvidenceFile(
               stdinPath,
               producer?.directory ?? segment.directory ?? directory,
               directory,

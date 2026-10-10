@@ -168,6 +168,7 @@ export async function enrichPackageScriptEvidence(
       let cursor = cwd;
       for (let depth = 0; depth < 8; depth++) {
         const path = join(cursor, "package.json");
+        // biome-ignore lint/performance/noAwaitInLoops: walks up one parent directory per step and returns at the nearest package.json, so a farther manifest must not be read before a closer one is ruled out
         const exists = await lstat(path)
           .then(() => true)
           .catch(() => false);
@@ -285,6 +286,7 @@ export async function enrichPackageScriptEvidence(
       for (const prefix of ["pre", "post"]) {
         const name = prefix + call.script;
         if (Object.hasOwn(pkg.scripts, name))
+          // biome-ignore lint/performance/noAwaitInLoops: the pre hook must be expanded before the post hook; each visit appends to the shared records list and active-cycle set, so overlapping visits would reorder records and race the cycle check
           await visit(
             { manager: call.manager, script: name, arguments: [] },
             pkgDirectory,
@@ -305,8 +307,10 @@ export async function enrichPackageScriptEvidence(
         command,
         pkgDirectory,
       )) {
-        for (const child of calls(segment.tokens))
+        for (const child of calls(segment.tokens)) {
+          // biome-ignore lint/performance/noAwaitInLoops: expands child script calls in command order into the shared records list, active-cycle set and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the cycle and budget checks
           await visit(child, segment.directory, depth + 1);
+        }
       }
     }
     active.delete(key);
@@ -315,8 +319,10 @@ export async function enrichPackageScriptEvidence(
     sourceCommand(request),
     directory,
   )) {
-    for (const call of calls(segment.tokens))
+    for (const call of calls(segment.tokens)) {
+      // biome-ignore lint/performance/noAwaitInLoops: expands top-level script calls in command order into the shared records list and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the budget check
       await visit(call, segment.directory, 0);
+    }
   }
   // Records are only popped while more than one remains, so `first` stays
   // records[0] from here on.

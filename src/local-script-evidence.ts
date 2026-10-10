@@ -333,7 +333,8 @@ export async function enrichLocalScriptEvidence(
             reason:
               segment.directoryReason ?? "working directory is unresolved",
           }
-        : await includeEvidenceFile(
+        : // biome-ignore lint/performance/noAwaitInLoops: reads one interpreter script at a time, appending records in command order after the seen-key dedup of earlier segments
+          await includeEvidenceFile(
             path,
             segment.directory ?? directory,
             directory,

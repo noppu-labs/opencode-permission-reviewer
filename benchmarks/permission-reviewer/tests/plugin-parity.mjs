@@ -28,6 +28,7 @@ const data = await loadDataset(
 );
 let checks = 0;
 for (const c of data.cases) {
+  // biome-ignore lint/performance/noAwaitInLoops: checks the plugin against core one dataset case at a time so the first failing assertion names the first diverging case
   const p = await adapter.prepare(modelInput(c), {
     model: "not-called",
     format: "text",
@@ -48,6 +49,7 @@ for (const c of data.cases) {
       parsed,
       coreDecision.parseDecisionFromText(JSON.stringify(d)),
     );
+    // biome-ignore lint/performance/noAwaitInLoops: checks each outcome against the same prepared case in turn so the first failing assertion names the outcome that diverged
     const result = await adapter.finish(p, parsed);
     assert.deepEqual(result.gated, {
       ...coreDecision.enforceDecision(parsed, p.config),

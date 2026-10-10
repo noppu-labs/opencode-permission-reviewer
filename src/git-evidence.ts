@@ -849,31 +849,31 @@ async function resolveRemoteTargets(
         identity !== undefined && literal.fetchUrl !== undefined
           ? repositoryIdentity(literal.fetchUrl)
           : undefined;
-      const matches =
+      const remoteRoles =
         pushIdentity === undefined && fetchIdentity === undefined
           ? []
-          : (
-              await Promise.all(
-                configuredNames
-                  .slice(0, MAX_RESOLVED_REMOTES)
-                  .map(async (name) => {
-                    const urls = await resolveRemote(name);
-                    return {
-                      name,
-                      push:
-                        pushIdentity !== undefined &&
-                        (urls.pushUrls?.some(
-                          (url) => repositoryIdentity(url) === pushIdentity,
-                        ) ??
-                          false),
-                      fetch:
-                        fetchIdentity !== undefined &&
-                        urls.fetchUrl !== undefined &&
-                        repositoryIdentity(urls.fetchUrl) === fetchIdentity,
-                    };
-                  }),
-              )
-            ).filter((match) => match.push || match.fetch);
+          : // biome-ignore lint/performance/noAwaitInLoops: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
+            await Promise.all(
+              configuredNames
+                .slice(0, MAX_RESOLVED_REMOTES)
+                .map(async (name) => {
+                  const urls = await resolveRemote(name);
+                  return {
+                    name,
+                    push:
+                      pushIdentity !== undefined &&
+                      (urls.pushUrls?.some(
+                        (url) => repositoryIdentity(url) === pushIdentity,
+                      ) ??
+                        false),
+                    fetch:
+                      fetchIdentity !== undefined &&
+                      urls.fetchUrl !== undefined &&
+                      repositoryIdentity(urls.fetchUrl) === fetchIdentity,
+                  };
+                }),
+            );
+      const matches = remoteRoles.filter((match) => match.push || match.fetch);
       targets.push({
         input: bounded,
         kind: "literal",
@@ -910,6 +910,7 @@ async function resolveRemoteTargets(
       continue;
     }
     defaults.push(
+      // biome-ignore lint/performance/noAwaitInLoops: each default-remote annotation spawns git config lookups through the shared resolvedRemotes memo, which is filled only after git returns; one annotation at a time reuses earlier lookups instead of spawning duplicates
       await resolveDefaultRemote(
         directory,
         annotation,
@@ -979,6 +980,7 @@ async function resolveDefaultRemote(
           },
         ];
   for (const step of configChain) {
+    // biome-ignore lint/performance/noAwaitInLoops: git's own precedence order (pushRemote, then remote.pushDefault, then branch remote); returns at the first key that is set, so later keys must not be spawned before an earlier one is ruled out
     const value = await runGit(
       directory,
       ["config", "--get", step.key],

@@ -61,6 +61,7 @@ export function createV1ContextReader(
       const createdAt =
         typeof time?.created === "number" ? time.created : undefined;
       while (true) {
+        // biome-ignore lint/performance/noAwaitInLoops: widens the message window only when the previous read returned too few intent messages, so each read depends on the result of the one before
         const messages = normalizeMessages(await pending);
         const users = selectIntentMessages(
           messages.filter((message) => {

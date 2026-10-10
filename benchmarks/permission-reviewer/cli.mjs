@@ -313,6 +313,7 @@ async function main() {
     const lines = [];
     for (const c of cases)
       for (const model of models) {
+        // biome-ignore lint/performance/noAwaitInLoops: render writes requests.jsonl in case-then-model order and prepares one case through the plugin's preflight at a time, matching the order a run reads them back
         const p = await adapter.prepare(modelInput(c), model);
         lines.push(
           JSON.stringify({

@@ -38,15 +38,18 @@ const gitBlob = (bytes) =>
 async function sourceSnapshot(repo) {
   const files = {};
   async function walk(dir, rel = "") {
-    for (const d of (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+    const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
       a.name.localeCompare(b.name),
-    )) {
+    );
+    for (const d of entries) {
       const relative = rel ? `${rel}/${d.name}` : d.name;
       if (d.isSymbolicLink())
         throw new Error(
           `Source symlink is not supported for a reproducible snapshot: ${relative}`,
         );
-      if (d.isDirectory()) await walk(join(dir, d.name), relative);
+      if (d.isDirectory())
+        // biome-ignore lint/performance/noAwaitInLoops: the depth-first walk inserts into files in sorted path order, which the snapshot records as-is, and it must throw at the first symlink before reading any later entry
+        await walk(join(dir, d.name), relative);
       else if (/\.(ts|tsx|js|json)$/.test(d.name))
         files[`src/${relative}`] = sha256(
           await readFile(join(dir, d.name)).then((b) => b.toString("utf8")),
@@ -54,11 +57,15 @@ async function sourceSnapshot(repo) {
     }
   }
   await walk(resolve(repo, "src"));
-  const differences = [];
-  for (const [path, expected] of Object.entries(PINNED_BLOBS)) {
-    const actual = gitBlob(await readFile(resolve(repo, path)));
-    if (actual !== expected) differences.push({ path, expected, actual });
-  }
+  const differences = (
+    await Promise.all(
+      Object.entries(PINNED_BLOBS).map(async ([path, expected]) => ({
+        path,
+        expected,
+        actual: gitBlob(await readFile(resolve(repo, path))),
+      })),
+    )
+  ).filter(({ expected, actual }) => actual !== expected);
   const packageJSON = JSON.parse(
     await readFile(resolve(repo, "package.json"), "utf8"),
   );
