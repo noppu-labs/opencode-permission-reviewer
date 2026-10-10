@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import { redactSecrets } from "./redact.ts";
-import { includeEvidenceFile } from "./ssh-evidence.ts";
 import type { PermissionRequest, ReviewDecision } from "./types.ts";
 
 export const VERIFIED_SCRIPT_LIMIT = 64 * 1024;

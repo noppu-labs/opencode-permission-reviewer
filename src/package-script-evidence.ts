@@ -1,13 +1,11 @@
 import { lstat } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { includeEvidenceFile } from "./evidence-file-reader.ts";
 import { invariant } from "./invariant.ts";
 import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
 import { effectiveCommands } from "./shell-effective-commands.ts";
-import {
-  includeEvidenceFile,
-  shellCommandSegmentsWithDirectory,
-} from "./ssh-evidence.ts";
+import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
 import type { PermissionRequest } from "./types.ts";
 
 const MANAGERS = new Set(["bun", "npm", "pnpm", "yarn"]);

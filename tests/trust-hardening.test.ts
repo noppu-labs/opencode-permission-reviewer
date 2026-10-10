@@ -26,6 +26,7 @@ import { resolveActorContext } from "../src/context/actor-resolver.ts";
 import { buildEvidence, buildTranscript } from "../src/context.ts";
 import { enforceDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { includeEvidenceFile } from "../src/evidence-file-reader.ts";
 import {
   collectConversionKeys,
   conversionNeutralizationArgs,
@@ -36,7 +37,7 @@ import type {
   OpenCodeClientLike,
 } from "../src/opencode/types.ts";
 import { evaluatePolicy } from "../src/policy/policy-engine.ts";
-import { enrichSshEvidence, includeEvidenceFile } from "../src/ssh-evidence.ts";
+import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import type {
   CapabilityAssessment,
   MessageWithParts,

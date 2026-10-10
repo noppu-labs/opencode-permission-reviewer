@@ -32,6 +32,7 @@ import {
   projectConfigPath,
 } from "../config/loader.ts";
 import { resolveConfig } from "../config.ts";
+import { includeEvidenceFile } from "../evidence-file-reader.ts";
 import { validateHostEndpoint } from "../opencode/v2/connection.ts";
 import { normalizeV2Permission } from "../opencode/v2/permission-codec.ts";
 import {
@@ -40,7 +41,6 @@ import {
   hashEffectivePolicy,
 } from "../policy/policy-engine.ts";
 import { redactSecrets } from "../redact.ts";
-import { includeEvidenceFile } from "../ssh-evidence.ts";
 import type {
   PermissionRequest,
   PermissionToolSource,

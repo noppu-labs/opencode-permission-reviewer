@@ -1,13 +1,13 @@
 import { basename, resolve } from "node:path";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
-import { invariant } from "./invariant.ts";
 import {
-  analyzeScriptContent,
   type FileEvidence,
   includeEvidenceFile,
-  shellCommandSegmentsWithDirectory,
-} from "./ssh-evidence.ts";
+} from "./evidence-file-reader.ts";
+import { invariant } from "./invariant.ts";
+import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
+import { analyzeScriptContent } from "./ssh-evidence.ts";
 import type { PermissionRequest } from "./types.ts";
 
 export interface LocalScriptEnrichmentResult {
