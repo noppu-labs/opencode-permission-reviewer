@@ -67,7 +67,6 @@ function findRootsStart(cmd: ShellToken[]): number {
   return index;
 }
 
-/** find's symlink-policy options. */
 const FIND_SYMLINK_OPTIONS = new Set(["-H", "-L", "-P"]);
 
 /** Words a leading find traversal option spans, or 0 for any other word. */
@@ -121,7 +120,7 @@ function sortMutation(cmd: ShellToken[]): ReadOnlyToolMutation | undefined {
   return result.writeTargets.length > 0 ? result : undefined;
 }
 
-/** In-place edit: the file operand(s) after the expression are rewritten. */
+/** In-place edit: every non-option operand, the expression included, is recorded as a write target. */
 function yqMutation(cmd: ShellToken[]): ReadOnlyToolMutation | undefined {
   if (!cmd.some((token) => token.value === "-i" || token.value === "--inplace"))
     return undefined;

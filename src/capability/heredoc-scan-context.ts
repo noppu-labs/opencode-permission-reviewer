@@ -47,7 +47,7 @@ export function skipComment(scan: ScanContext, c: string): boolean {
   return true;
 }
 
-/** Whether the character at `i` starts a word at a command position. */
+/** Whether the character at `i` starts a word: first in the command, or after whitespace or `;&|()`. */
 function atCommandBoundary(command: string, i: number): boolean {
   return i === 0 || /[\s;&|()]/.test(command.charAt(i - 1));
 }
@@ -65,7 +65,6 @@ export function scanArithmetic(scan: ScanContext, c: string): boolean {
   return true;
 }
 
-/** `$((` anywhere, or `((` at a command position. */
 function opensArithmetic(command: string, i: number, c: string): boolean {
   return (
     (c === "$" && command[i + 1] === "(" && command[i + 2] === "(") ||

@@ -78,7 +78,6 @@ function summaryOf(facts: CapabilityFacts): string {
   return summaryParts.join(", ");
 }
 
-/** The assessment the accumulated facts describe. */
 export function assessmentFrom(
   parsed: ParsedCommand,
   facts: CapabilityFacts,

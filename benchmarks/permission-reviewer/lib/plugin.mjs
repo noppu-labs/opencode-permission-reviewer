@@ -22,14 +22,12 @@ const PINNED_BLOBS = {
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "419ccaf0f89cf3aee80d69bdf9e24c094e8634d6",
+  "src/emergency-brake.ts": "74cbc1105ea38f4bfd096545cc528bbedee0fea0",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "51b07f1137833796f26e45dc2156adaff4433609",
-  "src/capability/bash-analyzer.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "5bad6b5919f2ce80707084b046cf22c00fefac15",
+  "src/capability/bash-analyzer.ts": "74fc89978ba4f023c9238d662933c4d2a987edea",
   "src/capability/bash-command-tables.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
@@ -37,13 +35,13 @@ const PINNED_BLOBS = {
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "faa0c8d39af857f106d66fed2d54f03ca08acd5a",
   "src/shell-effective-commands.ts": "66e9183f50e24ff07424ffa211ded46dca6ba4ce",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/effective-command-walk.ts": "b6aee5acba4cd76897d05e16ce31d399f83e6074",
+  "src/effective-command-walk.ts": "aedd2ffc4ef201aba00595e543d26e2a0f600421",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-wrapper-options.ts": "9926f878a195ab02df4cc2f22568b83565cef2e9",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-command-strings.ts": "0794d8de3dc08ebc7ac275f7a16f85806aad1751",
-  "src/env-split-string.ts": "d096f9ca93768489a9ab7aad4bb5591c54862d3a",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/env-split-string.ts": "1e65da835a70a6e8131dc50437c94efe884947a5",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/ssh-remote-command.ts": "64cd51b44423ff524b709f619e90e5650200cc67",
   "src/shell-lexer.ts": "d62563cfdd2eb71dfaffd70c624fd0de1d05a301",
@@ -69,22 +67,18 @@ const PINNED_BLOBS = {
   "src/capability/capability-facts.ts":
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "0f97918b43dbe5c9e8a730b30aa50ee037614e5c",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/capability/segment-heads.ts": "cbad636269bdd33188d3facb4f912344b519e027",
-  "src/capability/action-class.ts": "c14b827cd202c3c45656a327bfcd2024a11cac4c",
+    "91e3d8b4ef18becfd7d0bb66dd2b76b80368d343",
+  "src/capability/segment-heads.ts": "0591a3d6f45ee63c63f322c54dfa7f2a8b6e6ead",
+  "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
   "src/capability/sensitive-path-reads.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "700335e5517bf5aa418f792c03272a6bb3513f99",
+    "e0db1d3fcb8d89ceee3a4f6ff533417c97b15dff",
   "src/capability/effective-command-classifiers.ts":
-    "41b95cdccc21546871e8da9e2541b9748f192ed1",
+    "ab58f309f3c719e607a77687ee2a4aec4ebc51a7",
   "src/capability/executable-recognition.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "b1eafef1054206665fed857e749c3337b488f7cb",
   "src/capability/execution-classifiers.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "b60be6d30f542b0002a666a2c319fc98bec98b14",
+    "c111e9a3dfe91c33b6d69ce74eb791b636f8f1de",
   "src/capability/file-effect-classifiers.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "b03fa54cda5b0c69752aad779d8e6123bbd3f320",
@@ -94,13 +88,11 @@ const PINNED_BLOBS = {
   "src/capability/process-classifiers.ts":
     "b578ec0a5ff7535fab34e1fc2a1ca74af454b699",
   "src/capability/mutation-operands.ts":
-    "e830c4db3a7195ce632beb8c9ac9797c27349a50",
+    "57dc2a11a4c1885b99f7fb779e062dcae7a214ad",
   "src/capability/read-only-tool-mutations.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "f9e53d4a8c756981f7059cbf6564d27eb7398fcc",
+    "684c044741a3788a2c504a42a9250bbbafb9ed7a",
   "src/capability/git-subcommand-forms.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "4b725b813d7beb8ac15b5677c5634ed9fa88969c",
+    "1f4206bf0cad0d17779c139fd95241ccb5b65b0b",
   "src/capability/heredoc-delimiter.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "abae24b0e331469527d25e6c3719ceea81a8932e",
@@ -112,7 +104,7 @@ const PINNED_BLOBS = {
     "d2f0eabf08316462275c01b7edd4ebac2ef98308",
   "src/capability/heredoc-scan-context.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "77472dfbb6167002feb32615dbc55d81ce77a926",
+    "f70b351151236060ff9746f8ed766d3f94a4a9df",
   "src/capability/heredoc-bodies.ts":
     "d766923e0629d09e4bba8867d0e27d6739f19d98",
   "src/capability/heredoc-body-records.ts":

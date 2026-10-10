@@ -14,8 +14,7 @@ import type { CapabilityFacts } from "./capability-facts.ts";
 
 /** Wrappers the lexer peels (sudo, nohup, ssh, …) must be detected on the
  *  original segment heads, because `effective` starts at the real executable
- *  after peeling. The head is found by skipping shell keywords and VAR=value
- *  assignments exactly like the lexer does. */
+ *  after peeling. */
 export function classifySegmentHeads(
   segments: ShellSegment[],
   facts: CapabilityFacts,

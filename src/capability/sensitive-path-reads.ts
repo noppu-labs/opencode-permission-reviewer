@@ -51,8 +51,7 @@ function inputRedirectReadsCredential(r: Redirection): boolean {
 }
 
 /** A token following a redirect operator is that redirect's target, not a
- *  path operand: `cat > .env` writes the file, it does not read it. The
- *  regex covers `<`, `>`, `>>` and `<<` as well as fd-numbered operators. */
+ *  path operand: `cat > .env` writes the file, it does not read it. */
 function operandReadsCredential(previous: string, value: string): boolean {
   if (/^[0-9]*[<>]/.test(previous)) return false;
   if (value === "--") return false;

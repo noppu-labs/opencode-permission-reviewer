@@ -31,10 +31,9 @@ export async function verifiedInspection(
   // The planned directory comes from the reviewed command itself (`cd`,
   // `git -C`), so it can never mint an inspection root. Git runs subprocesses
   // with that directory as cwd; without containment a `cd /other/repo &&`
-  // prefix would inspect an unrelated repository. Only the session directory,
-  // the worktree, and /tmp/opencode may be inspected, judged on real paths so
-  // symlinks cannot bridge out. An unresolvable planned directory is treated
-  // as outside: there is nothing to inspect that the review can vouch for.
+  // prefix would inspect an unrelated repository. It is checked against
+  // `approvedEvidenceRoots()` on real paths, so symlinks cannot bridge out. An
+  // unresolvable planned directory counts as outside.
   const gitDirectory = await realpath(planned.executionDirectory).catch(
     () => undefined,
   );
@@ -70,9 +69,10 @@ async function repositoryState(
   // roots: git discovers repositories upward, so a working directory inside
   // an approved root can otherwise sit in a repository whose root, and whose
   // whole status/diff state, lies outside them. The window between this
-  // realpath and the git subprocesses below cannot be eliminated (git takes
-  // a path as cwd, not an open descriptor), but the reviewed command has not
-  // run yet, so racing it requires a second concurrent process.
+  // realpath and the inspection subprocesses this gate admits cannot be
+  // eliminated (git takes a path as cwd, not an open descriptor), but the
+  // reviewed command has not run yet, so racing it requires a second
+  // concurrent process.
   const root = await runGit(
     gitDirectory,
     ["rev-parse", "--show-toplevel"],

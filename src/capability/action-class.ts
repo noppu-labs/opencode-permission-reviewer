@@ -15,7 +15,6 @@ export function resolveActionClass(facts: CapabilityFacts): void {
   facts.classConfidence = confidence;
 }
 
-/** The first six rules of the chain, in order. */
 function effectClass(facts: CapabilityFacts): ResolvedClass | undefined {
   if (facts.deletion) return ["destruction", "high"];
   if (facts.gitMutation) return ["git-mutation", "high"];
@@ -27,7 +26,6 @@ function effectClass(facts: CapabilityFacts): ResolvedClass | undefined {
   return undefined;
 }
 
-/** The rest of the chain, in order, ending in the fallback. */
 function writeOrReadClass(facts: CapabilityFacts): ResolvedClass {
   if (facts.privilegeEscalation) return ["privilege-escalation", "high"];
   if (facts.workspaceWrite) return ["workspace-write", "medium"];

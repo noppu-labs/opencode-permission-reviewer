@@ -153,8 +153,6 @@ function boundedNeutralizationArgs(stdout: string): string[] {
   return conversionNeutralizationArgs(filterNames, diffDrivers);
 }
 
-/** The args for a scan that failed with `error`: none when nothing matched,
- *  otherwise the failure is rethrown. */
 function noMatchArgsOrRethrow(error: unknown): string[] {
   const record = error as { code?: unknown };
   // git config exits 1 when nothing matches: the common, benign case.

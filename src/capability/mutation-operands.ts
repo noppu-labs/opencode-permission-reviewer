@@ -14,9 +14,8 @@ export function isRemoteMutationOperand(value: string): boolean {
 
 /** Split a cp/mv/ln/rsync invocation into read sources and write
  *  destinations. The last positional operand is the destination (cp/mv/rsync
- *  destination, ln link name); `--target-directory`/`-t` names an additional
- *  destination directory everything lands under. Paths after `--` are
- *  operands like any other. */
+ *  destination, ln link name); with `--target-directory`/`-t`, that directory
+ *  is the only destination. Paths after `--` are operands like any other. */
 export function mutationOperands(
   base: string,
   cmd: ReadonlyArray<{ value: string }>,

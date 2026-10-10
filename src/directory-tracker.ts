@@ -1,5 +1,5 @@
-// Working-directory state across one command's segments: pending `cd`s, the operators that settle
-// them, and subshell groups that save and restore the parent state.
+// Working-directory state across one command's segments: pending `cd`s, the operators that decide
+// whether they apply, and subshell groups that save and restore the parent state.
 
 import { basename, isAbsolute, resolve } from "node:path";
 

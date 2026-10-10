@@ -32,10 +32,9 @@ import { classifyCredentialReads } from "./sensitive-path-reads.ts";
  * `sh -c` bodies are handled consistently with the emergency brake.
  *
  * The passes run in a fixed order and accumulate into one `CapabilityFacts`
- * record. Booleans only ever turn true. The action class depends on the order
- * below: `claimClass` replaces any earlier class, `claimUnsetClass` keeps the
- * first claim, and `resolveActionClass` fills the class only when no
- * classifier claimed one.
+ * record. The action class depends on the order below: `claimClass` replaces
+ * any earlier class, `claimUnsetClass` keeps the first claim, and
+ * `resolveActionClass` fills the class only when no classifier claimed one.
  */
 
 /** Analyze a parsed bash command and produce capability facts. */
@@ -62,7 +61,6 @@ export function analyzeCapability(
   return assessmentFrom(parsed, facts);
 }
 
-/** Redirections across all commands. */
 function recordRedirectionWrites(
   redirections: Redirection[][],
   facts: CapabilityFacts,
@@ -76,7 +74,6 @@ function recordRedirectionWrites(
   }
 }
 
-/** A heredoc that writes to a file is a write effect. */
 function recordHeredocWrites(
   heredocs: HeredocRecord[],
   facts: CapabilityFacts,

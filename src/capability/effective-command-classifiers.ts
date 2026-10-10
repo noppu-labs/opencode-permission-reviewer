@@ -57,12 +57,10 @@ export function classifyEffectiveCommand(
   classifyFileMutation(cmd, base, facts, context);
   classifyDeletion(cmd, base, facts, context);
   classifyGit(cmd, base, facts);
-  // Privilege wrappers were already detected on the segment head; the lexer
-  // peels them so `effective` starts at the real executable.
+  // No privilege-wrapper classifier: `classifySegmentHeads` detects those
+  // wrappers before the lexer peels them.
   classifyServiceManager(base, facts);
   classifyPersistenceTool(base, facts);
-  // Background operator `&` is already a segment separator; `disown`/`nohup`
-  // are handled on the segment head. A trailing `&` inside one logical
-  // command is rare with our lexer but `setsid`/`nohup` cover the common
-  // persistence cases.
+  // No background-job classifier: `&` is a segment separator, and
+  // `nohup`/`setsid`/`disown` are detected on the segment head.
 }

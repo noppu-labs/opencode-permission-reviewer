@@ -53,7 +53,7 @@ export async function resolveRemoteTargets(
     if (seen.has(input)) continue;
     seen.add(input);
     targets.push(
-      // biome-ignore lint/performance/noAwaitInLoops: the outer candidate loop stays sequential: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
+      // biome-ignore lint/performance/noAwaitInLoops: candidates share the resolvedRemotes memo and stop at MAX_RESOLVED_REMOTES; parallel lookups would spawn duplicate git processes and overrun the cap
       await remoteTarget(input, rewrites, configuredNames, resolveRemote),
     );
   }

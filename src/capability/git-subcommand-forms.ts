@@ -11,8 +11,7 @@ import {
 
 /** Resolve a git subcommand from the token stream, skipping global git flags
  *  (`-C <path>`, `-c <cfg>`, `--git-dir`, …) so `git -C /repo push` still
- *  detects the `push` mutation. Mirrors `gitSubcommand()` in
- *  `src/git-invocation.ts`. */
+ *  detects the `push` mutation. */
 export function gitSubcommandOf(cmd: ShellToken[]): {
   sub?: string;
   index?: number;

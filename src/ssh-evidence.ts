@@ -54,7 +54,7 @@ export async function enrichSshEvidence(
     if (!parsed) continue;
 
     const producer = pipelineProducer(segments, segmentIndex);
-    // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one stdin evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records, audit entries and preflight denials are appended in command order
+    // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one stdin evidence file is open at a time; records, audit entries and preflight denials are appended in command order
     const stdin = await stdinEvidence(segment, producer, scope);
     const remoteCommandSha256 = remoteCommandDigest(parsed);
     const denial = deterministicDenial(stdin);

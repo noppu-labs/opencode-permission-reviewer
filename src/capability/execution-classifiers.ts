@@ -62,9 +62,9 @@ export function classifyTestRunner(base: string, facts: CapabilityFacts): void {
   if (TEST_RUNNERS.has(base)) markTestRun(facts);
 }
 
-/** `<runtime> test` / `<runtime> t` (bun, npm, pnpm, yarn, deno, …). Test
- *  invocations always execute code: the runner and the suite itself are
- *  executable repository content, so `executesCode` must be true, not
+/** `<runtime> test` / `t` / `check` / `verify` (bun, npm, pnpm, yarn, deno,
+ *  …). Test invocations always execute code: the runner and the suite itself
+ *  are executable repository content, so `executesCode` must be true, not
  *  unknown (a `read-only` class for `npm test` understates the effect). */
 export function classifyTestSubcommand(
   cmd: ShellToken[],

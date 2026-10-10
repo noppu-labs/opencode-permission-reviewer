@@ -39,8 +39,9 @@ function isInformationFlag(token: string, interpreter: string): boolean {
   );
 }
 
-// A dash spell can mean inline code for one runtime and a valued option for
-// another (deno -c is --config, node -c is --check): the interpreter spec wins.
+// A dash spelling can mean inline code for one runtime and a valued option for
+// another (`python -c` runs code, `deno -c` is `--config`): the interpreter
+// spec wins.
 function runsInlineCode(
   token: string,
   spec: InterpreterSpec | undefined,

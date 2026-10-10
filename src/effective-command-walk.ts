@@ -121,7 +121,6 @@ function peelCommand(
   sink.budget.remainingCommands -= 1;
 }
 
-/** Re-analyze `text` when there is one; reports whether it did. */
 function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
   if (text === null) return false;
   reanalyze(text, level);

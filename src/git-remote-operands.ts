@@ -18,8 +18,8 @@ const REMOTE_VERBS_WITH_NAME = new Set([
 ]);
 
 /** First positional operand of a network subcommand, skipping options and
- *  their separate values. Returns the operand plus any `--repo`-style
- *  override value, which is itself a push destination. */
+ *  their separate values. Returns the `--repo` override when one is set,
+ *  otherwise the operand. */
 function networkOperand(
   tokens: string[],
   index: number,

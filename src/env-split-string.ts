@@ -6,11 +6,9 @@ import type { ShellToken } from "./shell-token.ts";
 
 /** `env -S 'command string'` (or unquoted: `env -S cmd args…`) carries a
  *  parsed command line, and any operands after the string are appended to
- *  it. The option may be clustered (`env -iS 'rm -rf /'`), where getopt
- *  takes the string from the rest of the cluster or, when S ends the
- *  cluster, from the next token. The concatenation is what gets re-analyzed,
- *  so `env -S rm -rf /` and `env -iS rm -rf /` are both caught. `null` when
- *  there is no non-empty split string. */
+ *  it. The concatenation is what gets re-analyzed, so `env -S rm -rf /` and
+ *  `env -iS rm -rf /` are both caught. `null` when there is no non-empty
+ *  split string. */
 export function envSplitString(words: ShellToken[], i: number): string | null {
   const s = findEnvSCommand(words, i + 1);
   if (s === null || s.script.length === 0) return null;
