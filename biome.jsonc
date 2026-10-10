@@ -81,7 +81,7 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 25 files.
+    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 23 files.
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
@@ -100,15 +100,13 @@
         "src/cli/explain.ts",
         "src/cli/init-config-files.ts",
         "src/cli/init.ts",
-        "src/opencode/v1/reviewer-backend.ts",
         "src/opencode/v2/reviewer-backend.ts",
         "src/ui-protocol.ts",
         "src/ui/v2.tsx",
         "tests/live-harness.ts",
         "tests/package-smoke.test.ts",
         "tests/stress.test.ts",
-        "tests/ui-protocol.test.ts",
-        "tests/v1-backend.test.ts"
+        "tests/ui-protocol.test.ts"
       ],
       "linter": {
         "rules": {

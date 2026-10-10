@@ -48,17 +48,26 @@ interface V1Fixture {
   cleanup: () => Promise<void>;
 }
 
-function fixture(
-  options: {
-    format?: ReviewerConfig["outputFormat"];
-    mcpServers?: boolean | "after-first";
-    mcpError?: boolean;
-    withoutMcp?: boolean;
-    base?: string;
-    inventory?: unknown;
-    timeoutMs?: number;
-  } = {},
-): V1Fixture {
+interface V1FixtureOptions {
+  format?: ReviewerConfig["outputFormat"];
+  mcpServers?: boolean | "after-first";
+  mcpError?: boolean;
+  withoutMcp?: boolean;
+  base?: string;
+  inventory?: unknown;
+  timeoutMs?: number;
+}
+
+/** The host MCP inventory the fixture reports on its `statuses`-th check. */
+function mcpInventory(options: V1FixtureOptions, statuses: number): unknown {
+  if ("inventory" in options) return options.inventory;
+  const servers =
+    options.mcpServers === true ||
+    (options.mcpServers === "after-first" && statuses > 1);
+  return servers ? { fixture: { status: "connected" } } : {};
+}
+
+function fixture(options: V1FixtureOptions = {}): V1Fixture {
   const base =
     options.base ?? mkdtempSync(join(tmpdir(), "reviewer-v1-isolation-"));
   const directories: string[] = [];
@@ -111,15 +120,7 @@ function fixture(
             mcpStatuses++;
             if (options.mcpError)
               return { error: { message: "mcp status unavailable" } };
-            return {
-              data:
-                "inventory" in options
-                  ? options.inventory
-                  : options.mcpServers === true ||
-                      (options.mcpServers === "after-first" && mcpStatuses > 1)
-                    ? { fixture: { status: "connected" } }
-                    : {},
-            };
+            return { data: mcpInventory(options, mcpStatuses) };
           },
         },
   } as unknown as RuntimeContext["client"];
