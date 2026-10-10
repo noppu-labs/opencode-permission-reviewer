@@ -30,29 +30,15 @@ import type {
 import { createUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
 import { ScriptAnalysisRegistry } from "../verified-ssh-script.ts";
 import { ReviewAttempt } from "./review-attempt.ts";
+import { actionHash, type Logger } from "./review-coordinator-support.ts";
 import { evaluateReview } from "./review-engine.ts";
 import { ReviewLimiter } from "./review-limiter.ts";
-
-type Logger = (message: string, details?: unknown) => void;
 
 /** process() registers the attempt before its first await and deletes it only
  *  in its finally block, after closing it; handle() runs one process() per
  *  request ID. The asserted lookups below all run inside that window. */
 const ATTEMPT_REGISTERED =
   "process() keeps the review attempt registered until it returns";
-
-/** Stable hash of the canonical request so audit records for the same action
- *  correlate across runs. Patterns are sorted so event order does not matter.
- *  The per-invocation tool call/message IDs are deliberately excluded: two
- *  identical commands in different sessions or runs must produce the same hash. */
-function actionHash(request: PermissionRequest): string {
-  const canonical = JSON.stringify({
-    permission: request.permission,
-    patterns: [...request.patterns].sort(),
-    metadata: request.metadata,
-  });
-  return createHash("sha256").update(canonical).digest("hex");
-}
 
 /**
  * Owns the review lifecycle for permission requests: orchestration, the
