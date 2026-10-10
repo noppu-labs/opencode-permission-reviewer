@@ -329,3 +329,122 @@ test("registered V2 services must match the active host version", async () => {
     await rm(root, { recursive: true, force: true });
   }
 });
+
+test("V2 host transport passes other routes through and retries a 405 wait with the original request", async () => {
+  const seen: Array<{ input: RequestInfo | URL; method?: string }> = [];
+  const delegate = mock(async (input: RequestInfo | URL) => {
+    seen.push({
+      input,
+      ...(input instanceof Request ? { method: input.method } : {}),
+    });
+    const path = new URL(
+      input instanceof Request ? input.url : input.toString(),
+    ).pathname;
+    if (path === "/api/experimental/session/ses_old/wait")
+      return new Response("missing", { status: 405 });
+    if (path === "/api/experimental/session/ses_broken/wait")
+      return new Response(null, { status: 500 });
+    return new Response(null, { status: 204 });
+  }) as unknown as typeof globalThis.fetch;
+  const fetch = hostCompatibleFetch(delegate);
+  const other = new URL("http://127.0.0.1:4096/api/session/ses_main");
+  await fetch(other);
+  expect(seen[0]?.input).toBe(other);
+  const broken = await fetch(
+    "http://127.0.0.1:4096/api/experimental/session/ses_broken/wait",
+  );
+  expect(broken.status).toBe(500);
+  expect(seen).toHaveLength(2);
+  const request = new Request(
+    "http://127.0.0.1:4096/api/experimental/session/ses_old/wait",
+    { method: "POST" },
+  );
+  const retried = await fetch(request);
+  expect(retried.status).toBe(204);
+  expect(seen).toHaveLength(4);
+  expect(seen[2]?.input).not.toBe(request);
+  expect(seen[2]?.method).toBe("POST");
+  const legacy = seen[3]?.input;
+  expect(legacy).toBeInstanceOf(Request);
+  expect((legacy as Request).url).toBe(
+    "http://127.0.0.1:4096/api/session/ses_old/wait",
+  );
+  expect(seen[3]?.method).toBe("POST");
+});
+
+async function registeredServiceError(
+  contents: string | undefined,
+): Promise<string | undefined> {
+  delete process.env[hostUrl];
+  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
+  process.env[stateHome] = root;
+  await mkdir(join(root, "opencode"));
+  if (contents !== undefined)
+    await writeFile(join(root, "opencode", "service.json"), contents);
+  const { make, restore } = stubMake(() => fakeClient("expected"));
+  try {
+    const error = await connectV2Host(
+      "/workspace",
+      "expected",
+      "2.0.3",
+      AbortSignal.timeout(1000),
+    ).then(
+      () => undefined,
+      (reason: unknown) => reason as Error,
+    );
+    expect(make).not.toHaveBeenCalled();
+    return error?.message;
+  } finally {
+    restore();
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+test("registered V2 service registrations fail closed on a missing, unreadable or malformed file", async () => {
+  const valid = {
+    version: "2.0.3",
+    url: "http://127.0.0.1:4096/",
+    pid: process.pid,
+    password: "synthetic-service-password",
+  };
+  const cases: Array<[string | undefined, string]> = [
+    [
+      undefined,
+      "Reviewer host connection unavailable: use the registered service or configure OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD",
+    ],
+    ["{", "Reviewer service registration is not valid JSON"],
+    ["null", "Reviewer service registration is invalid"],
+    ['"service"', "Reviewer service registration is invalid"],
+    [
+      JSON.stringify({ ...valid, url: 4096 }),
+      "Reviewer service registration does not contain a URL",
+    ],
+    [
+      JSON.stringify({ ...valid, password: "" }),
+      "Reviewer service registration does not contain authentication",
+    ],
+  ];
+  for (const [contents, message] of cases) {
+    // biome-ignore lint/performance/noAwaitInLoops: each case rewrites the shared XDG_STATE_HOME registration and restores the client stub before the next
+    expect(await registeredServiceError(contents)).toBe(message);
+  }
+});
+
+test("registered V2 service read errors other than a missing file propagate", async () => {
+  delete process.env[hostUrl];
+  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
+  process.env[stateHome] = root;
+  await mkdir(join(root, "opencode", "service.json"), { recursive: true });
+  try {
+    await expect(
+      connectV2Host(
+        "/workspace",
+        "expected",
+        "2.0.3",
+        AbortSignal.timeout(1000),
+      ),
+    ).rejects.toMatchObject({ code: "EISDIR" });
+  } finally {
+    await rm(root, { recursive: true, force: true });
+  }
+});
