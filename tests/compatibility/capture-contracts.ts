@@ -23,6 +23,7 @@ const client = OpenCode.make({
 const controller = new AbortController();
 const events: OpenCodeEvent[] = [];
 const registry = new V2AskDecisions();
+// biome-ignore lint/nursery/useExplicitType: Biome 2.5.15 reports a definite-assignment declaration (`let x!: T`) as untyped although it carries an annotation; the `!` is needed because the Promise executor assigns it
 let connected!: () => void;
 const ready = new Promise<void>((resolve) => {
   connected = resolve;

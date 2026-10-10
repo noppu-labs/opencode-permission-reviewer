@@ -9,7 +9,7 @@ const releases = Object.entries({
 }).sort(([left], [right]) =>
   left.localeCompare(right, undefined, { numeric: true }),
 );
-const python = process.env.PYTHON ?? "python";
+const python: string = process.env.PYTHON ?? "python";
 const build = Bun.spawn(["bun", "run", "build"], {
   stdout: "inherit",
   stderr: "inherit",

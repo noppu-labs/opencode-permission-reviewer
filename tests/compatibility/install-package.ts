@@ -3,10 +3,12 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import packageInfo from "../../package.json";
 
-const manager = process.env.PACKAGE_MANAGER ?? "npm";
+const manager: string = process.env.PACKAGE_MANAGER ?? "npm";
 if (manager !== "npm" && manager !== "bun")
   throw new Error("PACKAGE_MANAGER must be npm or bun");
-const directory = await mkdtemp(join(tmpdir(), "reviewer-installed-package-"));
+const directory: string = await mkdtemp(
+  join(tmpdir(), "reviewer-installed-package-"),
+);
 const root = resolve(import.meta.dir, "../..");
 async function run(cmd: string[], cwd: string): Promise<string> {
   const process = Bun.spawn({ cmd, cwd, stdout: "pipe", stderr: "pipe" });
@@ -26,7 +28,7 @@ await run(
 const tarballs = (await readdir(directory)).filter((name) =>
   name.endsWith(".tgz"),
 );
-const [packedName] = tarballs;
+const [packedName]: string[] = tarballs;
 if (tarballs.length !== 1 || packedName === undefined)
   throw new Error(`Expected one packed tarball, found ${tarballs.length}`);
 const tarball = join(directory, packedName);
@@ -46,7 +48,8 @@ await run(
   directory,
 );
 const packagePath = join(directory, "node_modules", packageInfo.name);
-const plugin = await import(join(packagePath, "dist/index.js"));
+const plugin: { default?: { server?: unknown; setup?: unknown } } =
+  await import(join(packagePath, "dist/index.js"));
 if (
   typeof plugin.default?.server !== "function" ||
   typeof plugin.default?.setup !== "function"

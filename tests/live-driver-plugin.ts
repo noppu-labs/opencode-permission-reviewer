@@ -1,4 +1,4 @@
-import type { Plugin, PluginModule } from "@opencode-ai/plugin";
+import type { Plugin, PluginModule, ToolContext } from "@opencode-ai/plugin";
 import { tool } from "@opencode-ai/plugin";
 
 const scenarios = {
@@ -140,7 +140,10 @@ const server: Plugin = async () => ({
           "critical_destruction",
         ]),
       },
-      async execute(args, ctx) {
+      async execute(
+        args: { scenario: keyof typeof scenarios },
+        ctx: ToolContext,
+      ): Promise<string> {
         const sample = scenarios[args.scenario];
         await ctx.ask({
           permission: "bash",

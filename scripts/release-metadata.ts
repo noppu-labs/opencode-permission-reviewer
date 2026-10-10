@@ -2,7 +2,15 @@ import { appendFile } from "node:fs/promises";
 import { parse } from "semver";
 import packageInfo from "../package.json";
 
-export function releaseMetadata(tag: string, packageVersion: string) {
+export function releaseMetadata(
+  tag: string,
+  packageVersion: string,
+): {
+  tag: string;
+  version: string;
+  prerelease: boolean;
+  dist_tag: "next" | "v1" | "latest";
+} {
   const version = tag.startsWith("v") ? tag.slice(1) : "";
   const parsed = parse(version);
   if (!parsed || version !== packageVersion)

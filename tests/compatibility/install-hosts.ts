@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import contracts from "./host-contracts.json";
 
-const generation = process.env.HOST_GENERATION;
+const generation: string | undefined = process.env.HOST_GENERATION;
 if (generation !== "v1" && generation !== "v2")
   throw new Error("Set HOST_GENERATION to v1 or v2");
 const releases =

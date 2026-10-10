@@ -5,7 +5,7 @@ import pkg from "../../package.json";
 // when upstream moves that pin. Failing here turns the scheduled run red, which
 // is the signal to move the three packages together and revisit the seroval
 // residual admitted by the consumer audit in tests/package-smoke.test.ts.
-const pinned = pkg.dependencies["solid-js"];
+const pinned: string = pkg.dependencies["solid-js"];
 const lookup = Bun.spawn(
   [
     "npm",
@@ -17,7 +17,7 @@ const lookup = Bun.spawn(
   ],
   { stdout: "pipe", stderr: "pipe" },
 );
-const [code, stdout, stderr] = await Promise.all([
+const [code, stdout, stderr]: [number, string, string] = await Promise.all([
   lookup.exited,
   new Response(lookup.stdout).text(),
   new Response(lookup.stderr).text(),
@@ -28,8 +28,8 @@ const latest = JSON.parse(stdout) as {
   version?: unknown;
   peerDependencies?: Record<string, unknown>;
 };
-const version = latest.version;
-const peer = latest.peerDependencies?.["solid-js"];
+const version: unknown = latest.version;
+const peer: unknown = latest.peerDependencies?.["solid-js"];
 if (typeof version !== "string" || typeof peer !== "string")
   throw new Error("Invalid registry metadata for @opentui/solid");
 if (peer !== pinned) {
