@@ -80,9 +80,9 @@ def _launch(
     processes: list[tuple[subprocess.Popen[bytes], IO[str]]],
     generation: str,
     binary: str,
-    config: Any,
+    config: object,
     reviewer: dict[str, Any] | None = None,
-    global_config: Any = None,
+    global_config: object = None,
     profile: str | None = None,
     service: bool = False,
 ) -> dict[str, Any]:
@@ -151,7 +151,7 @@ def _isolated_env(root: Path, home: Path) -> dict[str, str]:
 
 
 def _write_configs(
-    root: Path, project: Path, home: Path, *, config: Any, global_config: Any, reviewer: dict[str, Any] | None
+    root: Path, project: Path, home: Path, *, config: object, global_config: object, reviewer: dict[str, Any] | None
 ) -> None:
     if config is not None:
         (project / "opencode.json").write_text(json.dumps(config), encoding="utf-8")
@@ -286,6 +286,7 @@ def model_server():
 
         def do_POST(self):
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            assert isinstance(body, dict), "chat completion body is a JSON object"
             calls.append(body)
             time.sleep(control["delay"])
             encoded = _model_reply(body, calls, control, decision)
@@ -308,7 +309,9 @@ def model_server():
     thread.join(timeout=5)
 
 
-def _model_reply(body: Any, calls: list[Any], control: dict[str, Any], decision: dict[str, Any]) -> bytes:
+def _model_reply(
+    body: dict[str, Any], calls: list[dict[str, Any]], control: dict[str, Any], decision: dict[str, Any]
+) -> bytes:
     """The streamed chat completion for one request: the driver runs a tool, the reviewer decides."""
     if body.get("model") == "driver":
         delta, structured = _driver_delta(body, control)
@@ -318,7 +321,7 @@ def _model_reply(body: Any, calls: list[Any], control: dict[str, Any], decision:
 
 
 def _reviewer_delta(
-    body: Any, calls: list[Any], control: dict[str, Any], decision: dict[str, Any]
+    body: dict[str, Any], calls: list[dict[str, Any]], control: dict[str, Any], decision: dict[str, Any]
 ) -> tuple[dict[str, Any], bool]:
     tool_name = next(
         (
@@ -352,7 +355,7 @@ def _reviewer_delta(
     return {"role": "assistant", "tool_calls": tool_calls}, True
 
 
-def _driver_delta(body: Any, control: dict[str, Any]) -> tuple[dict[str, Any], bool]:
+def _driver_delta(body: dict[str, Any], control: dict[str, Any]) -> tuple[dict[str, Any], bool]:
     """Call the native shell tool once, then finish after the tool result comes back."""
     if any(message.get("role") == "tool" for message in body.get("messages", [])):
         return {"role": "assistant", "content": "Completed."}, False
