@@ -225,10 +225,15 @@ def request_permission(host, session_id, decision_outcome):
 
 
 def settled_audit_records(host):
+    audit_path = host["root"] / "reviewer-audit.jsonl"
     deadline = time.monotonic() + 5
     records = []
     while time.monotonic() < deadline:
-        records = audit_records(host)
+        if audit_path.exists():
+            try:
+                records = [json.loads(line) for line in audit_path.read_text().splitlines()]
+            except json.JSONDecodeError:
+                records = []
         if records:
             break
         time.sleep(0.02)
