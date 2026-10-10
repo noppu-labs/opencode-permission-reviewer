@@ -77,7 +77,7 @@ function tempDir(prefix: string): string {
   return dir;
 }
 
-// A string is written as is (for malformed JSONC); anything else as JSON.
+// A string is written as is, so a test can plant malformed JSONC.
 function useGlobalConfig(
   dir: string,
   content: unknown,
@@ -108,7 +108,6 @@ function captureWarnings(): { warnings: string[]; restore: () => void } {
   };
 }
 
-// Puts the rules in the trusted global file or the trusted inline options.
 function loadTrustedRules(
   dir: string,
   layer: "global" | "inline",

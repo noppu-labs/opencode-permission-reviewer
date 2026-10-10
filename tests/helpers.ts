@@ -21,7 +21,6 @@ export function defined<T>(value: T | null | undefined, label = "value"): T {
   return value;
 }
 
-/** Serialises fixture rows as JSONL: one `JSON.stringify` line per row, newline-terminated. */
 export function toJsonl(rows: readonly unknown[]): string {
   return `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
 }

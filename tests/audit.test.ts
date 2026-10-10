@@ -43,7 +43,6 @@ function auditWriter(
   return defined(createAuditWriter(...args), "audit writer");
 }
 
-/** An enabled writer for `auditPath`; `logger` receives append failures. */
 function writerFor(
   auditPath: string,
   logger?: Parameters<typeof createAuditWriter>[1],
@@ -51,7 +50,6 @@ function writerFor(
   return auditWriter({ ...DEFAULT_CONFIG, audit: true, auditPath }, logger);
 }
 
-/** A writer whose logger collects every reported failure detail. */
 function loggingWriter(auditPath: string): {
   logs: unknown[];
   writeAudit: ReturnType<typeof auditWriter>;
@@ -81,7 +79,6 @@ function record(overrides: Partial<ReviewAuditRecord> = {}): ReviewAuditRecord {
   };
 }
 
-/** One serialized audit line, newline-terminated. */
 function recordLine(overrides: Partial<ReviewAuditRecord>): string {
   return toJsonl([record(overrides)]);
 }
@@ -94,7 +91,6 @@ const headLine = recordLine({
   timestamp: "2020-01-01T00:00:00.000Z",
 });
 
-/** Create `file` sparsely from `[data, offset]` writes. */
 function writeSparse(file: string, writes: [string, number][]): void {
   const fd = openSync(file, "w");
   try {
