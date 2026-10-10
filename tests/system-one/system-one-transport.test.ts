@@ -8,11 +8,20 @@ import {
   parseSystemOneReview,
   SYSTEM_ONE_QUESTIONS,
 } from "../../src/system-one/review.ts";
-import {
-  response,
-  reviewOnce,
-  withSyntheticCommandCodeKey,
-} from "./system-one-fixtures.ts";
+import { response, reviewOnce } from "./system-one-fixtures.ts";
+
+async function withSyntheticCommandCodeKey<T>(
+  run: () => Promise<T>,
+): Promise<T> {
+  const previous = process.env.CMD_API_KEY;
+  process.env.CMD_API_KEY = "synthetic-commandcode-key";
+  try {
+    return await run();
+  } finally {
+    if (previous === undefined) delete process.env.CMD_API_KEY;
+    else process.env.CMD_API_KEY = previous;
+  }
+}
 
 describe("System One reviewer", () => {
   test("selects only known Jev providers and model IDs", () => {

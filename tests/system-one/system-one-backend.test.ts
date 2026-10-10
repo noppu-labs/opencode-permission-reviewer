@@ -1,17 +1,75 @@
 import { describe, expect, test } from "bun:test";
 import { resolveConfig } from "../../src/config.ts";
+import { ReviewAttempt } from "../../src/core/review-attempt.ts";
+import { evaluateReview } from "../../src/core/review-engine.ts";
 import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
-import type { ReviewExecutionResult } from "../../src/types.ts";
+import type {
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+} from "../../src/types.ts";
 import { defined } from "../helpers.ts";
 import {
   choice,
-  escalatingJevBackend,
+  envelope,
   PRIMARY_BASES,
-  reasoningAllow,
   response,
   reviewOnce,
-  reviewWithIncompleteEvidence,
 } from "./system-one-fixtures.ts";
+
+function reasoningAllow(
+  evidence: "sufficient" | "partial",
+  rationale: string,
+): ReviewExecutionResult {
+  return {
+    kind: "allow",
+    reason: rationale,
+    decisionSource: "llm-reviewer",
+    reviewerOutcome: "allow",
+    decision: {
+      version: 2,
+      outcome: "allow",
+      risk_level: "low",
+      user_authorization: "high",
+      scope_alignment: "aligned",
+      evidence_completeness: evidence,
+      rationale,
+      confidence: 0.95,
+    },
+  };
+}
+
+// An explicit Jev escalation at 0.6 is plausible enough to hand to reasoning.
+function escalatingJevBackend(
+  config: ReviewerConfig,
+  reasoning: ReviewExecutionResult,
+): SystemOneReviewerBackend {
+  return new SystemOneReviewerBackend(
+    config,
+    async () => reasoning,
+    "openai/gpt-5.6-luna",
+    async () =>
+      response({
+        outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6),
+      }),
+  );
+}
+
+// Incomplete action evidence makes the engine's allow gate downgrade any allow.
+function reviewWithIncompleteEvidence(
+  config: ReviewerConfig,
+  backend: SystemOneReviewerBackend,
+): Promise<ReviewExecutionResult> {
+  const pending = envelope();
+  return evaluateReview(pending.request, config, {
+    collect: async () => ({ ...pending, actionEvidenceComplete: false }),
+    review: (value: ReviewEnvelope) =>
+      backend.review(value, new ReviewAttempt("generation", 10_000)),
+    active: () => true,
+    auxiliarySession: () => false,
+    observe: () => {},
+  });
+}
 
 describe("System One reviewer", () => {
   test("routes a valid difficult decision to the configured reasoning reviewer", async () => {

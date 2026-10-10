@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "runtime-manual-replies.test.ts",
-    "system-one-fixtures.ts",
     "system-one-transport.test.ts",
     "trust-fixtures.ts",
     "trust-actor-provenance.test.ts",
