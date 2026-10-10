@@ -359,8 +359,10 @@ export class ReviewCoordinator {
    * remains in audit, TUI, and debug.
    */
   annotateToolResult(
-    _callID: string,
-    _output: { output?: unknown; metadata?: unknown },
+    // biome-ignore lint/correctness/noUnusedFunctionParameters: deprecated public no-op keeps its documented parameter name
+    callID: string,
+    // biome-ignore lint/correctness/noUnusedFunctionParameters: deprecated public no-op keeps its documented parameter name
+    output: { output?: unknown; metadata?: unknown },
   ): void {
     // Intentionally empty — asymmetric feedback: allow is silent to the agent.
   }
@@ -417,16 +419,16 @@ export class ReviewCoordinator {
   ): Promise<void> {
     if (!this.ctx.writeAudit) return;
     const decision = result.decision;
-    const ssh = this.attempts.get(request.id)?.evidence.sshAudit;
-    const actor = this.attempts.get(request.id)?.evidence.actor;
-    const capability = this.attempts.get(request.id)?.evidence.capability;
-    const policyTrace = this.attempts.get(request.id)?.evidence.policyTrace;
-    const timings = this.attempts.get(request.id)?.evidence.timings;
-    const evidence = this.attempts.get(request.id)?.evidence
-      .evidenceCompleteness;
-    const verifiedScript = this.attempts.get(request.id)?.evidence
-      .verifiedScript;
-    const askDecisions = this.attempts.get(request.id)?.evidence.askDecisions;
+    const attempt = this.attempts.get(request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
+    const ssh = attempt.evidence.sshAudit;
+    const actor = attempt.evidence.actor;
+    const capability = attempt.evidence.capability;
+    const policyTrace = attempt.evidence.policyTrace;
+    const timings = attempt.evidence.timings;
+    const evidence = attempt.evidence.evidenceCompleteness;
+    const verifiedScript = attempt.evidence.verifiedScript;
+    const askDecisions = attempt.evidence.askDecisions;
     // Infer the source when a path did not set it explicitly (the process()
     // catch builds an escalate with no decision): a result still carrying a
     // reviewer decision is an LLM outcome; everything else without an explicit
@@ -437,8 +439,6 @@ export class ReviewCoordinator {
     const warnings: string[] = [];
     if (evidence !== undefined) warnings.push(...evidence.reasons);
     if (capability !== undefined) warnings.push(...capability.analysisWarnings);
-    const attempt = this.attempts.get(request.id);
-    invariant(attempt, ATTEMPT_REGISTERED);
     const record: ReviewAuditRecord = {
       schemaVersion: 3,
       reviewID: attempt.id,
@@ -455,7 +455,7 @@ export class ReviewCoordinator {
       actionFingerprint: `v1:${actionHash(request)}`,
       application: this.isSuperseded(request)
         ? "superseded"
-        : (this.attempts.get(request.id)?.application ?? "unknown"),
+        : attempt.application,
       decisionSchemaVersion: DECISION_SCHEMA_VERSION,
       promptVersion: REVIEWER_PROMPT_VERSION,
       decisionSource,
