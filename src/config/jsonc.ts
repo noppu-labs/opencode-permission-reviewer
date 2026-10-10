@@ -40,13 +40,13 @@ export function stripCommentsAndTrailingCommas(input: string): string {
   // trailing commas: when we encounter `}` or `]`, we check if the last real
   // character was `,` and remove it.
   let lastReal = "";
-  const append = (ch: string) => {
+  const append = (ch: string): void => {
     out += ch;
     if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") lastReal = ch;
   };
 
   while (i < len) {
-    const ch = input[i]!;
+    const ch = input.charAt(i);
     const next = input[i + 1];
 
     // String literal — copy verbatim until the closing quote.
@@ -54,10 +54,10 @@ export function stripCommentsAndTrailingCommas(input: string): string {
       append(ch);
       i += 1;
       while (i < len) {
-        const c = input[i]!;
+        const c = input.charAt(i);
         append(c);
         if (c === "\\" && i + 1 < len) {
-          append(input[i + 1]!);
+          append(input.charAt(i + 1));
           i += 2;
           continue;
         }

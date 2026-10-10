@@ -1,7 +1,11 @@
 import { DEFAULT_CONFIG } from "../src/config.ts";
+import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
 import { probeCapabilities } from "../src/opencode/capability-detection.ts";
-import type { OpenCodeClientLike, RuntimeContext } from "../src/runtime.ts";
-import { ApprovalReviewerRuntime } from "../src/runtime.ts";
+import type {
+  ClientResponse,
+  OpenCodeClientLike,
+  RuntimeContext,
+} from "../src/opencode/types.ts";
 import type {
   PermissionRequest,
   ReviewAuditRecord,
@@ -10,6 +14,12 @@ import type {
   SystemOneScores,
 } from "../src/types.ts";
 import type { ReviewUiStatus } from "../src/ui-protocol.ts";
+
+/** Narrows a value a test expects to be present; a throw fails the test with a clear message. */
+export function defined<T>(value: T | null | undefined, label = "value"): T {
+  if (value == null) throw new Error(`expected ${label} to be defined`);
+  return value;
+}
 
 export function decision(
   outcome: ReviewDecision["outcome"],
@@ -93,10 +103,8 @@ export class MockClient implements OpenCodeClientLike {
   nextTexts: string[] = [];
   promptImpl?: (
     options: unknown,
-  ) => Promise<{ data?: Record<string, unknown>; error?: unknown }>;
-  messagesImpl?: (
-    options: unknown,
-  ) => Promise<{ data?: unknown; error?: unknown }>;
+  ) => Promise<ClientResponse<Record<string, unknown>>>;
+  messagesImpl?: (options: unknown) => Promise<ClientResponse<unknown>>;
   messageData: unknown = [
     {
       info: { id: "msg_user", role: "user" },
@@ -124,10 +132,9 @@ export class MockClient implements OpenCodeClientLike {
    *  location is MCP-free; tests set an entry to exercise the fail-closed path. */
   mcpServers: Record<string, unknown> = {};
   mcpError?: unknown;
-  mcpStatusImpl?: (options: unknown) => Promise<{
-    data?: Record<string, unknown>;
-    error?: unknown;
-  }>;
+  mcpStatusImpl?: (
+    options: unknown,
+  ) => Promise<ClientResponse<Record<string, unknown>>>;
   readonly mcpStatuses: unknown[] = [];
   private sessionCounter = 0;
 
@@ -137,25 +144,29 @@ export class MockClient implements OpenCodeClientLike {
 
   constructor() {
     this.session = {
-      create: async (options: unknown) => {
+      create: async (
+        options: unknown,
+      ): Promise<ClientResponse<Record<string, unknown>>> => {
         this.creates.push(options);
         if (this.createError !== undefined) return { error: this.createError };
         this.sessionCounter += 1;
         return { data: { id: `ses_review_${this.sessionCounter}` } };
       },
-      messages: async (options: unknown) => {
+      messages: async (options: unknown): Promise<ClientResponse<unknown>> => {
         this.messageQueries.push(options);
         if (this.messagesImpl) return this.messagesImpl(options);
         if (this.messagesError !== undefined)
           return { error: this.messagesError };
         return { data: this.messageData };
       },
-      prompt: async (options: unknown) => {
+      prompt: async (
+        options: unknown,
+      ): Promise<ClientResponse<Record<string, unknown>>> => {
         this.prompts.push(options);
         if (this.promptImpl) return this.promptImpl(options);
         if (this.promptError !== undefined) return { error: this.promptError };
         if (this.nextTexts.length > 0) {
-          const text = this.nextTexts.shift()!;
+          const text = defined(this.nextTexts.shift(), "queued review text");
           return {
             data: {
               info: { id: "msg_review", role: "assistant" },
@@ -173,13 +184,13 @@ export class MockClient implements OpenCodeClientLike {
         }
         return { data: { info: { structured: this.nextStructured } } };
       },
-      delete: async (options: unknown) => {
+      delete: async (options: unknown): Promise<ClientResponse<unknown>> => {
         this.deletes.push(options);
         return { data: true };
       },
     };
     this.tool = {
-      ids: async (options?: unknown) => {
+      ids: async (options?: unknown): Promise<ClientResponse<string[]>> => {
         this.toolQueries.push(options);
         if (this.toolIdsError !== undefined)
           return { error: this.toolIdsError };
@@ -187,7 +198,9 @@ export class MockClient implements OpenCodeClientLike {
       },
     };
     this.mcp = {
-      status: async (options?: unknown) => {
+      status: async (
+        options?: unknown,
+      ): Promise<ClientResponse<Record<string, unknown>>> => {
         this.mcpStatuses.push(options);
         if (this.mcpStatusImpl) return this.mcpStatusImpl(options);
         if (this.mcpError !== undefined) return { error: this.mcpError };
@@ -196,13 +209,17 @@ export class MockClient implements OpenCodeClientLike {
     };
   }
 
-  permissionReply = async (options: unknown) => {
+  permissionReply = async (
+    options: unknown,
+  ): Promise<ClientResponse<boolean>> => {
     this.replies.push(options);
     if (this.replyError !== undefined) return { error: this.replyError };
     return { data: true };
   };
 
-  publishUiStatus = async (status: ReviewUiStatus) => {
+  publishUiStatus = async (
+    status: ReviewUiStatus,
+  ): Promise<ClientResponse<boolean>> => {
     this.uiStatuses.push(status);
     if (this.publishStatusError !== undefined)
       return { error: this.publishStatusError };
@@ -234,7 +251,7 @@ export function runtime(
     capabilities: probeCapabilities(client),
     permissionReply: client.permissionReply,
     publishUiStatus: client.publishUiStatus,
-    writeAudit: async (record) => {
+    writeAudit: async (record: ReviewAuditRecord): Promise<void> => {
       auditRecords.push(record);
     },
     directory: contextOverrides.directory ?? "/workspace/project",

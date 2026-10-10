@@ -1,6 +1,7 @@
 import { basename, resolve } from "node:path";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { invariant } from "./invariant.ts";
 import {
   analyzeScriptContent,
   type FileEvidence,
@@ -205,7 +206,8 @@ function scriptPath(
   let fileTargetPending = false;
   let optionsEnded = false;
   for (let index = interpreterIndex + 1; index < tokens.length; index += 1) {
-    const token = tokens[index]!;
+    const token = tokens[index];
+    invariant(token !== undefined, "tokens[index] is in bounds");
     if (token === "--" && !optionsEnded) {
       optionsEnded = true;
       continue;
@@ -309,8 +311,14 @@ export async function enrichLocalScriptEvidence(
 
   for (const segment of segments) {
     const command = localExecutableCommand(segment.tokens)?.tokens;
-    if (!command || !INTERPRETERS.has(basename(command[0] ?? ""))) continue;
-    const interpreter = basename(command[0]!);
+    const executable = command?.[0];
+    if (
+      command === undefined ||
+      executable === undefined ||
+      !INTERPRETERS.has(basename(executable))
+    )
+      continue;
+    const interpreter = basename(executable);
     const path = scriptPath(command, 0, interpreter);
     if (!path) continue;
     const key = `${interpreter}\0${segment.directory === undefined && !path.startsWith("/") ? `unresolved:${path}` : resolve(segment.directory ?? directory, path)}`;
@@ -325,7 +333,8 @@ export async function enrichLocalScriptEvidence(
             reason:
               segment.directoryReason ?? "working directory is unresolved",
           }
-        : await includeEvidenceFile(
+        : // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one script evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records are appended in command order
+          await includeEvidenceFile(
             path,
             segment.directory ?? directory,
             directory,

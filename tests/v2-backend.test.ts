@@ -2,15 +2,20 @@ import { expect, test } from "bun:test";
 import { existsSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
-import type { OpenCodeClient } from "@opencode/client";
+import type { McpListOutput, OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
-import type { ReviewEnvelope, ReviewerConfig } from "../src/types.ts";
+import type {
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+} from "../src/types.ts";
 import { config, decision, request } from "./helpers.ts";
 
 type Context = Parameters<Plugin.Plugin["setup"]>[0];
 type McpEditor = Parameters<Parameters<Context["mcp"]["transform"]>[0]>[0];
+type McpConfig = Parameters<McpEditor["set"]>[1];
 type McpServer = NonNullable<ReturnType<McpEditor["get"]>>;
 type Tool = {
   input: { parse(value: unknown): unknown };
@@ -22,6 +27,28 @@ type ContextEvent = {
   messages: unknown[];
   tools: Record<string, unknown>;
 };
+
+interface V2Fixture {
+  backend: V2ReviewerBackend;
+  run: (command?: string) => Promise<ReviewExecutionResult>;
+  state: () => {
+    directory: string;
+    directories: string[];
+    sessionID: string;
+    sessionIDs: string[];
+    removed: boolean;
+    messagesBySession: Map<string, string>;
+    prompts: number;
+    mcpLists: number;
+    mcpTransforms: number;
+    disposed: number;
+    setups: number;
+  };
+  mcp: () => Promise<McpListOutput["data"]>;
+  reload: () => Promise<void>;
+  unrelated: () => Promise<unknown>;
+  cleanup: () => Promise<void>;
+}
 
 function fixture(
   options: {
@@ -45,7 +72,7 @@ function fixture(
     mcpServers?: boolean | "after-first";
     pluginMcp?: boolean;
   } = {},
-) {
+): V2Fixture {
   let tool!: Tool;
   let contextHook!: (event: ContextEvent) => void;
   let toolHook!: (event: { sessionID: string; tool: string }) => void;
@@ -67,10 +94,12 @@ function fixture(
   let hostCleanup: (() => Promise<void>) | undefined;
   // Registrations made by the current bootstrap setup, which the host disposes on unload.
   const scope: Array<{ dispose(): Promise<void> }> = [];
-  const registration = (onDispose = () => void disposed++) => {
+  const registration = (
+    onDispose = (): void => void disposed++,
+  ): { dispose: () => Promise<void> } => {
     let active = true;
     const handle = {
-      dispose: async () => {
+      dispose: async (): Promise<void> => {
         if (active) onDispose();
         active = false;
       },
@@ -85,7 +114,7 @@ function fixture(
         callback: (editor: { add(definition: Tool): void }) => void,
       ) => {
         callback({
-          add: (definition) => {
+          add: (definition: Tool) => {
             tool = definition;
           },
         });
@@ -189,12 +218,12 @@ function fixture(
         const servers = new Map<string, McpServer>();
         const editor: McpEditor = {
           list: () => [...servers],
-          get: (name) => servers.get(name),
+          get: (name: string) => servers.get(name),
           // The host stores a mutable copy of each config, so the fixture does too.
-          set: (name, config) =>
+          set: (name: string, config: McpConfig) =>
             void servers.set(name, structuredClone(config) as McpServer),
           update: () => {},
-          remove: (name) => void servers.delete(name),
+          remove: (name: string) => void servers.delete(name),
         };
         // A global plugin set up earlier adds a server, as @upstash/context7-opencode does.
         if (options.pluginMcp)
@@ -329,7 +358,7 @@ function fixture(
   };
   return {
     backend,
-    run: (command = "Run printf safe") => {
+    run: (command = "Run printf safe"): Promise<ReviewExecutionResult> => {
       const attempt = new ReviewAttempt("generation_fixture", 5000);
       attempts.push(attempt);
       return backend.review(
@@ -351,8 +380,9 @@ function fixture(
       disposed,
       setups,
     }),
-    mcp: async () => (await client.mcp.list({ location: { directory } })).data,
-    reload: async () => {
+    mcp: async (): Promise<McpListOutput["data"]> =>
+      (await client.mcp.list({ location: { directory } })).data,
+    reload: async (): Promise<void> => {
       await hostCleanup?.();
       await Promise.all(scope.splice(0).map((handle) => handle.dispose()));
       const plugin = await import(pathToFileURL(`${directory}/index.js`).href);
@@ -362,7 +392,7 @@ function fixture(
       });
       setups++;
     },
-    unrelated: () => {
+    unrelated: (): Promise<unknown> => {
       const event: ContextEvent = {
         sessionID: "ses_other",
         system: [],
@@ -375,11 +405,14 @@ function fixture(
       toolHook({ sessionID: "ses_other", tool: "shell" });
       return tool.execute(decision("allow"), { sessionID: "ses_other" });
     },
-    cleanup: async () => {
+    cleanup: async (): Promise<void> => {
       for (const attempt of attempts) attempt.close("cancelled");
       await backend.dispose();
-      for (const path of directories)
-        if (existsSync(path)) await rm(path, { recursive: true });
+      await Promise.all(
+        directories.map(async (path) => {
+          if (existsSync(path)) await rm(path, { recursive: true });
+        }),
+      );
     },
   };
 }
@@ -392,6 +425,7 @@ test("isolated structured and text backends preserve scope, variant, and retenti
       retain: format === "text",
     });
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("allow");
       const state = harness.state();
       expect(state.prompts).toBe(1);
@@ -416,6 +450,7 @@ test("invalid, ambiguous, and foreign execution outputs never become approvals",
   ]) {
     const harness = fixture(options);
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("escalate");
       expect(harness.state().prompts).toBeLessThanOrEqual(3);
       expect(harness.state().removed).toBe(true);
@@ -491,6 +526,7 @@ test("isolation activation accepts normalized local plugin representations", asy
   ] as const) {
     const harness = fixture({ activationRepresentation });
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("allow");
       expect(harness.state().prompts).toBe(1);
     } finally {
@@ -508,6 +544,7 @@ test("unavailable model, unsupported format or variant, and wrong isolation fail
   ]) {
     const harness = fixture(options);
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("escalate");
       expect(harness.state().prompts).toBe(0);
       expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(

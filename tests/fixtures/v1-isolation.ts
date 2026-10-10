@@ -4,7 +4,7 @@ import type { RuntimeContext } from "../../src/opencode/types.ts";
 import { V1ReviewerBackend } from "../../src/opencode/v1/reviewer-backend.ts";
 import { config, MockClient, request } from "../helpers.ts";
 
-const base = process.argv[2];
+const base: string | undefined = process.argv[2];
 if (!base) throw new Error("Missing isolation fixture directory");
 for (let index = 0; index < 20; index++) {
   const client = new MockClient();
@@ -24,6 +24,7 @@ for (let index = 0; index < 20; index++) {
   );
   const attempt = new ReviewAttempt("fixture", 5000);
   try {
+    // biome-ignore lint/performance/noAwaitInLoops: successive reviews share one isolation base directory and the script checks each review leaves it intact before the next starts
     const result = await backend.review(
       {
         request: request(),

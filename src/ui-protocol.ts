@@ -135,7 +135,7 @@ function isDecision(value: unknown): value is ReviewDecision {
   );
 }
 
-export function parseUiStatus(value: unknown): ReviewUiStatus | undefined {
+function parseUiStatus(value: unknown): ReviewUiStatus | undefined {
   if (!isRecord(value) || value.version !== 1) return;
   if (
     typeof value.requestID !== "string" ||

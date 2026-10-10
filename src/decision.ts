@@ -50,9 +50,9 @@ export function extractJsonFromText(text: string): unknown {
   // the last thing in the response; anything before or after it rejects the
   // whole response instead of salvaging a candidate from inside.
   if (trimmed.startsWith("```")) {
-    const fenceMatch = trimmed.match(/^```[^\n]*\n?([\s\S]*?)\n?```\s*$/);
-    if (!fenceMatch) return;
-    body = fenceMatch[1]!.trim();
+    const fenceBody = trimmed.match(/^```[^\n]*\n?([\s\S]*?)\n?```\s*$/)?.[1];
+    if (fenceBody === undefined) return;
+    body = fenceBody.trim();
   }
 
   try {

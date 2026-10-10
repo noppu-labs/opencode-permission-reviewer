@@ -103,6 +103,8 @@ describe("deterministic emergency brake", () => {
     "find / -exec rm -rf {} +",
     "find / -exec rm -rf {} \\;",
     "find / -execdir rm -rf {} +",
+    // Bare `{` / `}` words after -exec are skipped to reach the executable.
+    "find / -exec { } rm -rf {} \\;",
     "sudo find / -delete",
     "sudo find / -exec rm -rf {} +",
     // Block-device destruction beyond the original mkfs/dd regexes.
@@ -198,6 +200,9 @@ describe("deterministic emergency brake", () => {
     "find . -name '*.tmp' -delete",
     "find /var/log -name '*.log' -delete",
     "find /home -exec rm -rf {} +",
+    // -exec followed only by bare braces, or by a non-rm executable.
+    "find / -exec {",
+    "find / -exec { } echo {} +",
     // Destructive tool mentioned but not executed (argument of echo/printf).
     'echo "mkfs.ext4 /dev/sda"',
     "printf 'dd if=/dev/zero of=/dev/nvme0n1'",

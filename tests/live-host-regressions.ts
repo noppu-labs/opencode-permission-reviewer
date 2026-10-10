@@ -16,13 +16,17 @@ import {
   resolveConfig,
 } from "../dist/index.js";
 import { probeCapabilities } from "../src/opencode/capability-detection.ts";
-import type { OpenCodeClientLike } from "../src/opencode/types.ts";
+import type {
+  ClientResponse,
+  OpenCodeClientLike,
+} from "../src/opencode/types.ts";
+import type { ReviewExecutionResult } from "../src/types.ts";
 import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-script.ts";
 import { decision, request } from "./helpers.ts";
 
-const root = await mkdtemp(join(tmpdir(), "reviewer-host-regression-"));
+const root: string = await mkdtemp(join(tmpdir(), "reviewer-host-regression-"));
 // Unique directory for the host output so concurrent runs never share a path.
-const logDirectory = await mkdtemp(
+const logDirectory: string = await mkdtemp(
   join(tmpdir(), "reviewer-host-regression-log-"),
 );
 const captured: Array<{
@@ -32,7 +36,7 @@ const captured: Array<{
 const provider = Bun.serve({
   hostname: "127.0.0.1",
   port: 0,
-  async fetch(req) {
+  async fetch(req: Request): Promise<Response> {
     const body = (await req.json()) as (typeof captured)[number] & {
       stream?: boolean;
     };
@@ -128,15 +132,15 @@ const portReservation = Bun.serve({
   port: 0,
   fetch: () => new Response(),
 });
-const port = portReservation.port;
+const port: number | undefined = portReservation.port;
 portReservation.stop(true);
 // Resolve the host the same way the compatibility matrix does: a pinned
 // opencode-ai binary, falling back to PATH. The
 // desktop runtime on PATH serves only the web SPA and cannot run this file.
-const hostBinary = process.env.OPENCODE_V1_1_18_32 ?? "opencode";
+const hostBinary: string = process.env.OPENCODE_V1_1_18_32 ?? "opencode";
 // The pinned host honors a known server password; the client sends it back as
 // Basic auth on every request, including the readiness poll below.
-const hostPassword =
+const hostPassword: string =
   process.env.REVIEWER_LIVE_PASSWORD ?? "synthetic-local-host-password";
 const hostHeaders: Record<string, string> =
   hostPassword === ""
@@ -176,6 +180,7 @@ try {
   const baseUrl = `http://127.0.0.1:${port}`;
   let ready = false;
   for (let attempt = 0; attempt < 200; attempt++) {
+    // biome-ignore lint/performance/noAwaitInLoops: polls the host health endpoint until it is ready or attempts run out
     ready = await fetch(`${baseUrl}/global/health`, {
       headers: hostHeaders,
       signal: AbortSignal.timeout(1000),
@@ -189,13 +194,14 @@ try {
   const sdk = createOpencodeClient({
     baseUrl,
     headers: hostHeaders,
-    fetch: (req) => fetch(req, { signal: AbortSignal.timeout(45000) }),
+    fetch: (req: Request) => fetch(req, { signal: AbortSignal.timeout(45000) }),
   });
   const session = await sdk.session.create({
     query: { directory: project },
     body: { title: "Synthetic requester" },
   });
   assert(session.data?.id);
+  const requesterSessionID = session.data.id;
   const operationalMcp = (await fetch(
     `${baseUrl}/mcp?directory=${encodeURIComponent(project)}`,
     {
@@ -230,7 +236,9 @@ try {
     worktree: project,
     reviewerDirectoryBase: join(root, "isolated"),
     capabilities: probeCapabilities(client),
-    permissionReply: async (reply: unknown) => {
+    permissionReply: async (
+      reply: unknown,
+    ): Promise<ClientResponse<boolean>> => {
       replies.push(reply);
       return { data: true };
     },
@@ -239,7 +247,7 @@ try {
     overrides = {},
     context = ctx,
     command = "printf safe",
-  ) => {
+  ): Promise<ReviewExecutionResult> => {
     replies.length = 0;
     return new ApprovalReviewerRuntime(
       context,
@@ -248,7 +256,7 @@ try {
       [],
     ).process(
       request({
-        sessionID: session.data!.id,
+        sessionID: requesterSessionID,
         metadata: { command },
         patterns: [command],
       }),
@@ -269,7 +277,7 @@ try {
   const scriptRuntime = new ApprovalReviewerRuntime(ctx, config, undefined, []);
   const scriptRequest = request({
     id: "per_verified_first",
-    sessionID: session.data!.id,
+    sessionID: requesterSessionID,
     patterns: [scriptCommand],
     metadata: { command: scriptCommand },
   });
@@ -353,7 +361,9 @@ try {
     ...client,
     session: {
       ...client.session,
-      messages: async () => ({ data: largeMessages }),
+      messages: async (): Promise<ClientResponse<unknown>> => ({
+        data: largeMessages,
+      }),
     },
   };
   assert.equal(
@@ -376,12 +386,13 @@ try {
       ...withMessages,
       session: {
         ...withMessages.session,
-        get: async () =>
+        get: async (): Promise<ClientResponse<unknown>> =>
           origin === "unknown"
             ? { error: "metadata unavailable" }
-            : { data: { id: session.data!.id, parentID: "ses_missing" } },
+            : { data: { id: requesterSessionID, parentID: "ses_missing" } },
       },
     };
+    // biome-ignore lint/performance/noAwaitInLoops: each origin reruns the review through the shared captured-messages array and MCP start log that the loop and later assertions read in order
     await run({ maxParentSessions: 0 }, { ...ctx, client: child });
     const messages = JSON.stringify(captured.at(-1)?.messages);
     assert(!messages.includes('\\"actor\\": \\"user\\"'));

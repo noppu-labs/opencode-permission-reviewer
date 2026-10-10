@@ -3,6 +3,7 @@ import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
 import type { CapabilityAssessment } from "../src/types.ts";
+import { defined } from "./helpers.ts";
 
 const DIR = "/home/user/project";
 const WT = "/home/user/project";
@@ -18,35 +19,39 @@ describe("heredoc extractor", () => {
     expect(sanitizedCommand).not.toContain("hello");
     expect(sanitizedCommand).toContain("<HEREDOC:sha256:");
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.delimiter).toBe("EOF");
-    expect(heredocs[0]!.expansionDisabled).toBe(true);
-    expect(heredocs[0]!.outputTarget).toBe("/tmp/x");
-    expect(heredocs[0]!.bodyBounded).toContain("hello");
-    expect(heredocs[0]!.bodySha256).toHaveLength(64);
-    expect(heredocs[0]!.dynamic).toBe(false);
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.delimiter).toBe("EOF");
+    expect(heredoc.expansionDisabled).toBe(true);
+    expect(heredoc.outputTarget).toBe("/tmp/x");
+    expect(heredoc.bodyBounded).toContain("hello");
+    expect(heredoc.bodySha256).toHaveLength(64);
+    expect(heredoc.dynamic).toBe(false);
   });
 
   test("unquoted delimiter enables expansion and is flagged dynamic", () => {
     const cmd = "cat <<EOF\n$HOME\nEOF";
     const { heredocs } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.expansionDisabled).toBe(false);
-    expect(heredocs[0]!.dynamic).toBe(true);
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.expansionDisabled).toBe(false);
+    expect(heredoc.dynamic).toBe(true);
   });
 
   test("unterminated heredoc is marked truncated, never throws", () => {
     const cmd = "cat <<EOF\nnever closed";
     const { heredocs } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.truncated).toBe(true);
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.truncated).toBe(true);
   });
 
   test("tab-stripped delimiter (<<-) closes on a tab-indented line", () => {
     const cmd = "cat <<-END\n\tbody\n\tEND\n";
     const { heredocs } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.delimiter).toBe("END");
-    expect(heredocs[0]!.operator).toBe("<<-");
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.delimiter).toBe("END");
+    expect(heredoc.operator).toBe("<<-");
   });
 
   test("multiple heredocs in one command are all extracted", () => {
@@ -59,10 +64,12 @@ describe("heredoc extractor", () => {
     const cmd = "cat <<A <<B\nx\nA\ny\nB\necho after";
     const { sanitizedCommand, heredocs } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(2);
-    expect(heredocs[0]!.delimiter).toBe("A");
-    expect(heredocs[0]!.bodyBounded).toBe("x\n");
-    expect(heredocs[1]!.delimiter).toBe("B");
-    expect(heredocs[1]!.bodyBounded).toBe("y\n");
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.delimiter).toBe("A");
+    expect(heredoc.bodyBounded).toBe("x\n");
+    const second = defined(heredocs[1], "heredocs[1]");
+    expect(second.delimiter).toBe("B");
+    expect(second.bodyBounded).toBe("y\n");
     expect(sanitizedCommand).not.toContain("x\n");
     expect(sanitizedCommand).toContain("echo after");
     expect((sanitizedCommand.match(/<HEREDOC:sha256:/g) ?? []).length).toBe(2);
@@ -72,8 +79,9 @@ describe("heredoc extractor", () => {
     const cmd = "cat <<'E O.F'\nbody\nE O.F\necho done";
     const { sanitizedCommand, heredocs } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.delimiter).toBe("E O.F");
-    expect(heredocs[0]!.expansionDisabled).toBe(true);
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.delimiter).toBe("E O.F");
+    expect(heredoc.expansionDisabled).toBe(true);
     expect(sanitizedCommand).not.toContain("body");
     expect(sanitizedCommand).toContain("echo done");
   });
@@ -87,8 +95,9 @@ describe("heredoc extractor", () => {
       const cmd = `cat <<${word}\nbody\n${line}\necho done`;
       const { heredocs, sanitizedCommand } = extractHeredocs(cmd);
       expect(heredocs).toHaveLength(1);
-      expect(heredocs[0]!.delimiter).toBe(line);
-      expect(heredocs[0]!.expansionDisabled).toBe(true);
+      const heredoc = defined(heredocs[0], "heredocs[0]");
+      expect(heredoc.delimiter).toBe(line);
+      expect(heredoc.expansionDisabled).toBe(true);
       expect(sanitizedCommand).not.toContain("body");
     }
   });
@@ -97,7 +106,8 @@ describe("heredoc extractor", () => {
     const cmd = "cat <<123\nbody\n123\necho done";
     const { heredocs, sanitizedCommand } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.delimiter).toBe("123");
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.delimiter).toBe("123");
     expect(sanitizedCommand).not.toContain("body");
   });
 
@@ -124,9 +134,10 @@ describe("heredoc extractor", () => {
     const { sanitizedCommand, heredocs, hasDynamicConstructs } =
       extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.delimiter).toBe("E$X");
-    expect(heredocs[0]!.truncated).toBe(false);
-    expect(heredocs[0]!.dynamic).toBe(false);
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.delimiter).toBe("E$X");
+    expect(heredoc.truncated).toBe(false);
+    expect(heredoc.dynamic).toBe(false);
     expect(hasDynamicConstructs).toBe(false);
     expect(sanitizedCommand).toContain("printf DESPUES");
     expect(sanitizedCommand).not.toContain("secret line");
@@ -147,9 +158,10 @@ describe("heredoc extractor", () => {
       const cmd = `cat <<${word}\nbody\n${line}\nprintf DESPUES`;
       const { sanitizedCommand, heredocs } = extractHeredocs(cmd);
       expect(heredocs).toHaveLength(1);
-      expect(heredocs[0]!.delimiter).toBe(line);
-      expect(heredocs[0]!.expansionDisabled).toBe(expansionDisabled);
-      expect(heredocs[0]!.truncated).toBe(false);
+      const heredoc = defined(heredocs[0], "heredocs[0]");
+      expect(heredoc.delimiter).toBe(line);
+      expect(heredoc.expansionDisabled).toBe(expansionDisabled);
+      expect(heredoc.truncated).toBe(false);
       expect(sanitizedCommand).toContain("printf DESPUES");
     }
   });
@@ -158,7 +170,8 @@ describe("heredoc extractor", () => {
     const cmd = "cat <<'EOF\nno closing quote anywhere";
     const { sanitizedCommand, heredocs } = extractHeredocs(cmd);
     expect(heredocs).toHaveLength(1);
-    expect(heredocs[0]!.truncated).toBe(true);
+    const heredoc = defined(heredocs[0], "heredocs[0]");
+    expect(heredoc.truncated).toBe(true);
     expect(sanitizedCommand).toContain("<unresolved>");
   });
 
@@ -169,7 +182,8 @@ describe("heredoc extractor", () => {
     ]) {
       const { heredocs, sanitizedCommand } = extractHeredocs(cmd);
       expect(heredocs).toHaveLength(1);
-      expect(heredocs[0]!.outputTarget).toBe("/tmp/x");
+      const heredoc = defined(heredocs[0], "heredocs[0]");
+      expect(heredoc.outputTarget).toBe("/tmp/x");
       expect(sanitizedCommand).toContain("printf DESPUES");
     }
   });
@@ -530,6 +544,7 @@ describe("capability analyzer - credential reads", () => {
 
   test.each([
     "cat $HOME/.ssh/id_rsa",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
     "cat ${SECRETS_DIR}/token",
     'echo "cat .env"',
     "cat .env.example",

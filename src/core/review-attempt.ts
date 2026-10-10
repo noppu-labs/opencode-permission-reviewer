@@ -77,7 +77,8 @@ export class ReviewAttempt {
   /** Abort the wait even if a host operation cannot cancel its transport. */
   async wait<T>(operation: Promise<T>): Promise<T> {
     return new Promise<T>((resolve, reject) => {
-      const abort = () => reject(this.terminalReason ?? this.signal.reason);
+      const abort = (): void =>
+        reject(this.terminalReason ?? this.signal.reason);
       // Observe the operation even when cancellation won before admission.
       // Its transport can still reject after this waiter has already closed.
       if (this.signal.aborted) abort();

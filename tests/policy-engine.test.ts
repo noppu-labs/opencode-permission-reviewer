@@ -177,7 +177,7 @@ function actor(profile: string): ActorContext {
   };
 }
 
-const config = DEFAULT_CONFIG;
+const config: typeof DEFAULT_CONFIG = DEFAULT_CONFIG;
 
 describe("policy engine — basics", () => {
   test("empty rules yield review route with no matches", () => {

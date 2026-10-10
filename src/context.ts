@@ -105,7 +105,7 @@ function messageSummary(
   const id = typeof message.info.id === "string" ? message.info.id : "unknown";
   const parts = message.parts
     .map((part) => {
-      if (role === "user" && isSyntheticPart(part)) return;
+      if (role === "user" && isSyntheticPart(part)) return undefined;
       return partSummary(part, maxPartChars);
     })
     .filter((part): part is string => Boolean(part));
@@ -125,8 +125,7 @@ export function buildTranscript(
   const kept: string[] = [];
   const seen = new Set<string>();
   let remaining = config.maxContextChars;
-  for (let index = selected.length - 1; index >= 0; index -= 1) {
-    const message = selected[index]!;
+  for (const message of [...selected].reverse()) {
     const parts = message.parts.filter(
       (part) =>
         part.type !== "reasoning" &&
@@ -223,8 +222,8 @@ function userIntentSummary(
 function keepMostRecentBlocks(blocks: string[], maxChars: number): string {
   const selected: string[] = [];
   let remaining = maxChars;
-  for (let index = blocks.length - 1; index >= 0 && remaining > 0; index -= 1) {
-    const block = blocks[index]!;
+  for (const block of [...blocks].reverse()) {
+    if (remaining <= 0) break;
     const separator = selected.length === 0 ? 0 : 2;
     if (remaining <= separator) break;
     const budget = remaining - separator;
@@ -596,7 +595,7 @@ function renderCapability(
 
 /** Render the actor-context prompt sections, or a single placeholder when
  *  resolution produced nothing (keeps the prompt compact for unknown actors). */
-export function actorEvidenceSections(
+function actorEvidenceSections(
   envelope: ReviewEnvelope,
   config: ReviewerConfig,
 ): string[] {

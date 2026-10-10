@@ -22,6 +22,8 @@
  * stack nor expand the result without bound.
  */
 
+import { invariant } from "./invariant.ts";
+
 export interface ShellToken {
   /** Original text including any surrounding quotes. */
   raw: string;
@@ -51,7 +53,7 @@ export interface ShellSegment {
   precededBy?: string;
 }
 
-export interface ShellRedirection {
+interface ShellRedirection {
   operator: string;
   target: string;
   quoted: boolean;
@@ -107,6 +109,15 @@ const TRANSPARENT_WRAPPERS = new Set([
   "exec",
 ]);
 
+const ENV_VALUE_OPTIONS = new Set([
+  "-u",
+  "--unset",
+  "-S",
+  "--split-string",
+  "-C",
+  "--chdir",
+]);
+
 /**
  * Wrapper short options that consume the next token as their value. Only flags
  * documented to take an argument are listed; pure flags (sudo -S/-A, unshare
@@ -132,7 +143,7 @@ const VALUE_OPTIONS: Record<string, Set<string>> = {
   ]),
   doas: new Set(["-u", "--user", "-a"]),
   pkexec: new Set(["--user", "--session"]),
-  env: new Set(["-u", "--unset", "-S", "--split-string", "-C", "--chdir"]),
+  env: ENV_VALUE_OPTIONS,
   nice: new Set(["-n", "--adjustment"]),
   time: new Set(["-o", "--output", "-f"]),
   ionice: new Set(["-c", "-n"]),
@@ -320,7 +331,7 @@ export function sshValueOption(
   if (!token.startsWith("-") || token.startsWith("--") || token.length <= 1)
     return;
   for (let position = 1; position < token.length; position += 1) {
-    const option = `-${token[position]!}`;
+    const option = `-${token.charAt(position)}`;
     if (!SSH_VALUE_OPTIONS.has(option)) continue;
     const attached = token.slice(position + 1);
     return attached ? { option, attached } : { option };
@@ -380,7 +391,7 @@ export function lexSegments(
   let lastSeparator: string | undefined;
   let outOfTokens = false;
 
-  const appendValue = (text: string, quoted: boolean) => {
+  const appendValue = (text: string, quoted: boolean): void => {
     if (text.length === 0) return;
     const last = spans.at(-1);
     if (last !== undefined && last.quoted === quoted) last.text += text;
@@ -388,7 +399,7 @@ export function lexSegments(
     value += text;
   };
 
-  const flushToken = () => {
+  const flushToken = (): void => {
     if (hasToken) {
       tokens.push({ raw, value, spans });
       value = "";
@@ -401,7 +412,7 @@ export function lexSegments(
       }
     }
   };
-  const flushSegment = (endedBy?: string) => {
+  const flushSegment = (endedBy?: string): void => {
     flushToken();
     // Paren separators survive as empty marker segments even without tokens:
     // the directory tracker needs every open/close event, and dropping the
@@ -420,7 +431,7 @@ export function lexSegments(
   let i = 0;
   while (i < command.length) {
     if (outOfTokens) break;
-    const c = command[i]!;
+    const c = command.charAt(i);
     if (inSingle) {
       raw += c;
       if (c === "'") inSingle = false;
@@ -433,7 +444,7 @@ export function lexSegments(
       if (c === '"') {
         inDouble = false;
       } else if (c === "\\" && i + 1 < command.length) {
-        const next = command[i + 1]!;
+        const next = command.charAt(i + 1);
         raw += next;
         // Inside double quotes bash only unescapes $ ` " \ and the newline
         // (a line continuation). A backslash before any other character,
@@ -513,7 +524,7 @@ export function lexSegments(
       continue;
     }
     if (c === "\\" && i + 1 < command.length) {
-      const next = command[i + 1]!;
+      const next = command.charAt(i + 1);
       raw += `\\${next}`;
       // Backslash-newline is a line continuation outside quotes: both
       // characters vanish, so `r\<newline>m` lexes as the token `rm`.
@@ -612,14 +623,19 @@ function walk(
     ...normalized.redirections,
   ];
   let i = 0;
-  while (i < tokens.length && SHELL_KEYWORDS.has(tokens[i]!.value)) i += 1;
+  while (i < tokens.length && SHELL_KEYWORDS.has(tokens[i]?.value ?? ""))
+    i += 1;
 
   // Consume leading VAR=value assignments (env-style, only at the head).
-  while (i < tokens.length && /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i]!.value))
+  while (
+    i < tokens.length &&
+    /^[A-Za-z_][A-Za-z0-9_]*=/.test(tokens[i]?.value ?? "")
+  )
     i += 1;
 
   while (i < tokens.length) {
-    const tok = tokens[i]!;
+    const tok = tokens[i];
+    invariant(tok, "tokens[i] is in bounds");
     if (tok.value === "--") {
       break;
     }
@@ -665,13 +681,15 @@ function walk(
       const valueOpts = VALUE_OPTIONS.timeout ?? new Set<string>();
       let j = i + 1;
       while (j < tokens.length) {
-        const opt = tokens[j]!.value;
+        const token = tokens[j];
+        invariant(token, "tokens[j] is in bounds");
+        const opt = token.value;
         if (opt === "--") {
           j += 1;
           break;
         }
         if (opt.startsWith("-") && opt.length > 1) {
-          j = skipWrapperOption(tokens, j, valueOpts);
+          j = skipWrapperOption(opt, j, valueOpts);
           continue;
         }
         break;
@@ -693,7 +711,9 @@ function walk(
       const valueOpts = VALUE_OPTIONS[base] ?? new Set<string>();
       i += 1;
       while (i < tokens.length) {
-        const opt = tokens[i]!.value;
+        const token = tokens[i];
+        invariant(token, "tokens[i] is in bounds");
+        const opt = token.value;
         if (opt === "--") {
           i += 1;
           break;
@@ -704,7 +724,7 @@ function walk(
           continue;
         }
         if (opt.startsWith("-") && opt.length > 1) {
-          i = skipWrapperOption(tokens, i, valueOpts);
+          i = skipWrapperOption(opt, i, valueOpts);
           continue;
         }
         break;
@@ -800,7 +820,9 @@ function walk(
       // NEWROOT token, then recurse into the real command tail.
       let j = i + 1;
       while (j < tokens.length) {
-        const opt = tokens[j]!.value;
+        const token = tokens[j];
+        invariant(token, "tokens[j] is in bounds");
+        const opt = token.value;
         if (opt === "--") {
           j += 1;
           break;
@@ -862,7 +884,7 @@ function redirectionOperatorAt(
   index: number,
 ): string | undefined {
   const value = token.value;
-  const live = (offset: number) =>
+  const live = (offset: number): string | undefined =>
     offset < value.length && !tokenCharIsQuoted(token, offset)
       ? value[offset]
       : undefined;
@@ -895,14 +917,15 @@ function nextRedirection(
  * `cmd>log`, `echo x>out`). Leaving those forms inside word tokens can hide the
  * real executable or make a redirection target look like an ordinary operand.
  */
-export function normalizeShellRedirections(tokens: ShellToken[]): {
+function normalizeShellRedirections(tokens: ShellToken[]): {
   tokens: ShellToken[];
   redirections: ShellRedirection[];
 } {
   const words: ShellToken[] = [];
   const redirections: ShellRedirection[] = [];
   for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-    const token = tokens[tokenIndex]!;
+    const token = tokens[tokenIndex];
+    invariant(token, "tokens[tokenIndex] is in bounds");
     // The heredoc extractor inserts this inert marker after removing the body.
     // It is evidence metadata, not another input redirection.
     if (/^<HEREDOC:sha256:[a-f0-9]+>$/.test(token.value)) {
@@ -951,7 +974,7 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
             Array.from(
               { length: targetToken.value.length },
               (_, index) => index,
-            ).some((index) => tokenCharIsQuoted(targetToken!, index)),
+            ).some((index) => tokenCharIsQuoted(targetToken, index)),
         });
       }
       cursor = following?.index ?? token.value.length;
@@ -961,24 +984,22 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
   return { tokens: words, redirections };
 }
 
-/** Advance past one wrapper option token at `index`, returning the index of
- *  the next token. Short-option clusters follow getopt semantics: the value
- *  of a value-taking letter is either embedded as the rest of the cluster
- *  (`-uroot`, `-un` where `u` takes the value `n`) or, when the letter is
- *  last, is the next token (`-nu root`). Misreading a cluster would swallow
- *  the wrapped command or mistake the value for the executable, so `sudo -nu
- *  root rm …` must skip the cluster and `root` together. */
+/** Short-option clusters follow getopt semantics: a value-taking letter takes
+ *  the rest of the cluster as its value (`-uroot`, `-un` where `u` takes `n`)
+ *  or, when it is last, the next token (`-nu root`).
+ *  Misreading a cluster would swallow the wrapped command or mistake the value
+ *  for the executable, so `sudo -nu root rm …` must skip the cluster and
+ *  `root` together. */
 function skipWrapperOption(
-  tokens: ShellToken[],
+  opt: string,
   index: number,
   valueOpts: Set<string>,
 ): number {
-  const opt = tokens[index]!.value;
   if (valueOpts.has(opt)) return index + 2;
   if (opt.startsWith("--")) return index + 1;
   const letters = opt.slice(1);
   for (let position = 0; position < letters.length; position += 1) {
-    if (valueOpts.has(`-${letters[position]!}`)) {
+    if (valueOpts.has(`-${letters.charAt(position)}`)) {
       return position === letters.length - 1 ? index + 2 : index + 1;
     }
   }
@@ -995,10 +1016,12 @@ function findCommandString(
   let endOfFlags = false;
   let shellCommandPending = false;
   while (i < tokens.length) {
-    const t = tokens[i]!.value;
+    const token = tokens[i];
+    invariant(token, "tokens[i] is in bounds");
+    const t = token.value;
     if (!endOfFlags && t === "--") {
       if (shellFlags && shellCommandPending) {
-        return i + 1 < tokens.length ? tokens[i + 1]!.value : null;
+        return tokens[i + 1]?.value ?? null;
       }
       endOfFlags = true;
       i += 1;
@@ -1010,11 +1033,11 @@ function findCommandString(
         i += 1;
         continue;
       }
-      return i + 1 < tokens.length ? tokens[i + 1]!.value : null;
+      return tokens[i + 1]?.value ?? null;
     }
     // Long form: `--command` (next token) or `--command=VALUE`.
     if (!endOfFlags && t === "--command") {
-      return i + 1 < tokens.length ? tokens[i + 1]!.value : null;
+      return tokens[i + 1]?.value ?? null;
     }
     if (!endOfFlags && t.startsWith("--command=")) {
       return t.slice("--command=".length);
@@ -1059,7 +1082,7 @@ function findCommandString(
         continue;
       }
       if (cPosition === t.length - 1) {
-        return i + 1 < tokens.length ? tokens[i + 1]!.value : null;
+        return tokens[i + 1]?.value ?? null;
       }
       return t.slice(cPosition + 1);
     }
@@ -1079,7 +1102,9 @@ function findEnvSCommand(
   start: number,
 ): { script: string; tailIndex: number } | null {
   for (let i = start; i < tokens.length; i += 1) {
-    const value = tokens[i]!.value;
+    const token = tokens[i];
+    invariant(token, "tokens[i] is in bounds");
+    const value = token.value;
     if (value === "--") return null;
     if (value.startsWith("--")) {
       if (value === "--split-string") {
@@ -1093,13 +1118,13 @@ function findEnvSCommand(
           tailIndex: i + 1,
         };
       }
-      if (VALUE_OPTIONS.env!.has(value)) i += 1;
+      if (ENV_VALUE_OPTIONS.has(value)) i += 1;
       continue;
     }
     if (!value.startsWith("-") || value.length <= 1) return null;
     const letters = value.slice(1);
     for (let position = 0; position < letters.length; position += 1) {
-      const letter = letters[position]!;
+      const letter = letters.charAt(position);
       if (letter === "S") {
         if (position === letters.length - 1) {
           const script = tokens[i + 1];
@@ -1124,7 +1149,9 @@ function consumeSshRemote(tokens: ShellToken[], start: number): ShellToken[] {
   let i = start;
   let hostSeen = false;
   while (i < tokens.length) {
-    const t = tokens[i]!.value;
+    const token = tokens[i];
+    invariant(token, "tokens[i] is in bounds");
+    const t = token.value;
     if (t === "--") {
       i += 1;
       break;

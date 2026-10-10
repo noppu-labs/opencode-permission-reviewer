@@ -1,12 +1,12 @@
-# gitleaks (pre-commit hook). Default rules, plus the synthetic credentials the redaction tests
+# gitleaks (pre-commit hook). Default rules, plus the synthetic credentials the tests
 # feed to the redactor on purpose.
 [extend]
 useDefault = true
 
 [[allowlists]]
-description = "Synthetic credentials in the redaction tests (CONTRIBUTING requires synthetic fixtures)"
+description = "Synthetic credentials shared by the tests, kept in one fixture file (CONTRIBUTING requires synthetic fixtures)"
 targetRules = ["generic-api-key"]
 # Both conditions must hold: only this file, and only these exact fixture values.
 condition = "AND"
-paths = ['''^tests/redact\.test\.ts$''']
-regexes = ['''^(abcdefgh1234567890|sksynthetic1234567890abcdef(1234567890)?)$''']
+paths = ['''^tests/fixtures/synthetic-secrets\.ts$''']
+regexes = ['''^(sksynthetic1234567890abcdef(1234567890)?)$''']

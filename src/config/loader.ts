@@ -18,11 +18,11 @@ import type { PolicyRule, ReviewerConfig } from "../types.ts";
 import { parseJsoncStrict } from "./jsonc.ts";
 import type { InlineOptionsTrust } from "./sources.ts";
 
-const O_RDONLY =
+const O_RDONLY: number =
   typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0;
-const O_NOFOLLOW =
+const O_NOFOLLOW: number =
   typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0;
-const O_NONBLOCK =
+const O_NONBLOCK: number =
   typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0;
 
 /** Cap on a single config file read: the project layer is repository-controlled
@@ -391,7 +391,7 @@ export function loadResolvedConfig(
 /** Whether the key is present in the layer (a `null`/wrong-type value must be
  *  handled as a present-but-invalid override, never silently forwarded). */
 function hasKey(object: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(object, key);
+  return Object.hasOwn(object, key);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

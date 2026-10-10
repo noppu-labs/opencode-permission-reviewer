@@ -7,6 +7,7 @@ import { parseDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
+import type { ClientResponse } from "../src/opencode/types.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import {
   createUiStatus,
@@ -14,7 +15,7 @@ import {
   encodeUiStatus,
 } from "../src/ui-protocol.ts";
 import { ReviewUiState } from "../src/ui-state.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -28,7 +29,9 @@ describe("stress and adversarial robustness", () => {
   test("processes 1,000 concurrent independent reviews exactly once", async () => {
     const client = new MockClient();
     let index = 0;
-    client.promptImpl = async () => {
+    client.promptImpl = async (): Promise<
+      ClientResponse<Record<string, unknown>>
+    > => {
       const current = index;
       index += 1;
       return {
@@ -135,7 +138,7 @@ describe("stress and adversarial robustness", () => {
       });
       const decoded = decodeUiStatus(encodeUiStatus(status));
       expect(decoded).toBeDefined();
-      expect(state.apply(decoded!)).toBe(true);
+      expect(state.apply(defined(decoded, "decoded status"))).toBe(true);
     }
     expect(state.all()).toHaveLength(10_000);
     expect(
@@ -170,7 +173,7 @@ describe("stress and adversarial robustness", () => {
     );
     expect(results).toHaveLength(2_000);
     for (let item = 0; item < results.length; item += 1) {
-      const result = results[item]!;
+      const result = defined(results[item], "result");
       expect(result.audit).toHaveLength(1);
       expect(result.audit[0]?.destination).toContain(
         item % 2 === 0 ? "192.0.2." : "198.51.100.",
@@ -268,7 +271,10 @@ describe("stress and adversarial robustness", () => {
       );
       for (let item = 0; item < results.length; item += 1) {
         const record = JSON.parse(
-          results[item]!.text.replace(/^GIT_STATE_ANALYSIS\n/, ""),
+          defined(results[item], "result").text.replace(
+            /^GIT_STATE_ANALYSIS\n/,
+            "",
+          ),
         ) as {
           status?: string;
           branch?: string;

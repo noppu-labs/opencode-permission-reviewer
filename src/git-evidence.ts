@@ -4,6 +4,7 @@ import { basename, resolve } from "node:path";
 import { promisify } from "node:util";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { invariant } from "./invariant.ts";
 import {
   approvedEvidenceRoots,
   isWithinRoot,
@@ -115,7 +116,8 @@ function networkOperand(
   let operand: string | undefined;
   let repoOverride: string | undefined;
   for (let cursor = index + 1; cursor < tokens.length; cursor += 1) {
-    const token = tokens[cursor]!;
+    const token = tokens[cursor];
+    invariant(token !== undefined, "tokens[cursor] is in bounds");
     if (token === "--") {
       afterSeparator = true;
       continue;
@@ -143,7 +145,8 @@ function gitSubcommand(
 ): { command?: string; index: number } {
   let index = gitIndex + 1;
   while (index < tokens.length) {
-    const token = tokens[index]!;
+    const token = tokens[index];
+    invariant(token !== undefined, "tokens[index] is in bounds");
     if (
       token === "-C" ||
       token === "-c" ||
@@ -165,8 +168,7 @@ function gitSubcommand(
 function positionalAfter(tokens: string[], index: number): string[] {
   const values: string[] = [];
   let afterSeparator = false;
-  for (let cursor = index + 1; cursor < tokens.length; cursor += 1) {
-    const token = tokens[cursor]!;
+  for (const token of tokens.slice(index + 1)) {
     if (token === "--") {
       afterSeparator = true;
       continue;
@@ -197,7 +199,11 @@ function gitExecutionDirectory(
     };
   let directory = initialDirectory;
   for (let index = gitIndex + 1; index < subcommandIndex; index += 1) {
-    const token = tokens[index]!;
+    const token = tokens[index];
+    invariant(
+      token !== undefined,
+      "tokens[index] is in bounds below the subcommand index",
+    );
     if (
       token.startsWith("--git-dir") ||
       token.startsWith("--work-tree") ||
@@ -293,7 +299,8 @@ function plannedActions(command: string, directory: string): PlannedGitActions {
       const args = tokens.slice(index + 1);
       const bases: string[] = [];
       for (let cursor = 0; cursor < args.length; cursor++) {
-        const arg = args[cursor]!;
+        const arg = args[cursor];
+        invariant(arg !== undefined, "args[cursor] is in bounds");
         if (
           [
             "--onto",
@@ -312,12 +319,14 @@ function plannedActions(command: string, directory: string): PlannedGitActions {
           bases.push(arg);
         }
       }
+      const [base] = bases;
       if (
         !args.includes("--root") &&
         bases.length === 1 &&
-        !/[$`*?{}<>]/.test(bases[0]!)
+        base !== undefined &&
+        !/[$`*?{}<>]/.test(base)
       )
-        result.rewriteBases.push(bases[0]!);
+        result.rewriteBases.push(base);
     }
     if (subcommand === "commit") result.commit = true;
     if (subcommand === "add")
@@ -382,8 +391,13 @@ function plannedActions(command: string, directory: string): PlannedGitActions {
       }
     }
   }
-  if (executionDirectories.size === 1 && directoryReasons.size === 0) {
-    result.executionDirectory = [...executionDirectories][0]!;
+  const [onlyDirectory] = executionDirectories;
+  if (
+    executionDirectories.size === 1 &&
+    directoryReasons.size === 0 &&
+    onlyDirectory !== undefined
+  ) {
+    result.executionDirectory = onlyDirectory;
   } else if (executionDirectories.size > 1) {
     result.directoryReason =
       "compound command targets multiple Git working directories";
@@ -658,6 +672,11 @@ interface DefaultRemoteRecord {
 const MAX_RESOLVED_REMOTES = 5;
 const MAX_PUSH_URLS = 5;
 
+type ConfiguredRemoteUrls = Pick<
+  RemoteTargetRecord,
+  "pushUrls" | "fetchUrl" | "note"
+>;
+
 /** Push affects every configured pushurl (or every url when no pushurl
  *  exists), so resolution uses `get-url --push --all`: reporting only the
  *  first URL would hide a real destination. Fetch contacts only the first
@@ -666,11 +685,7 @@ async function resolveConfiguredRemote(
   directory: string,
   name: string,
   neutralization: string[],
-): Promise<{
-  pushUrls?: string[];
-  fetchUrl?: string | undefined;
-  note?: string;
-}> {
+): Promise<ConfiguredRemoteUrls> {
   const push = await runGit(
     directory,
     ["remote", "get-url", "--push", "--all", name],
@@ -708,23 +723,34 @@ async function resolveConfiguredRemote(
   };
 }
 
-async function literalUrlRewrites(directory: string, neutralization: string[]) {
+interface UrlRewrite {
+  base: string;
+  prefix: string;
+  push: boolean;
+}
+
+async function literalUrlRewrites(
+  directory: string,
+  neutralization: string[],
+): Promise<UrlRewrite[] | undefined> {
   const config = await runGit(
     directory,
     ["config", "--null", "--list"],
     neutralization,
   );
   if (!config.ok) return undefined;
-  const rewrites: Array<{ base: string; prefix: string; push: boolean }> = [];
+  const rewrites: UrlRewrite[] = [];
   for (const entry of config.stdout.split("\0")) {
     const separator = entry.indexOf("\n");
     const key = entry.slice(0, separator);
     const match = key.match(/^url\.(.+)\.(pushinsteadof|insteadof)$/i);
-    if (match)
+    const base = match?.[1];
+    const kind = match?.[2];
+    if (base !== undefined && kind !== undefined)
       rewrites.push({
-        base: match[1]!,
+        base,
         prefix: entry.slice(separator + 1),
-        push: match[2]!.toLowerCase() === "pushinsteadof",
+        push: kind.toLowerCase() === "pushinsteadof",
       });
   }
   return rewrites;
@@ -732,10 +758,10 @@ async function literalUrlRewrites(directory: string, neutralization: string[]) {
 
 function expandLiteralUrl(
   input: string,
-  rewrites: NonNullable<Awaited<ReturnType<typeof literalUrlRewrites>>>,
+  rewrites: UrlRewrite[],
   push: boolean,
-) {
-  const match = (pushOnly: boolean) => {
+): string | undefined {
+  const match = (pushOnly: boolean): UrlRewrite | "ambiguous" | undefined => {
     const matches = rewrites
       .filter(
         (rewrite) =>
@@ -771,23 +797,19 @@ async function resolveRemoteTargets(
   const seen = new Set<string>();
   // Resolution is memoized per remote: repeated operands and default-remote
   // fallbacks reuse one lookup instead of re-running git.
-  const resolvedRemotes = new Map<
-    string,
-    Awaited<ReturnType<typeof resolveConfiguredRemote>>
-  >();
+  const resolvedRemotes = new Map<string, ConfiguredRemoteUrls>();
   const rewrites = planned.remoteCandidates.some(
     (input) => remoteOperandKind(input) === "literal",
   )
     ? await literalUrlRewrites(directory, neutralization)
     : undefined;
-  const resolveRemote = async (name: string) => {
-    if (!resolvedRemotes.has(name)) {
-      resolvedRemotes.set(
-        name,
-        await resolveConfiguredRemote(directory, name, neutralization),
-      );
+  const resolveRemote = async (name: string): Promise<ConfiguredRemoteUrls> => {
+    let resolved = resolvedRemotes.get(name);
+    if (resolved === undefined) {
+      resolved = await resolveConfiguredRemote(directory, name, neutralization);
+      resolvedRemotes.set(name, resolved);
     }
-    return resolvedRemotes.get(name)!;
+    return resolved;
   };
   for (const input of planned.remoteCandidates) {
     if (targets.length >= MAX_RESOLVED_REMOTES) break;
@@ -821,39 +843,41 @@ async function resolveRemoteTargets(
             }
           : {}),
       };
+      const onlyPushUrl =
+        literal.pushUrls?.length === 1 ? literal.pushUrls[0] : undefined;
       const pushIdentity =
-        identity !== undefined && literal.pushUrls?.length === 1
-          ? repositoryIdentity(literal.pushUrls[0]!)
+        identity !== undefined && onlyPushUrl !== undefined
+          ? repositoryIdentity(onlyPushUrl)
           : undefined;
       const fetchIdentity =
         identity !== undefined && literal.fetchUrl !== undefined
           ? repositoryIdentity(literal.fetchUrl)
           : undefined;
-      const matches =
+      const remoteRoles =
         pushIdentity === undefined && fetchIdentity === undefined
           ? []
-          : (
-              await Promise.all(
-                configuredNames
-                  .slice(0, MAX_RESOLVED_REMOTES)
-                  .map(async (name) => {
-                    const urls = await resolveRemote(name);
-                    return {
-                      name,
-                      push:
-                        pushIdentity !== undefined &&
-                        (urls.pushUrls?.some(
-                          (url) => repositoryIdentity(url) === pushIdentity,
-                        ) ??
-                          false),
-                      fetch:
-                        fetchIdentity !== undefined &&
-                        urls.fetchUrl !== undefined &&
-                        repositoryIdentity(urls.fetchUrl) === fetchIdentity,
-                    };
-                  }),
-              )
-            ).filter((match) => match.push || match.fetch);
+          : // biome-ignore lint/performance/noAwaitInLoops: the outer candidate loop stays sequential: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
+            await Promise.all(
+              configuredNames
+                .slice(0, MAX_RESOLVED_REMOTES)
+                .map(async (name) => {
+                  const urls = await resolveRemote(name);
+                  return {
+                    name,
+                    push:
+                      pushIdentity !== undefined &&
+                      (urls.pushUrls?.some(
+                        (url) => repositoryIdentity(url) === pushIdentity,
+                      ) ??
+                        false),
+                    fetch:
+                      fetchIdentity !== undefined &&
+                      urls.fetchUrl !== undefined &&
+                      repositoryIdentity(urls.fetchUrl) === fetchIdentity,
+                  };
+                }),
+            );
+      const matches = remoteRoles.filter((match) => match.push || match.fetch);
       targets.push({
         input: bounded,
         kind: "literal",
@@ -890,6 +914,7 @@ async function resolveRemoteTargets(
       continue;
     }
     defaults.push(
+      // biome-ignore lint/performance/noAwaitInLoops: each default-remote annotation spawns git config lookups through the shared resolvedRemotes memo, which is filled only after git returns; one annotation at a time reuses earlier lookups instead of spawning duplicates
       await resolveDefaultRemote(
         directory,
         annotation,
@@ -923,9 +948,7 @@ async function resolveDefaultRemote(
   annotation: string,
   configuredNames: string[],
   neutralization: string[],
-  resolveRemote: (
-    name: string,
-  ) => Promise<Awaited<ReturnType<typeof resolveConfiguredRemote>>>,
+  resolveRemote: (name: string) => Promise<ConfiguredRemoteUrls>,
 ): Promise<DefaultRemoteRecord> {
   const branch = await runGit(
     directory,
@@ -959,6 +982,7 @@ async function resolveDefaultRemote(
           },
         ];
   for (const step of configChain) {
+    // biome-ignore lint/performance/noAwaitInLoops: git's own precedence order (pushRemote, then remote.pushDefault, then branch remote); returns at the first key that is set, so later keys must not be spawned before an earlier one is ruled out
     const value = await runGit(
       directory,
       ["config", "--get", step.key],
@@ -1066,11 +1090,25 @@ function parseStatus(stdout: string): {
   return { branch, staged, unstaged, untracked, unmerged };
 }
 
+type RewriteEvidence =
+  | { status: "unavailable"; reason: string }
+  | {
+      status: "available";
+      base: string;
+      head: string;
+      commitsInRange: number;
+      commitsAbsentFromRemoteTrackingRefs: number;
+      commitsPresentInRemoteTrackingRefs: number;
+      remoteTrackingRefs: { values: string[]; omitted: number };
+      upstream?: string;
+      note: string;
+    };
+
 async function rewriteEvidence(
   directory: string,
   planned: PlannedGitActions,
   neutralization: string[],
-) {
+): Promise<RewriteEvidence | undefined> {
   if (!planned.commands.includes("rebase")) return undefined;
   const base = planned.rewriteBases[0];
   if (base === undefined || planned.rewriteBases.length !== 1)

@@ -16,17 +16,17 @@ import type { ReviewAuditRecord, ReviewerConfig } from "./types.ts";
 export const DEFAULT_AUDIT_PATH =
   "~/.local/share/opencode/permission-reviewer-audit.jsonl";
 
-const O_RDONLY =
+const O_RDONLY: number =
   typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0;
-const O_WRONLY =
+const O_WRONLY: number =
   typeof fsConstants.O_WRONLY === "number" ? fsConstants.O_WRONLY : 0;
-const O_CREAT =
+const O_CREAT: number =
   typeof fsConstants.O_CREAT === "number" ? fsConstants.O_CREAT : 0;
-const O_APPEND =
+const O_APPEND: number =
   typeof fsConstants.O_APPEND === "number" ? fsConstants.O_APPEND : 0;
-const O_NOFOLLOW =
+const O_NOFOLLOW: number =
   typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0;
-const O_NONBLOCK =
+const O_NONBLOCK: number =
   typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0;
 
 export function expandHome(path: string): string {
@@ -51,7 +51,7 @@ const REQUIRED_AUDIT_FIELDS = [
   "reason",
 ] as const;
 
-export interface AuditMissingFields {
+interface AuditMissingFields {
   lineNo: number;
   missing: string[];
 }
@@ -186,11 +186,11 @@ export function readAuditSummary(path: string): AuditSummary {
   // the summarized window, not the whole file.
   summary.totalLines = lines.length;
   const actorCounts = new Map<string, number>();
-  for (let i = 0; i < lines.length; i++) {
+  for (const [i, line] of lines.entries()) {
     const lineNo = i + 1;
     let parsed: unknown;
     try {
-      parsed = JSON.parse(lines[i]!);
+      parsed = JSON.parse(line);
     } catch {
       summary.invalidLines++;
       continue;
@@ -303,7 +303,7 @@ export function createAuditWriter(
   if (!config.audit) return;
   const path = expandHome(config.auditPath ?? DEFAULT_AUDIT_PATH);
   let ready: Promise<void> | undefined;
-  return async (record) => {
+  return async (record: ReviewAuditRecord): Promise<void> => {
     try {
       ready ??= mkdir(dirname(path), { recursive: true }).then(() => {});
       await ready;

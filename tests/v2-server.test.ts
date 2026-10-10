@@ -6,9 +6,28 @@ import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
 import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
 import type { ReviewExecutionResult } from "../src/types.ts";
-import { config, decision, systemOneScores } from "./helpers.ts";
+import { config, decision, defined, systemOneScores } from "./helpers.ts";
 
 type Input = Parameters<typeof normalizeV2Permission>[0] & { message?: string };
+type ServerRpc = {
+  identity(): Promise<string>;
+  status(): Promise<Record<string, unknown>>;
+  snapshot(): Promise<{ reviews: unknown[] }>;
+};
+interface ServerFixture {
+  evaluate: (value: Input) => Promise<void>;
+  input: (sessionID?: string) => Input;
+  rpc: ServerRpc;
+  directory: string;
+  reviews: () => number;
+  registrationDisposals: () => number;
+  endEvents: () => void;
+  event: (sessionID: string, location?: string) => void;
+  tool: (name: string, event: unknown) => void;
+  dispose: () => Promise<void>;
+  records: () => Promise<Record<string, unknown>[]>;
+  cleanup: () => Promise<void>;
+}
 
 async function fixture(
   options: {
@@ -18,23 +37,19 @@ async function fixture(
     budget?: number;
     hostVersion?: string;
   } = {},
-) {
+): Promise<ServerFixture> {
   const directory = await mkdtemp(join(tmpdir(), "reviewer-server-contract-"));
   const auditPath = join(directory, "audit.jsonl");
   let evaluate!: (input: Input) => Promise<void>;
-  let rpc!: {
-    identity(): Promise<string>;
-    status(): Promise<Record<string, unknown>>;
-    snapshot(): Promise<{ reviews: unknown[] }>;
-  };
+  let rpc!: ServerRpc;
   let resume: (() => void) | undefined;
   const events: OpenCodeEvent[] = [];
   let ended = false;
   let reviews = 0;
   let registrationDisposals = 0;
   const toolHooks = new Map<string, (event: unknown) => void>();
-  const registration = () => ({
-    dispose: async () => {
+  const registration = (): { dispose: () => Promise<void> } => ({
+    dispose: async (): Promise<void> => {
       registrationDisposals++;
     },
   });
@@ -45,7 +60,10 @@ async function fixture(
     rpc: {
       register: async (_definition: unknown, handlers: typeof rpc) => {
         rpc = handlers;
-        return { events: { emit: async () => {} }, ...registration() };
+        return {
+          events: { emit: async (): Promise<void> => {} },
+          ...registration(),
+        };
       },
     },
     tool: {
@@ -69,15 +87,17 @@ async function fixture(
     },
     event: {
       subscribe: async function* ({ signal }: { signal: AbortSignal }) {
-        const wake = () => resume?.();
+        const wake = (): void => resume?.();
         signal.addEventListener("abort", wake);
         try {
           while (!signal.aborted && !ended) {
-            if (events.length) yield events.shift()!;
-            else
+            if (events.length) yield defined(events.shift(), "queued event");
+            else {
+              // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
               await new Promise<void>((resolve) => {
                 resume = resolve;
               });
+            }
           }
         } finally {
           signal.removeEventListener("abort", wake);
@@ -136,17 +156,17 @@ async function fixture(
     effect: "ask",
   });
   return {
-    evaluate: (value: Input) => evaluate(value),
+    evaluate: (value: Input): Promise<void> => evaluate(value),
     input,
     rpc,
     directory,
-    reviews: () => reviews,
-    registrationDisposals: () => registrationDisposals,
-    endEvents: () => {
+    reviews: (): number => reviews,
+    registrationDisposals: (): number => registrationDisposals,
+    endEvents: (): void => {
       ended = true;
       resume?.();
     },
-    event: (sessionID: string, location = directory) => {
+    event: (sessionID: string, location = directory): void => {
       events.push({
         type: "session.execution.interrupted",
         data: { sessionID },
@@ -154,14 +174,14 @@ async function fixture(
       } as OpenCodeEvent);
       resume?.();
     },
-    tool: (name: string, event: unknown) => toolHooks.get(name)?.(event),
+    tool: (name: string, event: unknown): void => toolHooks.get(name)?.(event),
     dispose,
-    records: async () =>
+    records: async (): Promise<Record<string, unknown>[]> =>
       (await readFile(auditPath, "utf8"))
         .trim()
         .split("\n")
         .map((line) => JSON.parse(line) as Record<string, unknown>),
-    cleanup: async () => {
+    cleanup: async (): Promise<void> => {
       await dispose();
       await rm(directory, { recursive: true, force: true });
     },
@@ -170,6 +190,7 @@ async function fixture(
 
 test("server maps decisions without elevating existing allow or deny and reports application independently", async () => {
   for (const kind of ["allow", "deny", "escalate"] as const) {
+    // biome-ignore lint/performance/noAwaitInLoops: each case builds a full server fixture (temp dir, audit file, event stream) and asserts exact review counts, so cases run in order with cleanup before the next
     const harness = await fixture({
       result: {
         kind,
@@ -181,6 +202,7 @@ test("server maps decisions without elevating existing allow or deny and reports
     try {
       for (const effect of ["allow", "deny"] as const) {
         const unchanged = { ...harness.input(), effect };
+        // biome-ignore lint/performance/noAwaitInLoops: sequential steps on one server harness: each evaluation is checked before the next runs against the same review state
         await harness.evaluate(unchanged);
         expect(unchanged.effect).toBe(effect);
       }
@@ -221,6 +243,7 @@ test("deadline, interrupted session, event loss, and shutdown suppress late appr
     const delay = new Promise<void>((resolve) => {
       release = resolve;
     });
+    // biome-ignore lint/performance/noAwaitInLoops: each interruption case builds its own server fixture with a delayed pending review and timed events; run in order so the sleeps do not overlap
     const harness = await fixture({
       delay,
       budget: interruption === "deadline" ? 20 : 5000,
@@ -228,6 +251,7 @@ test("deadline, interrupted session, event loss, and shutdown suppress late appr
     try {
       const input = harness.input();
       const work = harness.evaluate(input);
+      // biome-ignore lint/performance/noAwaitInLoops: polls until the delayed review has started
       while (harness.reviews() === 0) await Bun.sleep(1);
       harness.event("ses_main", "/another-location");
       await Bun.sleep(1);
@@ -259,6 +283,7 @@ test("overload stays bounded and independent sessions keep independent outcomes"
       harness.input(`ses_${index}`),
     );
     const work = Promise.all(inputs.map(harness.evaluate));
+    // biome-ignore lint/performance/noAwaitInLoops: polls until all 32 reviews have started
     while (harness.reviews() < 32) await Bun.sleep(1);
     const overload = harness.input("ses_overload");
     await harness.evaluate(overload);
@@ -279,6 +304,7 @@ test("overload stays bounded and independent sessions keep independent outcomes"
 
 test("v2 host setup enforces the supported range and reports it", async () => {
   for (const version of ["2.0.3", "2.0.4", "2.0.11", "2.0.12", "2.1.0"]) {
+    // biome-ignore lint/performance/noAwaitInLoops: each version builds a full server fixture and cleans it up before the next
     const harness = await fixture({ hostVersion: version });
     try {
       expect(await harness.rpc.status()).toMatchObject({
@@ -289,26 +315,30 @@ test("v2 host setup enforces the supported range and reports it", async () => {
       await harness.cleanup();
     }
   }
-  for (const version of ["2.0.2", "3.0.0", "2.0.3-beta.1"]) {
-    const ctx = {
-      app: { version },
-      location: { directory: "/tmp", project: { directory: "/tmp" } },
-    } as unknown as Parameters<typeof setupWithServices>[0];
-    const services = {
-      loadConfig: () => {
-        throw new Error("setup must reject the host before loading config");
-      },
-      connect: () => {
-        throw new Error("setup must reject the host before connecting");
-      },
-      createBackend: () => {
-        throw new Error("setup must reject the host before creating a backend");
-      },
-    } as unknown as Parameters<typeof setupWithServices>[1];
-    await expect(setupWithServices(ctx, services)).rejects.toThrow(
-      `Unsupported OpenCode V2 host ${version}; supported range is >=2.0.3 <3`,
-    );
-  }
+  await Promise.all(
+    ["2.0.2", "3.0.0", "2.0.3-beta.1"].map(async (version) => {
+      const ctx = {
+        app: { version },
+        location: { directory: "/tmp", project: { directory: "/tmp" } },
+      } as unknown as Parameters<typeof setupWithServices>[0];
+      const services = {
+        loadConfig: () => {
+          throw new Error("setup must reject the host before loading config");
+        },
+        connect: () => {
+          throw new Error("setup must reject the host before connecting");
+        },
+        createBackend: () => {
+          throw new Error(
+            "setup must reject the host before creating a backend",
+          );
+        },
+      } as unknown as Parameters<typeof setupWithServices>[1];
+      await expect(setupWithServices(ctx, services)).rejects.toThrow(
+        `Unsupported OpenCode V2 host ${version}; supported range is >=2.0.3 <3`,
+      );
+    }),
+  );
 });
 
 test("action mutations and incomplete evidence cannot reuse an approval, and connection failures stay visible", async () => {
@@ -321,6 +351,7 @@ test("action mutations and incomplete evidence cannot reuse an approval, and con
   try {
     const input = changing.input();
     const work = changing.evaluate(input);
+    // biome-ignore lint/performance/noAwaitInLoops: polls until the delayed review has started
     while (changing.reviews() === 0) await Bun.sleep(1);
     Reflect.set(input, "metadata", { command: "printf changed" });
     release();
@@ -332,6 +363,7 @@ test("action mutations and incomplete evidence cannot reuse an approval, and con
     await changing.cleanup();
   }
   for (const connectionError of [false, true]) {
+    // biome-ignore lint/performance/noAwaitInLoops: each case builds a server fixture (own temp dir and audit file) and cleans it up before the next
     const harness = await fixture({ connectionError });
     try {
       const input = harness.input();
@@ -405,6 +437,7 @@ test("v2 audit records carry Jev's scores only when the reviewer result has them
     },
   ];
   for (const { result, expected } of cases) {
+    // biome-ignore lint/performance/noAwaitInLoops: each case builds a server fixture, disposes it and reads its audit file back; run in order
     const harness = await fixture({ result });
     try {
       await harness.evaluate(harness.input());
@@ -445,6 +478,7 @@ test("v2 failure-safe overrides keep Jev's scores from the replaced result", asy
   try {
     const input = harness.input();
     const work = harness.evaluate(input);
+    // biome-ignore lint/performance/noAwaitInLoops: polls until the delayed review has started
     while (harness.reviews() === 0) await Bun.sleep(1);
     Reflect.set(input, "metadata", { command: "printf changed" });
     release();

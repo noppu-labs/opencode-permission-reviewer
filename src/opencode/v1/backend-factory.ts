@@ -45,15 +45,19 @@ export function createV1ReviewerBackend(
   const primary = new SystemOneReviewerBackend(
     config,
     secondary
-      ? (envelope, attempt) => secondary.review(envelope, attempt)
+      ? (
+          envelope: ReviewEnvelope,
+          attempt: ReviewAttempt,
+        ): Promise<ReviewExecutionResult> => secondary.review(envelope, attempt)
       : undefined,
     secondaryConfig?.model,
     undefined,
     recordReviewerMs,
   );
   return {
-    owns: (sessionID) => secondary?.owns(sessionID) ?? false,
-    review: (envelope, attempt) => primary.review(envelope, attempt),
+    owns: (sessionID: string) => secondary?.owns(sessionID) ?? false,
+    review: (envelope: ReviewEnvelope, attempt: ReviewAttempt) =>
+      primary.review(envelope, attempt),
     waitForIdle: async () => {
       await Promise.all([primary.waitForIdle(), secondary?.waitForIdle()]);
     },

@@ -19,7 +19,7 @@
  * The marker is stable (idempotent) thanks to `(?!\[REDACTED)` guards.
  */
 
-const REDACT = (type: string) => `[REDACTED:${type}]`;
+const REDACT = (type: string): string => `[REDACTED:${type}]`;
 
 // Order matters: run specific token formats first, then URL userinfo, then
 // auth headers, then generic credential assignments. Each value-level rule
@@ -87,13 +87,13 @@ const RULES: ReadonlyArray<{
   // have no URL scheme and stay untouched.
   {
     re: /\b([a-z][a-z0-9+.-]*:\/\/)([^\s/@[\]]+)(?::[^\s/@[\]]*)?@/gi,
-    replace: (_m, g) => `${g[0] ?? ""}${REDACT("userinfo")}@`,
+    replace: (_m: string, g: string[]) => `${g[0] ?? ""}${REDACT("userinfo")}@`,
   },
   // Auth-scheme prefixes (Bearer / Basic / Token) followed by a token.
   // Case-insensitive so lowercase "bearer", "basic", "token" are caught too.
   {
     re: /\b(Bearer|Basic|Token)\s+(?!\[REDACTED)[A-Za-z0-9._~+/=-]{8,}/gi,
-    replace: (_m, g) => {
+    replace: (_m: string, g: string[]) => {
       const scheme = g[0] ?? "";
       return `${scheme} ${REDACT(scheme.toLowerCase())}`;
     },
@@ -101,13 +101,13 @@ const RULES: ReadonlyArray<{
   // Cookie headers.
   {
     re: /(^|[^A-Za-z0-9_])(Cookie|Set-Cookie)(\s*[:=]\s*)(["']?)(?!\[REDACTED)([A-Za-z0-9._~+/%=-]{8,})(["']?)/g,
-    replace: (_m, g) =>
+    replace: (_m: string, g: string[]) =>
       `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${g[3] ?? ""}${REDACT("credential")}${g[5] ?? ""}`,
   },
   // Authorization-style headers and JSON/YAML keys.
   {
     re: /(^|[^A-Za-z0-9_])(authorization|proxy-authorization|x-api-key|x-auth-token)(\s*[:=]\s*)(["']?)(?!\[REDACTED)([A-Za-z0-9._~+/-]{8,})(["']?)/gi,
-    replace: (_m, g) =>
+    replace: (_m: string, g: string[]) =>
       `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${g[3] ?? ""}${REDACT("credential")}${g[5] ?? ""}`,
   },
   // Generic credential assignments (covers compound env names like DB_PASSWORD,
@@ -117,7 +117,7 @@ const RULES: ReadonlyArray<{
   // service_credentials) are caught alongside their UPPER_CASE counterparts.
   {
     re: /(^|[^A-Za-z0-9_])([A-Za-z][A-Za-z0-9_]*(?:SECRET|PASSWORD|TOKEN|API_KEY|ACCESS_KEY|PRIVATE_KEY|CLIENT_SECRET|PASSPHRASE|CREDENTIALS?)[A-Za-z0-9_]*)(\s*[:=]\s*)(["']?)(?!\[REDACTED)([^$`{}()\s"'#[\]]{8,})(["']?)/gi,
-    replace: (_m, g) =>
+    replace: (_m: string, g: string[]) =>
       `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${g[3] ?? ""}${REDACT("credential")}${g[5] ?? ""}`,
   },
   // Then lowercase credential keywords as standalone-ish keys (also catches the
@@ -125,7 +125,7 @@ const RULES: ReadonlyArray<{
   // above misses because it requires a leading identifier).
   {
     re: /(^|_|[^A-Za-z0-9_])(api[_-]?key|access[_-]?token|secret[_-]?key|client[_-]?secret|secret|password|passwd|token|cookie|csrf[_-]?token|session[_-]?id|sessionid|session|sid|private[_-]?key|passphrase|credentials?)(["']?\s*[:=]\s*["']?)(?!\[REDACTED)([^$`{}()\s"'#[\]]{8,})/gi,
-    replace: (_m, g) =>
+    replace: (_m: string, g: string[]) =>
       `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
   },
 ];

@@ -18,6 +18,8 @@ import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
 import { REVIEWER_PROMPT_VERSION } from "../policy.ts";
 import type { SshAuditSummary } from "../ssh-evidence.ts";
 import type {
+  CapabilityAssessment,
+  ParsedCommand,
   PermissionRequest,
   ReviewEnvelope,
   ReviewerConfig,
@@ -112,8 +114,8 @@ export async function assembleEvidence(
   // requests; non-bash permissions have no command surface to analyze. Wrapped in
   // try/catch so a parser bug can never block a review (capability degrades to
   // absent, never throws).
-  let parsed;
-  let capability;
+  let parsed: ParsedCommand | undefined;
+  let capability: CapabilityAssessment | undefined;
   if (request.permission === "bash") {
     const command =
       typeof request.metadata.command === "string"

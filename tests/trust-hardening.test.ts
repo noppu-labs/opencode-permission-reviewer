@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { execFile } from "node:child_process";
+import { execFile, type PromiseWithChild } from "node:child_process";
 import {
   appendFileSync,
   existsSync,
@@ -37,15 +37,21 @@ import type {
 } from "../src/opencode/types.ts";
 import { evaluatePolicy } from "../src/policy/policy-engine.ts";
 import { enrichSshEvidence, includeEvidenceFile } from "../src/ssh-evidence.ts";
-import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import type {
+  CapabilityAssessment,
+  MessageWithParts,
+  PermissionRequest,
+} from "../src/types.ts";
+import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
+type GitRun = PromiseWithChild<{ stdout: string; stderr: string }>;
 
 const DIR = "/home/user/project";
 const WT = "/home/user/project";
 
-function assess(command: string) {
+function assess(command: string): CapabilityAssessment {
   return analyzeCapability(parseCommand(command), DIR, WT);
 }
 
@@ -346,7 +352,7 @@ describe("trust hardening — project config cannot weaken trusted layers", () =
     const projectDir = tempDir("reviewer-project-");
     const warnings: string[] = [];
     const originalWarn = console.warn;
-    console.warn = (message: string) => warnings.push(String(message));
+    console.warn = (message: string): number => warnings.push(String(message));
     try {
       const globalPath = join(warnDir, "permission-reviewer.jsonc");
       writeFileSync(globalPath, '{ "escalationMode": "deny"'); // unterminated object
@@ -651,7 +657,7 @@ describe("trust hardening — git evidence does not execute repository filters",
   test("a configured clean filter never runs during evidence collection", async () => {
     const directory = tempDir("reviewer-gitfilter-");
     try {
-      const run = (args: string[]) =>
+      const run = (args: string[]): GitRun =>
         execFileAsync("git", args, { cwd: directory });
       await run(["init", "-b", "staging"]);
       await run(["config", "user.email", "reviewer@example.invalid"]);
@@ -752,7 +758,9 @@ describe("trust hardening — audit output boundary", () => {
       const summary = readAuditSummary(file);
       expect(summary.validRecords).toBe(1);
       expect(summary.invalidLines).toBe(0);
-      expect(summary.unknownActorNames[0]!.name).toBe("(unnamed)");
+      expect(
+        defined(summary.unknownActorNames[0], "unknown actor name").name,
+      ).toBe("(unnamed)");
     } finally {
       rmSync(join(file, ".."), { recursive: true });
     }
@@ -762,12 +770,10 @@ describe("trust hardening — audit output boundary", () => {
     const dir = tempDir("reviewer-audit-");
     const file = join(dir, "audit.jsonl");
     try {
-      // Built by concatenation so the literal never matches a scanner pattern.
-      const secret = "ghp_" + "synthetic0123456789abcdefghijklmnopqrstuvwxyz";
+      const secret = GITHUB_PAT_ALPHANUMERIC;
       const config = resolveConfig({ audit: true, auditPath: file });
-      const write = createAuditWriter(config);
-      expect(write).toBeDefined();
-      await write!({
+      const write = defined(createAuditWriter(config), "audit writer");
+      await write({
         schemaVersion: 2,
         decisionSchemaVersion: 2,
         promptVersion: "test",
@@ -991,7 +997,7 @@ describe("trust hardening — git conversion-filter neutralization edge cases", 
     value: string,
     marker: string,
   ): Promise<void> {
-    const run = (args: string[]) =>
+    const run = (args: string[]): GitRun =>
       execFileAsync("git", args, { cwd: directory });
     await run(["init", "-b", "staging"]);
     await run(["config", "user.email", "reviewer@example.invalid"]);
@@ -1030,12 +1036,13 @@ describe("trust hardening — git conversion-filter neutralization edge cases", 
   test("more conversion filters than the neutralization limit refuses the inspection", async () => {
     const directory = tempDir("reviewer-gitfilter-many-");
     try {
-      const run = (args: string[]) =>
+      const run = (args: string[]): GitRun =>
         execFileAsync("git", args, { cwd: directory });
       await run(["init", "-b", "staging"]);
       await run(["config", "user.email", "reviewer@example.invalid"]);
       await run(["config", "user.name", "Reviewer Test"]);
       for (let i = 0; i < 55; i += 1) {
+        // biome-ignore lint/performance/noAwaitInLoops: 55 git config writes to the same repo, serialized by git's .git/config lock
         await run(["config", `filter.filler${i}.clean`, "cat"]);
       }
       writeFileSync(join(directory, "data.txt"), "BBBB\n");
@@ -1136,7 +1143,7 @@ describe("trust hardening — git conversion-filter names with spaces or equals"
   test("a repo with a spaced filter subsection still produces a snapshot", async () => {
     const directory = tempDir("reviewer-gitfilter-space-");
     try {
-      const run = (args: string[]) =>
+      const run = (args: string[]): GitRun =>
         execFileAsync("git", args, { cwd: directory });
       await run(["init", "-b", "staging"]);
       await run(["config", "user.email", "reviewer@example.invalid"]);
@@ -1158,7 +1165,7 @@ describe("trust hardening — git conversion-filter names with spaces or equals"
   test("a repo with an equals filter subsection withholds the snapshot", async () => {
     const directory = tempDir("reviewer-gitfilter-equals-");
     try {
-      const run = (args: string[]) =>
+      const run = (args: string[]): GitRun =>
         execFileAsync("git", args, { cwd: directory });
       await run(["init", "-b", "staging"]);
       await run(["config", "user.email", "reviewer@example.invalid"]);
@@ -1198,7 +1205,7 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       ],
     });
     expect(omitted.policyRules).toHaveLength(1);
-    expect(omitted.policyRules[0]!.when).toBeUndefined();
+    expect(defined(omitted.policyRules[0], "policy rule").when).toBeUndefined();
     const trace = evaluatePolicy(
       undefined,
       undefined,
@@ -1250,7 +1257,9 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       setGlobalConfigPathForTests(globalPath);
       const config = loadResolvedConfig({ confidenceThreshold: 0.9 });
       expect(config.configDegraded).toBeDefined();
-      expect(config.configDegraded!.join(" ")).toContain("malformed");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("malformed");
 
       // An LLM allow under a degraded config must not auto-approve.
       const client = new MockClient();
@@ -1289,9 +1298,9 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       setGlobalConfigPathForTests(globalPath);
       const config = loadResolvedConfig({});
       expect(config.configDegraded).toBeDefined();
-      expect(config.configDegraded!.join(" ")).toContain(
-        "dropped by validation",
-      );
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("dropped by validation");
       // The dropped deny rule did not survive as a rule…
       expect(config.policyRules).toHaveLength(0);
       // …and the degradation enters the effective-policy identity.
@@ -1315,7 +1324,9 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       setGlobalConfigPathForTests(dir);
       const config = loadResolvedConfig({});
       expect(config.configDegraded).toBeDefined();
-      expect(config.configDegraded!.join(" ")).toContain("could not be read");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("could not be read");
     } finally {
       setGlobalConfigPathForTests(undefined);
       rmSync(dir, { recursive: true });
@@ -1424,7 +1435,9 @@ describe("trust hardening — reviewer session isolation", () => {
     const client = new MockClient();
     const isolated = `${import.meta.dir}/.tmp-reviewer-isolated`;
     const originalCreate = client.session.create.bind(client);
-    client.session.create = async (options: unknown) => {
+    client.session.create = async (
+      options: unknown,
+    ): Promise<ClientResponse<Record<string, unknown>>> => {
       const query = (options as { query?: { directory?: string } }).query;
       if (query?.directory === isolated) {
         client.creates.push(options);
@@ -1543,7 +1556,7 @@ describe("trust hardening — project config layer reads are bounded", () => {
     const outsideDir = tempDir("reviewer-config-outside-");
     const warnings: string[] = [];
     const originalWarn = console.warn;
-    console.warn = (message: string) => warnings.push(String(message));
+    console.warn = (message: string): number => warnings.push(String(message));
     try {
       isolateGlobal(outsideDir);
       const target = join(outsideDir, "real.jsonc");
@@ -1569,7 +1582,7 @@ describe("trust hardening — project config layer reads are bounded", () => {
     const outsideDir = tempDir("reviewer-config-outside-");
     const warnings: string[] = [];
     const originalWarn = console.warn;
-    console.warn = (message: string) => warnings.push(String(message));
+    console.warn = (message: string): number => warnings.push(String(message));
     try {
       isolateGlobal(outsideDir);
       mkdirSync(join(projectDir, ".opencode"), { recursive: true });
@@ -1593,7 +1606,7 @@ describe("trust hardening — project config layer reads are bounded", () => {
     const outsideDir = tempDir("reviewer-config-outside-");
     const warnings: string[] = [];
     const originalWarn = console.warn;
-    console.warn = (message: string) => warnings.push(String(message));
+    console.warn = (message: string): number => warnings.push(String(message));
     try {
       isolateGlobal(outsideDir);
       mkdirSync(join(projectDir, ".opencode"), { recursive: true });
@@ -1677,7 +1690,7 @@ describe("review regression boundaries", () => {
   ] as const) {
     test(`${kind} never presents child messages as human authorization`, async () => {
       const client = new MockClient();
-      client.session.get = async () =>
+      client.session.get = async (): Promise<ClientResponse<unknown>> =>
         kind === "missing-metadata"
           ? { error: "unavailable" }
           : { data: { id: "ses_main", parentID: "ses_missing" } };
@@ -1688,7 +1701,7 @@ describe("review regression boundaries", () => {
       const prompt = client.prompts[0] as {
         body: { parts: Array<{ text: string }> };
       };
-      const text = prompt.body.parts[0]!.text;
+      const text = defined(prompt.body.parts[0], "prompt part").text;
       expect(text).not.toContain('"actor": "user"');
       expect(text).not.toContain("USER_INTENT_HISTORY\nuser:");
       const res = await resolveActorContext(
@@ -1710,7 +1723,9 @@ describe("review regression boundaries", () => {
 
   test("large preceding intent cannot displace the pending action from the final provider prompt", async () => {
     const client = new MockClient();
-    client.session.get = async () => ({ data: { id: "ses_main" } });
+    client.session.get = async (): Promise<ClientResponse<unknown>> => ({
+      data: { id: "ses_main" },
+    });
     client.messageData = [1, 2, 3].map((id) => ({
       info: { id: `msg_${id}`, role: "user" },
       parts: [{ type: "text", text: "a".repeat(7900) }],
@@ -1725,8 +1740,9 @@ describe("review regression boundaries", () => {
     const prompt = client.prompts[0] as {
       body: { parts: Array<{ text: string }> };
     };
-    expect(prompt.body.parts[0]!.text).toContain("PENDING_PERMISSION");
-    expect(prompt.body.parts[0]!.text).toContain('"command": "printf safe"');
+    const part = defined(prompt.body.parts[0], "prompt part");
+    expect(part.text).toContain("PENDING_PERMISSION");
+    expect(part.text).toContain('"command": "printf safe"');
   });
 
   test("text mode keeps every tool disabled", async () => {
@@ -1861,7 +1877,9 @@ describe("trust hardening - condition enum typos fail closed", () => {
       writeFileSync(path, JSON.stringify({ enforcementMode: "enfroce" }));
       setGlobalConfigPathForTests(path);
       const config = loadResolvedConfig({});
-      expect(config.configDegraded!.join(" ")).toContain("enforcementMode");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("enforcementMode");
       expect(config.enforcementMode).toBe("observe");
       const client = new MockClient();
       expect(
@@ -1879,7 +1897,9 @@ describe("trust hardening - condition enum typos fail closed", () => {
     try {
       setGlobalConfigPathForTests(join(dir, "missing-global.jsonc"));
       const config = loadResolvedConfig({ enforcementMode: "enfroce" });
-      expect(config.configDegraded!.join(" ")).toContain("enforcementMode");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("enforcementMode");
       expect(config.enforcementMode).toBe("observe");
     } finally {
       setGlobalConfigPathForTests(undefined);
@@ -1894,7 +1914,9 @@ describe("trust hardening - condition enum typos fail closed", () => {
       writeFileSync(path, JSON.stringify({ escalationMode: "dnye" }));
       setGlobalConfigPathForTests(path);
       const config = loadResolvedConfig({});
-      expect(config.configDegraded!.join(" ")).toContain("escalationMode");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("escalationMode");
       expect(config.escalationMode).toBe("manual");
     } finally {
       setGlobalConfigPathForTests(undefined);
@@ -1907,7 +1929,7 @@ describe("trust hardening - condition enum typos fail closed", () => {
     const outsideDir = tempDir("reviewer-enum-outside-");
     const warnings: string[] = [];
     const originalWarn = console.warn;
-    console.warn = (message: string) => warnings.push(String(message));
+    console.warn = (message: string): number => warnings.push(String(message));
     try {
       setGlobalConfigPathForTests(join(outsideDir, "missing-global.jsonc"));
       mkdirSync(join(projectDir, ".opencode"), { recursive: true });

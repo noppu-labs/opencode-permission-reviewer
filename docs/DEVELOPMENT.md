@@ -91,6 +91,8 @@ Every accepted finding carries its reason where it applies:
 
 - Biome: a line-level `// biome-ignore lint/<group>/<rule>: <reason>`. No `biome-ignore-all` and no
   `biome-ignore-start`/`-end` ranges.
+  Instead of a non-null assertion (`!`), use `invariant()` (`src/invariant.ts`) in `src` and
+  `defined()` (`tests/helpers.ts`) in tests.
 - Python: `# noqa: <code>` with a reason, `# nosec <id> # <reason>`, or
   `# complexipy: ignore (<reason>)` on the def line. Two `pyproject.toml` per-file ruff ignores
   are permanent and say why there: `ARG` for `tests/**`, and `E501` for the dataset modules whose
@@ -125,8 +127,6 @@ stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
 - `fta.json`: `exclude_filenames` lists every file above the cap. JSON has no comments, so the
   pull request that removes each one is listed in the description of the pull request that added
   it.
-- `knip.jsonc`: `ignoreIssues` and `ignoreDependencies` for dead exports and files and unused
-  dependencies.
 
 Don't add to these lists to get a new change through. Fix the finding, or suppress it on the line
 with a reason. When the last stacked pull request lands, none of them remain.

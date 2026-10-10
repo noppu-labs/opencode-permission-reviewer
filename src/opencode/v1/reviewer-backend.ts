@@ -161,7 +161,7 @@ export class V1ReviewerBackend {
     const { open, constants, lstat, rename, rm } = await import(
       "node:fs/promises"
     );
-    const assertReplaceable = async () => {
+    const assertReplaceable = async (): Promise<void> => {
       const existing = await lstat(path).catch(
         (error: NodeJS.ErrnoException) => {
           if (error.code !== "ENOENT") throw error;
@@ -261,7 +261,7 @@ export class V1ReviewerBackend {
     const title = `[permission-review] ${envelope.request.permission}: ${redactSecrets(
       envelope.request.patterns.join(", "),
     ).slice(0, 120)}`;
-    const create = async (directory: string) => {
+    const create = async (directory: string): Promise<string> => {
       signal.throwIfAborted();
       const created = responseData(
         await withTimeout(

@@ -22,8 +22,13 @@ import { ensureSolidTransformPlugin } from "@opentui/solid/bun-plugin";
  */
 ensureSolidTransformPlugin();
 
-export const { tui } = await import("../src/tui.tsx");
-export const { resolveReviewTheme, setupTuiV2 } = await import(
-  "../src/ui/v2.tsx"
+export const { tui }: typeof import("../src/tui.tsx") = await import(
+  "../src/tui.tsx"
 );
-export const { testRender } = await import("@opentui/solid");
+export const {
+  resolveReviewTheme,
+  setupTuiV2,
+}: typeof import("../src/ui/v2.tsx") = await import("../src/ui/v2.tsx");
+export const { testRender }: typeof import("@opentui/solid") = await import(
+  "@opentui/solid"
+);

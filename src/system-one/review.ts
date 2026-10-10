@@ -15,6 +15,8 @@ import {
   type SystemOneSignals,
 } from "../types.ts";
 
+/** @public Read by the benchmark harness, which loads this file by path
+ *  (benchmarks/permission-reviewer/lib/plugin.mjs), so knip sees no import. */
 export const SYSTEM_ONE_SPEC_VERSION = "system-one-1";
 
 const OUTCOMES = ["allow", "deny", "escalate"] as const;
@@ -31,13 +33,21 @@ const COMPLETENESS = [
 const choice = <const T extends ChoiceCriteria>(
   instructions: EntryType,
   criteria: T,
-) => ({
+): { type: "choice"; instructions: EntryType; criteria: T } => ({
   type: "choice" as const,
   instructions,
   criteria,
 });
 
-const noul = (question: string, yes: string, no: string) => ({
+const noul = (
+  question: string,
+  yes: string,
+  no: string,
+): {
+  type: "noul";
+  instructions: { question: string; evidence: string; boundary: string };
+  criteria: { true: string; false: string };
+} => ({
   type: "noul" as const,
   instructions: {
     question,
@@ -48,6 +58,7 @@ const noul = (question: string, yes: string, no: string) => ({
   criteria: { true: yes, false: no },
 });
 
+// biome-ignore lint/nursery/useExplicitType: the inferred type keeps every choice's literal criteria, which SystemOneResult<typeof SYSTEM_ONE_QUESTIONS> keys on; an annotation would restate all fifteen question specs
 export const SYSTEM_ONE_QUESTIONS = {
   outcome: choice(
     {
@@ -463,7 +474,7 @@ export function parseSystemOneReview(
   const score = <T extends string>(parsed: {
     choice: T;
     confidence: number;
-  }) => ({
+  }): { choice: T; confidence: number } => ({
     choice: parsed.choice,
     confidence: parsed.confidence,
   });
@@ -496,7 +507,7 @@ export function parseSystemOneReview(
 export function enforceSystemOneDecision(
   decision: ReviewDecision,
   config: ReviewerConfig,
-) {
+): ReviewExecutionResult {
   return enforceDecision(decision, {
     ...config,
     confidenceThreshold: 0,

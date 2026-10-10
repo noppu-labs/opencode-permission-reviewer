@@ -10,6 +10,7 @@ import { DECISION_SCHEMA_VERSION } from "../decision.ts";
 import { applyEscalationDisposition } from "../escalation.ts";
 import type { EvidenceProvider } from "../evidence/provider.ts";
 import { formatFailureReason } from "../failure-reason.ts";
+import { invariant } from "../invariant.ts";
 import { isAlreadyResolvedError, withTimeout } from "../opencode/transport.ts";
 import type { RuntimeContext } from "../opencode/types.ts";
 import {
@@ -34,6 +35,12 @@ import { evaluateReview } from "./review-engine.ts";
 import { ReviewLimiter } from "./review-limiter.ts";
 
 type Logger = (message: string, details?: unknown) => void;
+
+/** process() registers the attempt before its first await and deletes it only
+ *  in its finally block, after closing it; handle() runs one process() per
+ *  request ID. The asserted lookups below all run inside that window. */
+const ATTEMPT_REGISTERED =
+  "process() keeps the review attempt registered until it returns";
 
 /** Stable hash of the canonical request so audit records for the same action
  *  correlate across runs. Patterns are sorted so event order does not matter.
@@ -86,7 +93,7 @@ export class ReviewCoordinator {
     providers?: EvidenceProvider[],
     askDecisions?: AskDecisionSource,
   ) {
-    this.log = logger ?? (() => {});
+    this.log = logger ?? ((): void => {});
     this.backend = createV1ReviewerBackend(
       ctx,
       config,
@@ -293,14 +300,15 @@ export class ReviewCoordinator {
   private async processRequest(
     request: PermissionRequest,
   ): Promise<ReviewExecutionResult> {
-    const attempt = this.attempts.get(request.id)!;
+    const attempt = this.attempts.get(request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
     await this.emit(request, "reviewing");
     const result = await evaluateReview(request, this.config, {
-      collect: (pending) => this.collectEnvelope(pending),
-      review: (envelope) => this.runReviewer(envelope),
+      collect: (pending: PermissionRequest) => this.collectEnvelope(pending),
+      review: (envelope: ReviewEnvelope) => this.runReviewer(envelope),
       active: () => attempt.active() && !this.isSuperseded(request),
-      auxiliarySession: (sessionID) => this.backend.owns(sessionID),
-      observe: (envelope) => {
+      auxiliarySession: (sessionID: string) => this.backend.owns(sessionID),
+      observe: (envelope: ReviewEnvelope) => {
         if (envelope.policyTrace !== undefined) {
           this.remember(request.id, { policyTrace: envelope.policyTrace });
         }
@@ -350,9 +358,10 @@ export class ReviewCoordinator {
    * the plugin no longer registers a host hook that calls this. Rationale
    * remains in audit, TUI, and debug.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   annotateToolResult(
+    // biome-ignore lint/correctness/noUnusedFunctionParameters: deprecated public no-op keeps its documented parameter name
     callID: string,
+    // biome-ignore lint/correctness/noUnusedFunctionParameters: deprecated public no-op keeps its documented parameter name
     output: { output?: unknown; metadata?: unknown },
   ): void {
     // Intentionally empty — asymmetric feedback: allow is silent to the agent.
@@ -410,16 +419,16 @@ export class ReviewCoordinator {
   ): Promise<void> {
     if (!this.ctx.writeAudit) return;
     const decision = result.decision;
-    const ssh = this.attempts.get(request.id)?.evidence.sshAudit;
-    const actor = this.attempts.get(request.id)?.evidence.actor;
-    const capability = this.attempts.get(request.id)?.evidence.capability;
-    const policyTrace = this.attempts.get(request.id)?.evidence.policyTrace;
-    const timings = this.attempts.get(request.id)?.evidence.timings;
-    const evidence = this.attempts.get(request.id)?.evidence
-      .evidenceCompleteness;
-    const verifiedScript = this.attempts.get(request.id)?.evidence
-      .verifiedScript;
-    const askDecisions = this.attempts.get(request.id)?.evidence.askDecisions;
+    const attempt = this.attempts.get(request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
+    const ssh = attempt.evidence.sshAudit;
+    const actor = attempt.evidence.actor;
+    const capability = attempt.evidence.capability;
+    const policyTrace = attempt.evidence.policyTrace;
+    const timings = attempt.evidence.timings;
+    const evidence = attempt.evidence.evidenceCompleteness;
+    const verifiedScript = attempt.evidence.verifiedScript;
+    const askDecisions = attempt.evidence.askDecisions;
     // Infer the source when a path did not set it explicitly (the process()
     // catch builds an escalate with no decision): a result still carrying a
     // reviewer decision is an LLM outcome; everything else without an explicit
@@ -432,7 +441,7 @@ export class ReviewCoordinator {
     if (capability !== undefined) warnings.push(...capability.analysisWarnings);
     const record: ReviewAuditRecord = {
       schemaVersion: 3,
-      reviewID: this.attempts.get(request.id)!.id,
+      reviewID: attempt.id,
       hostRequestID: request.id,
       hostGeneration: "v1",
       hostVersion: this.ctx.hostVersion ?? "unknown",
@@ -446,7 +455,7 @@ export class ReviewCoordinator {
       actionFingerprint: `v1:${actionHash(request)}`,
       application: this.isSuperseded(request)
         ? "superseded"
-        : (this.attempts.get(request.id)?.application ?? "unknown"),
+        : attempt.application,
       decisionSchemaVersion: DECISION_SCHEMA_VERSION,
       promptVersion: REVIEWER_PROMPT_VERSION,
       decisionSource,
@@ -598,10 +607,9 @@ export class ReviewCoordinator {
   private runReviewer(
     envelope: ReviewEnvelope,
   ): Promise<ReviewExecutionResult> {
-    return this.backend.review(
-      envelope,
-      this.attempts.get(envelope.request.id)!,
-    );
+    const attempt = this.attempts.get(envelope.request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
+    return this.backend.review(envelope, attempt);
   }
 
   private remember(

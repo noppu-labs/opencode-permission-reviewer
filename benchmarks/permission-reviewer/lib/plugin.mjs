@@ -6,41 +6,51 @@ import { pathToFileURL } from "node:url";
 import { assert, sha256 } from "./util.mjs";
 
 // Git blob hashes of the security-critical files actually inspected for this kit.
-export const PINNED_BLOBS = {
+const PINNED_BLOBS = {
   "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
-  "src/context.ts": "7aa6c2d8d96ed745a686204ab7aa18c45caf86bc",
-  "src/config.ts": "370df2d5303de9c5f7fb8ef5efd5f89bbc7ba4a3",
-  "src/decision.ts": "66a2091cd7d0e93e4dfc9e34d3567dddb55d316b",
-  "src/policy/policy-engine.ts": "474e28ab9bb7a0d12196c1d045507af83b4d269b",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/context.ts": "4fc171f3bd2a62a77ee84d4e82a1401390d39a20",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/config.ts": "0971f2406a3c05cfe6a023a553abb68e15819e7a",
+  "src/decision.ts": "9deb30e0b8d300b5caebb6f2856e86e898064121",
+  "src/policy/policy-engine.ts": "b79f910288d2219109f86a42cf7226867610b01a",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "da3c9c5e4b2504810062b81cebf6bdddb9034d96",
-  "src/redact.ts": "f125ef1347e05eb69d9d8a476a7246a5bd81eac2",
+  "src/emergency-brake.ts": "5e0cdfb6d51c4edcd68faa31df0c4f084da4de0b",
+  "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "2a3bae3a5f7ed387db52cef25d652c83b4c58a2f",
-  "src/capability/bash-analyzer.ts": "238283897ef64b1f853f4a0e8098bafc728554e1",
-  "src/shell-lexer.ts": "8df45208e880bfe141f69a59d1a730b9107e931d",
+    "05ce6822ccf0614b6d0dc6837681b9c7e660d0cd",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/capability/bash-analyzer.ts": "1a2104e4e392a8d463d963bdb58df331b2784d68",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/shell-lexer.ts": "f9c3486ba78600925ea98aea0e86f113a78c07e4",
   "src/capability/heredoc-extractor.ts":
-    "84ee7ef2db5f1ac940fa6ad330a54df4b3ecef37",
-  "src/system-one/review.ts": "bd8a97c69724428be1aefff5f339b8acbe2de515",
+    "425372f2f01f30477bc5e2a31d420dcfd4105441",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/system-one/review.ts": "b355f8e899ab2904b80e9b8e4f155075a45d22a6",
 };
 const gitBlob = (bytes) =>
   createHash("sha1") // NOSONAR(S4790) SHA-1 is git's blob-object hash, compared against git blob IDs, not used for security
     .update(`blob ${bytes.length}\0`)
     .update(bytes)
     .digest("hex");
-export async function sourceSnapshot(repo) {
+async function sourceSnapshot(repo) {
   const files = {};
   async function walk(dir, rel = "") {
-    for (const d of (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
+    const entries = (await readdir(dir, { withFileTypes: true })).sort((a, b) =>
       a.name.localeCompare(b.name),
-    )) {
+    );
+    for (const d of entries) {
       const relative = rel ? `${rel}/${d.name}` : d.name;
       if (d.isSymbolicLink())
         throw new Error(
           `Source symlink is not supported for a reproducible snapshot: ${relative}`,
         );
-      if (d.isDirectory()) await walk(join(dir, d.name), relative);
+      if (d.isDirectory())
+        // biome-ignore lint/performance/noAwaitInLoops: the walk must throw at the first symlink before reading any later entry; it also fills the returned files map in sorted depth-first order, which the written snapshot shows (sourceSha256 is key-sorted and does not depend on it)
+        await walk(join(dir, d.name), relative);
       else if (/\.(ts|tsx|js|json)$/.test(d.name))
         files[`src/${relative}`] = sha256(
           await readFile(join(dir, d.name)).then((b) => b.toString("utf8")),
@@ -48,11 +58,15 @@ export async function sourceSnapshot(repo) {
     }
   }
   await walk(resolve(repo, "src"));
-  const differences = [];
-  for (const [path, expected] of Object.entries(PINNED_BLOBS)) {
-    const actual = gitBlob(await readFile(resolve(repo, path)));
-    if (actual !== expected) differences.push({ path, expected, actual });
-  }
+  const differences = (
+    await Promise.all(
+      Object.entries(PINNED_BLOBS).map(async ([path, expected]) => ({
+        path,
+        expected,
+        actual: gitBlob(await readFile(resolve(repo, path))),
+      })),
+    )
+  ).filter(({ expected, actual }) => actual !== expected);
   const packageJSON = JSON.parse(
     await readFile(resolve(repo, "package.json"), "utf8"),
   );

@@ -23,6 +23,7 @@ const client = OpenCode.make({
 const controller = new AbortController();
 const events: OpenCodeEvent[] = [];
 const registry = new V2AskDecisions();
+// biome-ignore lint/nursery/useExplicitType: Biome 2.5.15 reports a definite-assignment declaration (`let x!: T`) as untyped although it carries an annotation; the `!` is needed because the Promise executor assigns it
 let connected!: () => void;
 const ready = new Promise<void>((resolve) => {
   connected = resolve;
@@ -141,6 +142,7 @@ try {
   const deadline = Date.now() + 3000;
   phase = "form event";
   while (!registry.recentFor([session.id]).length && Date.now() < deadline)
+    // biome-ignore lint/performance/noAwaitInLoops: polls the registry until the form event is recorded or the deadline passes
     await Bun.sleep(10);
   if (registry.recentFor([session.id])[0]?.answer !== "Read only")
     throw new Error("Native form answer was not normalized");

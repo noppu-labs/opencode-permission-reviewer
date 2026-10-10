@@ -9,7 +9,7 @@ const releases = Object.entries({
 }).sort(([left], [right]) =>
   left.localeCompare(right, undefined, { numeric: true }),
 );
-const python = process.env.PYTHON ?? "python";
+const python: string = process.env.PYTHON ?? "python";
 const build = Bun.spawn(["bun", "run", "build"], {
   stdout: "inherit",
   stderr: "inherit",
@@ -17,6 +17,7 @@ const build = Bun.spawn(["bun", "run", "build"], {
 if ((await build.exited) !== 0) throw new Error("Plugin build failed");
 
 for (const [version, integrity] of releases) {
+  // biome-ignore lint/performance/noAwaitInLoops: verifies one host release at a time (npm install, then spawned python and bun checks) and aborts at the first failing version
   const directory = await mkdtemp(join(tmpdir(), "reviewer-v2-window-"));
   try {
     console.log(`\nVerifying OpenCode ${version}`);

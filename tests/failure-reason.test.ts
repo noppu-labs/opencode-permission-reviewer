@@ -10,7 +10,7 @@ import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.
 import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
 import type { ReviewEnvelope } from "../src/types.ts";
-import { config, MockClient, request, runtime } from "./helpers.ts";
+import { config, defined, MockClient, request, runtime } from "./helpers.ts";
 
 type V2Context = Parameters<Plugin.Plugin["setup"]>[0];
 type V2Input = Parameters<typeof normalizeV2Permission>[0] & {
@@ -92,7 +92,7 @@ test("helper caps cause depth and total length and never throws", () => {
 
 test("v1 reviewer backend failure keeps deny and failure-safe with cause", async () => {
   const client = new MockClient();
-  client.promptImpl = async () => {
+  client.promptImpl = async (): Promise<never> => {
     throw clientError();
   };
   const harness = runtime(client, { escalationMode: "deny" });
@@ -112,7 +112,7 @@ test("v1 reviewer backend failure keeps deny and failure-safe with cause", async
 
 test("review coordination failure audits deny with phase and cause", async () => {
   const client = new MockClient();
-  client.messagesImpl = async () => {
+  client.messagesImpl = async (): Promise<never> => {
     throw clientError();
   };
   const harness = runtime(client, { escalationMode: "deny" });
@@ -128,7 +128,7 @@ test("review coordination failure audits deny with phase and cause", async () =>
       outcome: "deny",
       decisionSource: "failure-safe",
     });
-    const reason = audits[0]!.reason as string;
+    const reason = defined(audits[0], "audits[0]").reason as string;
     expect(reason).toContain("review coordination");
     expect(reason).toContain("ClientError");
     expect(reason).toContain("socket hang up");
@@ -195,7 +195,9 @@ test("v2 permission review hook failure denies with phase and cause", async () =
   let resume: (() => void) | undefined;
   let ended = false;
   const events: OpenCodeEvent[] = [];
-  const registration = () => ({ dispose: async () => {} });
+  const registration = (): { dispose: () => Promise<void> } => ({
+    dispose: async () => {},
+  });
   const ctx = {
     app: { version: "2.0.3" },
     options: {},
@@ -226,11 +228,13 @@ test("v2 permission review hook failure denies with phase and cause", async () =
         signal.addEventListener("abort", wake);
         try {
           while (!signal.aborted && !ended) {
-            if (events.length) yield events.shift()!;
-            else
+            if (events.length) yield defined(events.shift(), "queued event");
+            else {
+              // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
               await new Promise<void>((resolve) => {
                 resume = resolve;
               });
+            }
           }
         } finally {
           signal.removeEventListener("abort", wake);
@@ -294,9 +298,10 @@ test("v2 permission review hook failure denies with phase and cause", async () =
       outcome: "deny",
       decisionSource: "failure-safe",
     });
-    expect(String(records[0]!.reason)).toContain("permission review hook");
-    expect(String(records[0]!.reason)).toContain("ClientError");
-    expect(String(records[0]!.reason)).toContain("socket hang up");
+    const auditRecord = defined(records[0], "audit record");
+    expect(String(auditRecord.reason)).toContain("permission review hook");
+    expect(String(auditRecord.reason)).toContain("ClientError");
+    expect(String(auditRecord.reason)).toContain("socket hang up");
   } finally {
     ended = true;
     resume?.();

@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import contracts from "./host-contracts.json";
 
-const generation = process.env.HOST_GENERATION;
+const generation: string | undefined = process.env.HOST_GENERATION;
 if (generation !== "v1" && generation !== "v2")
   throw new Error("Set HOST_GENERATION to v1 or v2");
 const releases =
@@ -19,6 +19,7 @@ const releases =
         integrity,
       }));
 for (const release of releases) {
+  // biome-ignore lint/performance/noAwaitInLoops: installs one pinned host release at a time into its own temp dir (npm spawn plus cleanup) and aborts the hosts job at the first failure
   const directory = await mkdtemp(join(tmpdir(), "reviewer-host-"));
   const proc = Bun.spawn(
     [

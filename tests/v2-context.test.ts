@@ -134,7 +134,11 @@ test("context preserves fork provenance and marks omitted history without invent
 
 test("native forms retain labels, scope, redaction, cancellation, and orphan protection", () => {
   const registry = new V2AskDecisions();
-  const observe = (type: string, data: unknown, directory = "/workspace") =>
+  const observe = (
+    type: string,
+    data: unknown,
+    directory = "/workspace",
+  ): void =>
     registry.observe(
       { type, data, location: { directory } } as OpenCodeEvent,
       "/workspace",

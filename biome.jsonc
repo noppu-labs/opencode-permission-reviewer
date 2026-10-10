@@ -82,334 +82,6 @@
   // entries cap each file at its current length instead), ordered by the stacked PR that fixes
   // those files and deletes the entry.
   "overrides": [
-    // Pending (quality/4-ts-rules): performance/noAwaitInLoops, 39 files.
-    {
-      "includes": [
-        "benchmarks/permission-reviewer/cli.mjs",
-        "benchmarks/permission-reviewer/lib/opencode-v1.mjs",
-        "benchmarks/permission-reviewer/lib/plugin.mjs",
-        "benchmarks/permission-reviewer/lib/providers.mjs",
-        "benchmarks/permission-reviewer/lib/run.mjs",
-        "benchmarks/permission-reviewer/tests/live-opencode-v1.mjs",
-        "benchmarks/permission-reviewer/tests/plugin-parity.mjs",
-        "src/context/actor-resolver.ts",
-        "src/git-evidence.ts",
-        "src/local-script-evidence.ts",
-        "src/opencode/v1/context-reader.ts",
-        "src/opencode/v2/reviewer-backend.ts",
-        "src/package-script-evidence.ts",
-        "src/ssh-evidence.ts",
-        "tests/characterization.test.ts",
-        "tests/cli-init.test.ts",
-        "tests/compatibility/capture-contracts.ts",
-        "tests/compatibility/host-advisory.ts",
-        "tests/compatibility/install-hosts.ts",
-        "tests/compatibility/verify-v2-window.ts",
-        "tests/explain-cli.test.ts",
-        "tests/failure-reason.test.ts",
-        "tests/fixtures/v1-isolation.ts",
-        "tests/git-evidence.test.ts",
-        "tests/git-operation-evidence.test.ts",
-        "tests/live-harness.ts",
-        "tests/live-host-regressions.ts",
-        "tests/live-v2-smoke.ts",
-        "tests/local-script-evidence.test.ts",
-        "tests/package-script-evidence.test.ts",
-        "tests/package-smoke.test.ts",
-        "tests/ssh-evidence.test.ts",
-        "tests/system-one.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/tui-v2.test.ts",
-        "tests/v1-backend.test.ts",
-        "tests/v2-backend.test.ts",
-        "tests/v2-server.test.ts",
-        "tests/verified-ssh-script.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "performance": {
-            "noAwaitInLoops": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): performance/noBarrelFile, 6 files.
-    {
-      "includes": [
-        "rpc.js",
-        "server.js",
-        "src/index.ts",
-        "src/opencode/v2-adapter.ts",
-        "src/runtime.ts",
-        "tui.tsx"
-      ],
-      "linter": {
-        "rules": {
-          "performance": {
-            "noBarrelFile": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): style/noExportedImports, 2 files.
-    {
-      "includes": ["src/opencode/types.ts", "src/tui.tsx"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExportedImports": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): suspicious/noImplicitAnyLet, 1 file.
-    {
-      "includes": ["src/context/evidence-assembler.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noImplicitAnyLet": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 52 files.
-    {
-      "includes": [
-        "src/audit.ts",
-        "src/capability/bash-analyzer.ts",
-        "src/capability/command-parser.ts",
-        "src/capability/heredoc-extractor.ts",
-        "src/cli/explain.ts",
-        "src/cli/init.ts",
-        "src/config/jsonc.ts",
-        "src/context.ts",
-        "src/context/action-purpose.ts",
-        "src/context/actor-resolver.ts",
-        "src/core/review-coordinator.ts",
-        "src/decision.ts",
-        "src/emergency-brake.ts",
-        "src/evidence/local-command.ts",
-        "src/git-evidence.ts",
-        "src/local-script-evidence.ts",
-        "src/opencode/reply-transport.ts",
-        "src/opencode/v2/context-reader.ts",
-        "src/opencode/v2/event-codec.ts",
-        "src/opencode/v2/server.ts",
-        "src/package-script-evidence.ts",
-        "src/policy/policy-engine.ts",
-        "src/shell-lexer.ts",
-        "src/ssh-evidence.ts",
-        "src/verified-ssh-script.ts",
-        "tests/actor-resolver.test.ts",
-        "tests/ask-decisions.test.ts",
-        "tests/audit.test.ts",
-        "tests/capability.test.ts",
-        "tests/characterization.test.ts",
-        "tests/compatibility/install-package.ts",
-        "tests/config-loader.test.ts",
-        "tests/escalation.test.ts",
-        "tests/failure-reason.test.ts",
-        "tests/helpers.ts",
-        "tests/intent-recovery.test.ts",
-        "tests/live-harness.ts",
-        "tests/live-host-regressions.ts",
-        "tests/package-smoke.test.ts",
-        "tests/runtime.test.ts",
-        "tests/shell-lexer.test.ts",
-        "tests/ssh-evidence.test.ts",
-        "tests/stress.test.ts",
-        "tests/system-one.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/tui-elapsed.test.ts",
-        "tests/tui-slot-contract.test.ts",
-        "tests/tui-v2.test.ts",
-        "tests/v1-backend.test.ts",
-        "tests/v2-connection.test.ts",
-        "tests/v2-server.test.ts",
-        "tests/workflow-pinning.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "style": {
-            "noNonNullAssertion": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): suspicious/noPrototypeBuiltins, 1 file.
-    {
-      "includes": ["src/config/loader.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noPrototypeBuiltins": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): security/noSecrets, 9 files.
-    {
-      "includes": [
-        "benchmarks/permission-reviewer/lib/plugin.mjs",
-        "tests/ask-decisions.test.ts",
-        "tests/audit.test.ts",
-        "tests/redact.test.ts",
-        "tests/runtime.test.ts",
-        "tests/ssh-evidence.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/v2-connection.test.ts",
-        "tests/verified-ssh-script.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "security": {
-            "noSecrets": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): a11y/noStaticElementInteractions, 1 file.
-    {
-      "includes": ["src/ui/components.tsx"],
-      "linter": {
-        "rules": {
-          "a11y": {
-            "noStaticElementInteractions": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): suspicious/noTemplateCurlyInString, 1 file.
-    {
-      "includes": ["tests/capability.test.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noTemplateCurlyInString": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): correctness/noUnsafeFinally, 1 file.
-    {
-      "includes": ["src/opencode/v2/reviewer-backend.ts"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnsafeFinally": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): correctness/noUnusedFunctionParameters, 1 file.
-    {
-      "includes": ["src/core/review-coordinator.ts"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedFunctionParameters": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): nursery/useExplicitType, 74 files.
-    {
-      "includes": [
-        "scripts/release-metadata.ts",
-        "src/audit.ts",
-        "src/capability/bash-analyzer.ts",
-        "src/capability/heredoc-extractor.ts",
-        "src/cli/init.ts",
-        "src/config.ts",
-        "src/config/jsonc.ts",
-        "src/config/loader.ts",
-        "src/context/ask-decisions.ts",
-        "src/core/review-attempt.ts",
-        "src/core/review-coordinator.ts",
-        "src/core/review-limiter.ts",
-        "src/git-evidence.ts",
-        "src/index.ts",
-        "src/opencode/reply-transport.ts",
-        "src/opencode/v1-adapter.ts",
-        "src/opencode/v1/backend-factory.ts",
-        "src/opencode/v1/context-reader.ts",
-        "src/opencode/v1/reviewer-backend.ts",
-        "src/opencode/v2/backend-factory.ts",
-        "src/opencode/v2/context-reader.ts",
-        "src/opencode/v2/event-codec.ts",
-        "src/opencode/v2/isolated-location.ts",
-        "src/opencode/v2/reviewer-backend.ts",
-        "src/opencode/v2/server.ts",
-        "src/package-script-evidence.ts",
-        "src/redact.ts",
-        "src/shell-lexer.ts",
-        "src/ssh-evidence.ts",
-        "src/system-one/backend.ts",
-        "src/system-one/review.ts",
-        "src/tui.tsx",
-        "src/ui/components.tsx",
-        "src/ui/v2.tsx",
-        "tests/action-purpose.test.ts",
-        "tests/actor-resolver.test.ts",
-        "tests/audit.test.ts",
-        "tests/characterization.test.ts",
-        "tests/cli-commands.test.ts",
-        "tests/compatibility/capture-contracts.ts",
-        "tests/compatibility/capture-evidence.ts",
-        "tests/compatibility/install-hosts.ts",
-        "tests/compatibility/install-package.ts",
-        "tests/compatibility/opentui-pin-advisory.ts",
-        "tests/compatibility/verify-v2-window.ts",
-        "tests/decision.test.ts",
-        "tests/escalation.test.ts",
-        "tests/failure-reason.test.ts",
-        "tests/fixtures/v1-isolation.ts",
-        "tests/fixtures/v1-server.ts",
-        "tests/git-operation-evidence.test.ts",
-        "tests/helpers.ts",
-        "tests/intent-recovery.test.ts",
-        "tests/live-driver-plugin.ts",
-        "tests/live-harness.ts",
-        "tests/live-host-regressions.ts",
-        "tests/live-v2-smoke.ts",
-        "tests/package-script-evidence.test.ts",
-        "tests/package-smoke.test.ts",
-        "tests/policy-engine.test.ts",
-        "tests/redact.test.ts",
-        "tests/reply-transport.test.ts",
-        "tests/runtime.test.ts",
-        "tests/stress.test.ts",
-        "tests/system-one.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/tui-loader.ts",
-        "tests/tui-slot-contract.test.ts",
-        "tests/tui-v2.test.ts",
-        "tests/v1-backend.test.ts",
-        "tests/v2-backend.test.ts",
-        "tests/v2-connection.test.ts",
-        "tests/v2-context.test.ts",
-        "tests/v2-server.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "nursery": {
-            "useExplicitType": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): suspicious/useIterableCallbackReturn, 1 file.
-    {
-      "includes": ["src/context.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "useIterableCallbackReturn": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/5-split-src): style/noExcessiveLinesPerFile, capped at its current length.
     {
       "includes": ["src/capability/bash-analyzer.ts"],
@@ -419,7 +91,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1391
+                "maxLines": 1415
               }
             }
           }
@@ -467,7 +139,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 629
+                "maxLines": 628
               }
             }
           }
@@ -483,7 +155,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 719
+                "maxLines": 722
               }
             }
           }
@@ -499,7 +171,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 702
+                "maxLines": 708
               }
             }
           }
@@ -515,7 +187,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1348
+                "maxLines": 1386
               }
             }
           }
@@ -531,7 +203,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1058
+                "maxLines": 1086
               }
             }
           }
@@ -547,7 +219,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 715
+                "maxLines": 725
               }
             }
           }
@@ -579,7 +251,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 647
+                "maxLines": 661
               }
             }
           }
@@ -595,7 +267,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 603
+                "maxLines": 618
               }
             }
           }
@@ -611,7 +283,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 614
+                "maxLines": 624
               }
             }
           }
@@ -627,7 +299,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1051
+                "maxLines": 1062
               }
             }
           }
@@ -643,7 +315,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 980
+                "maxLines": 1001
               }
             }
           }
@@ -659,7 +331,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1941
+                "maxLines": 1963
               }
             }
           }
@@ -675,7 +347,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 616
+                "maxLines": 653
               }
             }
           }

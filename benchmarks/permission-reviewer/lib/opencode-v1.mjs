@@ -143,6 +143,7 @@ export async function requestOpenCodeV1(
     let disposalError;
     for (let attempt = 0; attempt < INSTANCE_DISPOSE_ATTEMPTS; attempt++) {
       try {
+        // biome-ignore lint/performance/noAwaitInLoops: dispose retry; each attempt runs only after the previous one failed and the loop stops at the first success, so the host never sees overlapping dispose calls
         await call(
           "POST",
           "/instance/dispose",

@@ -65,15 +65,14 @@ export function evaluatePolicy(
   // first match so a lone allow rule is not silently overridden by the review
   // default.
   let finalRoute: PolicyTrace["finalRoute"] = EMPTY_TRACE_ROUTE;
-  if (matched.length > 0) {
-    let bestEffect = matched[0]!.effect as PolicyTrace["finalRoute"];
-    let bestSev =
-      EFFECT_SEVERITY[matched[0]!.effect as PolicyRule["effect"]] ?? 1;
-    for (let i = 1; i < matched.length; i += 1) {
-      const sev =
-        EFFECT_SEVERITY[matched[i]!.effect as PolicyRule["effect"]] ?? 1;
+  const [first, ...rest] = matched;
+  if (first !== undefined) {
+    let bestEffect = first.effect as PolicyTrace["finalRoute"];
+    let bestSev = EFFECT_SEVERITY[first.effect as PolicyRule["effect"]] ?? 1;
+    for (const rule of rest) {
+      const sev = EFFECT_SEVERITY[rule.effect as PolicyRule["effect"]] ?? 1;
       if (sev > bestSev) {
-        bestEffect = matched[i]!.effect as PolicyTrace["finalRoute"];
+        bestEffect = rule.effect as PolicyTrace["finalRoute"];
         bestSev = sev;
       }
     }

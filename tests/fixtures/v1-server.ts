@@ -1,17 +1,19 @@
+import type { Hooks } from "@opencode-ai/plugin";
 import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
 import { server } from "../../src/index.ts";
 import { MockClient, request } from "../helpers.ts";
 
-const configPath = process.argv[2];
+const configPath: string | undefined = process.argv[2];
 if (!configPath) throw new Error("Missing global fixture config");
 setGlobalConfigPathForTests(configPath);
 const client = new MockClient();
 const rawPosts: unknown[] = [];
+// biome-ignore lint/nursery/useExplicitType: Biome 2.5.15 reports a definite-assignment declaration (`let x!: T`) as untyped although it carries an annotation; the `!` is needed because the Promise executor assigns it
 let completed!: () => void;
 const completion = new Promise<void>((resolve) => {
   completed = resolve;
 });
-const hooks = await server(
+const hooks: Hooks = await server(
   {
     client: {
       session: client.session,

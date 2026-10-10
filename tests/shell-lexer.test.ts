@@ -4,12 +4,23 @@ import {
   commandSegments,
   effectiveCommands,
   lexSegments,
+  type ShellSegment,
+  type ShellToken,
   shellBasename,
   tokenCharIsQuoted,
 } from "../src/shell-lexer.ts";
+import { defined } from "./helpers.ts";
 
 function values(tokens: { value: string }[]): string[] {
   return tokens.map((t) => t.value);
+}
+
+function firstOf<T>(items: readonly T[], label: string): T {
+  return defined(items[0], label);
+}
+
+function tokenAt(segment: ShellSegment, index: number): ShellToken {
+  return defined(segment.tokens[index], `token ${index}`);
 }
 
 function firstExecutables(command: string): string[][] {
@@ -61,7 +72,9 @@ describe("shell lexer", () => {
   test("backslash-newline outside quotes is a line continuation", () => {
     // `r\<LF>m` is one token `rm`: the pair vanishes from the value.
     const segments = lexSegments("r\\\nm -rf /");
-    expect(segments[0]!.tokens.map((t) => t.value)).toEqual(["rm", "-rf", "/"]);
+    expect(
+      firstOf(segments, "first segment").tokens.map((t) => t.value),
+    ).toEqual(["rm", "-rf", "/"]);
   });
 
   test("backslash before a non-special char inside double quotes stays literal", () => {
@@ -69,21 +82,34 @@ describe("shell lexer", () => {
     // newline are escapable there. The evidence-selected file name must be
     // the one bash would open.
     const segments = lexSegments('python "a\\nb.py"');
-    expect(segments[0]!.tokens[1]!.value).toBe("a\\nb.py");
+    expect(tokenAt(firstOf(segments, "first segment"), 1).value).toBe(
+      "a\\nb.py",
+    );
     // A genuinely escapable char still unescapes.
-    expect(lexSegments('echo "a\\"b"')[0]!.tokens[1]!.value).toBe('a"b');
+    expect(
+      tokenAt(firstOf(lexSegments('echo "a\\"b"'), "first segment"), 1).value,
+    ).toBe('a"b');
   });
 
   test("tokens carry quoting spans for operator liveness", () => {
-    const glued = lexSegments('printf x >"/dev/sda"')[0]!.tokens[2]!;
+    const glued = tokenAt(
+      firstOf(lexSegments('printf x >"/dev/sda"'), "first segment"),
+      2,
+    );
     expect(glued.value).toBe(">/dev/sda");
     expect(tokenCharIsQuoted(glued, 0)).toBe(false);
     expect(tokenCharIsQuoted(glued, 1)).toBe(true);
-    const mixed = lexSegments('rm -rf "/"*')[0]!.tokens[2]!;
+    const mixed = tokenAt(
+      firstOf(lexSegments('rm -rf "/"*'), "first segment"),
+      2,
+    );
     expect(mixed.value).toBe("/*");
     expect(tokenCharIsQuoted(mixed, 0)).toBe(true);
     expect(tokenCharIsQuoted(mixed, 1)).toBe(false);
-    const quoted = lexSegments("echo '>/dev/sda'")[0]!.tokens[1]!;
+    const quoted = tokenAt(
+      firstOf(lexSegments("echo '>/dev/sda'"), "first segment"),
+      1,
+    );
     expect(tokenCharIsQuoted(quoted, 0)).toBe(true);
   });
 
@@ -100,11 +126,9 @@ describe("shell lexer", () => {
     expect(firstExecutables("printf 'x>quoted'")).toEqual([
       ["printf", "x>quoted"],
     ]);
-    expect(commandSegments("git>/tmp/log add .")[0]!.tokens).toEqual([
-      "git",
-      "add",
-      ".",
-    ]);
+    expect(
+      firstOf(commandSegments("git>/tmp/log add ."), "first segment").tokens,
+    ).toEqual(["git", "add", "."]);
   });
 
   test("records the separator that ended each segment", () => {
@@ -384,12 +408,16 @@ describe("shell lexer", () => {
     // refuse auto-approval for it.
     const overBudget = `${"env -S ".repeat(33)}rm -rf /`;
     const overSegments = lexSegments(overBudget);
-    const over = analyzeEffectiveCommands(overSegments[0]!);
+    const over = analyzeEffectiveCommands(
+      firstOf(overSegments, "first segment"),
+    );
     expect(over.commands).toEqual([]);
     expect(over.truncated).toBe(true);
 
     const withinBudget = `${"env -S ".repeat(32)}rm -rf /`;
-    const within = analyzeEffectiveCommands(lexSegments(withinBudget)[0]!);
+    const within = analyzeEffectiveCommands(
+      firstOf(lexSegments(withinBudget), "first segment"),
+    );
     expect(within.commands).toEqual([
       [
         { raw: "rm", value: "rm", spans: [{ text: "rm", quoted: false }] },
@@ -406,9 +434,13 @@ describe("shell lexer", () => {
     // analysis is flagged truncated.
     const body = `${"true; ".repeat(4096)}rm -rf /`;
     const script = `sh -c '${body}'`;
-    const analysis = analyzeEffectiveCommands(lexSegments(script)[0]!);
+    const analysis = analyzeEffectiveCommands(
+      firstOf(lexSegments(script), "first segment"),
+    );
     expect(analysis.commands.length).toBe(4096);
     expect(analysis.truncated).toBe(true);
-    expect(analysis.commands[0]!.map((t) => t.value)).toEqual(["true"]);
+    expect(
+      firstOf(analysis.commands, "first command").map((t) => t.value),
+    ).toEqual(["true"]);
   }, 30_000);
 });

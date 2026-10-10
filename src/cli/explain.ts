@@ -66,7 +66,7 @@ if (import.meta.main) {
 export async function runCli(argv: string[]): Promise<number> {
   const first = argv[0];
   const explicit = first !== undefined && !first.startsWith("-");
-  const command = explicit ? first! : "explain";
+  const command = explicit ? first : "explain";
   const rest = explicit ? argv.slice(1) : argv;
   try {
     switch (command) {

@@ -7,23 +7,35 @@ import {
 } from "../src/context.ts";
 import { buildReviewerPrompt, DEFAULT_TENANT_POLICY } from "../src/policy.ts";
 import { redactSecrets } from "../src/redact.ts";
+import {
+  ANTHROPIC_KEY,
+  BASIC_DASHED_PADDED,
+  BEARER_DASHED,
+  CSRF_TOKEN_PREFIX,
+  CSRF_TOKEN_VALUE,
+  GITHUB_FINE_GRAINED_PAT,
+  GITHUB_PAT,
+  GITHUB_USER_TOKEN,
+  HEADER_VALUE_OPAQUE,
+  JWT_TOKEN,
+  OPAQUE_ABCDEFGH,
+  OPAQUE_ABCDEFGHIJ,
+  OPENAI_KEY,
+  OPENAI_PROJECT_KEY,
+  PGPASSWORD_ASSIGNMENT,
+  POSTGRES_URL_WITH_PASSWORD,
+  SKSYNTHETIC_KEY,
+  SKSYNTHETIC_KEY_LONG,
+} from "./fixtures/synthetic-secrets.ts";
 import { request } from "./helpers.ts";
 
-// Live-secret-shaped fixtures are built by string concatenation so that no
-// continuous literal in source matches a static secret scanner (see AGENTS.md).
-// Scanners key on the full token shape; splitting the recognized prefix from
-// the body defeats that without weakening the assertion.
+// Scanner-prefixed fixtures are concatenated (see CONTRIBUTING.md, "Before
+// opening a pull request"); the ones Biome's noSecrets flags live in
+// fixtures/synthetic-secrets.ts.
 const AWS_EX = "AKIA" + "IOSFODNN7EXAMPLE";
 const AWS_ASIA = "ASIA" + "IOSFODNN7EXAMPLE";
-const GHP = "ghp_" + "syntheticGitHubToken01234567890abcdefghijklmnopqrstuv";
-const GHU = "ghu_" + "syntheticGitHubUserToken01234567890abcdefghijklmnopqr";
-const GH_FINE = "github_" + "pat_synthetictoken1234567890abcdef";
-const OAI_PROJ = "sk-" + "proj-synthetictoken1234567890abcdef";
-const OAI = "sk-" + "synthetictoken1234567890ABCDEF1234567890";
 const OAI_FRAG = "sk-" + "synthetic";
-const ANTHROPIC = "sk-" + "ant-synthetictoken1234567890ABCDEF";
 const SLACK = "xox" + "b-synthetic-slack-token-1234567890";
-const JWT = "ey" + "JhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.signatureabcdefg";
 const GLPAT = "gl" + "pat-syntheticgitlabtoken1234";
 const NVAPI = "nv" + "api-syntheticnvidiatoken1234abcd";
 const AWS_SECRET_VAL = "wJalrXUt" + "nFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
@@ -42,15 +54,15 @@ describe("redactSecrets — credential formats", () => {
   test.each([
     ["AWS access key id", `env ${AWS_EX} here`, AWS_EX],
     ["AWS temporary session token id", `creds ${AWS_ASIA} here`, AWS_ASIA],
-    ["GitHub PAT", GHP, "ghp_"],
-    ["GitHub user-to-server token", GHU, "ghu_"],
-    ["GitHub fine-grained", GH_FINE, "github_pat_"],
-    ["OpenAI project key", OAI_PROJ, OAI_FRAG],
-    ["OpenAI bare key", OAI, OAI_FRAG],
-    ["Anthropic key", ANTHROPIC, "sk-ant-"],
+    ["GitHub PAT", GITHUB_PAT, "ghp_"],
+    ["GitHub user-to-server token", GITHUB_USER_TOKEN, "ghu_"],
+    ["GitHub fine-grained", GITHUB_FINE_GRAINED_PAT, "github_pat_"],
+    ["OpenAI project key", OPENAI_PROJECT_KEY, OAI_FRAG],
+    ["OpenAI bare key", OPENAI_KEY, OAI_FRAG],
+    ["Anthropic key", ANTHROPIC_KEY, "sk-ant-"],
     ["Slack token", SLACK, "xox"],
     ["Google API key", `AIza${"a".repeat(35)}`, `AIza${"a".repeat(5)}`],
-    ["JWT", JWT, "eyJhbGci"],
+    ["JWT", JWT_TOKEN, "eyJhbGci"],
   ])("redacts %s", (_label, input, secret) => {
     const out = redactSecrets(input);
     expect(out).not.toContain(secret);
@@ -101,9 +113,7 @@ describe("redactSecrets — credential formats", () => {
   });
 
   test("redacts URL userinfo credentials", () => {
-    const out = redactSecrets(
-      "postgres://admin:s3cretpw@db.example.com:5432/app",
-    );
+    const out = redactSecrets(POSTGRES_URL_WITH_PASSWORD);
     expect(out).not.toContain("s3cretpw");
     expect(out).toContain("[REDACTED:userinfo]");
     expect(out).toContain("db.example.com");
@@ -113,6 +123,7 @@ describe("redactSecrets — credential formats", () => {
     );
     expect(usernameOnly).not.toContain(usernameToken);
     expect(usernameOnly).toContain(
+      // biome-ignore lint/security/noSecrets: expected redacted output (a [REDACTED:...] placeholder URL), not a credential
       "https://[REDACTED:userinfo]@example.invalid",
     );
     expect(redactSecrets("git@github.com:org/repo.git")).toBe(
@@ -121,20 +132,20 @@ describe("redactSecrets — credential formats", () => {
   });
 
   test("redacts Bearer / Basic / Token prefixes", () => {
-    expect(redactSecrets(`Authorization: Bearer ${OAI}`)).toContain(
+    expect(redactSecrets(`Authorization: Bearer ${OPENAI_KEY}`)).toContain(
       "Bearer [REDACTED:openai]",
     );
     expect(
       redactSecrets("Authorization: Basic dXNlcjpwYXNzMTIzNDU2Nzg="),
     ).toContain("Basic [REDACTED:basic]");
-    expect(redactSecrets("Token: abcdefgh1234567890")).toContain(
+    expect(redactSecrets(`Token: ${OPAQUE_ABCDEFGH}`)).toContain(
       "[REDACTED:credential]",
     );
   });
 
   test("redacts lowercase auth schemes (bearer / basic / token)", () => {
     // Case-insensitive flag: lowercase scheme prefixes must also be scrubbed.
-    const opaque = "abcdefghij1234567890";
+    const opaque = OPAQUE_ABCDEFGHIJ;
     expect(redactSecrets(`bearer ${opaque}`)).toContain("[REDACTED:bearer]");
     expect(redactSecrets(`bearer ${opaque}`)).not.toContain(opaque);
     expect(redactSecrets(`authorization: bearer ${opaque}`)).not.toContain(
@@ -148,14 +159,14 @@ describe("redactSecrets — credential formats", () => {
   });
 
   test("redacts Bearer tokens containing dashes", () => {
-    const dashed = "dGhpcy1pcy1hLXNlY3JldC10b2tlbg";
+    const dashed = BEARER_DASHED;
     const out = redactSecrets(`Authorization: Bearer ${dashed}`);
     expect(out).not.toContain(dashed);
     expect(out).toContain("Bearer [REDACTED:bearer]");
   });
 
   test("redacts Basic tokens containing dashes and padding", () => {
-    const dashed = "YWJjLWRlZi1naGk=";
+    const dashed = BASIC_DASHED_PADDED;
     const out = redactSecrets(`Authorization: Basic ${dashed}`);
     expect(out).not.toContain(dashed);
     expect(out).toContain("Basic [REDACTED:basic]");
@@ -163,8 +174,8 @@ describe("redactSecrets — credential formats", () => {
 
   test("dashed auth-scheme tokens stay redacted on a second pass", () => {
     const samples = [
-      "Authorization: Bearer dGhpcy1pcy1hLXNlY3JldC10b2tlbg",
-      "Authorization: Basic YWJjLWRlZi1naGk=",
+      `Authorization: Bearer ${BEARER_DASHED}`,
+      `Authorization: Basic ${BASIC_DASHED_PADDED}`,
     ];
     for (const sample of samples) {
       const once = redactSecrets(sample);
@@ -174,17 +185,17 @@ describe("redactSecrets — credential formats", () => {
   });
 
   test("redacts a dash-free Bearer token", () => {
-    const plain = "abcdefghij1234567890";
+    const plain = OPAQUE_ABCDEFGHIJ;
     const out = redactSecrets(`Authorization: Bearer ${plain}`);
     expect(out).not.toContain(plain);
     expect(out).toContain("Bearer [REDACTED:bearer]");
   });
 
   test("redacts Cookie / Set-Cookie headers", () => {
-    expect(redactSecrets("Cookie: session=abcdefgh1234567890")).not.toContain(
+    expect(redactSecrets(`Cookie: session=${OPAQUE_ABCDEFGH}`)).not.toContain(
       "abcdefgh",
     );
-    expect(redactSecrets("Set-Cookie: sid=abcdefgh1234567890")).not.toContain(
+    expect(redactSecrets(`Set-Cookie: sid=${OPAQUE_ABCDEFGH}`)).not.toContain(
       "abcdefgh",
     );
   });
@@ -192,7 +203,7 @@ describe("redactSecrets — credential formats", () => {
   test("redacts authorization / x-api-key / proxy-authorization header values", () => {
     // Direct header-value form (no Bearer/Basic scheme prefix), which the
     // auth-scheme rule does not catch — these hit the authorization-key rule.
-    const opaque = "syntheticapikey1234567890abcd";
+    const opaque = HEADER_VALUE_OPAQUE;
     expect(redactSecrets(`x-api-key: ${opaque}`)).not.toContain(opaque);
     expect(redactSecrets(`authorization: ${opaque}`)).not.toContain(opaque);
     expect(redactSecrets(`proxy-authorization: ${opaque}`)).not.toContain(
@@ -204,19 +215,19 @@ describe("redactSecrets — credential formats", () => {
   test("redacts compound env-var names (AWS_SECRET_ACCESS_KEY, DB_PASSWORD, …)", () => {
     expect(redactSecrets(AWS_SECRET_LINE)).not.toContain("wJalr");
     expect(redactSecrets("DB_PASSWORD=hunter2pass")).not.toContain("hunter2");
-    expect(redactSecrets("PGPASSWORD=postgrespass123")).not.toContain(
-      "postgrespass",
+    expect(redactSecrets(PGPASSWORD_ASSIGNMENT)).not.toContain("postgrespass");
+    expect(redactSecrets(`OPENAI_API_KEY=${OPENAI_KEY}`)).not.toContain(
+      OAI_FRAG,
     );
-    expect(redactSecrets(`OPENAI_API_KEY=${OAI}`)).not.toContain(OAI_FRAG);
   });
 
   test("redacts JSON / YAML credential assignments", () => {
     expect(redactSecrets('{"password": "hunter2pass"}')).not.toContain(
       "hunter2",
     );
-    expect(
-      redactSecrets("api_key: sksynthetic1234567890abcdef1234567890"),
-    ).not.toContain("sksynthetic");
+    expect(redactSecrets(`api_key: ${SKSYNTHETIC_KEY_LONG}`)).not.toContain(
+      "sksynthetic",
+    );
   });
 
   test("redacts truncated PEM blocks (BEGIN with no END)", () => {
@@ -244,19 +255,19 @@ describe("redactSecrets — credential formats", () => {
   });
 
   test("redacts bare session/cookie assignments", () => {
-    expect(redactSecrets("session=abcdefgh1234567890")).not.toContain(
+    expect(redactSecrets(`session=${OPAQUE_ABCDEFGH}`)).not.toContain(
       "abcdefgh",
     );
-    expect(redactSecrets('{"sid": "abcdefgh1234567890"}')).not.toContain(
+    expect(redactSecrets(`{"sid": "${OPAQUE_ABCDEFGH}"}`)).not.toContain(
       "abcdefgh",
     );
-    expect(redactSecrets("csrf_token=abcdef1234567890abcd")).not.toContain(
-      "abcdef1234567890",
+    expect(redactSecrets(`csrf_token=${CSRF_TOKEN_VALUE}`)).not.toContain(
+      CSRF_TOKEN_PREFIX,
     );
   });
 
   test("redacts private_key / passphrase / credential assignments", () => {
-    const val = (c: string) => c.repeat(8);
+    const val = (c: string): string => c.repeat(8);
     expect(redactSecrets(`private_key=${val("a")}`)).not.toContain("aaaaaaaa");
     expect(redactSecrets(`ssh_private_key=${val("b")}`)).not.toContain(
       "bbbbbbbb",
@@ -316,10 +327,10 @@ describe("redactSecrets — does not overreach", () => {
 describe("redactSecrets — robustness", () => {
   test("is idempotent", () => {
     const inputs = [
-      `Bearer ${OAI}`,
+      `Bearer ${OPENAI_KEY}`,
       AWS_SECRET_LINE,
-      "postgres://admin:s3cretpw@db.example.com:5432/app",
-      "password=hunter2pass and api_key=sksynthetic1234567890abcdef",
+      POSTGRES_URL_WITH_PASSWORD,
+      `password=hunter2pass and api_key=${SKSYNTHETIC_KEY}`,
       `${PEM_BEGIN}\nabc\n${PEM_END}`,
     ];
     for (const input of inputs) {
@@ -343,7 +354,7 @@ describe("redactSecrets — robustness", () => {
   });
 
   test("never leaves a known credential format in the output", () => {
-    const inputs = [AWS_EX, GHP, OAI, `Bearer ${JWT}`];
+    const inputs = [AWS_EX, GITHUB_PAT, OPENAI_KEY, `Bearer ${JWT_TOKEN}`];
     for (const input of inputs) {
       expect(redactSecrets(input)).not.toContain(input);
     }
@@ -356,7 +367,10 @@ describe("evidence redaction through buildEvidence", () => {
       {
         info: { id: "u1", role: "user" },
         parts: [
-          { type: "text", text: `My token is Bearer ${OAI}, please use it.` },
+          {
+            type: "text",
+            text: `My token is Bearer ${OPENAI_KEY}, please use it.`,
+          },
         ],
       },
       {
@@ -380,7 +394,7 @@ describe("evidence redaction through buildEvidence", () => {
         directory: "/repo",
         worktree: "/repo",
         transcript,
-        intentHistory: `USER_INTENT id=u1\nMy token is Bearer ${OAI}`,
+        intentHistory: `USER_INTENT id=u1\nMy token is Bearer ${OPENAI_KEY}`,
         enrichment: "",
         sshAudit: [],
       },
@@ -395,7 +409,7 @@ describe("evidence redaction through buildEvidence", () => {
 
 describe("tenant policy redaction", () => {
   test("buildReviewerPrompt redacts a credential accidentally placed in the tenant policy", () => {
-    const opaque = "abcdefghij1234567890";
+    const opaque = OPAQUE_ABCDEFGHIJ;
     const maliciousPolicy = `## Notes\nCall bearer ${opaque} if you need auth.`;
     const prompt = buildReviewerPrompt(maliciousPolicy, "harmless evidence");
     expect(prompt).not.toContain(opaque);

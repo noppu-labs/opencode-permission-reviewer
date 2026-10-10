@@ -1,4 +1,5 @@
 import type { ContextReader } from "../core/ports.ts";
+import { invariant } from "../invariant.ts";
 import { withTimeout } from "../opencode/transport.ts";
 import type { OpenCodeClientLike } from "../opencode/types.ts";
 import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
@@ -208,6 +209,7 @@ async function walkLineage(
       break;
     }
     visited.add(cursor.parentID);
+    // biome-ignore lint/performance/noAwaitInLoops: walks the session ancestry one parent at a time; the next parentID is only known from the session fetched in this step
     const parent = await fetchSession(client, cursor.parentID, directory);
     if (!parent) {
       missingParents.push(cursor.parentID);
@@ -248,10 +250,11 @@ function finalize(
   ) {
     missingParents.push(nextUnresolved);
   }
-  const root = nodes[nodes.length - 1];
+  const root = nodes.at(-1);
+  invariant(root, "walkLineage pushes the starting session before finalizing");
   return {
     nodes,
-    rootSessionID: root?.sessionID ?? nodes[0]!.sessionID,
+    rootSessionID: root.sessionID,
     depth,
     cycleDetected,
     truncated,

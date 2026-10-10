@@ -10,6 +10,7 @@ import {
   setGlobalConfigPathForTests,
 } from "../src/config/loader.ts";
 import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
+import { defined } from "./helpers.ts";
 
 describe("JSONC parser", () => {
   test("parses plain JSON", () => {
@@ -376,7 +377,9 @@ describe("config loader — trust boundary", () => {
       const loaded = loadResolvedConfig(undefined, dir);
       expect(loaded.policyRules).toHaveLength(1);
       // The loader overrode source to "project" regardless of the file's claim.
-      expect(loaded.policyRules[0]!.source).toBe("project");
+      expect(defined(loaded.policyRules[0], "policy rule").source).toBe(
+        "project",
+      );
     } finally {
       rmSync(dir, { recursive: true });
     }

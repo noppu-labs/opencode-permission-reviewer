@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import type { TuiPluginApi, TuiPluginMeta } from "@opencode-ai/plugin/tui";
 import { createUiStatus, encodeUiStatus } from "../src/ui-protocol.ts";
-import { request } from "./helpers.ts";
+import { defined, request } from "./helpers.ts";
 import { tui } from "./tui-loader.ts";
 
 /**
@@ -47,7 +47,7 @@ async function captureOverlay(): Promise<CapturedApi> {
   const toasts: Array<{ title?: string }> = [];
   let factories: Partial<Record<"app" | "app_bottom", () => unknown>> = {};
 
-  let dispose = () => {};
+  let dispose = (): void => {};
   const api = {
     lifecycle: {
       onDispose: (fn: () => void) => {
@@ -57,7 +57,7 @@ async function captureOverlay(): Promise<CapturedApi> {
     },
     route: {
       current: { name: "session", params: { sessionID: "ses_main" } },
-      register: () => () => {},
+      register: () => (): void => {},
       navigate: () => {},
     },
     theme: {
@@ -126,8 +126,9 @@ function factoryAttempt(
 ): { rendered: boolean; threw: boolean } {
   const factory = captured.factories[slot];
   expect(factory).toBeFunction();
+  const slotFactory = defined(factory, `${slot} factory`);
   try {
-    factory!();
+    slotFactory();
     return { rendered: false, threw: false };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -138,7 +139,7 @@ function factoryAttempt(
 function statusEvent(
   phase: "approved" | "denied" | "manual",
   overrides: Record<string, unknown> = {},
-) {
+): { properties: { command: string } } {
   const status = createUiStatus(request(), phase, {
     model: "test-model",
     variant: "high",

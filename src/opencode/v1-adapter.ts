@@ -1,4 +1,4 @@
-import { encodeUiStatus } from "../ui-protocol.ts";
+import { encodeUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
 import type {
   OpenCodeCapabilities,
   PermissionReplyInput,
@@ -57,7 +57,9 @@ export function createV1Adapter(
   const replyTransport = createReplyTransport({
     raw: transport,
     capabilities,
-    ...(logger === undefined ? {} : { logOnce: (message) => logger(message) }),
+    ...(logger === undefined
+      ? {}
+      : { logOnce: (message: string) => logger(message) }),
   });
 
   const client = input.client as unknown as OpenCodeClientLike;
@@ -65,7 +67,9 @@ export function createV1Adapter(
   // Permission reply is delegated to the isolated transport. The typed v1
   // method (postSessionIdPermissionsPermissionId) does not carry the feedback
   // message, so the transport resolves to the raw path.
-  const permissionReply: RuntimeContext["permissionReply"] = (request) => {
+  const permissionReply: RuntimeContext["permissionReply"] = (
+    request: unknown,
+  ) => {
     const opts = request as ReplyOptions;
     const flat: PermissionReplyInput = {
       requestID: opts.path.requestID,
@@ -84,7 +88,9 @@ export function createV1Adapter(
   // called on the `tui` object (not extracted) because the SDK uses `this` to
   // reach its internal transport.
   const tui = (input.client as { tui?: { publish?: TypedTuiPublish } }).tui;
-  const publishUiStatus: RuntimeContext["publishUiStatus"] = async (status) => {
+  const publishUiStatus: RuntimeContext["publishUiStatus"] = async (
+    status: ReviewUiStatus,
+  ) => {
     const body = {
       type: "tui.command.execute",
       properties: { command: encodeUiStatus(status) },

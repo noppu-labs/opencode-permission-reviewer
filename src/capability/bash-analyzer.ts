@@ -1,5 +1,6 @@
 import { homedir } from "node:os";
 import { normalize, resolve, sep } from "node:path";
+import { invariant } from "../invariant.ts";
 import { type ShellToken, shellBasename } from "../shell-lexer.ts";
 import type {
   CapabilityActionClass,
@@ -243,7 +244,9 @@ function mutationOperands(
   let targetDirectory: string | undefined;
   let endOfOptions = false;
   for (let i = 1; i < cmd.length; i += 1) {
-    const v = cmd[i]!.value;
+    const token = cmd[i];
+    invariant(token, "cmd[i] is in bounds");
+    const v = token.value;
     if (!endOfOptions && v === "--") {
       endOfOptions = true;
       continue;
@@ -262,7 +265,7 @@ function mutationOperands(
     }
     if (!endOfOptions && v.startsWith("-") && v.length > 1) {
       for (let position = 1; position < v.length; position += 1) {
-        const option = `-${v[position]!}`;
+        const option = `-${v.charAt(position)}`;
         if (!valueOpts.has(option)) continue;
         const attached = v.slice(position + 1);
         const value = attached || cmd[++i]?.value;
@@ -295,7 +298,8 @@ function mutationOperands(
     return { sources: operands, destinations: ["."], sawOperand: true };
   }
   const destinations: string[] = [];
-  if (operands.length > 0) destinations.push(operands[operands.length - 1]!);
+  const lastOperand = operands.at(-1);
+  if (lastOperand !== undefined) destinations.push(lastOperand);
   const sources = operands.length > 1 ? operands.slice(0, -1) : [];
   return { sources, destinations, sawOperand: operands.length > 0 };
 }
@@ -551,7 +555,9 @@ function readOnlyToolMutation(
     // value as the root would hide a later `/ -delete`.
     let index = 1;
     while (index < cmd.length) {
-      const value = cmd[index]!.value;
+      const token = cmd[index];
+      invariant(token, "cmd[index] is in bounds");
+      const value = token.value;
       if (value === "--") {
         index += 1;
         break;
@@ -572,18 +578,22 @@ function readOnlyToolMutation(
       break;
     }
     const roots: string[] = [];
+    let root = cmd[index];
     while (
-      index < cmd.length &&
-      !cmd[index]!.value.startsWith("-") &&
-      cmd[index]!.value !== "!" &&
-      cmd[index]!.value !== "("
+      root !== undefined &&
+      !root.value.startsWith("-") &&
+      root.value !== "!" &&
+      root.value !== "("
     ) {
-      roots.push(cmd[index]!.value);
+      roots.push(root.value);
       index += 1;
+      root = cmd[index];
     }
     const result: ReadOnlyToolMutation = { writeTargets: [] };
     for (; index < cmd.length; index += 1) {
-      const value = cmd[index]!.value;
+      const token = cmd[index];
+      invariant(token, "cmd[index] is in bounds");
+      const value = token.value;
       if (value === "-delete") {
         result.deletion = true;
         result.writeTargets.push(...roots);
@@ -605,7 +615,9 @@ function readOnlyToolMutation(
   if (base === "sort") {
     const result: ReadOnlyToolMutation = { writeTargets: [] };
     for (let index = 1; index < cmd.length; index += 1) {
-      const value = cmd[index]!.value;
+      const token = cmd[index];
+      invariant(token, "cmd[index] is in bounds");
+      const value = token.value;
       if (value === "-o" || value === "--output") {
         const target = cmd[index + 1]?.value;
         if (target !== undefined && !target.startsWith("-"))
@@ -669,11 +681,12 @@ function hasInlineCodeOption(tokens: ShellToken[]): {
   interpreter: string;
   inline: boolean;
 } {
-  if (tokens.length === 0) return { interpreter: "", inline: false };
-  const base = shellBasename(tokens[0]!.value);
+  const first = tokens[0];
+  if (first === undefined) return { interpreter: "", inline: false };
+  const base = shellBasename(first.value);
   if (!INTERPRETERS.has(base)) return { interpreter: base, inline: false };
-  for (let i = 1; i < tokens.length; i += 1) {
-    const v = tokens[i]!.value;
+  for (const token of tokens.slice(1)) {
+    const v = token.value;
     if (
       v === "-c" ||
       v === "--command" ||
@@ -730,7 +743,7 @@ function classifyPath(
   }
   const absolutePath =
     absolute.startsWith("/") || /^[A-Za-z]:[\\/]/.test(absolute);
-  const within = (root: string) => {
+  const within = (root: string): boolean => {
     const normalizedRoot = normalize(root);
     return (
       absolute === normalizedRoot ||
@@ -756,8 +769,8 @@ function classifyPath(
 
 function destinationFromTokens(tokens: ShellToken[]): string[] {
   const out: string[] = [];
-  for (let i = 1; i < tokens.length; i += 1) {
-    const v = tokens[i]!.value;
+  for (const token of tokens.slice(1)) {
+    const v = token.value;
     if (/^[a-z][a-z0-9+.-]*:\/\/[^\s]+/.test(v)) out.push(v);
     else if (/^[a-z0-9.-]+\.[a-z]{2,}(:[0-9]+)?(\/[^\s]*)?$/i.test(v))
       out.push(v);
@@ -772,7 +785,9 @@ function destinationFromTokens(tokens: ShellToken[]): string[] {
 function gitSubcommandOf(cmd: ShellToken[]): { sub?: string; index?: number } {
   let index = 1;
   while (index < cmd.length) {
-    const value = cmd[index]!.value;
+    const token = cmd[index];
+    invariant(token, "cmd[index] is in bounds");
+    const value = token.value;
     if (
       value === "-C" ||
       value === "-c" ||
@@ -806,6 +821,7 @@ function gitSubcommandMutates(
   const positional = args.filter(
     (value) => value !== "--" && !value.startsWith("-"),
   );
+  const firstPositional = positional[0];
   if (sub === "branch") {
     if (args.length === 0) return false;
     if (
@@ -855,7 +871,8 @@ function gitSubcommandMutates(
   }
   if (sub === "remote") {
     return (
-      positional.length > 0 && !["show", "get-url"].includes(positional[0]!)
+      firstPositional !== undefined &&
+      !["show", "get-url"].includes(firstPositional)
     );
   }
   if (sub === "config") {
@@ -891,12 +908,14 @@ function gitSubcommandMutates(
     return false;
   if (
     sub === "notes" &&
-    (positional.length === 0 || ["list", "show"].includes(positional[0]!))
+    (firstPositional === undefined ||
+      ["list", "show"].includes(firstPositional))
   )
     return false;
   if (
     sub === "submodule" &&
-    (positional.length === 0 || ["status", "summary"].includes(positional[0]!))
+    (firstPositional === undefined ||
+      ["status", "summary"].includes(firstPositional))
   )
     return false;
   if (sub === "symbolic-ref") {
@@ -960,17 +979,18 @@ export function analyzeCapability(
     let k = 0;
     while (
       k < segment.tokens.length &&
-      SHELL_KEYWORDS.has(segment.tokens[k]!.value)
+      SHELL_KEYWORDS.has(segment.tokens[k]?.value ?? "")
     )
       k += 1;
     while (
       k < segment.tokens.length &&
-      /^[A-Za-z_][A-Za-z0-9_]*=/.test(segment.tokens[k]!.value)
+      /^[A-Za-z_][A-Za-z0-9_]*=/.test(segment.tokens[k]?.value ?? "")
     ) {
       k += 1;
     }
-    if (k < segment.tokens.length) {
-      const head = shellBasename(segment.tokens[k]!.value);
+    const headToken = segment.tokens[k];
+    if (headToken !== undefined) {
+      const head = shellBasename(headToken.value);
       if (PRIVILEGE_WRAPPERS.has(head)) {
         privilegeEscalation = true;
         childProcesses = true;
@@ -1000,8 +1020,9 @@ export function analyzeCapability(
   }
 
   for (const cmd of parsed.effective) {
-    if (cmd.length === 0) continue;
-    const base = shellBasename(cmd[0]!.value);
+    const first = cmd[0];
+    if (first === undefined) continue;
+    const base = shellBasename(first.value);
     // A "usually read-only" executable in a mutating form (find -delete,
     // sort -o, yq -i) is a mutation: surface its effects here and disqualify
     // the read-only classification below.
@@ -1064,8 +1085,8 @@ export function analyzeCapability(
       const { inline } = hasInlineCodeOption(cmd);
       if (inline) createsAdHocCode = true;
       // If the interpreter targets a generated/heredoc file, it's ad-hoc code.
-      for (let i = 1; i < cmd.length; i += 1) {
-        const arg = cmd[i]!.value;
+      for (const token of cmd.slice(1)) {
+        const arg = token.value;
         if (heredocOutputs.has(arg)) createsAdHocCode = true;
         if (arg.startsWith(directory) || arg.startsWith(worktree))
           executesRepositoryCode = true;
@@ -1184,8 +1205,8 @@ export function analyzeCapability(
     if (DELETION_TOOLS.has(base)) {
       deletion = true;
       let anyTarget = false;
-      for (let i = 1; i < cmd.length; i += 1) {
-        const v = cmd[i]!.value;
+      for (const token of cmd.slice(1)) {
+        const v = token.value;
         if (v.startsWith("-")) continue;
         anyTarget = true;
         const cls = classifyPath(v, directory, worktree);
@@ -1241,10 +1262,10 @@ export function analyzeCapability(
   // an input (`<`) redirect target. Wrappers are already peeled in
   // `effective`, so `sudo cat ...` arrives here as `cat ...`. Facts accumulate
   // with OR across every command in the chain.
-  for (let index = 0; index < parsed.effective.length; index += 1) {
-    const cmd = parsed.effective[index]!;
-    if (cmd.length === 0) continue;
-    const base = shellBasename(cmd[0]!.value);
+  for (const [index, cmd] of parsed.effective.entries()) {
+    const first = cmd[0];
+    if (first === undefined) continue;
+    const base = shellBasename(first.value);
     const redirects = parsed.redirections[index] ?? [];
     for (const r of redirects) {
       if (r.operator !== "<") continue;
@@ -1253,10 +1274,13 @@ export function analyzeCapability(
     }
     if (!CREDENTIAL_READERS.has(base)) continue;
     for (let i = 1; i < cmd.length; i += 1) {
-      const value = cmd[i]!.value;
+      const token = cmd[i];
+      const previous = cmd[i - 1];
+      invariant(token && previous, "cmd[i - 1] and cmd[i] are in bounds");
+      const value = token.value;
       // A token following a redirect operator is that redirect's target, not
       // a path operand: `cat > .env` writes the file, it does not read it.
-      const prev = cmd[i - 1]!.value;
+      const prev = previous.value;
       if (prev === "<" || prev === ">" || prev === ">>" || prev === "<<")
         continue;
       if (/^[0-9]*[<>]/.test(prev)) continue;

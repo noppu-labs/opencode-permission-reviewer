@@ -1,4 +1,4 @@
-import { afterEach, expect, mock, test } from "bun:test";
+import { afterEach, expect, type Mock, mock, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,12 +8,17 @@ import {
   hostCompatibleFetch,
   validateHostEndpoint,
 } from "../src/opencode/v2/connection.ts";
+import { HTTP_URL_WITH_USERINFO } from "./fixtures/synthetic-secrets.ts";
+import { defined } from "./helpers.ts";
 
 const hostUrl = "OPENCODE_PERMISSION_REVIEWER_HOST_URL";
 const password = "OPENCODE_PASSWORD";
 const legacyPassword = "OPENCODE_SERVER_PASSWORD";
 const stateHome = "XDG_STATE_HOME";
-const originalEnv = {
+const originalEnv: Record<
+  typeof hostUrl | typeof password | typeof legacyPassword | typeof stateHome,
+  string | undefined
+> = {
   [hostUrl]: process.env[hostUrl],
   [password]: process.env[password],
   [legacyPassword]: process.env[legacyPassword],
@@ -36,8 +41,14 @@ function fakeClient(actualIdentity: string): OpenCodeClient {
 /** The bundled client exposes `make` as an accessor, which bun's spyOn
  *  cannot mock and whose setter ignores assignments; redefining the
  *  property works and the original descriptor restores cleanly. */
-function stubMake(impl: () => OpenCodeClient) {
-  const descriptor = Object.getOwnPropertyDescriptor(OpenCode, "make")!;
+function stubMake(impl: () => OpenCodeClient): {
+  make: Mock<() => OpenCodeClient>;
+  restore: () => void;
+} {
+  const descriptor = defined(
+    Object.getOwnPropertyDescriptor(OpenCode, "make"),
+    "OpenCode.make descriptor",
+  );
   const make = mock(impl);
   Object.defineProperty(OpenCode, "make", {
     value: make,
@@ -47,16 +58,16 @@ function stubMake(impl: () => OpenCodeClient) {
   });
   return {
     make,
-    restore: () => {
+    restore: (): void => {
       Object.defineProperty(OpenCode, "make", descriptor);
     },
   };
 }
 
 test("explicit V2 host URLs reject embedded credentials and non-loopback HTTP", () => {
-  expect(() =>
-    validateHostEndpoint("http://user:pass@127.0.0.1:4096/"),
-  ).toThrow("without embedded credentials");
+  expect(() => validateHostEndpoint(HTTP_URL_WITH_USERINFO)).toThrow(
+    "without embedded credentials",
+  );
   expect(() => validateHostEndpoint("http://example.invalid:4096/")).toThrow(
     "outside loopback require HTTPS",
   );

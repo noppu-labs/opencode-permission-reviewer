@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createUiStatus } from "../src/ui-protocol.ts";
-import { request } from "./helpers.ts";
+import { defined, request } from "./helpers.ts";
 import { resolveReviewTheme, setupTuiV2, testRender } from "./tui-loader.ts";
 
 test("TUI resolves nested, flat, and unavailable host themes", () => {
@@ -135,7 +135,7 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
           subscribe: async function* (
             _name: string,
             { signal }: { signal: AbortSignal },
-          ) {
+          ): AsyncGenerator<unknown, void, unknown> {
             const channel: Channel = { queue: [], ended: false };
             channels.push(channel);
             const wake = () => channel.wake?.();
@@ -143,10 +143,12 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
             try {
               while (!signal.aborted && !channel.ended) {
                 if (channel.queue.length) yield channel.queue.shift();
-                else
+                else {
+                  // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
                   await new Promise<void>((resolve) => {
                     channel.wake = resolve;
                   });
+                }
               }
             } finally {
               signal.removeEventListener("abort", wake);
@@ -161,9 +163,10 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     width: 100,
     height: 24,
   });
-  const waitForFrame = async (text: string, present = true) => {
+  const waitForFrame = async (text: string, present = true): Promise<void> => {
     const deadline = Date.now() + 3000;
     do {
+      // biome-ignore lint/performance/noAwaitInLoops: polls the rendered frame until the text appears or the deadline passes
       await view.flush();
       if (view.captureCharFrame().includes(text) === present) return;
       await Bun.sleep(10);
@@ -208,8 +211,9 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
         }),
       ],
     };
-    channels[0]!.ended = true;
-    channels[0]!.wake?.();
+    const firstChannel = defined(channels[0], "first channel");
+    firstChannel.ended = true;
+    firstChannel.wake?.();
     await waitForFrame("Review status unavailable");
     expect(view.captureCharFrame()).not.toContain("Review approved");
     expect(modeDepth).toBe(0);
@@ -217,7 +221,7 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     await waitForFrame("Review blocked");
     expect(snapshots).toBe(2);
     expect(view.captureCharFrame()).toContain("Review blocked");
-    const channel = channels.at(-1)!;
+    const channel = defined(channels.at(-1), "latest channel");
     channel.queue.push(
       {
         location: { directory },

@@ -1,4 +1,4 @@
-import type { OpenCodeClient } from "@opencode/client";
+import type { OpenCodeClient, SessionInfo } from "@opencode/client";
 import { selectIntentMessages } from "../../context.ts";
 import type { ContextReader } from "../../core/ports.ts";
 import type { MessageWithParts } from "../../types.ts";
@@ -14,13 +14,17 @@ export function createV2ContextReader(
   signal: AbortSignal,
 ): ContextReader {
   return {
-    async session(sessionID, directory) {
+    async session(sessionID: string, directory: string): Promise<SessionInfo> {
       const session = await ctx.session.get({ sessionID }, { signal });
       if (session.location.directory !== directory)
         throw new Error("Session location mismatch");
       return session;
     },
-    async messages(sessionID, directory, limit) {
+    async messages(
+      sessionID: string,
+      directory: string,
+      limit: number,
+    ): Promise<MessageWithParts[]> {
       const session = await ctx.session.get({ sessionID }, { signal });
       if (session.location.directory !== directory)
         throw new Error("Session location mismatch");
@@ -43,16 +47,16 @@ export function createV2ContextReader(
       }
       for (const message of messages.slice(-limit)) {
         if (message.type === "user") {
+          const fork = session.fork;
           const inherited =
-            session.fork !== undefined &&
-            message.time.created < session.time.created;
+            fork !== undefined && message.time.created < session.time.created;
           result.push({
             info: {
               id: message.id,
               role: inherited ? "assistant" : "user",
               time: message.time,
               ...(inherited
-                ? { originSessionID: session.fork!.sessionID, synthetic: true }
+                ? { originSessionID: fork.sessionID, synthetic: true }
                 : {}),
             },
             parts: [
@@ -87,7 +91,11 @@ export function createV2ContextReader(
       }
       return result;
     },
-    async intentMessages(sessionID, directory, limit) {
+    async intentMessages(
+      sessionID: string,
+      directory: string,
+      limit: number,
+    ): Promise<MessageWithParts[]> {
       const session = await ctx.session.get({ sessionID }, { signal });
       if (session.location.directory !== directory)
         throw new Error("Session location mismatch");
@@ -110,9 +118,9 @@ export function createV2ContextReader(
             .slice(-limit);
       const normalized = messages.flatMap((message) => {
         if (message.type !== "user") return [];
+        const fork = session.fork;
         const inherited =
-          session.fork !== undefined &&
-          message.time.created < session.time.created;
+          fork !== undefined && message.time.created < session.time.created;
         return [
           {
             info: {
@@ -120,7 +128,7 @@ export function createV2ContextReader(
               role: inherited ? "assistant" : "user",
               time: message.time,
               ...(inherited
-                ? { originSessionID: session.fork!.sessionID, synthetic: true }
+                ? { originSessionID: fork.sessionID, synthetic: true }
                 : {}),
             },
             parts: [

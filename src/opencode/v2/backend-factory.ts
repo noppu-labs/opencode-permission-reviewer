@@ -50,13 +50,18 @@ export function createV2ReviewerBackend(
     secondaryConfig?.model,
   );
   return {
-    owns: (sessionID) => secondary?.owns(sessionID) ?? false,
-    review: (envelope, attempt, client) =>
+    owns: (sessionID: string) => secondary?.owns(sessionID) ?? false,
+    review: (
+      envelope: ReviewEnvelope,
+      attempt: ReviewAttempt,
+      client: OpenCodeClient,
+    ) =>
       primary.review(
         envelope,
         attempt,
         secondary
-          ? (value, current) => secondary.review(value, current, client)
+          ? (value: ReviewEnvelope, current: ReviewAttempt) =>
+              secondary.review(value, current, client)
           : undefined,
       ),
     waitForIdle: async () => {

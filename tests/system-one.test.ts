@@ -18,9 +18,18 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../src/types.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
-const choice = (selected: string, keys: string[], confidence = 1) => {
+const choice = (
+  selected: string,
+  keys: string[],
+  confidence = 1,
+): {
+  type: string;
+  choice: string;
+  confidence: number;
+  probabilities: Record<string, number>;
+} => {
   const remainder = (1 - confidence) / (keys.length - 1);
   return {
     type: "choice",
@@ -32,7 +41,11 @@ const choice = (selected: string, keys: string[], confidence = 1) => {
   };
 };
 
-function response(overrides: Record<string, unknown> = {}) {
+function response(overrides: Record<string, unknown> = {}): {
+  model: string;
+  answers: Record<string, unknown>;
+  usage: { input_tokens: number; output_tokens: number };
+} {
   const answers: Record<string, unknown> = {
     outcome: choice("allow", ["allow", "deny", "escalate"]),
     risk_level: choice("low", ["low", "medium", "high", "critical"]),
@@ -125,7 +138,7 @@ function reasoningAllow(
 function escalatingJevBackend(
   config: ReviewerConfig,
   reasoning: ReviewExecutionResult,
-) {
+): SystemOneReviewerBackend {
   return new SystemOneReviewerBackend(
     config,
     async () => reasoning,
@@ -141,11 +154,11 @@ function escalatingJevBackend(
 function reviewWithIncompleteEvidence(
   config: ReviewerConfig,
   backend: SystemOneReviewerBackend,
-) {
+): Promise<ReviewExecutionResult> {
   const pending = envelope();
   return evaluateReview(pending.request, config, {
     collect: async () => ({ ...pending, actionEvidenceComplete: false }),
-    review: (value) =>
+    review: (value: ReviewEnvelope) =>
       backend.review(value, new ReviewAttempt("generation", 10_000)),
     active: () => true,
     auxiliarySession: () => false,
@@ -219,6 +232,7 @@ describe("System One reviewer", () => {
               model: provider.returnedModel,
             });
           });
+          // biome-ignore lint/performance/noAwaitInLoops: each case sets and restores process.env provider keys around its invoker, so cases must not overlap
           const raw = await invoke(state, new AbortController().signal);
           expect(calls).toHaveLength(1);
           expect(calls[0]?.url).toBe(provider.url);
@@ -542,7 +556,10 @@ describe("System One reviewer", () => {
       config,
     );
     expect(parsed?.difficultReason).toContain("below 0.40");
-    expect(enforceParsedSystemOneReview(parsed!, config).kind).toBe("deny");
+    expect(
+      enforceParsedSystemOneReview(defined(parsed, "parsed review"), config)
+        .kind,
+    ).toBe("deny");
   });
 
   test("does not reapply chat-model confidence floors after reconciliation", () => {
@@ -554,9 +571,12 @@ describe("System One reviewer", () => {
       config,
     );
     expect(parsed?.difficultReason).toBeUndefined();
-    expect(enforceSystemOneDecision(parsed!.decision, config).kind).toBe(
-      "allow",
-    );
+    expect(
+      enforceSystemOneDecision(
+        defined(parsed, "parsed review").decision,
+        config,
+      ).kind,
+    ).toBe("allow");
   });
 
   test("treats an unsafe allow signal as a difficult contradiction", () => {
@@ -611,10 +631,11 @@ describe("System One reviewer", () => {
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free");
     expect(escalations).toBe(1);
     // Jev's scores go in `systemOne`; `reviewerEscalatedFrom` keeps only model and reason.
-    expect(Object.keys(result.reviewerEscalatedFrom!).sort()).toEqual([
-      "model",
-      "reason",
-    ]);
+    expect(
+      Object.keys(
+        defined(result.reviewerEscalatedFrom, "reviewerEscalatedFrom"),
+      ).sort(),
+    ).toEqual(["model", "reason"]);
     expect(result.systemOne).toMatchObject({
       returnedModel: "jev-1.13.0",
       outcome: {
@@ -921,7 +942,7 @@ describe("System One scores in V1 audit records", () => {
     }
   }
 
-  function audits(harness: ReturnType<typeof runtime>) {
+  function audits(harness: ReturnType<typeof runtime>): ReviewAuditRecord[] {
     return (harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] })
       .auditRecords;
   }

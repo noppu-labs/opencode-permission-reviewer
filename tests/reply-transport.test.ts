@@ -79,7 +79,7 @@ describe("reply transport", () => {
     createReplyTransport({
       raw,
       capabilities: RAW_CAPS,
-      logOnce: (m) => messages.push(m),
+      logOnce: (m: string) => messages.push(m),
     });
     expect(messages).toHaveLength(1);
     expect(messages[0]).toContain("path=raw-authenticated");

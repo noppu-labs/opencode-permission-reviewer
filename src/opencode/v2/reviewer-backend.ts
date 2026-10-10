@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
+import type { ToolContext } from "@opencode/plugin/promise/tool";
 import { z } from "zod";
 import { splitModel } from "../../config.ts";
 import { buildEvidenceResult } from "../../context.ts";
@@ -90,7 +91,10 @@ export class V2ReviewerBackend {
               "Return exactly one final permission review decision matching the required schema.",
             options: { codemode: false, permission: TOOL },
             input: resultSchema,
-            execute: async (input, execution) => {
+            execute: async (
+              input: z.infer<typeof resultSchema>,
+              execution: ToolContext,
+            ) => {
               const pending = this.sessions.get(execution.sessionID);
               if (
                 !pending?.attempt.active() ||
@@ -149,7 +153,7 @@ export class V2ReviewerBackend {
           }
         }),
       );
-      return async () => {
+      return async (): Promise<void> => {
         await Promise.all(
           registrations.map((registration) => registration.dispose()),
         );
@@ -213,7 +217,7 @@ export class V2ReviewerBackend {
     client: OpenCodeClient,
   ): Promise<ReviewerLocation> {
     const registrations = new Set<() => Promise<void>>();
-    const dispose = async () => {
+    const dispose = async (): Promise<void> => {
       const results = await Promise.allSettled(
         [...registrations].map((registration) => registration()),
       );
@@ -221,9 +225,9 @@ export class V2ReviewerBackend {
       if (failed) throw failed.reason;
     };
     const isolated = await createIsolatedLocation(async (context) => {
-      if (this.closing) return async () => {};
+      if (this.closing) return async (): Promise<void> => {};
       const cleanup = await this.register(context);
-      const registration = async () => {
+      const registration = async (): Promise<void> => {
         if (!registrations.delete(registration)) return;
         await cleanup();
       };
@@ -349,6 +353,7 @@ export class V2ReviewerBackend {
           attempt.signal,
           AbortSignal.timeout(this.config.timeoutMs),
         ]);
+        // biome-ignore lint/performance/noAwaitInLoops: re-prompts the same exclusively owned reviewer session only after the previous answer was invalid, appending a correction to the prompt; prompts on one session must not overlap
         const admitted = await attempt.wait(
           client.session.prompt(
             { sessionID: id, text: pending.prompt },
@@ -442,6 +447,7 @@ export class V2ReviewerBackend {
         if (createIssued) {
           for (let retry = 0; retry < 2 && !cleanupConfirmed; retry++) {
             try {
+              // biome-ignore lint/performance/noAwaitInLoops: cleanup retry; each pass interrupts, removes and re-checks the reviewer session and runs again only while the previous pass left cleanup unconfirmed
               await client.session.interrupt(
                 { sessionID: id },
                 { signal: AbortSignal.timeout(2000) },
@@ -472,8 +478,7 @@ export class V2ReviewerBackend {
             }
           }
           if (!cleanupConfirmed)
-            // Cleanup uncertainty must override a provisional allow; the controller fails closed.
-            // eslint-disable-next-line no-unsafe-finally
+            // biome-ignore lint/correctness/noUnsafeFinally: deliberately overrides the provisional decision so an unconfirmed cleanup fails closed
             throw new Error(
               "Reviewer cleanup could not be confirmed; isolation guards remain active",
             );
@@ -501,6 +506,7 @@ async function waitForIsolationActive(
 ): Promise<void> {
   const root = resolve(directory);
   for (;;) {
+    // biome-ignore lint/performance/noAwaitInLoops: polls the host plugin inventory every 100 ms until the isolation bootstrap reports active or failed; each poll runs only after the previous one saw it pending
     const plugins = await client.plugin.list(
       { location: { directory } },
       { signal },
@@ -530,7 +536,7 @@ async function waitForIsolationActive(
         reject(signal.reason);
         return;
       }
-      const onAbort = () => {
+      const onAbort = (): void => {
         clearTimeout(timer);
         reject(signal.reason);
       };

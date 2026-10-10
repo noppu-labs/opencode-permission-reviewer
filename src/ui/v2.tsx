@@ -25,14 +25,14 @@ const color = (value: unknown): ColorInput | undefined => {
   const candidate = object(value);
   return candidate && "buffer" in candidate ? (value as ColorInput) : undefined;
 };
-const FALLBACK_THEME = {
+const FALLBACK_THEME: Record<keyof ReviewTheme, string> = {
   backgroundPanel: "#111111",
   text: "#eeeeee",
   textMuted: "#999999",
   info: "#4da3ff",
   success: "#48c774",
   error: "#ff5c5c",
-} satisfies ReviewTheme;
+};
 
 export function resolveReviewTheme(value: unknown): ReviewTheme {
   const host = object(value);
@@ -93,7 +93,7 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
   let reconnect: ReturnType<typeof setTimeout> | undefined;
   let popMode: (() => void) | undefined;
   let routeSession: string | undefined;
-  const active = () => {
+  const active = (): ReviewUiStatus | undefined => {
     revision();
     const route = ctx.ui.router.current();
     return route.type === "session"
@@ -105,7 +105,7 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
   };
   const theme = (): ReviewTheme =>
     resolveReviewTheme((ctx as unknown as { theme?: unknown }).theme);
-  const refresh = () => {
+  const refresh = (): void => {
     touch((value) => value + 1);
     const reviewing = active()?.phase === "reviewing";
     if (reviewing && !popMode) {
@@ -120,7 +120,7 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
       popMode = undefined;
     }
   };
-  const applyStatus = (value: unknown) => {
+  const applyStatus = (value: unknown): void => {
     const status = decodeUiStatus(encodeUiStatus(value as ReviewUiStatus));
     if (!status) return;
     state.apply(status);
@@ -131,7 +131,7 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
         message: status.reason ?? "The host requires your decision.",
       });
   };
-  const update = (value: unknown, owner: AbortController) => {
+  const update = (value: unknown, owner: AbortController): void => {
     if (owner !== controller || owner.signal.aborted) return;
     const event = object(value);
     if (!event || event.directory !== directory) return;
@@ -146,7 +146,7 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
     applyStatus(event.status);
     refresh();
   };
-  const markDisconnected = () => {
+  const markDisconnected = (): void => {
     for (const status of state.all())
       if (status.phase === "reviewing")
         state.apply({
@@ -157,7 +157,7 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
         });
     refresh();
   };
-  const connect = async () => {
+  const connect = async (): Promise<void> => {
     controller?.abort();
     clearTimeout(reconnect);
     if (!directory || stopped) return;
@@ -236,14 +236,14 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
       return (
         <>
           <Show when={reviewing()} keyed>
-            {(current) => (
+            {(current: ReviewUiStatus) => (
               <box position="absolute" bottom={0} left={0} right={0}>
                 <ReviewProgress theme={theme} status={current} frame={frame} />
               </box>
             )}
           </Show>
           <Show when={terminal()} keyed>
-            {(current) => (
+            {(current: ReviewUiStatus) => (
               <box position="absolute" bottom={0} left={0} right={0}>
                 <ReviewResult theme={theme} status={current} />
               </box>

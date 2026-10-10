@@ -14,8 +14,9 @@ export function localExecutableCommand(
     spans: [{ text: value, quoted: true }],
   }));
   const commands = effectiveCommands({ tokens: normalized });
-  if (commands.length !== 1) return;
-  const command = commands[0]!.map((token) => token.value);
+  const [only] = commands;
+  if (commands.length !== 1 || only === undefined) return;
+  const command = only.map((token) => token.value);
   const offset = normalized.length - command.length;
   // A command-string expansion does not establish the inner cwd. Requiring
   // the original tail also prevents command arguments from becoming executables.

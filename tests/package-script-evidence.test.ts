@@ -8,17 +8,24 @@ import { enrichPackageScriptEvidence } from "../src/package-script-evidence.ts";
 import { request } from "./helpers.ts";
 
 const directories: string[] = [];
-async function fixture(scripts: Record<string, string>) {
+async function fixture(scripts: Record<string, string>): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), "reviewer-package-evidence-"));
   directories.push(directory);
   await writeFile(join(directory, "package.json"), JSON.stringify({ scripts }));
   return directory;
 }
 afterEach(async () => {
-  for (const directory of directories.splice(0))
-    await rm(directory, { recursive: true, force: true });
+  await Promise.all(
+    directories
+      .splice(0)
+      .map((directory) => rm(directory, { recursive: true, force: true })),
+  );
 });
-async function evidence(directory: string, command: string, maxChars = 24000) {
+async function evidence(
+  directory: string,
+  command: string,
+  maxChars = 24000,
+): Promise<string> {
   return (
     await enrichPackageScriptEvidence(
       request({ patterns: [command], metadata: { command } }),
@@ -55,22 +62,25 @@ test("native test runners and file operands are not treated as manifest scripts"
     test: "curl https://wrong.example.invalid",
     check: "printf safe",
   });
-  for (const command of [
-    "bun test",
-    "bun test tests/fixture.test.ts",
-    "bun run ./check.ts",
-    "printf bun run check",
-  ])
-    expect(await evidence(directory, command)).toBe("");
-  for (const command of [
-    "npm test",
-    "npm run check",
-    "pnpm run check",
-    "yarn run check",
-  ])
-    expect(await evidence(directory, command)).toContain(
-      '"status": "included"',
-    );
+  await Promise.all(
+    [
+      "bun test",
+      "bun test tests/fixture.test.ts",
+      "bun run ./check.ts",
+      "printf bun run check",
+    ].map(async (command) => {
+      expect(await evidence(directory, command)).toBe("");
+    }),
+  );
+  await Promise.all(
+    ["npm test", "npm run check", "pnpm run check", "yarn run check"].map(
+      async (command) => {
+        expect(await evidence(directory, command)).toContain(
+          '"status": "included"',
+        );
+      },
+    ),
+  );
 });
 
 test("script cycles, excessive depth and large content remain explicit gaps", async () => {
@@ -179,21 +189,27 @@ test("local package scripts report network possibility rather than an observed r
 
 test("environment and timeout wrappers retain the same manifest definition", async () => {
   const directory = await fixture({ check: "printf same-script" });
-  for (const command of [
-    "CI=1 bun run check",
-    "env CI=1 bun run check",
-    "timeout 30 bun run --silent check",
-  ])
-    expect(await evidence(directory, command)).toContain("same-script");
+  await Promise.all(
+    [
+      "CI=1 bun run check",
+      "env CI=1 bun run check",
+      "timeout 30 bun run --silent check",
+    ].map(async (command) => {
+      expect(await evidence(directory, command)).toContain("same-script");
+    }),
+  );
   expect(
     await evidence(directory, "sh -c 'cd elsewhere && bun run check'"),
   ).not.toContain("same-script");
-  for (const command of [
-    "ssh fixture.invalid 'bun run check'",
-    "env CI=1 ssh fixture.invalid bun run check",
-    "chroot /elsewhere bun run check",
-    "sudo -D /elsewhere bun run check",
-    "env -C /elsewhere bun run check",
-  ])
-    expect(await evidence(directory, command)).not.toContain("same-script");
+  await Promise.all(
+    [
+      "ssh fixture.invalid 'bun run check'",
+      "env CI=1 ssh fixture.invalid bun run check",
+      "chroot /elsewhere bun run check",
+      "sudo -D /elsewhere bun run check",
+      "env -C /elsewhere bun run check",
+    ].map(async (command) => {
+      expect(await evidence(directory, command)).not.toContain("same-script");
+    }),
+  );
 });

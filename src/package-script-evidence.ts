@@ -1,6 +1,7 @@
 import { lstat } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { invariant } from "./invariant.ts";
 import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
 import { effectiveCommands } from "./shell-lexer.ts";
 import {
@@ -45,9 +46,13 @@ function invocation(tokens: string[]): ScriptInvocation | undefined {
   if (!MANAGERS.has(manager)) return;
   let cursor = 1;
   let ambiguous = false;
-  const skipOptions = () => {
+  const skipOptions = (): void => {
     while (tokens[cursor]?.startsWith("-")) {
-      const option = tokens[cursor++]!;
+      const option = tokens[cursor++];
+      invariant(
+        option !== undefined,
+        "the loop condition read a token at this cursor",
+      );
       if (
         /^(?:--(?:cwd|prefix|workspace|workspaces|filter)|-F|-C)(?:=|$)/.test(
           option,
@@ -105,7 +110,7 @@ export async function enrichPackageScriptEvidence(
   if (request.permission !== "bash") return { text: "" };
   const records: ScriptRecord[] = [];
   const active = new Set<string>();
-  const calls = (tokens: string[]) => {
+  const calls = (tokens: string[]): ScriptInvocation[] => {
     const managerIndex = tokens.findIndex((token) =>
       MANAGERS.has(basename(token)),
     );
@@ -163,6 +168,7 @@ export async function enrichPackageScriptEvidence(
       let cursor = cwd;
       for (let depth = 0; depth < 8; depth++) {
         const path = join(cursor, "package.json");
+        // biome-ignore lint/performance/noAwaitInLoops: walks up one parent directory per step and returns at the nearest package.json, so a farther manifest must not be read before a closer one is ruled out
         const exists = await lstat(path)
           .then(() => true)
           .catch(() => false);
@@ -221,7 +227,7 @@ export async function enrichPackageScriptEvidence(
     cwd: string | undefined,
     depth: number,
     phase = "requested",
-  ) => {
+  ): Promise<void> => {
     if (records.length >= MAX_SCRIPT_RECORDS) return;
     const base = {
       manager: call.manager,
@@ -280,6 +286,7 @@ export async function enrichPackageScriptEvidence(
       for (const prefix of ["pre", "post"]) {
         const name = prefix + call.script;
         if (Object.hasOwn(pkg.scripts, name))
+          // biome-ignore lint/performance/noAwaitInLoops: the pre hook must be expanded before the post hook; each visit appends to the shared records list and active-cycle set, so overlapping visits would reorder records and race the cycle check
           await visit(
             { manager: call.manager, script: name, arguments: [] },
             pkgDirectory,
@@ -300,8 +307,10 @@ export async function enrichPackageScriptEvidence(
         command,
         pkgDirectory,
       )) {
-        for (const child of calls(segment.tokens))
+        for (const child of calls(segment.tokens)) {
+          // biome-ignore lint/performance/noAwaitInLoops: expands child script calls in command order into the shared records list, active-cycle set and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the cycle and budget checks
           await visit(child, segment.directory, depth + 1);
+        }
       }
     }
     active.delete(key);
@@ -310,11 +319,16 @@ export async function enrichPackageScriptEvidence(
     sourceCommand(request),
     directory,
   )) {
-    for (const call of calls(segment.tokens))
+    for (const call of calls(segment.tokens)) {
+      // biome-ignore lint/performance/noAwaitInLoops: expands top-level script calls in command order into the shared records list and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the budget check
       await visit(call, segment.directory, 0);
+    }
   }
-  if (records.length === 0) return { text: "" };
-  const serialize = () =>
+  // Records are only popped while more than one remains, so `first` stays
+  // records[0] from here on.
+  const [first] = records;
+  if (first === undefined) return { text: "" };
+  const serialize = (): string =>
     JSON.stringify(
       {
         coverage:
@@ -336,13 +350,11 @@ export async function enrichPackageScriptEvidence(
   // Drop whole records before shortening a record, retaining explicit gaps.
   while (text.length > maxChars && records.length > 1) {
     records.pop();
-    records[0]!.status = "truncated";
-    records[0]!.reason =
-      "additional script evidence exceeded the character budget";
+    first.status = "truncated";
+    first.reason = "additional script evidence exceeded the character budget";
     text = serialize();
   }
   if (text.length > maxChars) {
-    const first = records[0]!;
     delete first.referencedCode;
     if (first.command !== undefined)
       first.command = first.command.slice(0, Math.max(0, maxChars - 1_000));

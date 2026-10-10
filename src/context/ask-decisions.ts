@@ -141,7 +141,7 @@ export class AskDecisionRegistry implements AskDecisionSource {
   private readonly now: () => number;
 
   constructor(logger?: Logger, now: () => number = () => Date.now()) {
-    this.log = logger ?? (() => {});
+    this.log = logger ?? ((): void => {});
     this.now = now;
   }
 

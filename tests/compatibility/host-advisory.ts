@@ -12,6 +12,7 @@ for (const [name, reference] of [
       stderr: "pipe",
     },
   );
+  // biome-ignore lint/performance/noAwaitInLoops: spawns one npm registry lookup at a time and throws at the first failing package, keeping the hosts job output in package order
   const [code, stdout, stderr] = await Promise.all([
     process.exited,
     new Response(process.stdout).text(),

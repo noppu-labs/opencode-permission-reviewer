@@ -89,10 +89,10 @@ const ACTOR_PROFILES: ReadonlySet<ActorProfile> = new Set([
   "unknown",
 ]);
 
-/** Every action class the capability analyzer can produce. The `satisfies`
- *  clause keeps this list in sync with the union type: adding a member to
+/** Every action class the capability analyzer can produce. The `Record`
+ *  annotation keeps this list in sync with the union type: adding a member to
  *  `CapabilityActionClass` without listing it here is a compile error. */
-const ACTION_CLASS_MEMBERS = {
+const ACTION_CLASS_MEMBERS: Record<CapabilityActionClass, true> = {
   "read-only": true,
   "workspace-write": true,
   "temporary-write": true,
@@ -107,7 +107,7 @@ const ACTION_CLASS_MEMBERS = {
   persistence: true,
   "privilege-escalation": true,
   unknown: true,
-} satisfies Record<CapabilityActionClass, true>;
+};
 
 const VALID_ACTION_CLASS: ReadonlySet<string> = new Set(
   Object.keys(ACTION_CLASS_MEMBERS),
