@@ -1,6 +1,7 @@
 // Git command planning: parses the reviewed command into the Git actions, targets and remotes it would touch.
 
 import { basename, resolve } from "node:path";
+import { elementAt } from "./element-at.ts";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { invariant } from "./invariant.ts";
 import { shellCommandSegmentsWithDirectory } from "./ssh-command-segments.ts";
@@ -103,27 +104,38 @@ function networkOperand(
   let operand: string | undefined;
   let repoOverride: string | undefined;
   for (let cursor = index + 1; cursor < tokens.length; cursor += 1) {
-    const token = tokens[cursor];
-    invariant(token !== undefined, "tokens[cursor] is in bounds");
+    const token = elementAt(tokens, cursor, "tokens");
     if (token === "--") {
       afterSeparator = true;
-      continue;
+    } else if (!afterSeparator && token.startsWith("-") && token.length > 1) {
+      const option = networkOption(tokens, cursor, subcommand, valueOpts);
+      cursor = option.last;
+      repoOverride = option.repoOverride ?? repoOverride;
+    } else {
+      operand ??= token;
     }
-    if (!afterSeparator && token.startsWith("-") && token.length > 1) {
-      if (token === "--repo" && cursor + 1 < tokens.length) {
-        repoOverride = tokens[++cursor];
-        continue;
-      }
-      if (subcommand === "push" && token.startsWith("--repo=")) {
-        repoOverride = token.slice("--repo=".length);
-        continue;
-      }
-      if (valueOpts.has(token)) cursor += 1;
-      continue;
-    }
-    operand ??= token;
   }
   return repoOverride === undefined ? { operand } : { repoOverride };
+}
+
+/** One option of a network subcommand at `cursor`: the index of its last
+ *  token (its separate value, if it takes one) and the `--repo` override it
+ *  sets, if any. */
+function networkOption(
+  tokens: string[],
+  cursor: number,
+  subcommand: string,
+  valueOpts: Set<string>,
+): { last: number; repoOverride?: string } {
+  const token = elementAt(tokens, cursor, "tokens");
+  if (token === "--repo" && cursor + 1 < tokens.length)
+    return {
+      last: cursor + 1,
+      repoOverride: elementAt(tokens, cursor + 1, "tokens"),
+    };
+  if (subcommand === "push" && token.startsWith("--repo="))
+    return { last: cursor, repoOverride: token.slice("--repo=".length) };
+  return { last: valueOpts.has(token) ? cursor + 1 : cursor };
 }
 
 function gitSubcommand(
@@ -166,6 +178,8 @@ function positionalAfter(tokens: string[], index: number): string[] {
   return values;
 }
 
+const UNRESOLVED_EXPANSION = /[$`*?{}<>]/;
+
 function gitExecutionDirectory(
   tokens: string[],
   gitIndex: number,
@@ -186,48 +200,243 @@ function gitExecutionDirectory(
     };
   let directory = initialDirectory;
   for (let index = gitIndex + 1; index < subcommandIndex; index += 1) {
-    const token = tokens[index];
-    invariant(
-      token !== undefined,
-      "tokens[index] is in bounds below the subcommand index",
-    );
-    if (
-      token.startsWith("--git-dir") ||
-      token.startsWith("--work-tree") ||
-      token.startsWith("--config-env")
-    )
-      return {
-        reason: "Git repository or configuration overrides are unresolved",
-      };
-    const config =
-      token === "-c"
-        ? tokens[index + 1]
-        : token.startsWith("-c")
-          ? token.slice(2)
-          : undefined;
-    if (
-      config &&
-      /^(?:remote\.|url\.|branch\..*\.(?:remote|pushRemote)=|core\.worktree=)/i.test(
-        config,
-      )
-    )
-      return {
-        reason:
-          "Git destination or worktree configuration overrides are unresolved",
-      };
-    let target: string | undefined;
-    if (token === "-C") {
-      target = tokens[index + 1];
-      index += 1;
-    } else if (token.startsWith("-C") && token.length > 2) {
-      target = token.slice(2);
-    }
-    if (target === undefined) continue;
-    if (/[$`*?{}<>]/.test(target))
-      return { reason: "git -C contains unresolved shell expansion" };
-    directory = resolve(directory, target);
+    const step = globalOptionStep(tokens, index, directory);
+    if ("reason" in step) return { reason: step.reason };
+    ({ last: index, directory } = step);
   }
   return { directory };
+}
+
+/** Applies the global option at `index` (below the subcommand) to the
+ *  directory Git will run in: the index of the option's last token and the
+ *  resulting directory, or the reason the directory cannot be resolved. */
+function globalOptionStep(
+  tokens: string[],
+  index: number,
+  directory: string,
+): { last: number; directory: string } | { reason: string } {
+  const token = elementAt(tokens, index, "tokens");
+  const reason = globalOptionOverrideReason(token, tokens[index + 1]);
+  if (reason !== undefined) return { reason };
+  const { target, last } = changeDirectoryTarget(tokens, index, token);
+  if (target === undefined) return { last, directory };
+  if (UNRESOLVED_EXPANSION.test(target))
+    return { reason: "git -C contains unresolved shell expansion" };
+  return { last, directory: resolve(directory, target) };
+}
+
+/** Why a global option makes the repository, its configuration or its
+ *  destinations unresolvable, if it does. `next` is the token after it. */
+function globalOptionOverrideReason(
+  token: string,
+  next: string | undefined,
+): string | undefined {
+  if (
+    token.startsWith("--git-dir") ||
+    token.startsWith("--work-tree") ||
+    token.startsWith("--config-env")
+  )
+    return "Git repository or configuration overrides are unresolved";
+  const config =
+    token === "-c" ? next : token.startsWith("-c") ? token.slice(2) : undefined;
+  if (
+    config &&
+    /^(?:remote\.|url\.|branch\..*\.(?:remote|pushRemote)=|core\.worktree=)/i.test(
+      config,
+    )
+  )
+    return "Git destination or worktree configuration overrides are unresolved";
+  return undefined;
+}
+
+function changeDirectoryTarget(
+  tokens: string[],
+  index: number,
+  token: string,
+): { target?: string | undefined; last: number } {
+  if (token === "-C") return { target: tokens[index + 1], last: index + 1 };
+  if (token.startsWith("-C") && token.length > 2)
+    return { target: token.slice(2), last: index };
+  return { last: index };
+}
+
+const PLANNED_SUBCOMMANDS: string[] = [
+  "add",
+  "commit",
+  "checkout",
+  "restore",
+  "rm",
+  "merge",
+  "rebase",
+  "stash",
+  ...GIT_REMOTE_COMMANDS,
+];
+
+const REBASE_VALUE_OPTIONS = [
+  "--onto",
+  "--exec",
+  "-x",
+  "--strategy",
+  "-s",
+  "--strategy-option",
+  "-X",
+];
+
+const MAX_REMOTE_CANDIDATES = 8;
+const MAX_DEFAULT_REMOTES = 4;
+
+/** A planned Git invocation in one segment: the local `git` command's
+ *  tokens and prefix, and its planned subcommand. */
+function plannedInvocation(
+  segmentTokens: string[],
+):
+  | { tokens: string[]; prefix: string[]; subcommand: string; index: number }
+  | undefined {
+  const local = localExecutableCommand(segmentTokens);
+  if (!local || basename(local.tokens[0] ?? "") !== "git") return undefined;
+  const { command: subcommand, index } = gitSubcommand(local.tokens, 0);
+  if (!subcommand || !PLANNED_SUBCOMMANDS.includes(subcommand))
+    return undefined;
+  return { tokens: local.tokens, prefix: local.prefix, subcommand, index };
+}
+
+/** The single literal base of a rebase, when the range has one. */
+function rebaseBase(tokens: string[], index: number): string | undefined {
+  const args = tokens.slice(index + 1);
+  const bases: string[] = [];
+  for (let cursor = 0; cursor < args.length; cursor++) {
+    const arg = elementAt(args, cursor, "args");
+    if (REBASE_VALUE_OPTIONS.includes(arg)) cursor++;
+    else if (!arg.startsWith("-")) bases.push(arg);
+  }
+  const [base] = bases;
+  if (
+    !args.includes("--root") &&
+    bases.length === 1 &&
+    base !== undefined &&
+    !UNRESOLVED_EXPANSION.test(base)
+  )
+    return base;
+  return undefined;
+}
+
+/** Remote operands a network subcommand names, or the default-remote
+ *  annotation it needs when it names none. */
+function networkTargets(
+  tokens: string[],
+  index: number,
+  subcommand: string,
+): { candidates: string[]; defaultRemote?: string } {
+  const { operand, repoOverride } = networkOperand(tokens, index, subcommand);
+  const candidates: string[] = [];
+  if (repoOverride !== undefined) candidates.push(repoOverride);
+  if (operand !== undefined) candidates.push(operand);
+  if (candidates.length > 0) return { candidates };
+  // --all fetches every configured remote, not just the default.
+  const all =
+    (subcommand === "fetch" || subcommand === "pull") &&
+    tokens.includes("--all");
+  return {
+    candidates,
+    defaultRemote: all ? `${subcommand} --all` : subcommand,
+  };
+}
+
+/** Remote names and URLs a `git remote` verb operates on, or the
+ *  default-remote annotation `remote update` needs. */
+function remoteVerbTargets(
+  tokens: string[],
+  index: number,
+): { candidates: string[]; defaultRemote?: string } {
+  const [verb, name, url] = positionalAfter(tokens, index);
+  // `remote update` fetches every configured remote (or the group's
+  // members) when no group operand is given.
+  if (verb === "update")
+    return name === undefined
+      ? { candidates: [], defaultRemote: "remote update --all" }
+      : { candidates: [] };
+  if (verb === undefined || !REMOTE_VERBS_WITH_NAME.has(verb))
+    return { candidates: [] };
+  const candidates = name === undefined ? [] : [name];
+  // set-url rewrites where the remote points: the new URL is a
+  // destination fact, not just a name.
+  if (verb === "set-url" && url !== undefined) candidates.push(url);
+  return { candidates };
+}
+
+function recordRemoteTargets(
+  result: PlannedGitActions,
+  targets: { candidates: string[]; defaultRemote?: string },
+): void {
+  for (const candidate of targets.candidates) {
+    if (result.remoteCandidates.length < MAX_REMOTE_CANDIDATES)
+      result.remoteCandidates.push(candidate);
+  }
+  if (
+    targets.defaultRemote !== undefined &&
+    result.needsDefaultRemote.length < MAX_DEFAULT_REMOTES
+  )
+    result.needsDefaultRemote.push(targets.defaultRemote);
+}
+
+function recordSubcommand(
+  result: PlannedGitActions,
+  tokens: string[],
+  index: number,
+  subcommand: string,
+): void {
+  switch (subcommand) {
+    case "rebase": {
+      const base = rebaseBase(tokens, index);
+      if (base !== undefined) result.rewriteBases.push(base);
+      break;
+    }
+    case "commit":
+      result.commit = true;
+      break;
+    case "add":
+      result.plannedAdd.push(...positionalAfter(tokens, index));
+      break;
+    case "rm":
+      result.removeTargets.push(...positionalAfter(tokens, index));
+      break;
+    case "checkout":
+    case "restore": {
+      const separator = tokens.indexOf("--", index + 1);
+      if (separator >= 0)
+        result.discardTargets.push(...tokens.slice(separator + 1));
+      break;
+    }
+    case "push":
+    case "fetch":
+    case "pull":
+    case "ls-remote":
+      recordRemoteTargets(result, networkTargets(tokens, index, subcommand));
+      break;
+    case "remote":
+      recordRemoteTargets(result, remoteVerbTargets(tokens, index));
+      break;
+  }
+}
+
+function settleExecutionDirectory(
+  result: PlannedGitActions,
+  executionDirectories: Set<string>,
+  directoryReasons: Set<string>,
+): void {
+  const [onlyDirectory] = executionDirectories;
+  if (
+    executionDirectories.size === 1 &&
+    directoryReasons.size === 0 &&
+    onlyDirectory !== undefined
+  ) {
+    result.executionDirectory = onlyDirectory;
+  } else if (executionDirectories.size > 1) {
+    result.directoryReason =
+      "compound command targets multiple Git working directories";
+  } else if (directoryReasons.size > 0) {
+    result.directoryReason = [...directoryReasons].join("; ");
+  }
 }
 
 export function plannedActions(
@@ -249,32 +458,15 @@ export function plannedActions(
   const directoryReasons = new Set<string>();
 
   for (const segment of shellCommandSegmentsWithDirectory(command, directory)) {
-    const local = localExecutableCommand(segment.tokens);
-    if (!local || basename(local.tokens[0] ?? "") !== "git") continue;
-    const tokens = local.tokens;
-    const gitIndex = 0;
-    const { command: subcommand, index } = gitSubcommand(tokens, gitIndex);
-    if (!subcommand) continue;
-    if (
-      ![
-        "add",
-        "commit",
-        "checkout",
-        "restore",
-        "rm",
-        "merge",
-        "rebase",
-        "stash",
-        ...GIT_REMOTE_COMMANDS,
-      ].includes(subcommand)
-    )
-      continue;
+    const invocation = plannedInvocation(segment.tokens);
+    if (invocation === undefined) continue;
+    const { tokens, prefix, subcommand, index } = invocation;
     const execution = gitExecutionDirectory(
       tokens,
-      gitIndex,
+      0,
       index,
       segment.directory,
-      local.prefix,
+      prefix,
     );
     if (execution.directory) executionDirectories.add(execution.directory);
     else
@@ -285,115 +477,9 @@ export function plannedActions(
       );
     result.relevant = true;
     result.commands.push(subcommand);
-    if (subcommand === "rebase") {
-      const args = tokens.slice(index + 1);
-      const bases: string[] = [];
-      for (let cursor = 0; cursor < args.length; cursor++) {
-        const arg = args[cursor];
-        invariant(arg !== undefined, "args[cursor] is in bounds");
-        if (
-          [
-            "--onto",
-            "--exec",
-            "-x",
-            "--strategy",
-            "-s",
-            "--strategy-option",
-            "-X",
-          ].includes(arg)
-        ) {
-          cursor++;
-          continue;
-        }
-        if (!arg.startsWith("-")) {
-          bases.push(arg);
-        }
-      }
-      const [base] = bases;
-      if (
-        !args.includes("--root") &&
-        bases.length === 1 &&
-        base !== undefined &&
-        !/[$`*?{}<>]/.test(base)
-      )
-        result.rewriteBases.push(base);
-    }
-    if (subcommand === "commit") result.commit = true;
-    if (subcommand === "add")
-      result.plannedAdd.push(...positionalAfter(tokens, index));
-    if (subcommand === "rm")
-      result.removeTargets.push(...positionalAfter(tokens, index));
-    if (subcommand === "checkout" || subcommand === "restore") {
-      const separator = tokens.indexOf("--", index + 1);
-      if (separator >= 0)
-        result.discardTargets.push(...tokens.slice(separator + 1));
-    }
-    if (
-      subcommand === "push" ||
-      subcommand === "fetch" ||
-      subcommand === "pull" ||
-      subcommand === "ls-remote"
-    ) {
-      const { operand, repoOverride } = networkOperand(
-        tokens,
-        index,
-        subcommand,
-      );
-      const candidates: string[] = [];
-      if (repoOverride !== undefined) candidates.push(repoOverride);
-      if (operand !== undefined) candidates.push(operand);
-      if (candidates.length > 0) {
-        for (const candidate of candidates) {
-          if (result.remoteCandidates.length < 8)
-            result.remoteCandidates.push(candidate);
-        }
-      } else if (result.needsDefaultRemote.length < 4) {
-        // --all fetches every configured remote, not just the default.
-        const all =
-          (subcommand === "fetch" || subcommand === "pull") &&
-          tokens.includes("--all");
-        result.needsDefaultRemote.push(
-          all ? `${subcommand} --all` : subcommand,
-        );
-      }
-    }
-    if (subcommand === "remote") {
-      const verbs = positionalAfter(tokens, index);
-      const [verb, name, url] = verbs;
-      if (verb === "update") {
-        // `remote update` fetches every configured remote (or the group's
-        // members) when no group operand is given.
-        if (name === undefined && result.needsDefaultRemote.length < 4) {
-          result.needsDefaultRemote.push("remote update --all");
-        }
-      } else if (verb !== undefined && REMOTE_VERBS_WITH_NAME.has(verb)) {
-        if (name !== undefined && result.remoteCandidates.length < 8)
-          result.remoteCandidates.push(name);
-        // set-url rewrites where the remote points: the new URL is a
-        // destination fact, not just a name.
-        if (
-          verb === "set-url" &&
-          url !== undefined &&
-          result.remoteCandidates.length < 8
-        ) {
-          result.remoteCandidates.push(url);
-        }
-      }
-    }
+    recordSubcommand(result, tokens, index, subcommand);
   }
-  const [onlyDirectory] = executionDirectories;
-  if (
-    executionDirectories.size === 1 &&
-    directoryReasons.size === 0 &&
-    onlyDirectory !== undefined
-  ) {
-    result.executionDirectory = onlyDirectory;
-  } else if (executionDirectories.size > 1) {
-    result.directoryReason =
-      "compound command targets multiple Git working directories";
-  } else if (directoryReasons.size > 0) {
-    result.directoryReason = [...directoryReasons].join("; ");
-  }
+  settleExecutionDirectory(result, executionDirectories, directoryReasons);
   return result;
 }
 
