@@ -3,7 +3,7 @@
 import { basename, isAbsolute, resolve } from "node:path";
 import { invariant } from "./invariant.ts";
 import { commandSegments } from "./shell-lexer.ts";
-import { sshValueOption } from "./shell-lexer-tables.ts";
+import { sshValueOption } from "./ssh-value-options.ts";
 
 function shellCommandSegments(
   command: string,

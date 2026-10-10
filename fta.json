@@ -19,7 +19,6 @@
     "package-script-evidence.ts",
     "shell-effective-commands.ts",
     "shell-lexer.ts",
-    "shell-lexer-tables.ts",
     "ssh-command-segments.ts",
     "ssh-evidence.ts",
     "verified-ssh-script.ts",

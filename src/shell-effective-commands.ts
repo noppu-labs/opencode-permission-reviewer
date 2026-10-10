@@ -27,10 +27,10 @@ import {
   SHELL_BINARIES,
   SHELL_KEYWORDS,
   SU_BINARIES,
-  sshValueOption,
   TRANSPARENT_WRAPPERS,
   VALUE_OPTIONS,
 } from "./shell-lexer-tables.ts";
+import { sshValueOption } from "./ssh-value-options.ts";
 
 /** Ceiling on command-string re-entry (`sh -c`, `env -S`, ssh, busybox,
  *  chroot). Deeper nesting than this is not a legitimate review shape; the
