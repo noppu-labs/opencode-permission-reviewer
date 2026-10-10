@@ -1,13 +1,10 @@
-import { createHash, randomUUID } from "node:crypto";
-import packageInfo from "../../package.json";
-import type { DecisionSource, ReviewAuditRecord } from "../audit-record.ts";
+import { randomUUID } from "node:crypto";
 import { isSystemOneReviewerModel, reviewBudgetMs } from "../config.ts";
 import type { AskDecisionSource } from "../context/ask-decisions.ts";
 import {
   assembleEvidence,
   defaultEvidenceProviders,
 } from "../context/evidence-assembler.ts";
-import { DECISION_SCHEMA_VERSION } from "../decision.ts";
 import { applyEscalationDisposition } from "../escalation.ts";
 import type { EvidenceProvider } from "../evidence/provider.ts";
 import { formatFailureReason } from "../failure-reason.ts";
@@ -19,7 +16,6 @@ import {
   type V1ReviewBackend,
 } from "../opencode/v1/backend-factory.ts";
 import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
-import { REVIEWER_PROMPT_VERSION } from "../policy.ts";
 import type {
   PermissionRequest,
   ReviewDecision,
@@ -30,15 +26,13 @@ import type {
 import { createUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
 import { ScriptAnalysisRegistry } from "../verified-ssh-script.ts";
 import { ReviewAttempt } from "./review-attempt.ts";
-import { actionHash, type Logger } from "./review-coordinator-support.ts";
+import {
+  ATTEMPT_REGISTERED,
+  type Logger,
+  writeReviewAudit,
+} from "./review-coordinator-support.ts";
 import { evaluateReview } from "./review-engine.ts";
 import { ReviewLimiter } from "./review-limiter.ts";
-
-/** process() registers the attempt before its first await and deletes it only
- *  in its finally block, after closing it; handle() runs one process() per
- *  request ID. The asserted lookups below all run inside that window. */
-const ATTEMPT_REGISTERED =
-  "process() keeps the review attempt registered until it returns";
 
 /**
  * Owns the review lifecycle for permission requests: orchestration, the
@@ -397,196 +391,25 @@ export class ReviewCoordinator {
     return envelope;
   }
 
-  private async audit(
+  private audit(
     request: PermissionRequest,
     result: ReviewExecutionResult,
     startedAt: number,
   ): Promise<void> {
-    if (!this.ctx.writeAudit) return;
-    const decision = result.decision;
-    const attempt = this.attempts.get(request.id);
-    invariant(attempt, ATTEMPT_REGISTERED);
-    const ssh = attempt.evidence.sshAudit;
-    const actor = attempt.evidence.actor;
-    const capability = attempt.evidence.capability;
-    const policyTrace = attempt.evidence.policyTrace;
-    const timings = attempt.evidence.timings;
-    const evidence = attempt.evidence.evidenceCompleteness;
-    const verifiedScript = attempt.evidence.verifiedScript;
-    const askDecisions = attempt.evidence.askDecisions;
-    // Infer the source when a path did not set it explicitly (the process()
-    // catch builds an escalate with no decision): a result still carrying a
-    // reviewer decision is an LLM outcome; everything else without an explicit
-    // source is a fail-safe escalation.
-    const decisionSource: DecisionSource =
-      result.decisionSource ??
-      (decision === undefined ? "failure-safe" : "llm-reviewer");
-    const warnings: string[] = [];
-    if (evidence !== undefined) warnings.push(...evidence.reasons);
-    if (capability !== undefined) warnings.push(...capability.analysisWarnings);
-    const record: ReviewAuditRecord = {
-      schemaVersion: 3,
-      reviewID: attempt.id,
-      hostRequestID: request.id,
-      hostGeneration: "v1",
-      hostVersion: this.ctx.hostVersion ?? "unknown",
-      generation: this.generation,
-      directory: this.ctx.directory,
-      nativeAction: request.permission,
-      pluginVersion: packageInfo.version,
-      effectiveConfigHash: createHash("sha256")
-        .update(JSON.stringify(this.config))
-        .digest("hex"),
-      actionFingerprint: `v1:${actionHash(request)}`,
-      application: this.isSuperseded(request)
-        ? "superseded"
-        : attempt.application,
-      decisionSchemaVersion: DECISION_SCHEMA_VERSION,
-      promptVersion: REVIEWER_PROMPT_VERSION,
-      decisionSource,
-      actionHash: actionHash(request),
-      reviewerModel: result.reviewerModel ?? this.config.model,
-      ...(result.reviewerEscalatedFrom === undefined
-        ? {}
-        : { reviewerEscalatedFrom: result.reviewerEscalatedFrom }),
-      ...(result.systemOne === undefined
-        ? {}
-        : { systemOne: result.systemOne }),
-      timestamp: new Date().toISOString(),
-      durationMs: Math.max(0, Date.now() - startedAt),
-      requestID: request.id,
-      sessionID: request.sessionID,
-      permission: request.permission,
-      outcome: result.kind,
-      reason: result.reason,
-      ...(warnings.length === 0 ? {} : { warnings }),
-      ...(timings === undefined ? {} : { timings }),
-      ...(evidence === undefined
-        ? {}
-        : { evidenceCompleteness: evidence.overall }),
-      ...(verifiedScript === undefined
-        ? {}
-        : {
-            verifiedScript: {
-              sha256: verifiedScript.sha256,
-              status: verifiedScript.status,
-              ...(verifiedScript.bytes === undefined
-                ? {}
-                : { bytes: verifiedScript.bytes }),
-            },
-          }),
-      ...(result.reviewerOutcome === undefined
-        ? {}
-        : { reviewerOutcome: result.reviewerOutcome }),
-      ...(result.escalationDisposition === undefined
-        ? {}
-        : { escalationDisposition: result.escalationDisposition }),
-      ...(decision === undefined
-        ? {}
-        : {
-            riskLevel: decision.risk_level,
-            userAuthorization: decision.user_authorization,
-            scopeAlignment: decision.scope_alignment,
-            confidence: decision.confidence,
-          }),
-      ...(result.reviewSessionID === undefined
-        ? {}
-        : { reviewerSessionID: result.reviewSessionID }),
-      ...(actor === undefined
-        ? {}
-        : {
-            rootSessionID: actor.rootSessionID.value,
-            actor: {
-              ...(actor.agentName.value === undefined
-                ? {}
-                : { name: actor.agentName.value }),
-              ...(actor.mode.value === undefined
-                ? {}
-                : { mode: actor.mode.value }),
-              profile: actor.profile.value,
-              identityCompleteness: actor.identityCompleteness,
-              identitySource: actor.agentName.source,
-              confidence: actor.agentName.confidence,
-              delegationDepth: actor.delegationDepth.value,
-            },
-          }),
-      ...(!ssh?.length ? {} : { ssh }),
-      ...(capability === undefined
-        ? {}
-        : {
-            capability: {
-              actionClass: capability.actionClass.value,
-              summary: capability.summary,
-              parserCompleteness: capability.parserCompleteness,
-              ...(capability.executesCode.value === true
-                ? { executesCode: true }
-                : {}),
-              ...(capability.createsAdHocCode.value === true
-                ? { createsAdHocCode: true }
-                : {}),
-              ...(capability.invokesPackageLifecycleScripts.value === true
-                ? { invokesPackageLifecycleScripts: true }
-                : {}),
-              writeEffects: {
-                ...(capability.writeEffects.temporaryWrite.value === true
-                  ? { temporaryWrite: true }
-                  : {}),
-                ...(capability.writeEffects.workspaceWrite.value === true
-                  ? { workspaceWrite: true }
-                  : {}),
-                ...(capability.writeEffects.externalWrite.value === true
-                  ? { externalWrite: true }
-                  : {}),
-                ...(capability.writeEffects.deletion.value === true
-                  ? { deletion: true }
-                  : {}),
-              },
-              ...(capability.network.observed.value === true
-                ? { networkObserved: true }
-                : {}),
-              ...(capability.credentialRead.value === true
-                ? { credentialRead: true }
-                : {}),
-              ...(capability.process.privilegeEscalation.value === true
-                ? { privilegeEscalation: true }
-                : {}),
-              ...(capability.process.persistence.value === true
-                ? { persistence: true }
-                : {}),
-              ...(capability.remote.enabled.value === true
-                ? { remoteEnabled: true }
-                : {}),
-              ...(capability.git.possible.value === true
-                ? { gitMutation: true }
-                : {}),
-            },
-          }),
-      ...(policyTrace === undefined
-        ? {}
-        : {
-            policyTrace: {
-              effectivePolicyHash: policyTrace.effectivePolicyHash,
-              matchedRules: policyTrace.matchedRules,
-              finalRoute: policyTrace.finalRoute,
-              mode: policyTrace.mode,
-            },
-          }),
-      ...(askDecisions === undefined
-        ? {}
-        : {
-            askDecisions: askDecisions.slice(-5).map((d) => ({
-              at: d.at,
-              question: d.question,
-              answer: d.answer,
-            })),
-          }),
-    };
-    await this.ctx.writeAudit(record).catch((error) => {
-      this.log("failed to write review audit", {
-        requestID: request.id,
-        error: error instanceof Error ? error.message : String(error),
-      });
-    });
+    return writeReviewAudit(
+      {
+        ctx: this.ctx,
+        config: this.config,
+        generation: this.generation,
+        attempts: this.attempts,
+        isSuperseded: (pending: PermissionRequest): boolean =>
+          this.isSuperseded(pending),
+        log: this.log,
+      },
+      request,
+      result,
+      startedAt,
+    );
   }
 
   private runReviewer(
