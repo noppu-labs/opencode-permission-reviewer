@@ -8,7 +8,6 @@
     "node_modules"
   ],
   "exclude_filenames": [
-    "package-script-evidence.ts",
     "audit.ts",
     "config.ts",
     "loader.ts",
