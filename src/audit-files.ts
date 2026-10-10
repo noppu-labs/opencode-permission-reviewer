@@ -75,12 +75,9 @@ function readWindow(fd: number, size: number): AuditTail {
   return { text, truncated };
 }
 
-/** When the window does not start at the beginning of the file, its first
- *  byte may land mid-line. Peek at the byte just before the window: a
- *  newline there means the window already starts at a line boundary, so the
- *  first line is whole and must be kept. Otherwise the first line may be
- *  partial and is dropped. A failed peek keeps the old always-strip
- *  behavior; it only ever drops one line from the report. */
+/** A window that starts mid-file may begin mid-line: a newline in the byte
+ *  before it means the first line is whole. A failed peek drops the first
+ *  line, which costs at most one line of the report. */
 function startsAtLineBoundary(fd: number, offset: number): boolean {
   try {
     const probe = Buffer.alloc(1);
@@ -91,7 +88,6 @@ function startsAtLineBoundary(fd: number, offset: number): boolean {
   }
 }
 
-/** Read `length` bytes at `offset`, stopping early at end of file. */
 function readFully(
   fd: number,
   buffer: Buffer,
@@ -115,17 +111,13 @@ function closeSyncSafe(fd: number): void {
   }
 }
 
-/** Append one JSONL line through an explicitly opened descriptor: O_NOFOLLOW
- *  rejects a symlinked audit path, O_NONBLOCK refuses to hang on a FIFO
- *  destination (a write-open on a readerless FIFO fails with ENXIO instead of
- *  blocking the host forever), the descriptor is verified to be a regular
- *  file before writing, and mode 0600 is asserted on every append — a
- *  pre-existing group- or world-readable audit file is tightened before it
- *  receives new records, matching the documented 0600 guarantee instead of
- *  silently extending a looser mode. If the mode cannot be enforced (for
- *  example a file owned by another user), the append fails rather than adding
- *  records to a readable file. One open per record matches the previous
- *  append-per-call behavior. Throws on failure; the caller logs and swallows. */
+/** Append one JSONL line through an explicitly opened descriptor: `O_NOFOLLOW`
+ *  rejects a symlinked audit path, `O_NONBLOCK` makes a write-open on a
+ *  readerless FIFO fail with `ENXIO` instead of hanging the host, and the
+ *  descriptor must be a regular file. Mode 0600 is enforced on every append,
+ *  so a pre-existing group- or world-readable file is tightened before it gets
+ *  new records, or the append fails. Throws on failure; the caller logs and
+ *  swallows. */
 export function appendAuditLine(path: string, line: string): void {
   let fd: number | undefined;
   try {

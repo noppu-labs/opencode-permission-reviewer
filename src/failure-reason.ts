@@ -107,7 +107,6 @@ function nextCause(current: unknown): unknown {
   }
 }
 
-/** Up to MAX_CAUSE_DEPTH cause messages. */
 function causeMessages(error: Error): string[] {
   const causes: string[] = [];
   try {

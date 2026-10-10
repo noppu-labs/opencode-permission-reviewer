@@ -42,10 +42,6 @@ async function denyAndReply(
   return undefined;
 }
 
-/**
- * Apply a fully disposed result (allow / deny / escalate) to UI + reply.
- * This is the single side-effect boundary after logical disposition.
- */
 export async function applyDisposition(
   state: CoordinatorState,
   request: PermissionRequest,
@@ -75,7 +71,6 @@ export async function applyDisposition(
   return result;
 }
 
-/** The failure-safe escalation for a review that threw. */
 export function failureDisposition(
   config: ReviewerConfig,
   error: unknown,
@@ -91,9 +86,9 @@ export function failureDisposition(
   );
 }
 
-/** Start a failed review's disposition and return that step's own promise:
- *  only the unknown phase when the reply's fate is unknown or the attempt has
- *  ended, else the full disposition. */
+/** Not async: returns the chosen step's own promise (the unknown phase when
+ *  the reply's fate is unknown or the attempt ended, else the full
+ *  disposition), so the caller awaits it directly. */
 export function applyFailureDisposition(
   state: CoordinatorState,
   attempt: ReviewAttempt,
@@ -107,7 +102,6 @@ export function applyFailureDisposition(
     : applyDisposition(state, request, disposed);
 }
 
-/** Log a review that threw after its attempt recorded the failure disposition. */
 export function logReviewFailure(
   state: Pick<CoordinatorState, "log">,
   request: PermissionRequest,

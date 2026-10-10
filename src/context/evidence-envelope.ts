@@ -19,7 +19,6 @@ import { actionCompleteness } from "./evidence-completeness.ts";
 import { scopedAskDecisions } from "./evidence-sources.ts";
 import type { ActorResolution } from "./unknown-resolution.ts";
 
-/** Everything the assembler fetched, resolved and collected for one request. */
 export interface GatheredEvidence {
   request: PermissionRequest;
   ctx: EvidenceAssemblyContext;

@@ -105,8 +105,6 @@ export function summarizeAuditTail(
   summary.exists = true;
   summary.truncated = read.truncated;
   const lines = read.text.split("\n").filter((line) => line.trim().length > 0);
-  // When the cap was hit only the tail was read; line counts then describe
-  // the summarized window, not the whole file.
   summary.totalLines = lines.length;
   const actorCounts = new Map<string, number>();
   for (const [i, line] of lines.entries()) {

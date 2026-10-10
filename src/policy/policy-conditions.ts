@@ -13,7 +13,8 @@ import type {
 
 /** Whether every field of a condition matches the observed facts. A missing
  *  condition (or `{ always: true }`) is a universal rule: it matches any
- *  request, which is why the loader only accepts that shape explicitly. */
+ *  request, which is why `validateCondition` rejects a condition that
+ *  validates to nothing. */
 export function conditionMatches(
   cond: PolicyCondition | undefined,
   cap: CapabilityAssessment | undefined,

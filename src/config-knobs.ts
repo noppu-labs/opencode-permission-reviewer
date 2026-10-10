@@ -28,12 +28,10 @@ type KnobBounds<K extends NumericKey> = Readonly<
   Record<K, readonly [min: number, max: number]>
 >;
 
-/** The reviewer timeout, a clamped integer. */
 export const REVIEW_TIMEOUT: KnobBounds<"timeoutMs"> = {
   timeoutMs: [5_000, 600_000],
 };
 
-/** Context and transcript budgets, clamped integers. */
 export const CONTEXT_BUDGETS: KnobBounds<
   | "maxContextChars"
   | "maxPartChars"
@@ -52,7 +50,6 @@ export const CONTEXT_BUDGETS: KnobBounds<
   historyMessages: [20, 500],
 };
 
-/** Decision floors, clamped finite numbers. */
 export const CONFIDENCE_FLOORS: KnobBounds<
   | "confidenceThreshold"
   | "systemOneConfidenceThreshold"
@@ -63,7 +60,6 @@ export const CONFIDENCE_FLOORS: KnobBounds<
   systemOneReasoningThreshold: [0, 1],
 };
 
-/** Session lineage limits, clamped integers. */
 export const LINEAGE_LIMITS: KnobBounds<
   "maxSessionDepth" | "maxParentSessions"
 > = {

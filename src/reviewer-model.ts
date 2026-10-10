@@ -34,7 +34,6 @@ export function isSystemOneReviewerModel(model: string): boolean {
   );
 }
 
-/** A provider/model id: any string containing a slash. */
 export function isProviderModelId(value: unknown): value is string {
   return typeof value === "string" && value.includes("/");
 }

@@ -1,8 +1,7 @@
 import type { RiskPolicy, UserAuthorization } from "./types.ts";
 
-/** Default risk×authorization matrix. Reproduces exactly the previous
- *  hard-coded gate: critical never auto-allows; high needs at least medium auth;
- *  medium needs at least low auth; low allows any auth including unknown. */
+/** Default risk×authorization matrix. `critical` stays empty: critical risk
+ *  never auto-allows. */
 export const DEFAULT_RISK_POLICY: RiskPolicy = {
   allow: {
     low: ["high", "medium", "low", "unknown"],

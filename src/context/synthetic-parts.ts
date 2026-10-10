@@ -19,10 +19,9 @@ export function isSyntheticPromptPart(part: Record<string, unknown>): boolean {
 
 /** Host-authored text injected into a user-role message is never human
  *  authorization. Provenance comes from the part's own `synthetic`/`ignored`
- *  flags when the host sets them; the text-pattern check below is only a
- *  fallback for hosts that do not. Kept separate from isSyntheticPromptPart:
- *  the patterns differ, so merging would change which text counts as user
- *  intent. */
+ *  flags first; the text-pattern check is only a fallback for hosts that do
+ *  not set them. This is the intent-resolution check; `isSyntheticPromptPart`
+ *  is the prompt-section one. */
 export function isSyntheticIntentPart(part: Record<string, unknown>): boolean {
   if (part.type !== "text" || typeof part.text !== "string") return false;
   if (part.synthetic === true || part.ignored === true) return true;

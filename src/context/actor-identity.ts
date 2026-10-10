@@ -24,8 +24,6 @@ export const UNKNOWN_PROFILE = prov<ActorProfile>(
   "unknown",
 );
 
-// --- current-session actor (pure, from already-fetched messages) -----------
-
 interface CurrentActor {
   agentName: string | undefined;
   mode: string | undefined;
@@ -59,8 +57,6 @@ export function resolveCurrentActor(
     );
   return { agentName, mode, toolLocated };
 }
-
-// --- actor context assembly -------------------------------------------------
 
 function resolveProfile(
   agentName: string | undefined,

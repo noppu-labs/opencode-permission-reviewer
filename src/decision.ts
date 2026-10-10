@@ -82,7 +82,6 @@ function hasValidVerdict(value: Record<string, unknown>): boolean {
   );
 }
 
-/** The trimmed rationale when it is a string of 3 to 2000 characters. */
 function validRationale(value: unknown): string | undefined {
   if (typeof value !== "string") return;
   const rationale = value.trim();

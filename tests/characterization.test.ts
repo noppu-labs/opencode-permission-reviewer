@@ -104,7 +104,7 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("publishUiStatus returning {error} does not change the safety decision", async () => {
     const client = new MockClient();
-    // Return an error response (not a throw) — publishReviewStatus must ignore it and still allow.
+    // An `{ error }` response rather than a rejection; `publishReviewStatus` must ignore it.
     client.publishStatusError = { message: "publish failed" };
     const result = await runtime(client).runtime.process(request());
     expect(result.kind).toBe("allow");
@@ -262,11 +262,9 @@ describe("characterization gaps (baseline prereq)", () => {
   });
 
   test("audit on the error path still carries the ssh summary after collectEnvelope ran", async () => {
-    // collectEnvelope runs and populates the ssh bridge; afterwards
-    // sendPermissionReply throws (non-404 transport failure), so process()
-    // rejects and the catch branch writes an audit. That audit must still
-    // include the ssh summary —
-    // parity we must preserve when the coordinator moves.
+    // `sendPermissionReply` throws a non-404 transport failure after
+    // `collectEnvelope` filled the ssh bridge, so `process()` rejects and the
+    // catch branch writes the audit.
     const client = new MockClient();
     client.replyError = { message: "permission transport down" };
     const harness = runtime(client);

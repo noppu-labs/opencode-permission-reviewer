@@ -57,7 +57,6 @@ function statusFor(
   });
 }
 
-/** Whether a resolved publish reported an `error` field. */
 function publishError(response: unknown): response is { error: unknown } {
   return (
     !!response &&

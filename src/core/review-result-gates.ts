@@ -10,8 +10,6 @@ import type {
   ReviewerConfig,
 } from "../types.ts";
 
-/** Gate a reviewer allow, dispose an undisposed escalation, and add the script
- *  guidance to anything but an allow. */
 export function gateReviewedResult(
   request: PermissionRequest,
   config: ReviewerConfig,
@@ -36,7 +34,6 @@ export function gateReviewedResult(
   };
 }
 
-/** Why a reviewer allow may not stand, or undefined when it may. */
 function allowBlockedReason(
   config: ReviewerConfig,
   envelope: ReviewEnvelope,
@@ -49,8 +46,6 @@ function allowBlockedReason(
   return undefined;
 }
 
-/** Turn a blocked allow into a deterministic escalation that keeps the
- *  reviewer's decision, session, model and System One fields. */
 function gateAllow(
   result: ReviewExecutionResult,
   config: ReviewerConfig,

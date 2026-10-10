@@ -28,11 +28,11 @@ export interface CoordinatorState {
   readonly attempts: Map<string, ReviewAttempt>;
   stopped: boolean;
   /**
-   * Request IDs that a human (or any other reply source) resolved while the
-   * automatic review was still in flight. The in-flight review must then give
-   * up silently: no UI status, no reply. OpenCode resolves a request on a
-   * first-writer basis, so a late programmatic reply returns 404
-   * PermissionNotFoundError — we treat that the same way.
+   * Request IDs a human (or any other reply source) resolved while the
+   * automatic review was in flight; that review then gives up with no UI
+   * status and no reply. OpenCode resolves a request first-writer-wins, so a
+   * late programmatic reply gets 404 `PermissionNotFoundError`, which
+   * `sendPermissionReply` treats the same way.
    */
   readonly resolvedManually: Set<string>;
   readonly log: Logger;
@@ -74,8 +74,6 @@ export function coordinatorState(
   return state;
 }
 
-/** A new attempt for one of this coordinator's reviews, with the full review
- *  budget. */
 export function startAttempt(
   state: Pick<CoordinatorState, "generation" | "config">,
 ): ReviewAttempt {

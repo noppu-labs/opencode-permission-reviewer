@@ -14,7 +14,8 @@ import {
 export const ATTEMPT_REGISTERED =
   "process() keeps the review attempt registered until it returns";
 
-/** `scope` is the coordinator state, built once per coordinator. */
+/** `scope` must be the live coordinator state: the supersede check reads
+ *  `stopped` and `resolvedManually` when the record is built. */
 export async function writeReviewAudit(
   scope: AuditRecordScope & Pick<CoordinatorState, "attempts" | "log">,
   request: PermissionRequest,

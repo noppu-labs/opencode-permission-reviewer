@@ -60,7 +60,6 @@ function deny(reason: string, emergency: boolean): ReviewExecutionResult {
   };
 }
 
-/** Deterministic escalation, disposed by the configured escalation mode. */
 function escalate(
   reason: string,
   config: ReviewerConfig,

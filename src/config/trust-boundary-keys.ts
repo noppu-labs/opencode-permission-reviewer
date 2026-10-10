@@ -55,8 +55,8 @@ export const TRUST_BOUNDARY_KEYS: ReadonlySet<string> = new Set([
  *  - auditPath: only trusted global/inline config may choose the audit
  *    destination. A repository must never be able to redirect or silence the
  *    audit trail by pointing it at /dev/null or a path it controls.
- *  - model and policy: the reviewer destination and the tenant policy text are
- *    trusted decisions. A repository must not choose where code/context is sent
+ *  - model, escalationReviewer and policy: the reviewer destinations and the
+ *    tenant policy text are trusted decisions. A repository must not choose where code/context is sent
  *    for review, nor rewrite the policy the reviewer enforces. The reasoning
  *    variant, the decision output format, and review-session retention are the
  *    same class of decision: a weaker variant, a looser output format, or
@@ -64,8 +64,7 @@ export const TRUST_BOUNDARY_KEYS: ReadonlySet<string> = new Set([
  *  - actorProfiles: name→profile mappings are a trust delegation (which agent
  *    gets which capability profile). Only trusted global/inline config may
  *    grant them; otherwise a repository could promote its own agent to a
- *    higher-privilege profile ("build" → "operator"). trustedProjects opt-in is
- *    a future item; until then the project layer cannot define mappings. */
+ *    higher-privilege profile ("build" → "operator"). */
 export const TRUSTED_ONLY_KEYS = [
   "configDegraded",
   "timeoutMs",

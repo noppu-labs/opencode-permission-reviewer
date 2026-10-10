@@ -3,7 +3,6 @@
 import type { ReviewEnvelope } from "../types.ts";
 import type { ReviewAttempt } from "./review-attempt.ts";
 
-/** Merge evidence into the request's attempt while it is still active. */
 export function rememberEvidence(
   attempts: Map<string, ReviewAttempt>,
   requestID: string,

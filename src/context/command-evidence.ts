@@ -41,10 +41,8 @@ export function collectVerifiedScript(
 }
 
 /**
- * Parse the bash command and derive capability facts. Only computed for bash
- * requests; non-bash permissions have no command surface to analyze. Wrapped in
- * try/catch so a parser bug can never block a review (capability degrades to
- * absent, never throws).
+ * Only bash requests have a command to analyze. A parser failure leaves
+ * capability absent rather than failing the review.
  */
 export function analyzeBashCommand(
   request: PermissionRequest,
