@@ -425,15 +425,3 @@ export const CREDENTIAL_READERS = new Set([
   "source",
   ".",
 ]);
-
-export const SHELL_KEYWORDS = new Set([
-  "{",
-  "}",
-  "(",
-  ")",
-  "then",
-  "else",
-  "do",
-  "elif",
-  "!",
-]);

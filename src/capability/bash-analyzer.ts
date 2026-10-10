@@ -1,5 +1,6 @@
 import { invariant } from "../invariant.ts";
 import { shellBasename } from "../shell-lexer.ts";
+import { SHELL_KEYWORDS } from "../shell-lexer-tables.ts";
 import type { CapabilityActionClass } from "../types.ts";
 import {
   CREDENTIAL_READERS,
@@ -18,7 +19,6 @@ import {
   PRIVILEGE_WRAPPERS,
   READ_ONLY_TOOLS,
   SERVICE_MANAGERS,
-  SHELL_KEYWORDS,
   SSH_TOOLS,
   TEST_RUNNERS,
 } from "./bash-command-tables.ts";
