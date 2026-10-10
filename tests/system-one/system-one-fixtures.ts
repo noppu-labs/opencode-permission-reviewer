@@ -3,6 +3,8 @@ import type { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
 import type { SystemOnePrimaryBasis } from "../../src/system-one/system-one-types.ts";
 import type { ReviewEnvelope, ReviewExecutionResult } from "../../src/types.ts";
 
+// Deliberately a hand copy, not SYSTEM_ONE_BASES: it is the only test pin of the 11-basis
+// wire contract (parseChoice's exactKeys).
 export const PRIMARY_BASES: readonly SystemOnePrimaryBasis[] = [
   "authorized_routine",
   "authorized_reversible_change",
