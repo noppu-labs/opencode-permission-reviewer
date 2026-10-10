@@ -78,17 +78,19 @@ function tempDir(prefix: string): string {
 }
 
 // A string is written as is, so a test can plant malformed JSONC.
-function useGlobalConfig(
-  dir: string,
-  content: unknown,
-  name = "permission-reviewer.jsonc",
-): void {
-  const path = join(dir, name);
+function useGlobalConfig(dir: string, content: unknown): void {
+  const path = join(dir, "permission-reviewer.jsonc");
   writeFileSync(
     path,
     typeof content === "string" ? content : JSON.stringify(content),
   );
   setGlobalConfigPathForTests(path);
+}
+
+function isolateGlobal(outsideDir: string): void {
+  // Point the trusted global layer at a missing file so only the project
+  // layer under test influences the loaded config.
+  setGlobalConfigPathForTests(join(outsideDir, "missing-global.jsonc"));
 }
 
 function writeProjectConfig(projectDir: string, content: unknown): void {
@@ -113,11 +115,7 @@ function loadTrustedRules(
   layer: "global" | "inline",
   policyRules: unknown,
 ): ReviewerConfig {
-  useGlobalConfig(
-    dir,
-    layer === "global" ? { policyRules } : {},
-    "config.json",
-  );
+  useGlobalConfig(dir, layer === "global" ? { policyRules } : {});
   return loadResolvedConfig(layer === "inline" ? { policyRules } : {});
 }
 
@@ -250,9 +248,7 @@ describe("trust hardening — project config cannot weaken trusted layers", () =
     const globalDir = tempDir("reviewer-global-");
     const projectDir = tempDir("reviewer-project-");
     try {
-      // Isolate the global layer: a missing file in a temp directory, never
-      // the developer's real global config.
-      setGlobalConfigPathForTests(join(globalDir, "permission-reviewer.jsonc"));
+      isolateGlobal(globalDir);
       writeProjectConfig(projectDir, {
         variant: "minimal",
         outputFormat: "text",
@@ -1488,12 +1484,6 @@ describe("trust hardening — ssh stdin file evidence resilience", () => {
 // --- project config layer: non-regular and oversized reads -------------------------------
 
 describe("trust hardening — project config layer reads are bounded", () => {
-  function isolateGlobal(outsideDir: string): void {
-    // Point the trusted global layer at a missing file so only the project
-    // layer under test influences the loaded config.
-    setGlobalConfigPathForTests(join(outsideDir, "missing-global.jsonc"));
-  }
-
   test("a symlinked project config is ignored with a warning instead of followed", () => {
     const projectDir = tempDir("reviewer-config-link-");
     const outsideDir = tempDir("reviewer-config-outside-");
@@ -1738,27 +1728,23 @@ describe("trust hardening - condition enum typos fail closed", () => {
   test("valid enum members and modes survive without degradation", () => {
     const dir = tempDir("reviewer-enum-valid-");
     try {
-      useGlobalConfig(
-        dir,
-        {
-          enforcementMode: "enforce",
-          escalationMode: "deny",
-          policyRules: [
-            {
-              id: "valid",
-              source: "global",
-              effect: "deny",
-              reason: "valid members",
-              when: {
-                repositoryTrust: ["untrusted"],
-                actionClass: ["network"],
-                actorProfile: ["operator"],
-              },
+      useGlobalConfig(dir, {
+        enforcementMode: "enforce",
+        escalationMode: "deny",
+        policyRules: [
+          {
+            id: "valid",
+            source: "global",
+            effect: "deny",
+            reason: "valid members",
+            when: {
+              repositoryTrust: ["untrusted"],
+              actionClass: ["network"],
+              actorProfile: ["operator"],
             },
-          ],
-        },
-        "config.json",
-      );
+          },
+        ],
+      });
       const config = loadResolvedConfig({});
       expect(config.configDegraded).toBeUndefined();
       expect(config.policyRules).toHaveLength(1);
@@ -1773,7 +1759,7 @@ describe("trust hardening - condition enum typos fail closed", () => {
   test("a mistyped global enforcementMode degrades and blocks model allow", async () => {
     const dir = tempDir("reviewer-enum-mode-");
     try {
-      useGlobalConfig(dir, { enforcementMode: "enfroce" }, "config.json");
+      useGlobalConfig(dir, { enforcementMode: "enfroce" });
       const config = loadResolvedConfig({});
       expect(
         defined(config.configDegraded, "configDegraded").join(" "),
@@ -1789,7 +1775,7 @@ describe("trust hardening - condition enum typos fail closed", () => {
   test("a mistyped trusted inline enforcementMode degrades without changing the safe default", () => {
     const dir = tempDir("reviewer-enum-inline-mode-");
     try {
-      setGlobalConfigPathForTests(join(dir, "missing-global.jsonc"));
+      isolateGlobal(dir);
       const config = loadResolvedConfig({ enforcementMode: "enfroce" });
       expect(
         defined(config.configDegraded, "configDegraded").join(" "),
@@ -1804,7 +1790,7 @@ describe("trust hardening - condition enum typos fail closed", () => {
   test("a mistyped global escalationMode degrades the config", () => {
     const dir = tempDir("reviewer-enum-escalation-");
     try {
-      useGlobalConfig(dir, { escalationMode: "dnye" }, "config.json");
+      useGlobalConfig(dir, { escalationMode: "dnye" });
       const config = loadResolvedConfig({});
       expect(
         defined(config.configDegraded, "configDegraded").join(" "),
@@ -1821,7 +1807,7 @@ describe("trust hardening - condition enum typos fail closed", () => {
     const outsideDir = tempDir("reviewer-enum-outside-");
     const { warnings, restore } = captureWarnings();
     try {
-      setGlobalConfigPathForTests(join(outsideDir, "missing-global.jsonc"));
+      isolateGlobal(outsideDir);
       writeProjectConfig(projectDir, {
         policyRules: [
           {
