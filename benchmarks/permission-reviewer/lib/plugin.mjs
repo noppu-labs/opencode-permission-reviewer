@@ -25,7 +25,8 @@ const PINNED_BLOBS = {
   "src/emergency-brake.ts": "419ccaf0f89cf3aee80d69bdf9e24c094e8634d6",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "4188940db8e267afd802da2d65abb5e42a294822",
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "51b07f1137833796f26e45dc2156adaff4433609",
   "src/capability/bash-analyzer.ts": "8083891f202decb61ca85c01baf3bc3c9b08f964",
   "src/capability/bash-command-tables.ts":
     "e7683cf49e9956942e81dcef76c2be5fe0985e79",
