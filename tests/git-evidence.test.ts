@@ -11,7 +11,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { enrichGitEvidence } from "../src/git-evidence.ts";
+import {
+  enrichGitEvidence,
+  type GitEnrichmentResult,
+} from "../src/git-evidence.ts";
 import { request } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -38,6 +41,28 @@ async function repository(): Promise<string> {
   return repositoryAt(await mkdtemp(join(tmpdir(), "approval-reviewer-git-")));
 }
 
+async function enrich(
+  directory: string,
+  command: string,
+  maxChars: number,
+  worktree?: string,
+): Promise<GitEnrichmentResult> {
+  return enrichGitEvidence(
+    request({ patterns: [command], metadata: { command } }),
+    directory,
+    maxChars,
+    worktree,
+  );
+}
+
+async function addRemote(
+  directory: string,
+  name: string,
+  url: string,
+): Promise<void> {
+  await git(directory, ["remote", "add", name, url]);
+}
+
 afterEach(async () => {
   for (const directory of temporaryDirectories.splice(0)) {
     // biome-ignore lint/performance/noAwaitInLoops: fixtures nest (a repository inside another fixture), so removing them one at a time keeps two recursive removals from walking the same tree
@@ -48,12 +73,11 @@ afterEach(async () => {
 describe("Git state evidence enrichment", () => {
   test("remote Git commands and command mentions never resolve against the local repository", async () => {
     const directory = await repository();
-    await git(directory, [
-      "remote",
-      "add",
+    await addRemote(
+      directory,
       "origin",
       "https://local.example.invalid/project.git",
-    ]);
+    );
     for (const command of [
       "printf git push origin",
       "ssh fixture.invalid git push origin",
@@ -62,11 +86,7 @@ describe("Git state evidence enrichment", () => {
       "env -C other git push origin",
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ metadata: { command }, patterns: [command] }),
-        directory,
-        8000,
-      );
+      const result = await enrich(directory, command, 8000);
       expect(result.text).toBe("");
     }
     for (const command of [
@@ -75,11 +95,7 @@ describe("Git state evidence enrichment", () => {
       "git >output.log push origin",
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ metadata: { command }, patterns: [command] }),
-        directory,
-        8000,
-      );
+      const result = await enrich(directory, command, 8000);
       expect(result.text).toContain(
         "https://local.example.invalid/project.git",
       );
@@ -90,11 +106,7 @@ describe("Git state evidence enrichment", () => {
     const directory = await repository();
     const url = "https://literal.example.invalid/a>b.git";
     const command = `git push '${url}' main`;
-    const result = await enrichGitEvidence(
-      request({ metadata: { command }, patterns: [command] }),
-      directory,
-      8000,
-    );
+    const result = await enrich(directory, command, 8000);
     expect(result.text).toContain(url);
   });
 
@@ -157,11 +169,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     await git(directory, ["add", "unrelated.py"]);
     await writeFile(join(directory, "target.py"), "before = 3\n");
     const command = 'git add target.py && git commit -m "bounded change"';
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain("GIT_STATE_ANALYSIS");
     expect(result.text).toContain('"branch": "staging"');
     expect(result.text).toContain('"commitRequested": true');
@@ -175,11 +183,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     const directory = await repository();
     await writeFile(join(directory, "target.py"), "before = 99\n");
     const command = "git checkout HEAD -- target.py";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"discardTargets"');
     expect(result.text).toContain("target.py");
     expect(result.text).toContain(
@@ -198,11 +202,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `git -C ${directory} checkout HEAD -- target.py`,
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        outer,
-        24_000,
-      );
+      const result = await enrich(outer, command, 24_000);
       expect(result.text).toContain(`"repositoryRoot": "${directory}"`);
       expect(result.text).toContain('"branch": "staging"');
       expect(result.text).toContain(
@@ -224,11 +224,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `git -C ${elsewhere} checkout HEAD -- target.py`,
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        workspace,
-        8_000,
-      );
+      const result = await enrich(workspace, command, 8_000);
       expect(result.text).toContain('"status": "unavailable"');
       expect(result.text).toContain(
         "planned Git directory is outside approved enrichment roots",
@@ -248,11 +244,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     await symlink(elsewhere, link);
 
     const command = "git -C linked-repo checkout HEAD -- target.py";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      workspace,
-      8_000,
-    );
+    const result = await enrich(workspace, command, 8_000);
     expect(result.text).toContain('"status": "unavailable"');
     expect(result.text).toContain(
       "planned Git directory is outside approved enrichment roots",
@@ -268,11 +260,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     await writeFile(join(outer, "target.py"), "ancestor = true\n");
 
     const command = "git checkout HEAD -- target.py";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      sessionDirectory,
-      8_000,
-    );
+    const result = await enrich(sessionDirectory, command, 8_000);
     expect(result.text).toContain('"status": "unavailable"');
     expect(result.text).toContain(
       "repository root is outside approved enrichment roots",
@@ -289,12 +277,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     await writeFile(join(outer, "target.py"), "parent = true\n");
 
     const command = "git -C .. checkout HEAD -- target.py";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      sessionDirectory,
-      24_000,
-      outer,
-    );
+    const result = await enrich(sessionDirectory, command, 24_000, outer);
     expect(result.text).toContain(`"repositoryRoot": "${outer}"`);
     expect(result.text).toContain('"branch": "staging"');
   });
@@ -303,11 +286,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     const directory = await repository();
     const command =
       'git add "locales/$locale/messages.json" && git commit -m i18n';
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"unresolvedPlannedPaths"');
     expect(result.text).toContain("$locale");
   });
@@ -318,11 +297,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     );
     temporaryDirectories.push(directory);
     const command = "git commit -m test";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      8_000,
-    );
+    const result = await enrich(directory, command, 8_000);
     expect(result.text).toContain('"status": "unavailable"');
     expect(result.text).toContain("not a git repository");
   });
@@ -330,13 +305,9 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   test("resolves the remote operand of a push to its configured URLs", async () => {
     const directory = await repository();
     const upstream = "https://example.invalid/upstream.git";
-    await git(directory, ["remote", "add", "origin", upstream]);
+    await addRemote(directory, "origin", upstream);
     const command = "git push origin staging";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"input": "origin"');
     expect(result.text).toContain('"kind": "configured-remote"');
     expect(result.text).toContain('"pushUrls": [');
@@ -347,12 +318,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
 
   test("reports every pushurl a push would contact", async () => {
     const directory = await repository();
-    await git(directory, [
-      "remote",
-      "add",
-      "origin",
-      "https://example.invalid/one.git",
-    ]);
+    await addRemote(directory, "origin", "https://example.invalid/one.git");
     await git(directory, [
       "remote",
       "set-url",
@@ -370,11 +336,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "https://example.invalid/three.git",
     ]);
     const command = "git push origin staging";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain("https://example.invalid/two.git");
     expect(result.text).toContain("https://example.invalid/three.git");
   }, 30_000);
@@ -382,7 +344,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   test("options with separate values do not mask the remote operand", async () => {
     const directory = await repository();
     const upstream = "https://example.invalid/upstream.git";
-    await git(directory, ["remote", "add", "origin", upstream]);
+    await addRemote(directory, "origin", upstream);
     for (const command of [
       "git fetch --depth 1 origin",
       "git push -o ci.skip origin main",
@@ -390,11 +352,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git ls-remote --sort=committerdate origin",
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        24_000,
-      );
+      const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain('"input": "origin"');
       expect(result.text).toContain('"kind": "configured-remote"');
     }
@@ -402,23 +360,18 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
 
   test("a --repo override is the push destination, not the named remote", async () => {
     const directory = await repository();
-    await git(directory, [
-      "remote",
-      "add",
+    await addRemote(
+      directory,
       "origin",
       "https://example.invalid/upstream.git",
-    ]);
+    );
     for (const command of [
       "git push --repo https://override.example.invalid/x.git origin main",
       "git push --repo=https://override.example.invalid/x.git main",
       "git push main --repo=https://override.example.invalid/x.git",
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        24_000,
-      );
+      const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain(
         '"input": "https://override.example.invalid/x.git"',
       );
@@ -431,11 +384,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     const directory = await repository();
     const secret = "syn" + "thetic-cred";
     const command = `git push https://user:${secret}@example.invalid/x.git main`;
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"kind": "literal"');
     expect(result.text).toContain(
       '"url": "https://<redacted>@example.invalid/x.git"',
@@ -447,7 +396,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     const directory = await repository();
     const password = "synthetic-password-".repeat(40);
     const url = `https://user:${password}@example.invalid/x.git`;
-    await git(directory, ["remote", "add", "origin", url]);
+    await addRemote(directory, "origin", url);
     await git(directory, ["config", "branch.staging.remote", url]);
     for (const command of [
       `git push ${url} main`,
@@ -455,11 +404,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git pull",
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        24_000,
-      );
+      const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain("https://<redacted>@example.invalid/x.git");
       expect(result.text).not.toContain("synthetic-password-");
     }
@@ -469,11 +414,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `git -C /outside push ${url} main`,
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        24_000,
-      );
+      const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain('"status": "unavailable"');
       expect(result.text).toContain("https://<redacted>@example.invalid/x.git");
       expect(result.text).not.toContain("synthetic-password-");
@@ -484,11 +425,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     const directory = await repository();
     const credential = "synthetic-private-value-123456";
     const command = `git push https://${credential}@example.invalid/x.git main`;
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain("https://<redacted>@example.invalid/x.git");
     expect(result.text).not.toContain(credential);
   }, 30_000);
@@ -496,11 +433,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   test("reports an operand that matches no configured remote", async () => {
     const directory = await repository();
     const command = "git push HEAD:main";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"input": "HEAD:main"');
     expect(result.text).toContain('"kind": "unmatched"');
     expect(result.text).toContain("matches no configured remote");
@@ -509,23 +442,15 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   test("resolves the default remote for an operand-less push", async () => {
     const directory = await repository();
     const upstream = "https://example.invalid/upstream.git";
-    await git(directory, ["remote", "add", "origin", upstream]);
-    const plain = await enrichGitEvidence(
-      request({ patterns: ["git push"], metadata: { command: "git push" } }),
-      directory,
-      24_000,
-    );
+    await addRemote(directory, "origin", upstream);
+    const plain = await enrich(directory, "git push", 24_000);
     expect(plain.text).toContain('"source": "origin fallback"');
     expect(plain.text).toContain(`"${upstream}"`);
 
     const mirror = "https://mirror.example.invalid/rea.git";
-    await git(directory, ["remote", "add", "mirror", mirror]);
+    await addRemote(directory, "mirror", mirror);
     await git(directory, ["config", "remote.pushDefault", "mirror"]);
-    const viaPushDefault = await enrichGitEvidence(
-      request({ patterns: ["git push"], metadata: { command: "git push" } }),
-      directory,
-      24_000,
-    );
+    const viaPushDefault = await enrich(directory, "git push", 24_000);
     expect(viaPushDefault.text).toContain('"source": "remote.pushDefault"');
     expect(viaPushDefault.text).toContain(`"${mirror}"`);
 
@@ -536,11 +461,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "branch.staging.remote",
       "https://direct.example.invalid/u.git",
     ]);
-    const viaBranchUrl = await enrichGitEvidence(
-      request({ patterns: ["git pull"], metadata: { command: "git pull" } }),
-      directory,
-      24_000,
-    );
+    const viaBranchUrl = await enrich(directory, "git pull", 24_000);
     expect(viaBranchUrl.text).toContain('"source": "branch remote"');
     expect(viaBranchUrl.text).toContain("https://direct.example.invalid/u.git");
     expect(viaBranchUrl.text).toContain(
@@ -550,23 +471,14 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
 
   test("fetch --all, pull --all and remote update report every configured remote", async () => {
     const directory = await repository();
-    await git(directory, [
-      "remote",
-      "add",
-      "origin",
-      "https://example.invalid/up.git",
-    ]);
+    await addRemote(directory, "origin", "https://example.invalid/up.git");
     for (const command of [
       "git fetch --all",
       "git pull --all",
       "git remote update",
     ]) {
       // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
-      const result = await enrichGitEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        24_000,
-      );
+      const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain('"source": "all configured remotes"');
       expect(result.text).toContain("origin");
     }
@@ -576,40 +488,22 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     const directory = await repository();
     for (const name of ["a", "b", "c", "d", "e", "f", "g"]) {
       // biome-ignore lint/performance/noAwaitInLoops: each remote add rewrites the shared .git/config, which git locks while writing
-      await git(directory, [
-        "remote",
-        "add",
-        name,
-        `https://example.invalid/${name}.git`,
-      ]);
+      await addRemote(directory, name, `https://example.invalid/${name}.git`);
     }
     // One remote operand per network command: push's extra positionals are
     // refspecs, not repositories.
     const command =
       "git fetch a && git fetch b && git fetch c && git fetch d && git fetch e && git fetch f && git fetch g";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"remoteTargetsOmitted": 2');
   }, 30_000);
 
   test("remote set-url surfaces the rewritten destination", async () => {
     const directory = await repository();
-    await git(directory, [
-      "remote",
-      "add",
-      "origin",
-      "https://old.example.invalid/u.git",
-    ]);
+    await addRemote(directory, "origin", "https://old.example.invalid/u.git");
     const command =
       "git remote set-url origin https://new.example.invalid/u.git";
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).toContain('"input": "origin"');
     expect(result.text).toContain(
       '"input": "https://new.example.invalid/u.git"',
@@ -620,11 +514,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   test("commands without network subcommands carry no remote evidence", async () => {
     const directory = await repository();
     const command = 'git add target.py && git commit -m "local only"';
-    const result = await enrichGitEvidence(
-      request({ patterns: [command], metadata: { command } }),
-      directory,
-      24_000,
-    );
+    const result = await enrich(directory, command, 24_000);
     expect(result.text).not.toContain("remoteTargets");
     expect(result.text).not.toContain("defaultRemotes");
   }, 30_000);
