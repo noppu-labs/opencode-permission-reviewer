@@ -10,7 +10,7 @@ import {
   replyBody,
 } from "./runtime-fixtures.ts";
 
-type PromptResolver = (value: { data: Record<string, unknown> }) => void;
+type PromptResolver = (value: ClientResponse<Record<string, unknown>>) => void;
 type MessagesResolver = (value: ClientResponse<unknown>) => void;
 
 function holdPrompts(client: MockClient): HeldCalls<PromptResolver> {
