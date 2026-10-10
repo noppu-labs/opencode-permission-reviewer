@@ -110,7 +110,7 @@ describe("assembleEvidence", () => {
     expect(envelope.enrichment).toBe("GIT\n\nLOCAL");
     expect(envelope.sshAudit).toEqual([
       { destination: "h", stdinStatus: "absent" },
-    ] as never);
+    ]);
     expect(envelope.preflightDenial).toBe("first");
     expect(envelope.actionPurpose).toEqual({
       text: "Running the build.",

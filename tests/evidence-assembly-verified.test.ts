@@ -4,6 +4,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DEFAULT_CONFIG } from "../src/config.ts";
+import type { EvidenceFragment } from "../src/evidence/provider.ts";
 import { REVIEWER_PROMPT_VERSION } from "../src/policy.ts";
 import type { PermissionRequest } from "../src/types.ts";
 import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
@@ -55,12 +56,9 @@ async function script(port?: number): Promise<Script> {
   };
 }
 
-const SSH_AND_GIT: Array<[string, never]> = [
-  [
-    "ssh",
-    { kind: "ssh", text: "SSH", audit: [{ destination: "other" }] } as never,
-  ],
-  ["git", { kind: "git", text: "GIT" } as never],
+const SSH_AND_GIT: Array<[string, EvidenceFragment]> = [
+  ["ssh", { kind: "ssh", text: "SSH", audit: [{ destination: "other" }] }],
+  ["git", { kind: "git", text: "GIT" }],
 ];
 
 describe("assembleEvidence verified scripts", () => {
@@ -83,7 +81,7 @@ describe("assembleEvidence verified scripts", () => {
         port: "2222",
         stdinStatus: "unavailable",
       },
-    ] as never);
+    ]);
     expect(envelope.actionEvidenceComplete).toBe(false);
     expect(envelope.evidenceCompleteness?.reasons.at(-1)).toBe(
       "verified script content was unavailable or did not match its hash",
@@ -108,7 +106,7 @@ describe("assembleEvidence verified scripts", () => {
     expect(envelope.verifiedScript?.cacheKey).toBe(key(PARENT));
     expect(envelope.sshAudit).toEqual([
       { destination: "deploy@host.invalid", stdinStatus: "reused" },
-    ] as never);
+    ]);
     expect(envelope.actionEvidenceComplete).toBe(true);
   });
 
