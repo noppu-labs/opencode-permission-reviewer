@@ -6,20 +6,11 @@
  *   - grouping of single/double quotes (so separators inside quotes do not
  *     split a token, and `printf "a; sudo rm -rf /"` stays one argument),
  *   - splitting on logical command separators (`;`, `|`, `&`, newlines),
- *   - stripping `#` comments when they begin a token,
- *   - a recursive "effective command" resolver that peels privilege wrappers
- *     (`sudo`, `doas`, `env`, `command`, `nice`, `nohup`, `time`, `stdbuf`,
- *     `ionice`, `pkexec`, `fakeroot`, `setsid`, `setpriv`, `unshare`, `run0`,
- *     `watch`, `xargs`) and destructures command-string forms (`sh -c`,
- *     `su -c`, `env -S`, `ssh host cmd`, `busybox applet`, `chroot root cmd`,
- *     `timeout duration cmd`).
+ *   - stripping `#` comments when they begin a token.
  *
  * It deliberately does NOT expand variables, globs, command substitutions,
  * heredocs, or arithmetic. Those remain the model reviewer's job; the brake
  * is only a last line of defense for *unmistakable* literal destruction.
- * Command-string recursion depth and the total number of resolved effective
- * commands are hard-capped, so adversarial nesting can neither exhaust the
- * stack nor expand the result without bound.
  */
 
 import { invariant } from "./invariant.ts";

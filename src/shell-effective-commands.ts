@@ -1,4 +1,17 @@
-// Effective-command walk: peels wrappers and destructures command-string forms into the real commands.
+/*
+ * Effective-command walk used by the deterministic emergency brake, run over
+ * the segments that shell-lexer.ts produces:
+ *   - a recursive "effective command" resolver that peels privilege wrappers
+ *     (`sudo`, `doas`, `env`, `command`, `nice`, `nohup`, `time`, `stdbuf`,
+ *     `ionice`, `pkexec`, `fakeroot`, `setsid`, `setpriv`, `unshare`, `run0`,
+ *     `watch`, `xargs`) and destructures command-string forms (`sh -c`,
+ *     `su -c`, `env -S`, `ssh host cmd`, `busybox applet`, `chroot root cmd`,
+ *     `timeout duration cmd`).
+ *
+ * Command-string recursion depth and the total number of resolved effective
+ * commands are hard-capped, so adversarial nesting can neither exhaust the
+ * stack nor expand the result without bound.
+ */
 
 import { invariant } from "./invariant.ts";
 import {
