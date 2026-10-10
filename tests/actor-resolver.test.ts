@@ -1,8 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import {
-  resolveActorContext,
-  unknownResolution,
-} from "../src/context/actor-resolver.ts";
+import { resolveActorContext } from "../src/context/actor-resolver.ts";
+import { unknownResolution } from "../src/context/unknown-resolution.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
