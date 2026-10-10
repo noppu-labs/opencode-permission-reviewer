@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { classifyPath } from "../src/capability/bash-mutation.ts";
-import { gitSubcommandMutates } from "../src/capability/git-subcommand-forms.ts";
+import {
+  gitSubcommandMutates,
+  gitSubcommandOf,
+} from "../src/capability/git-subcommand-forms.ts";
 import { mutationOperands } from "../src/capability/mutation-operands.ts";
 import { readOnlyToolMutation } from "../src/capability/read-only-tool-mutations.ts";
 import type { ShellToken } from "../src/shell-token.ts";
@@ -113,6 +116,20 @@ describe("classifyPath", () => {
     ],
   ])("%p in %p (worktree %p)", (target, directory, worktree, expected) => {
     expect(classifyPath(target, directory, worktree)).toEqual(expected);
+  });
+});
+
+describe("gitSubcommandOf", () => {
+  test.each([
+    ["git --no-pager push", { sub: "push", index: 2 }],
+    ["git -C dir -c k=v status", { sub: "status", index: 5 }],
+    // A lone `-` is not an option, so it is taken as the subcommand.
+    ["git - push", { sub: "-", index: 1 }],
+    ["git -C", {}],
+    ["git --bare", {}],
+    ["git", {}],
+  ])("%s", (command, expected) => {
+    expect(gitSubcommandOf(words(command))).toEqual(expected);
   });
 });
 
