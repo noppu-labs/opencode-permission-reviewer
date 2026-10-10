@@ -23,11 +23,5 @@
   "ignoreFiles": ["tests/live-fixture/**"],
   // System tools, not npm packages: uv runs pre-commit (package.json "check"), mkfifo builds a
   // named pipe in two tests.
-  "ignoreBinaries": ["uv", "mkfifo"],
-
-  // Pending exemptions. Each one matches only what knip reports today, and the PR named on it
-  // removes it by fixing the code. Keep this list in step with the PR description.
-  // quality/4-ts-rules: nothing imports jiti (remove it, or keep it with a reason); tests import
-  // @opencode-ai/sdk without declaring it.
-  "ignoreDependencies": ["jiti", "@opencode-ai/sdk"]
+  "ignoreBinaries": ["uv", "mkfifo"]
 }
