@@ -27,11 +27,11 @@ import { buildEvidence, buildTranscript } from "../src/context.ts";
 import { enforceDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { includeEvidenceFile } from "../src/evidence-file-reader.ts";
+import { enrichGitEvidence } from "../src/git-evidence.ts";
 import {
   collectConversionKeys,
   conversionNeutralizationArgs,
-  enrichGitEvidence,
-} from "../src/git-evidence.ts";
+} from "../src/git-filter-neutralization.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
