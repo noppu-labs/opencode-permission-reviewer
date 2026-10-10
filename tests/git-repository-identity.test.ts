@@ -2,11 +2,13 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { resolveRemoteTargets } from "../src/git-remote-targets.ts";
 import {
   git,
+  isolateGlobalGitConfig,
   planned,
   removeRepositories,
   repository,
 } from "./git-remote-fixtures.ts";
 
+isolateGlobalGitConfig();
 afterAll(removeRepositories);
 
 const BOTH = [{ name: "origin", push: true, fetch: true }];

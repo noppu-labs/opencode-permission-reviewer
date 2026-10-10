@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -111,10 +112,19 @@ test("the manifest search checks the working directory and seven parents", async
   );
 });
 
-test("the manifest search stops at the filesystem root", async () => {
-  expect(await packageEvidence("/", "npm run check")).toBe(
-    expectedText([
-      { ...located("/", "check"), status: "unavailable", reason: NO_MANIFEST },
-    ]),
-  );
-});
+// Starting at "/" is the only way to reach the root arm before the depth bound;
+// a host with a root manifest would legitimately find it.
+test.skipIf(existsSync("/package.json"))(
+  "the manifest search stops at the filesystem root",
+  async () => {
+    expect(await packageEvidence("/", "npm run check")).toBe(
+      expectedText([
+        {
+          ...located("/", "check"),
+          status: "unavailable",
+          reason: NO_MANIFEST,
+        },
+      ]),
+    );
+  },
+);

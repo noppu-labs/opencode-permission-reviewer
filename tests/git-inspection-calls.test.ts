@@ -4,6 +4,7 @@ import {
   mkdir,
   mkdtemp,
   readFile,
+  realpath,
   rm,
   writeFile,
 } from "node:fs/promises";
@@ -75,7 +76,9 @@ async function inspect(
   responses: Record<string, string>,
   fail: string[] = [],
 ): Promise<{ text: string; calls: Invocation[]; directory: string }> {
-  const directory = await mkdtemp(join(tmpdir(), "reviewer-git-calls-"));
+  const directory = await realpath(
+    await mkdtemp(join(tmpdir(), "reviewer-git-calls-")),
+  );
   directories.push(directory);
   const bin = join(directory, ".bin");
   await mkdir(bin);
