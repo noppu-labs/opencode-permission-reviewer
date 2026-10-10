@@ -88,4 +88,26 @@ describe("coordinator audit records", () => {
     expect(first.actionFingerprint).toBe(`v1:${first.actionHash}`);
     expect(other.actionHash).not.toBe(first.actionHash);
   });
+
+  test("actionHash of a fixed request is a pinned value", async () => {
+    const harness = runtime();
+    await harness.runtime.process(
+      request({
+        id: "per_pin",
+        permission: "bash",
+        // Mixed case and a non-ASCII entry: code-unit and locale sorts differ.
+        patterns: ["b*", "é*", "B*", "a*"],
+        metadata: { command: "printf pinned" },
+      }),
+    );
+    const record = defined(
+      auditRecords(harness.ctx).find((r) => r.requestID === "per_pin"),
+      "per_pin audit",
+    );
+    // Pins the canonical form so audit records stay correlatable across versions.
+    expect(record.actionHash).toBe(
+      // biome-ignore lint/security/noSecrets: a SHA-256 hex digest pinned as the expected value, not a credential
+      "a235e10ca35924b993710c8eb897d1eaf669c2dd97fb63f4d6cef9bd2725f253",
+    );
+  });
 });
