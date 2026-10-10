@@ -4,6 +4,7 @@ import {
   chmod,
   mkdir,
   mkdtemp,
+  realpath,
   rm,
   symlink,
   writeFile,
@@ -38,7 +39,9 @@ async function repositoryAt(directory: string): Promise<string> {
 }
 
 async function repository(): Promise<string> {
-  return repositoryAt(await mkdtemp(join(tmpdir(), "approval-reviewer-git-")));
+  return repositoryAt(
+    await realpath(await mkdtemp(join(tmpdir(), "approval-reviewer-git-"))),
+  );
 }
 
 async function enrich(
@@ -192,7 +195,9 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   });
 
   test("uses the repository selected by cd or git -C inside the approved roots", async () => {
-    const outer = await mkdtemp(join(tmpdir(), "approval-reviewer-git-outer-"));
+    const outer = await realpath(
+      await mkdtemp(join(tmpdir(), "approval-reviewer-git-outer-")),
+    );
     temporaryDirectories.push(outer);
     const directory = await repositoryAt(join(outer, "workspace", "repo"));
     await writeFile(join(directory, "target.py"), "selected = true\n");
@@ -270,7 +275,9 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
 
   test("allows the repository selected through a parent worktree", async () => {
     const outer = await repositoryAt(
-      await mkdtemp(join(tmpdir(), "approval-reviewer-git-parent-")),
+      await realpath(
+        await mkdtemp(join(tmpdir(), "approval-reviewer-git-parent-")),
+      ),
     );
     const sessionDirectory = join(outer, "workspace");
     await mkdir(sessionDirectory);
