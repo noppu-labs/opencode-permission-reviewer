@@ -99,7 +99,7 @@ const PINNED_BLOBS = {
     "f9e53d4a8c756981f7059cbf6564d27eb7398fcc",
   "src/capability/git-subcommand-forms.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "f9b6c43c544a7b376ee31244028004356a62136e",
+    "4b725b813d7beb8ac15b5677c5634ed9fa88969c",
   "src/capability/heredoc-delimiter.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "abae24b0e331469527d25e6c3719ceea81a8932e",

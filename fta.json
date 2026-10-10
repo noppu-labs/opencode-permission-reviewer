@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "evidence-file-reader.ts",
-    "git-command-plan.ts",
     "git-evidence.ts",
     "git-remote-targets.ts",
     "local-script-evidence.ts",
