@@ -290,17 +290,19 @@ describe("SSH evidence enrichment", () => {
       [binary, "blocked", false],
       [credential, "blocked", false],
     ] as const;
-    for (const [path, status, denied] of cases) {
-      const command = `cat ${path} | ssh host 'python -'`;
-      const result = await enrichSshEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        directory,
-        1_000,
-      );
-      expect(result.audit[0]?.stdinStatus).toBe(status);
-      expect(Boolean(result.preflightDenial)).toBe(denied);
-    }
+    await Promise.all(
+      cases.map(async ([path, status, denied]) => {
+        const command = `cat ${path} | ssh host 'python -'`;
+        const result = await enrichSshEvidence(
+          request({ patterns: [command], metadata: { command } }),
+          directory,
+          directory,
+          1_000,
+        );
+        expect(result.audit[0]?.stdinStatus).toBe(status);
+        expect(Boolean(result.preflightDenial)).toBe(denied);
+      }),
+    );
   });
 
   test("rechecks a briefly missing stdin file before denying", async () => {
@@ -335,19 +337,21 @@ describe("SSH evidence enrichment", () => {
     await writeFile(outsideScript, "print('outside')\n");
     await symlink(outsideScript, link);
 
-    for (const path of [envPath, ghConfig, link]) {
-      const command = `cat ${path} | ssh host 'python -'`;
-      const result = await enrichSshEvidence(
-        request({ patterns: [command], metadata: { command } }),
-        directory,
-        directory,
-        4_000,
-      );
-      expect(result.audit[0]?.stdinStatus).toBe("blocked");
-      expect(result.preflightDenial).toBeUndefined();
-      expect(result.text).not.toContain("TOKEN=secret");
-      expect(result.text).not.toContain("print('outside')");
-    }
+    await Promise.all(
+      [envPath, ghConfig, link].map(async (path) => {
+        const command = `cat ${path} | ssh host 'python -'`;
+        const result = await enrichSshEvidence(
+          request({ patterns: [command], metadata: { command } }),
+          directory,
+          directory,
+          4_000,
+        );
+        expect(result.audit[0]?.stdinStatus).toBe("blocked");
+        expect(result.preflightDenial).toBeUndefined();
+        expect(result.text).not.toContain("TOKEN=secret");
+        expect(result.text).not.toContain("print('outside')");
+      }),
+    );
 
     const tokenFile = join(directory, "token.py");
     const githubToken = "ghp_" + "syntheticcredential123456";

@@ -275,6 +275,7 @@ describe("supply-chain surface", () => {
     const bundles = files.filter((f) => /^dist\/[^/]+\.js$/.test(f));
     expect(bundles.length).toBeGreaterThan(0);
     for (const member of bundles) {
+      // biome-ignore lint/performance/noAwaitInLoops: each bundle member is extracted with its own tar process; run one at a time so a failure names the first offending bundle
       const bundle = await readFromTarball(packOnce(), member);
       // `effect` may appear as a literal (e.g. permission `"effect": "ask"`),
       // but never as a module specifier: tsup externalizes it, so an

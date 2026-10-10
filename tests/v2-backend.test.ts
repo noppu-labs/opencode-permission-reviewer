@@ -378,8 +378,11 @@ function fixture(
     cleanup: async () => {
       for (const attempt of attempts) attempt.close("cancelled");
       await backend.dispose();
-      for (const path of directories)
-        if (existsSync(path)) await rm(path, { recursive: true });
+      await Promise.all(
+        directories.map(async (path) => {
+          if (existsSync(path)) await rm(path, { recursive: true });
+        }),
+      );
     },
   };
 }
@@ -392,6 +395,7 @@ test("isolated structured and text backends preserve scope, variant, and retenti
       retain: format === "text",
     });
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("allow");
       const state = harness.state();
       expect(state.prompts).toBe(1);
@@ -416,6 +420,7 @@ test("invalid, ambiguous, and foreign execution outputs never become approvals",
   ]) {
     const harness = fixture(options);
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("escalate");
       expect(harness.state().prompts).toBeLessThanOrEqual(3);
       expect(harness.state().removed).toBe(true);
@@ -491,6 +496,7 @@ test("isolation activation accepts normalized local plugin representations", asy
   ] as const) {
     const harness = fixture({ activationRepresentation });
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("allow");
       expect(harness.state().prompts).toBe(1);
     } finally {
@@ -508,6 +514,7 @@ test("unavailable model, unsupported format or variant, and wrong isolation fail
   ]) {
     const harness = fixture(options);
     try {
+      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
       expect((await harness.run()).kind).toBe("escalate");
       expect(harness.state().prompts).toBe(0);
       expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(

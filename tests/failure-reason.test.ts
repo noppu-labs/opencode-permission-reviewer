@@ -227,10 +227,12 @@ test("v2 permission review hook failure denies with phase and cause", async () =
         try {
           while (!signal.aborted && !ended) {
             if (events.length) yield defined(events.shift(), "queued event");
-            else
+            else {
+              // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
               await new Promise<void>((resolve) => {
                 resume = resolve;
               });
+            }
           }
         } finally {
           signal.removeEventListener("abort", wake);

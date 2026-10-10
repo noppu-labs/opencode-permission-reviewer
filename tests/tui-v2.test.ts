@@ -143,10 +143,12 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
             try {
               while (!signal.aborted && !channel.ended) {
                 if (channel.queue.length) yield channel.queue.shift();
-                else
+                else {
+                  // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
                   await new Promise<void>((resolve) => {
                     channel.wake = resolve;
                   });
+                }
               }
             } finally {
               signal.removeEventListener("abort", wake);
@@ -164,6 +166,7 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
   const waitForFrame = async (text: string, present = true) => {
     const deadline = Date.now() + 3000;
     do {
+      // biome-ignore lint/performance/noAwaitInLoops: polls the rendered frame until the text appears or the deadline passes
       await view.flush();
       if (view.captureCharFrame().includes(text) === present) return;
       await Bun.sleep(10);

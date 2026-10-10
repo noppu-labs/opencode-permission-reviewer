@@ -139,6 +139,7 @@ describe("cli init", () => {
       writeFileSync(binary, `#!/bin/sh\nprintf '${version}\\n'\n`, {
         mode: 0o700,
       });
+      // biome-ignore lint/performance/noAwaitInLoops: each case rewrites the same fake binary file and then spawns the init CLI against it, so a concurrent case would run the wrong version script
       const result = await run(
         ["--binary", binary, "--dry-run", "--project", project],
         {

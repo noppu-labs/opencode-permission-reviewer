@@ -24,6 +24,7 @@ for (let index = 0; index < 20; index++) {
   );
   const attempt = new ReviewAttempt("fixture", 5000);
   try {
+    // biome-ignore lint/performance/noAwaitInLoops: successive reviews share one isolation base directory and the script checks each review leaves it intact before the next starts
     const result = await backend.review(
       {
         request: request(),

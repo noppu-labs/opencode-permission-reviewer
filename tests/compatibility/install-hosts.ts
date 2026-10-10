@@ -19,6 +19,7 @@ const releases =
         integrity,
       }));
 for (const release of releases) {
+  // biome-ignore lint/performance/noAwaitInLoops: installs one pinned host release at a time into its own temp dir (npm spawn plus cleanup) and aborts the hosts job at the first failure
   const directory = await mkdtemp(join(tmpdir(), "reviewer-host-"));
   const proc = Bun.spawn(
     [

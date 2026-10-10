@@ -213,6 +213,7 @@ describe("characterization gaps (baseline prereq)", () => {
     for (const bad of [null, "not an object", 123, { outcome: "allow" }]) {
       const client = new MockClient();
       client.nextStructured = bad;
+      // biome-ignore lint/performance/noAwaitInLoops: every case's runtime provisions V1 reviewer isolation files under the helper's one shared scratch base directory, so cases run one at a time
       const result = await runtime(client).runtime.process(request());
       expect(result.kind).toBe("escalate");
       expect(client.replies).toHaveLength(0);

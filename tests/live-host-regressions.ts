@@ -176,6 +176,7 @@ try {
   const baseUrl = `http://127.0.0.1:${port}`;
   let ready = false;
   for (let attempt = 0; attempt < 200; attempt++) {
+    // biome-ignore lint/performance/noAwaitInLoops: polls the host health endpoint until it is ready or attempts run out
     ready = await fetch(`${baseUrl}/global/health`, {
       headers: hostHeaders,
       signal: AbortSignal.timeout(1000),
@@ -383,6 +384,7 @@ try {
             : { data: { id: requesterSessionID, parentID: "ses_missing" } },
       },
     };
+    // biome-ignore lint/performance/noAwaitInLoops: each origin reruns the review through the shared captured-messages array and MCP start log that the loop and later assertions read in order
     await run({ maxParentSessions: 0 }, { ...ctx, client: child });
     const messages = JSON.stringify(captured.at(-1)?.messages);
     assert(!messages.includes('\\"actor\\": \\"user\\"'));

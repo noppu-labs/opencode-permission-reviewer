@@ -13,6 +13,7 @@ describe("explain CLI", () => {
         stdout: "pipe",
         stderr: "pipe",
       });
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns a bun CLI process and checks its exit; run one at a time so process start-up load stays flat under CI
       expect(await proc.exited).toBe(0);
       const result = JSON.parse(await new Response(proc.stdout).text());
       expect(result.command).toBe("");

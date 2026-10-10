@@ -30,6 +30,7 @@ async function auditFor(sessionID: string): Promise<ReviewAuditRecord> {
   const deadline = Date.now() + 30_000;
   while (Date.now() < deadline) {
     const file = Bun.file(path);
+    // biome-ignore lint/performance/noAwaitInLoops: polls the audit file until the shell review record for the session lands
     if (await file.exists()) {
       const records = (await file.text())
         .trim()

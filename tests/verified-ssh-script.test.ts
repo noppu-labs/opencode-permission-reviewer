@@ -352,25 +352,27 @@ describe("verified SSH script protocol", () => {
       enrichment: "",
       sshAudit: [],
     };
-    for (const reason of [
-      "Remote script content is incomplete.",
-      "El script aparece truncado.",
-    ]) {
-      const result = await evaluateReview(
-        pending,
-        { ...DEFAULT_CONFIG, escalationMode: "deny" },
-        {
-          collect: async () => envelope,
-          review: async () => ({ kind: "escalate", reason }),
-          active: () => true,
-          auxiliarySession: () => false,
-          observe: () => {},
-        },
-      );
-      expect(result.kind).toBe("deny");
-      expect(result.reason).toContain(
-        "opencode-permission-reviewer script command",
-      );
-    }
+    await Promise.all(
+      [
+        "Remote script content is incomplete.",
+        "El script aparece truncado.",
+      ].map(async (reason) => {
+        const result = await evaluateReview(
+          pending,
+          { ...DEFAULT_CONFIG, escalationMode: "deny" },
+          {
+            collect: async () => envelope,
+            review: async () => ({ kind: "escalate", reason }),
+            active: () => true,
+            auxiliarySession: () => false,
+            observe: () => {},
+          },
+        );
+        expect(result.kind).toBe("deny");
+        expect(result.reason).toContain(
+          "opencode-permission-reviewer script command",
+        );
+      }),
+    );
   });
 });

@@ -141,6 +141,7 @@ try {
   const deadline = Date.now() + 3000;
   phase = "form event";
   while (!registry.recentFor([session.id]).length && Date.now() < deadline)
+    // biome-ignore lint/performance/noAwaitInLoops: polls the registry until the form event is recorded or the deadline passes
     await Bun.sleep(10);
   if (registry.recentFor([session.id])[0]?.answer !== "Read only")
     throw new Error("Native form answer was not normalized");

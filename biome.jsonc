@@ -82,43 +82,6 @@
   // entries cap each file at its current length instead), ordered by the stacked PR that fixes
   // those files and deletes the entry.
   "overrides": [
-    // Pending (quality/4-ts-rules): performance/noAwaitInLoops, 25 files.
-    {
-      "includes": [
-        "tests/characterization.test.ts",
-        "tests/cli-init.test.ts",
-        "tests/compatibility/capture-contracts.ts",
-        "tests/compatibility/host-advisory.ts",
-        "tests/compatibility/install-hosts.ts",
-        "tests/compatibility/verify-v2-window.ts",
-        "tests/explain-cli.test.ts",
-        "tests/failure-reason.test.ts",
-        "tests/fixtures/v1-isolation.ts",
-        "tests/git-evidence.test.ts",
-        "tests/git-operation-evidence.test.ts",
-        "tests/live-harness.ts",
-        "tests/live-host-regressions.ts",
-        "tests/live-v2-smoke.ts",
-        "tests/local-script-evidence.test.ts",
-        "tests/package-script-evidence.test.ts",
-        "tests/package-smoke.test.ts",
-        "tests/ssh-evidence.test.ts",
-        "tests/system-one.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/tui-v2.test.ts",
-        "tests/v1-backend.test.ts",
-        "tests/v2-backend.test.ts",
-        "tests/v2-server.test.ts",
-        "tests/verified-ssh-script.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "performance": {
-            "noAwaitInLoops": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/4-ts-rules): nursery/useExplicitType, 74 files.
     {
       "includes": [
@@ -406,7 +369,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 614
+                "maxLines": 626
               }
             }
           }
@@ -438,7 +401,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 987
+                "maxLines": 988
               }
             }
           }
@@ -454,7 +417,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1953
+                "maxLines": 1954
               }
             }
           }
@@ -470,7 +433,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 616
+                "maxLines": 623
               }
             }
           }

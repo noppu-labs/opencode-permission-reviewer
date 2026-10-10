@@ -219,6 +219,7 @@ describe("System One reviewer", () => {
               model: provider.returnedModel,
             });
           });
+          // biome-ignore lint/performance/noAwaitInLoops: each case sets and restores process.env provider keys around its invoker, so cases must not overlap
           const raw = await invoke(state, new AbortController().signal);
           expect(calls).toHaveLength(1);
           expect(calls[0]?.url).toBe(provider.url);
