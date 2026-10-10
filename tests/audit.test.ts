@@ -83,7 +83,7 @@ function record(overrides: Partial<ReviewAuditRecord> = {}): ReviewAuditRecord {
 
 /** One serialized audit line, newline-terminated. */
 function recordLine(overrides: Partial<ReviewAuditRecord>): string {
-  return `${JSON.stringify(record(overrides))}\n`;
+  return toJsonl([record(overrides)]);
 }
 
 /** The out-of-window record both tail-window tests plant at offset 0. */
@@ -442,10 +442,7 @@ describe("audit summary hardening", () => {
 
   test("a symlinked audit file reads as missing instead of following the link", async () => {
     const target = join(directory, "target.jsonl");
-    writeFileSync(
-      target,
-      `${JSON.stringify(record({ requestID: "per_link" }))}\n`,
-    );
+    writeFileSync(target, recordLine({ requestID: "per_link" }));
     await symlink(target, join(directory, "audit.jsonl"));
     const summary = readAuditSummary(join(directory, "audit.jsonl"));
     expect(summary.exists).toBe(false);
