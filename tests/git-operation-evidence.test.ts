@@ -77,7 +77,7 @@ test("unresolved rebase ranges remain unavailable and stash receives a workspace
     "git rebase --root dev",
     "git rebase HEAD~1 another-branch",
   ]) {
-    // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+    // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
     expect((await evidence(directory, command)).rewrite.status).toBe(
       "unavailable",
     );
@@ -152,7 +152,7 @@ test("literal destinations match only the configured repository and transport ro
     "https://github.com/example/fixture.git?redirect=other",
   ])
     expect(
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       (await evidence(directory, `git push ${url} dev`)).remoteTargets[0]
         .configuredMatches,
     ).toBeUndefined();
@@ -173,7 +173,7 @@ test("invocation overrides cannot borrow destination identity from the ordinary 
     "git --git-dir=/outside/repository.git push origin dev",
     "GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=remote.origin.url GIT_CONFIG_VALUE_0=https://other.example.invalid/repo.git git push origin dev",
   ]) {
-    // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+    // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
     const snapshot = await evidence(directory, command);
     expect(snapshot.status).toBe("unavailable");
     expect(snapshot.reason).toContain("overrides are unresolved");

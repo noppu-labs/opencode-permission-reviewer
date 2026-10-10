@@ -39,8 +39,6 @@ async function repository(): Promise<string> {
 }
 
 afterEach(async () => {
-  // Sequential and force: nested fixtures push overlapping paths, so parallel
-  // removals race and an already-deleted child would fail the suite.
   for (const directory of temporaryDirectories.splice(0)) {
     // biome-ignore lint/performance/noAwaitInLoops: nested fixtures push overlapping paths, so parallel removals would race and an already-deleted child would fail the suite
     await rm(directory, { recursive: true, force: true });
@@ -63,7 +61,7 @@ describe("Git state evidence enrichment", () => {
       "chroot ./root git push origin",
       "env -C other git push origin",
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ metadata: { command }, patterns: [command] }),
         directory,
@@ -76,7 +74,7 @@ describe("Git state evidence enrichment", () => {
       "sudo -u fixture git push origin",
       "git >output.log push origin",
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ metadata: { command }, patterns: [command] }),
         directory,
@@ -199,7 +197,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `cd ${directory} && git checkout HEAD -- target.py`,
       `git -C ${directory} checkout HEAD -- target.py`,
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         outer,
@@ -225,7 +223,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `cd ${elsewhere} && git checkout HEAD -- target.py`,
       `git -C ${elsewhere} checkout HEAD -- target.py`,
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         workspace,
@@ -391,7 +389,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git pull -s recursive origin main",
       "git ls-remote --sort=committerdate origin",
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         directory,
@@ -415,7 +413,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git push --repo=https://override.example.invalid/x.git main",
       "git push main --repo=https://override.example.invalid/x.git",
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         directory,
@@ -456,7 +454,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git push origin main",
       "git pull",
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         directory,
@@ -470,7 +468,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `git -C missing push ${url} main`,
       `git -C /outside push ${url} main`,
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         directory,
@@ -563,7 +561,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git pull --all",
       "git remote update",
     ]) {
-      // biome-ignore lint/performance/noAwaitInLoops: each case runs git against the one fixture repo, and concurrent git invocations can collide on .git/index.lock
+      // biome-ignore lint/performance/noAwaitInLoops: each case spawns several git inspections under a 2,000 ms runGit timeout, so overlapping cases under CI load could time out into a false "unavailable"
       const result = await enrichGitEvidence(
         request({ patterns: [command], metadata: { command } }),
         directory,

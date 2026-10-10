@@ -1,2 +1,2 @@
-// biome-ignore lint/performance/noBarrelFile: root shim for the "./tui" package export (dist/tui/tui.tsx); hosts load it by filename
+// biome-ignore lint/performance/noBarrelFile: shipped root shim (package.json "files") re-exporting dist/tui/tui.tsx, for hosts that resolve plugins by filename
 export { default } from "./dist/tui/tui.tsx";

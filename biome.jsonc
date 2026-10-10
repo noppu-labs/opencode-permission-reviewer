@@ -139,7 +139,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 629
+                "maxLines": 628
               }
             }
           }
@@ -284,22 +284,6 @@
               "level": "error",
               "options": {
                 "maxLines": 626
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/policy-engine.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 601
               }
             }
           }

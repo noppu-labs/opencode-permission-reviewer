@@ -1,3 +1,3 @@
 // Directory entrypoint for hosts that resolve local plugins by filename.
-// biome-ignore lint/performance/noBarrelFile: root shim for hosts that load local plugins by filename; the re-export is the package entry
+// biome-ignore lint/performance/noBarrelFile: shipped root shim (package.json "files") re-exporting dist/index.js, for hosts that resolve plugins by filename
 export { default } from "./dist/index.js";

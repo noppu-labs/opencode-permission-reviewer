@@ -9,7 +9,7 @@ import type { RuntimeContext } from "./opencode/types.ts";
 import { createV1Adapter } from "./opencode/v1-adapter.ts";
 import { setup } from "./opencode/v2/server.ts";
 
-// biome-ignore lint/nursery/useExplicitType: input and options are contextually typed by the Plugin annotation on server; restating them would duplicate the SDK signature
+// biome-ignore lint/nursery/useExplicitType: input and options are contextually typed by the Plugin annotation on server; annotating them wraps the signature and pushes this file over the FTA cap of 52
 export const server: Plugin = async (input, options) => {
   // V1 does not report whether plugin options came from global or project
   // config. Treat that unknown provenance like V2: inline values may tighten
@@ -69,7 +69,7 @@ export const server: Plugin = async (input, options) => {
     askDecisions,
   );
   return {
-    // biome-ignore lint/nursery/useExplicitType: the event payload is contextually typed by the Hooks["event"] signature that Plugin returns; restating it would duplicate the SDK type
+    // biome-ignore lint/nursery/useExplicitType: the event payload is contextually typed by the Plugin annotation on server; annotating it needs an SDK type import and pushes this file over the FTA cap of 52
     event: async ({ event }) => {
       // Observe synchronously first: reviews started by later events must see
       // ask decisions captured by this one. The observer is total.
