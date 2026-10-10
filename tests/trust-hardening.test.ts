@@ -41,7 +41,14 @@ import { evaluatePolicy } from "../src/policy/policy-engine.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
-import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
+import {
+  decision,
+  defined,
+  MockClient,
+  request,
+  runtime,
+  toJsonl,
+} from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
 type GitRun = PromiseWithChild<{ stdout: string; stderr: string }>;
@@ -741,8 +748,8 @@ describe("trust hardening — audit output boundary", () => {
     try {
       writeFileSync(
         file,
-        `${[
-          JSON.stringify({
+        toJsonl([
+          {
             timestamp: "2026-01-01T00:00:00.000Z",
             requestID: "r1",
             sessionID: "s1",
@@ -750,8 +757,8 @@ describe("trust hardening — audit output boundary", () => {
             outcome: "allow",
             reason: "ok",
             actor: null,
-          }),
-        ].join("\n")}\n`,
+          },
+        ]),
       );
       const summary = readAuditSummary(file);
       expect(summary.validRecords).toBe(1);
