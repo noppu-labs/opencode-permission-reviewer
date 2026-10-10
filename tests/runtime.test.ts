@@ -23,11 +23,15 @@ type PromptResolver = (value: { data: Record<string, unknown> }) => void;
 type MessagesResolver = (value: { data?: unknown; error?: unknown }) => void;
 
 /** Holds every reviewer prompt open until the test resolves it. */
-function holdPrompts(client: MockClient): PromptResolver[] {
+function holdPrompts(
+  client: MockClient,
+  onHeld?: (held: number) => void,
+): PromptResolver[] {
   const resolvers: PromptResolver[] = [];
   client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
     new Promise((resolve) => {
       resolvers.push(resolve);
+      onHeld?.(resolvers.length);
     });
   return resolvers;
 }
@@ -573,7 +577,13 @@ describe("runtime decisions", () => {
 
   test("a manual reply for one request does not cancel a sibling review in the same session", async () => {
     const client = new MockClient();
-    const resolvers = holdPrompts(client);
+    let bothHeld = (): void => {};
+    const bothAtModel = new Promise<void>((resolve) => {
+      bothHeld = resolve;
+    });
+    const resolvers = holdPrompts(client, (held) => {
+      if (held === 2) bothHeld();
+    });
     const harness = runtime(client);
     harness.runtime.handle(
       request({ id: "per_1", tool: { messageID: "m1", callID: "c1" } }),
@@ -581,7 +591,8 @@ describe("runtime decisions", () => {
     harness.runtime.handle(
       request({ id: "per_2", tool: { messageID: "m2", callID: "c2" } }),
     );
-    await new Promise((r) => setTimeout(r, 10));
+    // Evidence collection time varies by runner, so wait for both model calls.
+    await bothAtModel;
     manualReply(harness, "per_2", "reject");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("allow") } } });
