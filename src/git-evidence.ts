@@ -672,11 +672,10 @@ interface DefaultRemoteRecord {
 const MAX_RESOLVED_REMOTES = 5;
 const MAX_PUSH_URLS = 5;
 
-interface ConfiguredRemoteUrls {
-  pushUrls?: string[];
-  fetchUrl?: string | undefined;
-  note?: string;
-}
+type ConfiguredRemoteUrls = Pick<
+  RemoteTargetRecord,
+  "pushUrls" | "fetchUrl" | "note"
+>;
 
 /** Push affects every configured pushurl (or every url when no pushurl
  *  exists), so resolution uses `get-url --push --all`: reporting only the
@@ -1095,9 +1094,9 @@ function parseStatus(stdout: string): {
 }
 
 type RewriteEvidence =
-  | { status: string; reason: string }
+  | { status: "unavailable"; reason: string }
   | {
-      status: string;
+      status: "available";
       base: string;
       head: string;
       commitsInRange: number;

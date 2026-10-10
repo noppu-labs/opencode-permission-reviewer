@@ -44,7 +44,7 @@ export function createReplyTransport(deps: ReplyTransportDeps): ReplyTransport {
   return {
     async reply(
       input: PermissionReplyInput,
-    ): Promise<{ data?: unknown; error?: unknown }> {
+    ): ReturnType<ReplyTransport["reply"]> {
       return raw.post({
         url: "/permission/{requestID}/reply",
         path: { requestID: input.requestID },
