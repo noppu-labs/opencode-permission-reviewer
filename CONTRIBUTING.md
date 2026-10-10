@@ -55,7 +55,9 @@ Your pull request should also meet these rules:
 - No secrets or personal data in code or tests. Use obviously synthetic fixtures: tokens like
   `sk-syntheticcredential...`, documentation IP ranges (`192.0.2.x`, `198.51.100.x`,
   `203.0.113.x`), and `*.invalid` hostnames. Never commit real tokens, keys, personal filesystem
-  paths, or internal codenames.
+  paths, or internal codenames. Put new secret-shaped test values in
+  `tests/fixtures/synthetic-secrets.ts`: it carries the `noSecrets` line ignores, and
+  `.gitleaks.toml` allowlists that path with the exact values.
 - Behavior stays backward compatible unless you are intentionally changing a version pin or an
   enforcement invariant. If you are, say so in the pull request.
 - User-facing strings are in English. The policy and reviewer prompts are English, and runtime
