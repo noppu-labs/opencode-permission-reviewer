@@ -2,10 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type { ActorContext } from "../src/actor-context-types.ts";
 import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
-import {
-  evaluatePolicy,
-  PROFILE_TEMPLATES,
-} from "../src/policy/policy-engine.ts";
+import { evaluatePolicy } from "../src/policy/policy-engine.ts";
+import { PROFILE_TEMPLATES } from "../src/policy/profile-templates.ts";
 import type { PolicyRule } from "../src/types.ts";
 
 function cap(
