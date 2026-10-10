@@ -8,6 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { TUI_SHIP_FILES } from "./package-tui-files.ts";
 
 const CWD = `${import.meta.dir}/..`;
 const PACKAGE_NAME: string = (
@@ -118,20 +119,7 @@ describe("npm pack ship set", () => {
       "MIGRATION.md",
       "dist/explain.js",
       // TUI ships as raw TSX so the host compiles it with its Solid pipeline.
-      "dist/tui/tui.tsx",
-      "dist/tui/config.ts",
-      "dist/tui/config-fields.ts",
-      "dist/tui/config-knobs.ts",
-      "dist/tui/config-policy-rules.ts",
-      "dist/tui/config-risk-policy.ts",
-      "dist/tui/config-rule-condition.ts",
-      "dist/tui/reviewer-model.ts",
-      "dist/tui/config/loader.ts",
-      "dist/tui/config/jsonc.ts",
-      "dist/tui/ui-protocol.ts",
-      "dist/tui/ui-state.ts",
-      "dist/tui/types.ts",
-      "dist/tui/opencode/event-normalizer.ts",
+      ...TUI_SHIP_FILES,
     ]) {
       expect(files).toContain(required);
     }

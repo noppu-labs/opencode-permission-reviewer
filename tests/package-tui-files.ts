@@ -1,0 +1,24 @@
+/** The raw TypeScript sources scripts/copy-tui.ts ships under dist/tui. The
+ *  host compiles them at runtime, so every runtime module they import must be
+ *  listed here as well. */
+export const TUI_SHIP_FILES: readonly string[] = [
+  "dist/tui/tui.tsx",
+  "dist/tui/config.ts",
+  "dist/tui/config-fields.ts",
+  "dist/tui/config-knobs.ts",
+  "dist/tui/config-policy-rules.ts",
+  "dist/tui/config-risk-policy.ts",
+  "dist/tui/config-rule-condition.ts",
+  "dist/tui/reviewer-model.ts",
+  "dist/tui/config/loader.ts",
+  "dist/tui/config/layer-read.ts",
+  "dist/tui/config/trust-boundary.ts",
+  "dist/tui/config/trust-boundary-keys.ts",
+  "dist/tui/config/risk-policy-clamp.ts",
+  "dist/tui/config/trusted-degradation.ts",
+  "dist/tui/config/jsonc.ts",
+  "dist/tui/ui-protocol.ts",
+  "dist/tui/ui-state.ts",
+  "dist/tui/types.ts",
+  "dist/tui/opencode/event-normalizer.ts",
+];

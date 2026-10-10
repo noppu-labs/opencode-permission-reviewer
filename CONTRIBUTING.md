@@ -69,9 +69,10 @@ Your pull request should also meet these rules:
 ## Areas that need care
 
 - `src/decision.ts`, `src/policy.ts`, `src/emergency-brake.ts`, `src/policy/policy-engine.ts`,
-  the trust boundary in `src/config/loader.ts`, and the runtime enforcement path encode the safety
-  invariants. A change to them needs tests that demonstrate the invariant (for example, that
-  critical risk can never be approved) and the reasoning stated in the pull request.
+  the config trust boundary (`src/config/loader.ts`, `trust-boundary.ts`, `risk-policy-clamp.ts`),
+  and the runtime enforcement path encode the safety invariants. A change to them needs tests that
+  demonstrate the invariant (for example, that critical risk can never be approved) and the
+  reasoning stated in the pull request.
 - The V1 adapter and isolated reply transport (`src/opencode/v1-adapter.ts`,
   `src/opencode/reply-transport.ts`) reach into OpenCode's authenticated SDK transport. Changes
   there must keep the "refusing unsafe partial startup" behavior.
