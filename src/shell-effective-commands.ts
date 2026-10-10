@@ -456,6 +456,18 @@ function shellOptionWidth(t: string): number {
   return (t.startsWith("-") || t.startsWith("+")) && t.length > 1 ? 1 : 0;
 }
 
+/** The command string an `env -S` option carries, and the index of the first
+ *  operand after it. */
+interface EnvSplitString {
+  script: string;
+  tailIndex: number;
+}
+
+/** What one token means for the -S search: the split string it carries,
+ *  `null` when the search ends without one, or the index of the next token to
+ *  examine. */
+type EnvOptionStep = EnvSplitString | null | number;
+
 /** Locate the command string carried by a (possibly clustered) `env -S`
  *  option, honoring the other value-taking env options on the way (`-u
  *  NAME`, `-C DIR`, long forms). The string is the next token when S ends
@@ -465,48 +477,63 @@ function shellOptionWidth(t: string): number {
 function findEnvSCommand(
   tokens: ShellToken[],
   start: number,
-): { script: string; tailIndex: number } | null {
-  for (let i = start; i < tokens.length; i += 1) {
-    const token = tokens[i];
-    invariant(token, "tokens[i] is in bounds");
-    const value = token.value;
-    if (value === "--") return null;
-    if (value.startsWith("--")) {
-      if (value === "--split-string") {
-        const script = tokens[i + 1];
-        if (script === undefined) return null;
-        return { script: script.value, tailIndex: i + 2 };
-      }
-      if (value.startsWith("--split-string=")) {
-        return {
-          script: value.slice("--split-string=".length),
-          tailIndex: i + 1,
-        };
-      }
-      if (ENV_VALUE_OPTIONS.has(value)) i += 1;
-      continue;
-    }
-    if (!value.startsWith("-") || value.length <= 1) return null;
-    const letters = value.slice(1);
-    for (let position = 0; position < letters.length; position += 1) {
-      const letter = letters.charAt(position);
-      if (letter === "S") {
-        if (position === letters.length - 1) {
-          const script = tokens[i + 1];
-          if (script === undefined) return null;
-          return { script: script.value, tailIndex: i + 2 };
-        }
-        return { script: letters.slice(position + 1), tailIndex: i + 1 };
-      }
-      // -u/-C/-P consume a value: the rest of the cluster, or the next
-      // token when the letter ends the cluster.
-      if (letter === "u" || letter === "C" || letter === "P") {
-        if (position === letters.length - 1) i += 1;
-        break;
-      }
-    }
+): EnvSplitString | null {
+  let i = start;
+  while (i < tokens.length) {
+    const step = envOptionStep(tokens, i);
+    if (typeof step !== "number") return step;
+    i = step;
   }
   return null;
+}
+
+function envOptionStep(tokens: ShellToken[], i: number): EnvOptionStep {
+  const value = elementAt(tokens, i, "tokens").value;
+  if (value === "--") return null;
+  if (value.startsWith("--")) return longEnvOptionStep(tokens, i, value);
+  if (!value.startsWith("-") || value.length <= 1) return null;
+  return envClusterStep(tokens, i, value.slice(1));
+}
+
+function longEnvOptionStep(
+  tokens: ShellToken[],
+  i: number,
+  value: string,
+): EnvOptionStep {
+  if (value === "--split-string") return splitStringOperand(tokens, i + 1);
+  if (value.startsWith("--split-string="))
+    return { script: value.slice("--split-string=".length), tailIndex: i + 1 };
+  return ENV_VALUE_OPTIONS.has(value) ? i + 2 : i + 1;
+}
+
+/** The first S, u, C or P letter decides the cluster; other letters are
+ *  flags. */
+function envClusterStep(
+  tokens: ShellToken[],
+  i: number,
+  letters: string,
+): EnvOptionStep {
+  const position = letters.search(/[SuCP]/);
+  if (position === -1) return i + 1;
+  const last = position === letters.length - 1;
+  if (letters.charAt(position) === "S")
+    return last
+      ? splitStringOperand(tokens, i + 1)
+      : { script: letters.slice(position + 1), tailIndex: i + 1 };
+  // -u/-C/-P consume a value: the rest of the cluster, or the next
+  // token when the letter ends the cluster.
+  return last ? i + 2 : i + 1;
+}
+
+/** The split string held by the separate token at `index`; its tail starts
+ *  after that token. */
+function splitStringOperand(
+  tokens: ShellToken[],
+  index: number,
+): EnvSplitString | null {
+  const script = tokens[index];
+  if (script === undefined) return null;
+  return { script: script.value, tailIndex: index + 1 };
 }
 
 /** Consume ssh options + host and return the remaining remote-command tokens. */
@@ -514,24 +541,19 @@ function consumeSshRemote(tokens: ShellToken[], start: number): ShellToken[] {
   let i = start;
   let hostSeen = false;
   while (i < tokens.length) {
-    const token = tokens[i];
-    invariant(token, "tokens[i] is in bounds");
-    const t = token.value;
-    if (t === "--") {
-      i += 1;
-      break;
-    }
-    if (t.startsWith("-") && t.length > 1) {
-      const valued = sshValueOption(t);
-      i += valued !== undefined && valued.attached === undefined ? 2 : 1;
-      continue;
-    }
-    if (!hostSeen) {
+    const t = elementAt(tokens, i, "tokens").value;
+    if (t === "--") return tokens.slice(i + 1);
+    if (t.startsWith("-") && t.length > 1) i += sshOptionWidth(t);
+    else if (hostSeen) break;
+    else {
       hostSeen = true;
       i += 1;
-      continue;
     }
-    break;
   }
   return tokens.slice(i);
+}
+
+function sshOptionWidth(t: string): number {
+  const valued = sshValueOption(t);
+  return valued !== undefined && valued.attached === undefined ? 2 : 1;
 }
