@@ -1,5 +1,4 @@
-import type { Plugin, PluginInput, PluginOptions } from "@opencode-ai/plugin";
-import type { Event } from "@opencode-ai/sdk";
+import type { Plugin } from "@opencode-ai/plugin";
 import { createAuditWriter } from "./audit.ts";
 import { loadResolvedConfig } from "./config/loader.ts";
 import { AskDecisionRegistry } from "./context/ask-decisions.ts";
@@ -10,10 +9,8 @@ import type { RuntimeContext } from "./opencode/types.ts";
 import { createV1Adapter } from "./opencode/v1-adapter.ts";
 import { setup } from "./opencode/v2/server.ts";
 
-export const server: Plugin = async (
-  input: PluginInput,
-  options?: PluginOptions,
-) => {
+// biome-ignore lint/nursery/useExplicitType: input and options are contextually typed by the Plugin annotation on server; restating them would duplicate the SDK signature
+export const server: Plugin = async (input, options) => {
   // V1 does not report whether plugin options came from global or project
   // config. Treat that unknown provenance like V2: inline values may tighten
   // policy, but only the dedicated global file may select the reviewer or
@@ -72,7 +69,8 @@ export const server: Plugin = async (
     askDecisions,
   );
   return {
-    event: async ({ event }: { event: Event }) => {
+    // biome-ignore lint/nursery/useExplicitType: the event payload is contextually typed by the Hooks["event"] signature that Plugin returns; restating it would duplicate the SDK type
+    event: async ({ event }) => {
       // Observe synchronously first: reviews started by later events must see
       // ask decisions captured by this one. The observer is total.
       askDecisions?.observe(event);
