@@ -1,7 +1,11 @@
 import { beforeAll, describe, expect, test } from "bun:test";
-import { mkdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
+import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 beforeAll(async () => {
@@ -109,5 +113,32 @@ describe("coordinator audit records", () => {
       // biome-ignore lint/security/noSecrets: a SHA-256 hex digest pinned as the expected value, not a credential
       "a235e10ca35924b993710c8eb897d1eaf669c2dd97fb63f4d6cef9bd2725f253",
     );
+  });
+
+  test("a verified ssh script read during evidence collection reaches the audit record", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "coordinator-audit-"));
+    try {
+      const path = join(directory, "deploy.sh");
+      await writeFile(path, "echo ok\n");
+      const command = renderVerifiedSshScriptCommand({
+        path,
+        destination: "deploy@host.invalid",
+        sha256: createHash("sha256").update("echo ok\n").digest("hex"),
+        shell: "bash",
+      });
+      const harness = runtime(new MockClient(), {}, undefined, { directory });
+      await harness.runtime.process(
+        request({ metadata: { command }, patterns: [command] }),
+      );
+      expect(
+        defined(auditRecords(harness.ctx)[0], "audit record").verifiedScript,
+      ).toEqual({
+        sha256: createHash("sha256").update("echo ok\n").digest("hex"),
+        status: "full",
+        bytes: 8,
+      });
+    } finally {
+      await rm(directory, { recursive: true });
+    }
   });
 });
