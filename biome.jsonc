@@ -81,12 +81,9 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 2 files.
+    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 1 file.
     {
-      "includes": [
-        "src/local-script-evidence.ts",
-        "src/package-script-evidence.ts"
-      ],
+      "includes": ["src/package-script-evidence.ts"],
       "linter": {
         "rules": {
           "complexity": {
