@@ -82,8 +82,7 @@ function extractRedirections(tokens: ShellToken[]): Redirection[] {
     const tok = tokens[i];
     invariant(tok, "tokens[i] is in bounds");
     const value = tok.value;
-    // Combined forms like `2>file` or `1>>file`. Both groups are mandatory, so
-    // they are defined exactly when the pattern matches.
+    // Combined forms like `2>file` or `1>>file`.
     const combined = /^([0-9]?>>?)\s*(.+)$/.exec(value);
     const combinedOperator = combined?.[1];
     const combinedTarget = combined?.[2];

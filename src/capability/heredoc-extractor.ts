@@ -475,7 +475,6 @@ function findOutputTarget(beforeOperator: string): string | undefined {
   // Match the last `>` / `>>` redirection target on the start line.
   const trimmed = beforeOperator.replace(/\s+$/, "");
   const match = />>?\s*([^\s|;&<>]+)\s*$/.exec(trimmed);
-  // The one capturing group is mandatory, so it is defined on every match.
   const target = match?.[1];
   return target === undefined ? undefined : stripQuotes(target);
 }

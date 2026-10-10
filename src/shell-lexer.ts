@@ -109,7 +109,6 @@ const TRANSPARENT_WRAPPERS = new Set([
   "exec",
 ]);
 
-/** env's value-taking options, also read directly by `findEnvSCommand`. */
 const ENV_VALUE_OPTIONS = new Set([
   "-u",
   "--unset",
@@ -985,13 +984,12 @@ function normalizeShellRedirections(tokens: ShellToken[]): {
   return { tokens: words, redirections };
 }
 
-/** Advance past the wrapper option token `opt` found at `index`, returning
- *  the index of the next token. Short-option clusters follow getopt
- *  semantics: the value of a value-taking letter is either embedded as the
- *  rest of the cluster (`-uroot`, `-un` where `u` takes the value `n`) or,
- *  when the letter is last, is the next token (`-nu root`). Misreading a cluster would swallow
- *  the wrapped command or mistake the value for the executable, so `sudo -nu
- *  root rm …` must skip the cluster and `root` together. */
+/** Short-option clusters follow getopt semantics: a value-taking letter takes
+ *  the rest of the cluster as its value (`-uroot`, `-un` where `u` takes `n`)
+ *  or, when it is last, the next token (`-nu root`).
+ *  Misreading a cluster would swallow the wrapped command or mistake the value
+ *  for the executable, so `sudo -nu root rm …` must skip the cluster and
+ *  `root` together. */
 function skipWrapperOption(
   opt: string,
   index: number,
