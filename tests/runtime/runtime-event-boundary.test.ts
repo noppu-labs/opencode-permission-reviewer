@@ -245,7 +245,6 @@ describe("event boundary", () => {
       JSON.stringify(decision("allow", { risk_level: "critical" })),
     ];
     const result = await harness.runtime.process(request());
-    // The retry parsed but enforceDecision must never auto-approve critical risk.
     expect(result.kind).toBe("escalate");
     expect(harness.client.replies).toHaveLength(0);
     expect(harness.client.prompts).toHaveLength(2);
@@ -261,7 +260,6 @@ describe("event boundary", () => {
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
     expect(harness.client.replies).toHaveLength(0);
-    // The retry is only for parse failures, not transport failures.
     expect(harness.client.prompts).toHaveLength(1);
   });
 

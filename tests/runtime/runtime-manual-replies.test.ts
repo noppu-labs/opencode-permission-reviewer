@@ -150,7 +150,6 @@ describe("runtime decisions", () => {
     manualReply(harness, "per_1", "reject");
     for (const resolve of msgResolvers) resolve({ data: client.messageData });
     await harness.runtime.waitForIdle();
-    // No reviewer session, no model call, no reply; the request stays as reviewing.
     expect(client.creates).toHaveLength(0);
     expect(client.prompts).toHaveLength(0);
     expect(client.replies).toHaveLength(0);
