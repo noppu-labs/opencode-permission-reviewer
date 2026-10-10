@@ -4,7 +4,6 @@ import { basename } from "node:path";
 import { elementAt } from "./element-at.ts";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
-import { invariant } from "./invariant.ts";
 
 /** Subcommands whose first positional names (or implies) a remote. */
 const GIT_REMOTE_COMMANDS = new Set([
@@ -21,8 +20,7 @@ function gitSubcommand(
 ): { command?: string; index: number } {
   let index = gitIndex + 1;
   while (index < tokens.length) {
-    const token = tokens[index];
-    invariant(token !== undefined, "tokens[index] is in bounds");
+    const token = elementAt(tokens, index, "tokens");
     if (
       token === "-C" ||
       token === "-c" ||
