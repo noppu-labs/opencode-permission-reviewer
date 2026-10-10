@@ -49,18 +49,28 @@ export function parseVerifiedSshScriptCommand(
     /^cat -- ([A-Za-z0-9_./-]+) \| ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=5(?: -p ([0-9]{1,5}))? ([A-Za-z0-9_.@-]+) '(.+)'$/.exec(
       command,
     );
-  if (!match || match[3]!.startsWith("-")) return;
-  const port = match[2] === undefined ? undefined : Number(match[2]);
+  if (!match) return;
+  // Groups 1, 3 and 4 are mandatory, so they are defined once the regex
+  // matches; only the port group is optional.
+  const [, path, portText, destination, remote] = match;
+  if (
+    path === undefined ||
+    destination === undefined ||
+    remote === undefined ||
+    destination.startsWith("-")
+  )
+    return;
+  const port = portText === undefined ? undefined : Number(portText);
   if (port !== undefined && (port < 1 || port > 65535)) return;
-  const digest = /\b[a-f0-9]{64}\b/.exec(match[4]!)?.[0];
-  const shell = /; (bash|sh) \$f$/.exec(match[4]!)?.[1] as
+  const digest = /\b[a-f0-9]{64}\b/.exec(remote)?.[0];
+  const shell = /; (bash|sh) \$f$/.exec(remote)?.[1] as
     | "bash"
     | "sh"
     | undefined;
   if (!digest || !shell) return;
   const parsed = {
-    path: match[1]!,
-    destination: match[3]!,
+    path,
+    destination,
     ...(port === undefined ? {} : { port }),
     sha256: digest,
     shell,
@@ -112,8 +122,12 @@ export class ScriptAnalysisRegistry {
       analysis,
       expires: Date.now() + RECEIPT_LIFETIME_MS,
     });
-    while (this.entries.size > RECEIPT_LIMIT)
-      this.entries.delete(this.entries.keys().next().value!);
+    // Map keys iterate oldest first, and deleting the current key does not
+    // disturb the iteration.
+    for (const oldest of this.entries.keys()) {
+      if (this.entries.size <= RECEIPT_LIMIT) break;
+      this.entries.delete(oldest);
+    }
   }
 
   rememberApproved(

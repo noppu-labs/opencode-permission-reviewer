@@ -22,8 +22,11 @@ export class V2AskDecisions implements AskDecisionSource {
       if (!form.sessionID.startsWith("ses_") || this.pending.has(form.id))
         return;
       if (JSON.stringify(form).length > 64_000) return;
-      if (this.pending.size >= 128)
-        this.pending.delete(this.pending.keys().next().value!);
+      if (this.pending.size >= 128) {
+        // A non-empty map always yields its oldest key.
+        const oldest = this.pending.keys().next();
+        if (!oldest.done) this.pending.delete(oldest.value);
+      }
       const bounded: Created = {
         ...form,
         fields: [form.fields[0], ...form.fields.slice(1, 32)],

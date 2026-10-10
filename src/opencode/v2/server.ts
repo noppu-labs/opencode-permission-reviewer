@@ -159,7 +159,11 @@ export async function setupWithServices(
     `${sessionID}:${messageID}:${id}`;
   registrations.push(
     await ctx.tool.hook("execute.before", (event) => {
-      if (tools.size >= 512) tools.delete(tools.keys().next().value!);
+      if (tools.size >= 512) {
+        // A non-empty map always yields its oldest key.
+        const oldest = tools.keys().next();
+        if (!oldest.done) tools.delete(oldest.value);
+      }
       // Retain the event object so subsequent hooks' input replacement is visible.
       tools.set(key(event.sessionID, event.messageID, event.id), event);
     }),
@@ -277,7 +281,9 @@ export async function setupWithServices(
           actionSnapshot = snapshotAction();
           if (actionSnapshot.length > 1_000_000)
             throw new Error("Pending action exceeds the evidence size limit");
-          normalized = normalizeV2Permission(
+          // The collect closure below reads this const: TS does not keep the
+          // narrowing of the outer `let` inside it.
+          const permission = normalizeV2Permission(
             input,
             {
               reviewID: attempt.id,
@@ -287,7 +293,8 @@ export async function setupWithServices(
             },
             exact,
           );
-          const request = normalized.request;
+          normalized = permission;
+          const request = permission.request;
           await publish(
             createUiStatus(request, "reviewing", {
               model: config.model,
@@ -333,7 +340,7 @@ export async function setupWithServices(
                 );
                 envelope.actionEvidenceComplete =
                   envelope.actionEvidenceComplete !== false &&
-                  normalized!.actionEvidenceComplete;
+                  permission.actionEvidenceComplete;
                 return envelope;
               },
               review: (evidence) => backend.review(evidence, attempt, client),
@@ -407,7 +414,7 @@ export async function setupWithServices(
           notify(() =>
             publish(
               createUiStatus(
-                normalized!.request,
+                normalized.request,
                 result.kind === "allow"
                   ? "approved"
                   : result.kind === "deny"

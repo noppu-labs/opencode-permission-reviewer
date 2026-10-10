@@ -133,25 +133,9 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 43 files.
+    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 27 files.
     {
       "includes": [
-        "src/audit.ts",
-        "src/cli/explain.ts",
-        "src/cli/init.ts",
-        "src/config/jsonc.ts",
-        "src/context/action-purpose.ts",
-        "src/context/actor-resolver.ts",
-        "src/core/review-coordinator.ts",
-        "src/evidence/local-command.ts",
-        "src/git-evidence.ts",
-        "src/local-script-evidence.ts",
-        "src/opencode/v2/context-reader.ts",
-        "src/opencode/v2/event-codec.ts",
-        "src/opencode/v2/server.ts",
-        "src/package-script-evidence.ts",
-        "src/ssh-evidence.ts",
-        "src/verified-ssh-script.ts",
         "tests/actor-resolver.test.ts",
         "tests/ask-decisions.test.ts",
         "tests/audit.test.ts",
@@ -347,7 +331,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 719
+                "maxLines": 721
               }
             }
           }
@@ -363,7 +347,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 702
+                "maxLines": 708
               }
             }
           }
@@ -379,7 +363,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1348
+                "maxLines": 1368
               }
             }
           }
@@ -411,7 +395,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 715
+                "maxLines": 723
               }
             }
           }

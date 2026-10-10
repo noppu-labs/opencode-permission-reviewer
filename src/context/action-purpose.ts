@@ -141,8 +141,9 @@ function purposeFromIntent(
   // Parent delegated tasks are only safe when exactly one is present. With
   // multiple siblings the parent transcript lists several briefs and the
   // latest one may belong to a different child session.
-  if (intent.delegatedTask.length === 1) {
-    const text = boundPurpose(intent.delegatedTask[0]!.text);
+  const [onlyTask] = intent.delegatedTask;
+  if (intent.delegatedTask.length === 1 && onlyTask !== undefined) {
+    const text = boundPurpose(onlyTask.text);
     if (text !== undefined) {
       return { text, confidence: "medium" };
     }
@@ -152,8 +153,8 @@ function purposeFromIntent(
 }
 
 function latestBlockText(blocks: IntentBlock[]): string | undefined {
-  for (let index = blocks.length - 1; index >= 0; index -= 1) {
-    const text = boundPurpose(blocks[index]!.text);
+  for (const block of [...blocks].reverse()) {
+    const text = boundPurpose(block.text);
     if (text !== undefined) return text;
   }
   return undefined;

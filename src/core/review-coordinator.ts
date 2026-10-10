@@ -10,6 +10,7 @@ import { DECISION_SCHEMA_VERSION } from "../decision.ts";
 import { applyEscalationDisposition } from "../escalation.ts";
 import type { EvidenceProvider } from "../evidence/provider.ts";
 import { formatFailureReason } from "../failure-reason.ts";
+import { invariant } from "../invariant.ts";
 import { isAlreadyResolvedError, withTimeout } from "../opencode/transport.ts";
 import type { RuntimeContext } from "../opencode/types.ts";
 import {
@@ -34,6 +35,12 @@ import { evaluateReview } from "./review-engine.ts";
 import { ReviewLimiter } from "./review-limiter.ts";
 
 type Logger = (message: string, details?: unknown) => void;
+
+/** process() registers the attempt before its first await and deletes it only
+ *  in its finally block, after closing it; handle() runs one process() per
+ *  request ID. The asserted lookups below all run inside that window. */
+const ATTEMPT_REGISTERED =
+  "process() keeps the review attempt registered until it returns";
 
 /** Stable hash of the canonical request so audit records for the same action
  *  correlate across runs. Patterns are sorted so event order does not matter.
@@ -293,7 +300,8 @@ export class ReviewCoordinator {
   private async processRequest(
     request: PermissionRequest,
   ): Promise<ReviewExecutionResult> {
-    const attempt = this.attempts.get(request.id)!;
+    const attempt = this.attempts.get(request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
     await this.emit(request, "reviewing");
     const result = await evaluateReview(request, this.config, {
       collect: (pending) => this.collectEnvelope(pending),
@@ -429,9 +437,11 @@ export class ReviewCoordinator {
     const warnings: string[] = [];
     if (evidence !== undefined) warnings.push(...evidence.reasons);
     if (capability !== undefined) warnings.push(...capability.analysisWarnings);
+    const attempt = this.attempts.get(request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
     const record: ReviewAuditRecord = {
       schemaVersion: 3,
-      reviewID: this.attempts.get(request.id)!.id,
+      reviewID: attempt.id,
       hostRequestID: request.id,
       hostGeneration: "v1",
       hostVersion: this.ctx.hostVersion ?? "unknown",
@@ -597,10 +607,9 @@ export class ReviewCoordinator {
   private runReviewer(
     envelope: ReviewEnvelope,
   ): Promise<ReviewExecutionResult> {
-    return this.backend.review(
-      envelope,
-      this.attempts.get(envelope.request.id)!,
-    );
+    const attempt = this.attempts.get(envelope.request.id);
+    invariant(attempt, ATTEMPT_REGISTERED);
+    return this.backend.review(envelope, attempt);
   }
 
   private remember(

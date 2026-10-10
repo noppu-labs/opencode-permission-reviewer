@@ -4,6 +4,7 @@ import { basename, resolve } from "node:path";
 import { promisify } from "node:util";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { invariant } from "./invariant.ts";
 import {
   approvedEvidenceRoots,
   isWithinRoot,
@@ -115,7 +116,8 @@ function networkOperand(
   let operand: string | undefined;
   let repoOverride: string | undefined;
   for (let cursor = index + 1; cursor < tokens.length; cursor += 1) {
-    const token = tokens[cursor]!;
+    const token = tokens[cursor];
+    invariant(token !== undefined, "tokens[cursor] is in bounds");
     if (token === "--") {
       afterSeparator = true;
       continue;
@@ -143,7 +145,8 @@ function gitSubcommand(
 ): { command?: string; index: number } {
   let index = gitIndex + 1;
   while (index < tokens.length) {
-    const token = tokens[index]!;
+    const token = tokens[index];
+    invariant(token !== undefined, "tokens[index] is in bounds");
     if (
       token === "-C" ||
       token === "-c" ||
@@ -165,8 +168,7 @@ function gitSubcommand(
 function positionalAfter(tokens: string[], index: number): string[] {
   const values: string[] = [];
   let afterSeparator = false;
-  for (let cursor = index + 1; cursor < tokens.length; cursor += 1) {
-    const token = tokens[cursor]!;
+  for (const token of tokens.slice(index + 1)) {
     if (token === "--") {
       afterSeparator = true;
       continue;
@@ -197,7 +199,11 @@ function gitExecutionDirectory(
     };
   let directory = initialDirectory;
   for (let index = gitIndex + 1; index < subcommandIndex; index += 1) {
-    const token = tokens[index]!;
+    const token = tokens[index];
+    invariant(
+      token !== undefined,
+      "tokens[index] is in bounds below the subcommand index",
+    );
     if (
       token.startsWith("--git-dir") ||
       token.startsWith("--work-tree") ||
@@ -293,7 +299,8 @@ function plannedActions(command: string, directory: string): PlannedGitActions {
       const args = tokens.slice(index + 1);
       const bases: string[] = [];
       for (let cursor = 0; cursor < args.length; cursor++) {
-        const arg = args[cursor]!;
+        const arg = args[cursor];
+        invariant(arg !== undefined, "args[cursor] is in bounds");
         if (
           [
             "--onto",
@@ -312,12 +319,14 @@ function plannedActions(command: string, directory: string): PlannedGitActions {
           bases.push(arg);
         }
       }
+      const [base] = bases;
       if (
         !args.includes("--root") &&
         bases.length === 1 &&
-        !/[$`*?{}<>]/.test(bases[0]!)
+        base !== undefined &&
+        !/[$`*?{}<>]/.test(base)
       )
-        result.rewriteBases.push(bases[0]!);
+        result.rewriteBases.push(base);
     }
     if (subcommand === "commit") result.commit = true;
     if (subcommand === "add")
@@ -382,8 +391,13 @@ function plannedActions(command: string, directory: string): PlannedGitActions {
       }
     }
   }
-  if (executionDirectories.size === 1 && directoryReasons.size === 0) {
-    result.executionDirectory = [...executionDirectories][0]!;
+  const [onlyDirectory] = executionDirectories;
+  if (
+    executionDirectories.size === 1 &&
+    directoryReasons.size === 0 &&
+    onlyDirectory !== undefined
+  ) {
+    result.executionDirectory = onlyDirectory;
   } else if (executionDirectories.size > 1) {
     result.directoryReason =
       "compound command targets multiple Git working directories";
@@ -719,12 +733,16 @@ async function literalUrlRewrites(directory: string, neutralization: string[]) {
   for (const entry of config.stdout.split("\0")) {
     const separator = entry.indexOf("\n");
     const key = entry.slice(0, separator);
+    // Both capture groups are mandatory, so they are defined exactly when
+    // the key matches.
     const match = key.match(/^url\.(.+)\.(pushinsteadof|insteadof)$/i);
-    if (match)
+    const base = match?.[1];
+    const kind = match?.[2];
+    if (base !== undefined && kind !== undefined)
       rewrites.push({
-        base: match[1]!,
+        base,
         prefix: entry.slice(separator + 1),
-        push: match[2]!.toLowerCase() === "pushinsteadof",
+        push: kind.toLowerCase() === "pushinsteadof",
       });
   }
   return rewrites;
@@ -780,14 +798,14 @@ async function resolveRemoteTargets(
   )
     ? await literalUrlRewrites(directory, neutralization)
     : undefined;
+  // Stored values are objects, so a missing entry is the only `undefined`.
   const resolveRemote = async (name: string) => {
-    if (!resolvedRemotes.has(name)) {
-      resolvedRemotes.set(
-        name,
-        await resolveConfiguredRemote(directory, name, neutralization),
-      );
+    let resolved = resolvedRemotes.get(name);
+    if (resolved === undefined) {
+      resolved = await resolveConfiguredRemote(directory, name, neutralization);
+      resolvedRemotes.set(name, resolved);
     }
-    return resolvedRemotes.get(name)!;
+    return resolved;
   };
   for (const input of planned.remoteCandidates) {
     if (targets.length >= MAX_RESOLVED_REMOTES) break;
@@ -821,9 +839,11 @@ async function resolveRemoteTargets(
             }
           : {}),
       };
+      const onlyPushUrl =
+        literal.pushUrls?.length === 1 ? literal.pushUrls[0] : undefined;
       const pushIdentity =
-        identity !== undefined && literal.pushUrls?.length === 1
-          ? repositoryIdentity(literal.pushUrls[0]!)
+        identity !== undefined && onlyPushUrl !== undefined
+          ? repositoryIdentity(onlyPushUrl)
           : undefined;
       const fetchIdentity =
         identity !== undefined && literal.fetchUrl !== undefined

@@ -186,11 +186,11 @@ export function readAuditSummary(path: string): AuditSummary {
   // the summarized window, not the whole file.
   summary.totalLines = lines.length;
   const actorCounts = new Map<string, number>();
-  for (let i = 0; i < lines.length; i++) {
+  for (const [i, line] of lines.entries()) {
     const lineNo = i + 1;
     let parsed: unknown;
     try {
-      parsed = JSON.parse(lines[i]!);
+      parsed = JSON.parse(line);
     } catch {
       summary.invalidLines++;
       continue;

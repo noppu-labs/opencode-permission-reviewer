@@ -3,6 +3,7 @@ import { constants as fsConstants } from "node:fs";
 import { lstat, open, readlink, realpath } from "node:fs/promises";
 import { basename, isAbsolute, resolve, sep } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { invariant } from "./invariant.ts";
 import { commandSegments, sshValueOption } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
 
@@ -71,11 +72,13 @@ function cdTarget(
   tokens: string[],
   directory: string | undefined,
 ): { directory?: string; reason?: string } {
-  if (tokens.length < 2 || commandName(tokens[0]!) !== "cd") return {};
+  const [head] = tokens;
+  if (tokens.length < 2 || head === undefined || commandName(head) !== "cd")
+    return {};
   const values = tokens[1] === "--" ? tokens.slice(2) : tokens.slice(1);
-  if (values.length !== 1)
+  const [target] = values;
+  if (values.length !== 1 || target === undefined)
     return { reason: "cd target is absent or ambiguous" };
-  const target = values[0]!;
   if (/[$`*?{}<>]/.test(target))
     return { reason: "cd target contains unresolved shell expansion" };
   if (isAbsolute(target)) return { directory: resolve(target) };
@@ -175,13 +178,14 @@ export function shellCommandSegmentsWithDirectory(
           }
         : { directory }),
     });
-    if (segment.tokens.length === 0) {
+    const [head] = segment.tokens;
+    if (head === undefined) {
       // Paren marker: a grouping event with no command of its own.
       if (segment.endedBy === "(") openSubshell();
       else if (segment.endedBy === ")") closeSubshell();
       continue;
     }
-    if (commandName(segment.tokens[0]!) === "cd") {
+    if (commandName(head) === "cd") {
       const target = cdTarget(segment.tokens, directory);
       pendingCd = {
         ...(directory === undefined ? {} : { before: directory }),
@@ -227,7 +231,8 @@ function parseSsh(
   let index = sshIndex + 1;
 
   while (index < tokens.length) {
-    const token = tokens[index]!;
+    const token = tokens[index];
+    invariant(token !== undefined, "tokens[index] is in bounds");
     if (token === "--") {
       index += 1;
       destination = tokens[index];
@@ -260,8 +265,11 @@ function parseSsh(
   const user = at > 0 ? destination.slice(0, at) : undefined;
   const host = at > 0 ? destination.slice(at + 1) : destination;
   const remoteTokens = [...tokens.slice(index)];
-  while (remoteTokens.length > 0 && /^\d*(?:>|<)/.test(remoteTokens.at(-1)!))
+  let last = remoteTokens.at(-1);
+  while (last !== undefined && /^\d*(?:>|<)/.test(last)) {
     remoteTokens.pop();
+    last = remoteTokens.at(-1);
+  }
   return {
     destination,
     host,
@@ -274,12 +282,14 @@ function parseSsh(
 }
 
 function catSource(tokens: ReadonlyArray<string>): string | undefined {
-  if (tokens.length < 2 || commandName(tokens[0]!) !== "cat") return;
+  const [head] = tokens;
+  if (tokens.length < 2 || head === undefined || commandName(head) !== "cat")
+    return;
   const positional = tokens
     .slice(1)
     .filter((value) => value !== "--" && !value.startsWith("-"));
-  if (positional.length !== 1) return;
-  const source = positional[0]!;
+  const [source] = positional;
+  if (positional.length !== 1 || source === undefined) return;
   if (/[$`*?{}<>]/.test(source)) return;
   return source;
 }
@@ -625,12 +635,7 @@ export async function enrichSshEvidence(
   const audit: SshAuditSummary[] = [];
   const preflightDenials: string[] = [];
 
-  for (
-    let segmentIndex = 0;
-    segmentIndex < segments.length;
-    segmentIndex += 1
-  ) {
-    const segment = segments[segmentIndex]!;
+  for (const [segmentIndex, segment] of segments.entries()) {
     const sshIndex = findSshIndex(segment.tokens);
     if (sshIndex < 0) continue;
     const parsed = parseSsh(segment.tokens, sshIndex);
@@ -640,10 +645,13 @@ export async function enrichSshEvidence(
     // like `(cd sub && cat p.py) | ssh …` reads the stdin file from sub even
     // though ssh itself executes in the outer directory. Walk back over
     // paren markers to the producing command.
+    // A negative index reads `undefined`, which ends the walk at the start.
     let producerIndex = segmentIndex - 1;
-    while (producerIndex >= 0 && segments[producerIndex]!.tokens.length === 0)
+    let producer = segments[producerIndex];
+    while (producer !== undefined && producer.tokens.length === 0) {
       producerIndex -= 1;
-    const producer = producerIndex >= 0 ? segments[producerIndex]! : undefined;
+      producer = segments[producerIndex];
+    }
     const stdinPath =
       segment.preceding === "|" && producer
         ? catSource(producer.tokens)

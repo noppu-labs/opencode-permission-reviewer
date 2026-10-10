@@ -1,6 +1,7 @@
 import { lstat } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import { sourceCommand } from "./evidence/source-command.ts";
+import { invariant } from "./invariant.ts";
 import { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
 import { effectiveCommands } from "./shell-lexer.ts";
 import {
@@ -47,7 +48,11 @@ function invocation(tokens: string[]): ScriptInvocation | undefined {
   let ambiguous = false;
   const skipOptions = () => {
     while (tokens[cursor]?.startsWith("-")) {
-      const option = tokens[cursor++]!;
+      const option = tokens[cursor++];
+      invariant(
+        option !== undefined,
+        "the loop condition read a token at this cursor",
+      );
       if (
         /^(?:--(?:cwd|prefix|workspace|workspaces|filter)|-F|-C)(?:=|$)/.test(
           option,
@@ -313,7 +318,10 @@ export async function enrichPackageScriptEvidence(
     for (const call of calls(segment.tokens))
       await visit(call, segment.directory, 0);
   }
-  if (records.length === 0) return { text: "" };
+  // Records are only popped while more than one remains, so `first` stays
+  // records[0] from here on.
+  const [first] = records;
+  if (first === undefined) return { text: "" };
   const serialize = () =>
     JSON.stringify(
       {
@@ -336,13 +344,11 @@ export async function enrichPackageScriptEvidence(
   // Drop whole records before shortening a record, retaining explicit gaps.
   while (text.length > maxChars && records.length > 1) {
     records.pop();
-    records[0]!.status = "truncated";
-    records[0]!.reason =
-      "additional script evidence exceeded the character budget";
+    first.status = "truncated";
+    first.reason = "additional script evidence exceeded the character budget";
     text = serialize();
   }
   if (text.length > maxChars) {
-    const first = records[0]!;
     delete first.referencedCode;
     if (first.command !== undefined)
       first.command = first.command.slice(0, Math.max(0, maxChars - 1_000));

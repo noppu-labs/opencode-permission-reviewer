@@ -76,11 +76,11 @@ export async function runInit(argv: string[]): Promise<number> {
   }
 
   const pkg = readPackageInfo();
-  if (!["auto", "v1", "v2"].includes(values.host!)) {
+  if (!["auto", "v1", "v2"].includes(values.host)) {
     console.error("init: --host must be auto, v1, or v2");
     return 2;
   }
-  const versionChecks = await runVersionChecks(pkg, values.binary!);
+  const versionChecks = await runVersionChecks(pkg, values.binary);
   if (
     values.host === "auto" &&
     !versionChecks.find((check) => check.name === "opencode")?.ok
