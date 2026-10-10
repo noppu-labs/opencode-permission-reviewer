@@ -1,5 +1,6 @@
 # Nothing here is packaged or installed. The repo is a TypeScript plugin; its Python is the
-# real-host compatibility matrix (tests/compatibility) and one benchmark dataset script. This
+# real-host compatibility matrix (tests/compatibility) and the benchmark dataset builder
+# (benchmarks/permission-reviewer/scripts/build-dataset.py and its scripts/dataset/ package). This
 # file exists for the tooling venv and the tool settings that .pre-commit-config.yaml wires up.
 #
 #   uv sync                                # create .venv with the dev tools
@@ -29,8 +30,6 @@ dev = [
 
 # Cognitive complexity (complexipy, run by pre-commit on changed files), capped at 14 as in the
 # sibling repos. A deliberate exception is `# complexipy: ignore (reason)` on the def line.
-# Pending, removed by quality/3-python: complexipy-snapshot.json records the 11 functions over 14
-# and fails on a new one or on a recorded one getting worse.
 [tool.complexipy]
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 max-complexity-allowed = 14
@@ -50,7 +49,7 @@ max-module-lines = 600
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 # pytest finds fixtures by name; nothing calls them.
 ignore_decorators = ["@pytest.fixture"]
-# BaseHTTPRequestHandler calls these by name (tests/compatibility/test_v2_reviewer.py).
+# BaseHTTPRequestHandler calls these by name (tests/compatibility/conftest.py).
 ignore_names = ["do_POST", "log_message"]
 
 [tool.codespell]
@@ -74,50 +73,13 @@ exclude_dirs = [".venv", "node_modules", "tests/live-fixture"]
 # B404: flags any `import subprocess`; the calls themselves are still checked (B603/B607).
 skips = ["B101", "B404"]
 
-# Type checking (PyCharm runs Pyrefly). The compatibility tests import `test_v2_reviewer` as a
-# sibling module, so that folder is on the search path.
+# Type checking (PyCharm runs Pyrefly). The compatibility tests import `hosts` as a
+# sibling module and build-dataset.py imports the `dataset` package beside it, so both
+# folders are on the search path.
 [tool.pyrefly]
 project-includes = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
-search-path = ["tests/compatibility"]
+search-path = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 python-version = "3.12"
-
-# Pending: removed by quality/3-python. One sub-config per file, switching off only the error
-# kinds that file still reports.
-[[tool.pyrefly.sub-config]]
-matches = "benchmarks/permission-reviewer/scripts/build-dataset.py"
-[tool.pyrefly.sub-config.errors]
-bad-assignment = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_evidence_recovery.py"
-[tool.pyrefly.sub-config.errors]
-unsupported-operation = false
-unbound-name = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_local_evidence.py"
-[tool.pyrefly.sub-config.errors]
-unbound-name = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_opencode_v1.py"
-[tool.pyrefly.sub-config.errors]
-unsupported-operation = false
-not-iterable = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_opencode_v2.py"
-[tool.pyrefly.sub-config.errors]
-no-matching-overload = false
-
-[[tool.pyrefly.sub-config]]
-matches = "tests/compatibility/test_v2_reviewer.py"
-[tool.pyrefly.sub-config.errors]
-unsupported-operation = false
-unbound-name = false
-bad-index = false
-bad-override = false
-missing-attribute = false
 
 [tool.ruff]
 line-length = 120
@@ -156,6 +118,8 @@ select = [
 ignore = [
     "TRY003",  # long messages in raise: an opinion, and the messages are the useful part
 ]
+# V107: vulture's unused-variable code, used in line-level noqa comments.
+external = ["V107"]
 # PLR6301 is a preview rule. explicit-preview-rules keeps every *other* preview rule off, but
 # preview also switches stable rules to their preview behaviour. The formatter has its own flag.
 preview = true
@@ -168,25 +132,15 @@ mccabe.max-complexity = 10
 # Test stubs mirror a real signature and fixtures are requested for their side effects.
 "tests/**/*.py" = ["ARG"]
 
-# Pending: removed by quality/3-python. Each entry lists only the codes that file still fails.
-# F811/F401: fixtures are imported from test_v2_reviewer and redeclared as parameters. Removing the
-# import breaks the run (pytest cannot find the fixture), so they move to conftest.py in 3-python.
-"benchmarks/permission-reviewer/scripts/build-dataset.py" = [
-    "E501",    # dataset strings that ruff format cannot split; text stays verbatim
-    "RUF001",  # deliberate full-width and curly-quote characters in dataset cases
-    "RUF005",
-    "UP031",
-    "C401",
-]
-"tests/compatibility/conftest.py" = ["C901"]
-"tests/compatibility/test_evidence_recovery.py" = ["PT006", "F811"]
-"tests/compatibility/test_local_evidence.py" = ["PT006", "F811", "E501"]
-"tests/compatibility/test_opencode_v1.py" = ["F811", "E501"]
-"tests/compatibility/test_opencode_v2.py" = ["F811"]
-"tests/compatibility/test_rollback.py" = ["F811"]
-"tests/compatibility/test_tui.py" = ["E402", "PT006", "F811"]
-"tests/compatibility/test_v2_analysis_regressions.py" = ["F401", "F811", "PT018"]
-"tests/compatibility/test_v2_reviewer.py" = ["PT006", "C901", "E501", "SIM105"]
+# Permanent: the dataset case strings are the benchmark's input and read as one verbatim line each.
+# Splitting them mid-sentence would hide the text from grep and make a case hard to compare.
+"benchmarks/permission-reviewer/scripts/dataset/injections.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_dataflow.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_git.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_intent.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_paths.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_shell.py" = ["E501"]
+"benchmarks/permission-reviewer/scripts/dataset/semantic_side_effects.py" = ["E501"]
 
 [tool.ruff.format]
 quote-style = "double"

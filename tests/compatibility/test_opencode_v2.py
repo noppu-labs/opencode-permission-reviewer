@@ -7,13 +7,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from test_v2_reviewer import model_server  # noqa: F401
-
-V2_VERSIONS = (
-    [os.environ["V2_HOST_VERSION"]]
-    if os.environ.get("V2_HOST_VERSION")
-    else ["2.0.3", "2.0.11", "2.0.15", "2.0.18", "2.0.26"]
-)
+from hosts import V2_VERSIONS
 
 
 @pytest.mark.parametrize("host_version", V2_VERSIONS)
@@ -55,8 +49,10 @@ def test_native_context_fork_and_form_contracts(launch_host, model_server, host_
     }
     host = launch_host("v2", binary, {}, global_config=provider)
     script = Path(__file__).with_name("capture-contracts.ts")
+    bun = shutil.which("bun")
+    assert bun is not None, "bun is not on PATH"
     captured = subprocess.run(  # nosec B603 # fixed argv, no shell
-        [shutil.which("bun"), str(script), host["url"], str(host["project"]), host_version],
+        [bun, str(script), host["url"], str(host["project"]), host_version],
         env=host["env"],
         capture_output=True,
         text=True,

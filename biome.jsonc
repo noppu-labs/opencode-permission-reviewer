@@ -15,10 +15,7 @@
       "!tests/live-fixture",
       "!benchmarks/permission-reviewer/runs",
       "!benchmarks/permission-reviewer/reviews",
-      "!benchmarks/permission-reviewer/models.local.json",
-      // complexipy rewrites this file without a final newline on every run, so the formatter would
-      // fight it (end-of-file-fixer excludes it for the same reason).
-      "!complexipy-snapshot.json"
+      "!benchmarks/permission-reviewer/models.local.json"
     ]
   },
   "formatter": {
