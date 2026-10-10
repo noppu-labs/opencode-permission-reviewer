@@ -1,15 +1,14 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
   // Files that run or ship without an import edge knip can follow. The bun, tsup, node and
-  // github-actions plugins already cover the tsup entries, the bun test files, server.js and the
-  // benchmark CLI.
+  // github-actions plugins already cover the tsup entries, the bun test files, server.js, the
+  // benchmark CLI and scripts/*.ts (run from package.json scripts and release.yml).
   "entry": [
     // Shipped to hosts as-is (package.json "files").
     "rpc.js",
     "tui.tsx",
     // Copied raw to dist/tui by scripts/copy-tui.ts and loaded by the host as the TUI plugin.
     "src/tui.tsx",
-    "scripts/*.ts",
     // Live harness, host fixtures and the compatibility matrix, run by hand or from CI.
     "tests/live-*.ts",
     "tests/fixtures/*.ts",
