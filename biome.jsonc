@@ -78,9 +78,8 @@
       }
     }
   },
-  // The ratchet. Each entry turns off one rule for exactly the files that fail it today (file-length
-  // entries cap each file at its current length instead), ordered by the stacked PR that fixes
-  // those files and deletes the entry.
+  // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
+  // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
     // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 16 files.
     {
