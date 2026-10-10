@@ -1,3 +1,6 @@
+import { commandName, splitArguments } from "./brake-arguments.ts";
+import { hasRmFlags } from "./brake-rm-flags.ts";
+import { targetsRoot } from "./brake-root-target.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { invariant } from "./invariant.ts";
@@ -78,105 +81,16 @@ const SECRET_EXPORT_REASON =
 const ANALYSIS_LIMIT_REASON =
   "Emergency brake: command exceeded the static analysis budget (input size, token count, or command-string expansion). Split the command into smaller steps and retry. This is a resource limit, not a detected destruction.";
 
-/** Short flags that make `rm` recursive / forceful when clustered (e.g. `-rf`). */
-function hasRmFlags(tokens: ShellToken[]): {
-  recursive: boolean;
-  force: boolean;
-} {
-  let recursive = false;
-  let force = false;
-  let endOfFlags = false;
-  for (const { value } of tokens.slice(1)) {
-    if (!endOfFlags && value === "--") {
-      endOfFlags = true;
-      continue;
-    }
-    if (!endOfFlags && value.startsWith("-") && value.length > 1) {
-      if (value === "--recursive" || value === "-R") recursive = true;
-      else if (value === "--force") force = true;
-      else if (value.startsWith("--")) {
-        // Empty on purpose: other long flags (`--no-preserve-root`, `--one-file-system`, …) must not reach the short-flag letter scan below.
-      } else {
-        // Clustered short flags; GNU rm allows them interleaved with operands.
-        if (value.includes("r") || value.includes("R")) recursive = true;
-        if (value.includes("f")) force = true;
-      }
-    }
-  }
-  return { recursive, force };
-}
-
-/**
- * A literal target resolves to the filesystem root `/` after dropping trailing
- * `.`, `..`, and empty components. We do NOT touch variables, globs, command
- * substitutions, or backslash escapes (the lexer already produced the shell
- * value): those stay non-literal and out of the brake's remit, so `rm -rf '\/'`
- * is left untouched (it is a file literally named `\`-slash, not root).
- */
-function resolvesToRoot(rawTarget: string): boolean {
-  if (!rawTarget.startsWith("/")) return false;
-  const stack: string[] = [];
-  for (const part of rawTarget.split("/")) {
-    if (part === "" || part === ".") continue;
-    if (part === "..") {
-      stack.pop();
-      continue;
-    }
-    stack.push(part);
-  }
-  return stack.length === 0;
-}
-
-/**
- * A live glob that expands to every entry of the filesystem root (`/*`,
- * `//**`): the shell expands it before rm runs, so `rm -rf /*` destroys the
- * system exactly like `rm -rf /`. The star is only an operator while its
- * characters sit in an UNQUOTED span: `"/"*` still globs (only the slash is
- * quoted), while `'/*'` or `/\*` name a literal file and stay with the
- * reviewer. Trailing `*` and `**` both count: without globstar, `**`
- * behaves like `*` at the root level.
- */
-function isLiveRootGlob(token: ShellToken): boolean {
-  if (!token.value.startsWith("/")) return false;
-  const components = token.value.split("/");
-  const last = components.at(-1);
-  invariant(last !== undefined, "String.split returns at least one element");
-  if (!/^\*+$/.test(last)) return false;
-  const starStart = token.value.length - last.length;
-  if (tokenCharIsQuoted(token, starStart)) return false;
-  const stack: string[] = [];
-  for (const part of components.slice(0, -1)) {
-    if (part === "" || part === ".") continue;
-    if (part === "..") {
-      stack.pop();
-      continue;
-    }
-    stack.push(part);
-  }
-  return stack.length === 0;
-}
-
 function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
-  for (const { effective } of analyzed) {
-    for (const tokens of effective) {
-      const first = tokens[0];
-      if (first === undefined) continue;
-      if (shellBasename(first.value) !== "rm") continue;
-      const { recursive, force } = hasRmFlags(tokens);
-      if (!recursive || !force) continue;
-      let endOfFlags = false;
-      for (const token of tokens.slice(1)) {
-        const value = token.value;
-        if (!endOfFlags && value === "--") {
-          endOfFlags = true;
-          continue;
-        }
-        if (!endOfFlags && value.startsWith("-") && value.length > 1) continue;
-        if (resolvesToRoot(value) || isLiveRootGlob(token)) return true;
-      }
-    }
-  }
-  return false;
+  return analyzed.some(({ effective }) => effective.some(isRootRm));
+}
+
+function isRootRm(command: ShellToken[]): boolean {
+  if (commandName(command) !== "rm") return false;
+  const { recursive, force } = hasRmFlags(command);
+  return (
+    recursive && force && splitArguments(command).operands.some(targetsRoot)
+  );
 }
 
 /**
@@ -239,11 +153,7 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
           }
         }
       }
-      if (
-        root !== null &&
-        (resolvesToRoot(root.value) || isLiveRootGlob(root)) &&
-        (hasDelete || hasExecRm)
-      )
+      if (root !== null && targetsRoot(root) && (hasDelete || hasExecRm))
         return true;
     }
   }
