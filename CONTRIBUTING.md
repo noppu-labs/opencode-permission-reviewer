@@ -68,10 +68,15 @@ Your pull request should also meet these rules:
 
 ## Areas that need care
 
-- `src/decision.ts`, `src/policy.ts`, `src/emergency-brake.ts`, `src/policy/policy-engine.ts`,
-  the config trust boundary in `src/config/` (`loader.ts`, `trust-boundary.ts`, the key lists in
-  `trust-boundary-keys.ts`, `risk-policy-clamp.ts` and `trusted-degradation.ts`), and the runtime
-  enforcement path encode the safety invariants. A change to them needs tests that demonstrate the
+- `src/decision.ts` with `src/decision-gates.ts` and `src/decision-schema.ts`, `src/policy.ts`,
+  `src/emergency-brake.ts` with the `src/brake-*.ts` detectors it calls,
+  `src/policy/policy-engine.ts` with `src/policy/policy-conditions.ts` and
+  `src/policy/profile-templates.ts`, the config trust boundary in `src/config/` (`loader.ts`,
+  `trust-boundary.ts`, the key lists in `trust-boundary-keys.ts`, `risk-policy-clamp.ts` and
+  `trusted-degradation.ts`), and the runtime enforcement path in `src/core/` (`review-engine.ts`
+  with `review-result-gates.ts`, and `review-coordinator.ts` with the `review-pipeline.ts`,
+  `review-disposition.ts`, `review-reply.ts`, `reply-events.ts` and `coordinator-state.ts` modules
+  it delegates to) encode the safety invariants. A change to them needs tests that demonstrate the
   invariant (for example, that critical risk can never be approved) and the reasoning stated in the
   pull request.
 - The V1 adapter and isolated reply transport (`src/opencode/v1-adapter.ts`,

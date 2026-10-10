@@ -7,7 +7,8 @@
 
 ## Safety impact
 
-<!-- If this touches decision.ts, policy.ts, emergency-brake.ts, the reply
+<!-- If this touches decision.ts, policy.ts, emergency-brake.ts (or the
+     decision-*, brake-* and policy/ modules split from them), the reply
      transport, or the config trust boundary, explain why the safety invariants
      are preserved (critical risk never approved, project config cannot weaken
      global, reviewer failure → manual, etc.). If it does not touch safety
