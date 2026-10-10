@@ -1,23 +1,22 @@
-import type { PermissionRequest } from "./types.ts"
+import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import {
   analyzeEffectiveCommands,
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
-  tokenCharIsQuoted,
   type ShellSegment,
   type ShellToken,
   shellBasename,
-} from "./shell-lexer.ts"
-import { extractHeredocs } from "./capability/heredoc-extractor.ts"
-import type { Redirection } from "./types.ts"
+  tokenCharIsQuoted,
+} from "./shell-lexer.ts";
+import type { PermissionRequest, Redirection } from "./types.ts";
 
 /** One segment with its resolved effective commands, computed once per
  *  request and shared by every detector. */
 interface AnalyzedSegment {
-  segment: ShellSegment
-  effective: ShellToken[][]
-  redirections: Redirection[][]
+  segment: ShellSegment;
+  effective: ShellToken[][];
+  redirections: Redirection[][];
 }
 
 /*
@@ -51,48 +50,56 @@ const ROOT_DESTRUCTION_REGEX = [
   // handled by the lexer-based detectors below so that `echo "mkfs …"` and
   // other non-executable mentions do not trip the brake.)
   /:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/,
-]
+];
 
-const SECRET_EXPORT_UTILITIES = new Set(["curl", "wget", "nc", "ncat", "netcat", "socat"])
+const SECRET_EXPORT_UTILITIES = new Set([
+  "curl",
+  "wget",
+  "nc",
+  "ncat",
+  "netcat",
+  "socat",
+]);
 
 const SECRET_EXPORT_TARGETS = [
   /(?:\.ssh\/(?:id_|authorized_keys)|\.aws\/credentials|\.config\/gh\/hosts\.yml)/i,
   /(?:api[_-]?key|access[_-]?token|private[_-]?key|session[_-]?cookie)/i,
-]
+];
 
 const ROOT_DESTRUCTION_REASON =
-  "Emergency brake: command contains unmistakable broad system destruction."
+  "Emergency brake: command contains unmistakable broad system destruction.";
 const SECRET_EXPORT_REASON =
-  "Emergency brake: command appears to export credential material through a network utility."
+  "Emergency brake: command appears to export credential material through a network utility.";
 const ANALYSIS_LIMIT_REASON =
-  "Emergency brake: command exceeded the static analysis budget (input size, token count, or command-string expansion). Split the command into smaller steps and retry. This is a resource limit, not a detected destruction."
+  "Emergency brake: command exceeded the static analysis budget (input size, token count, or command-string expansion). Split the command into smaller steps and retry. This is a resource limit, not a detected destruction.";
 
 /** Short flags that make `rm` recursive / forceful when clustered (e.g. `-rf`). */
-function hasRmFlags(tokens: ShellToken[]): { recursive: boolean; force: boolean } {
-  let recursive = false
-  let force = false
-  let endOfFlags = false
+function hasRmFlags(tokens: ShellToken[]): {
+  recursive: boolean;
+  force: boolean;
+} {
+  let recursive = false;
+  let force = false;
+  let endOfFlags = false;
   for (let i = 1; i < tokens.length; i += 1) {
-    const value = tokens[i]!.value
+    const value = tokens[i]!.value;
     if (!endOfFlags && value === "--") {
-      endOfFlags = true
-      continue
+      endOfFlags = true;
+      continue;
     }
     if (!endOfFlags && value.startsWith("-") && value.length > 1) {
-      if (value === "--recursive" || value === "-R") recursive = true
-      else if (value === "--force") force = true
+      if (value === "--recursive" || value === "-R") recursive = true;
+      else if (value === "--force") force = true;
       else if (value.startsWith("--")) {
-        // Other long flags (--no-preserve-root, --one-file-system, …): no effect on r/f.
-        continue
+        // Empty on purpose: other long flags (`--no-preserve-root`, `--one-file-system`, …) must not reach the short-flag letter scan below.
       } else {
         // Clustered short flags; GNU rm allows them interleaved with operands.
-        if (value.includes("r") || value.includes("R")) recursive = true
-        if (value.includes("f")) force = true
+        if (value.includes("r") || value.includes("R")) recursive = true;
+        if (value.includes("f")) force = true;
       }
-      continue
     }
   }
-  return { recursive, force }
+  return { recursive, force };
 }
 
 /**
@@ -103,17 +110,17 @@ function hasRmFlags(tokens: ShellToken[]): { recursive: boolean; force: boolean 
  * is left untouched (it is a file literally named `\`-slash, not root).
  */
 function resolvesToRoot(rawTarget: string): boolean {
-  if (!rawTarget.startsWith("/")) return false
-  const stack: string[] = []
+  if (!rawTarget.startsWith("/")) return false;
+  const stack: string[] = [];
   for (const part of rawTarget.split("/")) {
-    if (part === "" || part === ".") continue
+    if (part === "" || part === ".") continue;
     if (part === "..") {
-      stack.pop()
-      continue
+      stack.pop();
+      continue;
     }
-    stack.push(part)
+    stack.push(part);
   }
-  return stack.length === 0
+  return stack.length === 0;
 }
 
 /**
@@ -126,44 +133,44 @@ function resolvesToRoot(rawTarget: string): boolean {
  * behaves like `*` at the root level.
  */
 function isLiveRootGlob(token: ShellToken): boolean {
-  if (!token.value.startsWith("/")) return false
-  const components = token.value.split("/")
-  const last = components[components.length - 1]!
-  if (!/^\*+$/.test(last)) return false
-  const starStart = token.value.length - last.length
-  if (tokenCharIsQuoted(token, starStart)) return false
-  const stack: string[] = []
+  if (!token.value.startsWith("/")) return false;
+  const components = token.value.split("/");
+  const last = components[components.length - 1]!;
+  if (!/^\*+$/.test(last)) return false;
+  const starStart = token.value.length - last.length;
+  if (tokenCharIsQuoted(token, starStart)) return false;
+  const stack: string[] = [];
   for (const part of components.slice(0, -1)) {
-    if (part === "" || part === ".") continue
+    if (part === "" || part === ".") continue;
     if (part === "..") {
-      stack.pop()
-      continue
+      stack.pop();
+      continue;
     }
-    stack.push(part)
+    stack.push(part);
   }
-  return stack.length === 0
+  return stack.length === 0;
 }
 
 function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
   for (const { effective } of analyzed) {
     for (const tokens of effective) {
-      if (tokens.length === 0) continue
-      if (shellBasename(tokens[0]!.value) !== "rm") continue
-      const { recursive, force } = hasRmFlags(tokens)
-      if (!recursive || !force) continue
-      let endOfFlags = false
+      if (tokens.length === 0) continue;
+      if (shellBasename(tokens[0]!.value) !== "rm") continue;
+      const { recursive, force } = hasRmFlags(tokens);
+      if (!recursive || !force) continue;
+      let endOfFlags = false;
       for (let i = 1; i < tokens.length; i += 1) {
-        const value = tokens[i]!.value
+        const value = tokens[i]!.value;
         if (!endOfFlags && value === "--") {
-          endOfFlags = true
-          continue
+          endOfFlags = true;
+          continue;
         }
-        if (!endOfFlags && value.startsWith("-") && value.length > 1) continue
-        if (resolvesToRoot(value) || isLiveRootGlob(tokens[i]!)) return true
+        if (!endOfFlags && value.startsWith("-") && value.length > 1) continue;
+        if (resolvesToRoot(value) || isLiveRootGlob(tokens[i]!)) return true;
       }
     }
   }
-  return false
+  return false;
 }
 
 /**
@@ -175,36 +182,45 @@ function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
 function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
   for (const { effective } of analyzed) {
     for (const tokens of effective) {
-      if (tokens.length === 0) continue
-      if (shellBasename(tokens[0]!.value) !== "find") continue
-      let root: ShellToken | null = null
-      let hasDelete = false
-      let hasExecRm = false
+      if (tokens.length === 0) continue;
+      if (shellBasename(tokens[0]!.value) !== "find") continue;
+      let root: ShellToken | null = null;
+      let hasDelete = false;
+      let hasExecRm = false;
       for (let i = 1; i < tokens.length; i += 1) {
-        const value = tokens[i]!.value
+        const value = tokens[i]!.value;
         // The search root is the first non-flag operand; everything after it
         // belongs to the expression. Flags that take a value (e.g. `-maxdepth`)
         // are not modelled here, so `find -maxdepth 1 / …` is a false negative
         // (rare and safe) — we never falsely trip.
         if (root === null) {
           if (value === "-D") {
-            i += 1
-            continue
+            i += 1;
+            continue;
           }
-          if (value.startsWith("-") && value.length > 1) continue
-          if (value === "--") continue
-          root = tokens[i]!
-          continue
+          if (value.startsWith("-") && value.length > 1) continue;
+          if (value === "--") continue;
+          root = tokens[i]!;
+          continue;
         }
-        if (value === "-delete") hasDelete = true
-        if (value === "-exec" || value === "-execdir" || value === "-ok" || value === "-okdir") {
+        if (value === "-delete") hasDelete = true;
+        if (
+          value === "-exec" ||
+          value === "-execdir" ||
+          value === "-ok" ||
+          value === "-okdir"
+        ) {
           // First non-placeholder token after -exec is the executable; if it is
           // `rm` with recursive+force flags, find destroys its matches.
-          let j = i + 1
-          while (j < tokens.length && (tokens[j]!.value === "{" || tokens[j]!.value === "}")) j += 1
+          let j = i + 1;
+          while (
+            j < tokens.length &&
+            (tokens[j]!.value === "{" || tokens[j]!.value === "}")
+          )
+            j += 1;
           if (j < tokens.length && shellBasename(tokens[j]!.value) === "rm") {
-            const { recursive, force } = hasRmFlags(tokens.slice(j))
-            if (recursive && force) hasExecRm = true
+            const { recursive, force } = hasRmFlags(tokens.slice(j));
+            if (recursive && force) hasExecRm = true;
           }
         }
       }
@@ -213,10 +229,10 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
         (resolvesToRoot(root.value) || isLiveRootGlob(root)) &&
         (hasDelete || hasExecRm)
       )
-        return true
+        return true;
     }
   }
-  return false
+  return false;
 }
 
 /**
@@ -228,7 +244,7 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
  * `echo "mkfs …"` (where the destructive tool is an argument, not the
  * executable) are handled correctly.
  */
-const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/
+const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/;
 /**
  * Whitelist of real block-device path prefixes so that pseudo-devices
  * (`/dev/null`, `/dev/zero`, `/dev/shm/…`, `/dev/fd/…`, etc.) — which sit under
@@ -236,10 +252,10 @@ const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/
  * like `dd … of=/dev/null` or `shred /dev/shm/scratch`.
  */
 const BLOCK_DEVICE_RE =
-  /^\/dev\/(?:sd|hd|vd|xvd|nvme|mmcblk|loop|md|dm-|zram|drbd|bcache|mapper\/|disk\/by-)/
+  /^\/dev\/(?:sd|hd|vd|xvd|nvme|mmcblk|loop|md|dm-|zram|drbd|bcache|mapper\/|disk\/by-)/;
 
 function isBlockDeviceTarget(value: string): boolean {
-  return BLOCK_DEVICE_RE.test(value)
+  return BLOCK_DEVICE_RE.test(value);
 }
 
 /** Shell redirection onto a real block device: `> /dev/sda` (or `>>`, `>|`,
@@ -251,41 +267,48 @@ function isBlockDeviceTarget(value: string): boolean {
  *  while a quoted operator (`echo 'x > /dev/sda'`) is data. */
 function redirectTargetsBlockDevice(tokens: ShellToken[]): boolean {
   for (let i = 0; i < tokens.length; i += 1) {
-    const token = tokens[i]!
+    const token = tokens[i]!;
     for (const operator of unquotedRedirectOperators(token)) {
-      const rest = token.value.slice(operator.start + operator.length)
+      const rest = token.value.slice(operator.start + operator.length);
       if (rest.length > 0) {
-        if (isBlockDeviceTarget(rest)) return true
-        continue
+        if (isBlockDeviceTarget(rest)) return true;
+        continue;
       }
-      const target = tokens[i + 1]
-      if (target !== undefined && isBlockDeviceTarget(target.value)) return true
+      const target = tokens[i + 1];
+      if (target !== undefined && isBlockDeviceTarget(target.value))
+        return true;
     }
   }
-  return false
+  return false;
 }
 
 /** Positions and lengths of `>` / `>>` redirect operators whose `>` characters
  *  are all unquoted. The normalized redirection pass handles compound forms
  *  such as `>|` and `&>` separately. */
-function unquotedRedirectOperators(token: ShellToken): Array<{ start: number; length: number }> {
-  const out: Array<{ start: number; length: number }> = []
-  const value = token.value
+function unquotedRedirectOperators(
+  token: ShellToken,
+): Array<{ start: number; length: number }> {
+  const out: Array<{ start: number; length: number }> = [];
+  const value = token.value;
   for (let index = 0; index < value.length; index += 1) {
-    if (value[index] !== ">") continue
-    if (tokenCharIsQuoted(token, index)) continue
-    const doubled = value[index + 1] === ">" && !tokenCharIsQuoted(token, index + 1)
-    out.push({ start: index, length: doubled ? 2 : 1 })
-    index += doubled ? 1 : 0
+    if (value[index] !== ">") continue;
+    if (tokenCharIsQuoted(token, index)) continue;
+    const doubled =
+      value[index + 1] === ">" && !tokenCharIsQuoted(token, index + 1);
+    out.push({ start: index, length: doubled ? 2 : 1 });
+    index += doubled ? 1 : 0;
   }
-  return out
+  return out;
 }
 
 /** Whether a short-flag cluster (e.g. `-af`) contains a given flag letter. */
 function shortFlagClusterIncludes(value: string, letter: string): boolean {
   return (
-    value.startsWith("-") && !value.startsWith("--") && value.length > 1 && value.includes(letter)
-  )
+    value.startsWith("-") &&
+    !value.startsWith("--") &&
+    value.length > 1 &&
+    value.includes(letter)
+  );
 }
 
 /** `cp SOURCE DEVICE` and `install SOURCE DEVICE` open the final operand for
@@ -293,7 +316,10 @@ function shortFlagClusterIncludes(value: string, letter: string): boolean {
  *  so an option argument that merely resembles a device is never mistaken for
  *  the destination. Target-directory forms point at a directory and cannot
  *  directly overwrite a block device. */
-function copyOverwritesBlockDevice(tokens: ShellToken[], base: string): boolean {
+function copyOverwritesBlockDevice(
+  tokens: ShellToken[],
+  base: string,
+): boolean {
   const valueOptions =
     base === "cp"
       ? new Set(["-S", "-t", "--suffix", "--target-directory", "--context"])
@@ -310,104 +336,117 @@ function copyOverwritesBlockDevice(tokens: ShellToken[], base: string): boolean 
           "--target-directory",
           "--context",
           "--strip-program",
-        ])
-  const operands: string[] = []
-  let endOfOptions = false
-  let targetDirectory = false
+        ]);
+  const operands: string[] = [];
+  let endOfOptions = false;
+  let targetDirectory = false;
   for (let index = 1; index < tokens.length; index += 1) {
-    const value = tokens[index]!.value
+    const value = tokens[index]!.value;
     if (!endOfOptions && value === "--") {
-      endOfOptions = true
-      continue
+      endOfOptions = true;
+      continue;
     }
     if (!endOfOptions && value.startsWith("--")) {
-      const option = value.split("=", 1)[0]!
-      if (option === "--target-directory") targetDirectory = true
-      if (valueOptions.has(option) && !value.includes("=")) index += 1
-      continue
+      const option = value.split("=", 1)[0]!;
+      if (option === "--target-directory") targetDirectory = true;
+      if (valueOptions.has(option) && !value.includes("=")) index += 1;
+      continue;
     }
     if (!endOfOptions && value.startsWith("-") && value.length > 1) {
       for (let position = 1; position < value.length; position += 1) {
-        const option = `-${value[position]!}`
-        if (!valueOptions.has(option)) continue
-        if (option === "-t") targetDirectory = true
-        if (position === value.length - 1) index += 1
-        break
+        const option = `-${value[position]!}`;
+        if (!valueOptions.has(option)) continue;
+        if (option === "-t") targetDirectory = true;
+        if (position === value.length - 1) index += 1;
+        break;
       }
-      continue
+      continue;
     }
-    operands.push(value)
+    operands.push(value);
   }
-  return !targetDirectory && operands.length >= 2 && isBlockDeviceTarget(operands.at(-1)!)
+  return (
+    !targetDirectory &&
+    operands.length >= 2 &&
+    isBlockDeviceTarget(operands.at(-1)!)
+  );
 }
 
 function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
   for (const { segment, effective, redirections } of analyzed) {
-    if (redirectTargetsBlockDevice(segment.tokens)) return true
-    for (let commandIndex = 0; commandIndex < effective.length; commandIndex += 1) {
-      const tokens = effective[commandIndex]!
-      if (tokens.length === 0) continue
+    if (redirectTargetsBlockDevice(segment.tokens)) return true;
+    for (
+      let commandIndex = 0;
+      commandIndex < effective.length;
+      commandIndex += 1
+    ) {
+      const tokens = effective[commandIndex]!;
+      if (tokens.length === 0) continue;
       // Command-string destructuring (`sh -c '… > /dev/sda'`, `script -c …`,
       // ssh remote commands) only surfaces inside the resolved effective
       // commands, so the redirect scan runs on them too.
-      if (redirectTargetsBlockDevice(tokens)) return true
+      if (redirectTargetsBlockDevice(tokens)) return true;
       if (
         (redirections[commandIndex] ?? []).some((redirection) => {
-          const operator = redirection.operator.replace(/^\d+/, "")
+          const operator = redirection.operator.replace(/^\d+/, "");
           const writes =
             [">", ">>", ">|", "&>", "&>>", "<>"].includes(operator) ||
             (operator === ">&" &&
               !/^\d/.test(redirection.operator) &&
               redirection.target !== "-" &&
-              !/^\d+$/.test(redirection.target))
-          return writes && isBlockDeviceTarget(redirection.target)
+              !/^\d+$/.test(redirection.target));
+          return writes && isBlockDeviceTarget(redirection.target);
         })
       )
-        return true
-      const base = shellBasename(tokens[0]!.value)
-      const args = tokens.slice(1)
-      const targetsBlock = args.some((t) => isBlockDeviceTarget(t.value))
+        return true;
+      const base = shellBasename(tokens[0]!.value);
+      const args = tokens.slice(1);
+      const targetsBlock = args.some((t) => isBlockDeviceTarget(t.value));
 
       // tee copies its stdin into every file operand: a real block device
       // operand is a raw overwrite, as unmistakable as shred.
-      if (base === "tee" && targetsBlock) return true
-      if ((base === "cp" || base === "install") && copyOverwritesBlockDevice(tokens, base))
-        return true
+      if (base === "tee" && targetsBlock) return true;
+      if (
+        (base === "cp" || base === "install") &&
+        copyOverwritesBlockDevice(tokens, base)
+      )
+        return true;
 
       // mkfs / mkfs.* / mke2fs / mkswap: any real block target is destruction,
       // unless a dry-run flag is present (`-n` for mke2fs/mkfs.ext4, `-V`/`-t`
       // alone do not write but are rare; `-n` is the canonical dry-run).
       if (MKFS_FAMILY.test(base) || base === "mke2fs" || base === "mkswap") {
-        if (!targetsBlock) continue
-        const dryRun = args.some((t) => t.value === "-n" || t.value === "--dry-run")
-        if (!dryRun) return true
+        if (!targetsBlock) continue;
+        const dryRun = args.some(
+          (t) => t.value === "-n" || t.value === "--dry-run",
+        );
+        if (!dryRun) return true;
       }
       // shred: any real block target is destruction.
-      if (base === "shred" && targetsBlock) return true
+      if (base === "shred" && targetsBlock) return true;
 
       // wipefs: only --all/-a (alone or clustered like `-af`)/-t wipes
       // signatures; bare wipefs just lists signatures.
       if (base === "wipefs" && targetsBlock) {
         const wipes = args.some((t) => {
-          const v = t.value
+          const v = t.value;
           return (
             v === "--all" ||
             v === "-a" ||
             shortFlagClusterIncludes(v, "a") ||
             v.startsWith("-t") ||
             v === "--types"
-          )
-        })
-        if (wipes) return true
+          );
+        });
+        if (wipes) return true;
       }
 
       // dd: detect `of=<real block device>` (the lexer already stripped quotes).
       if (base === "dd") {
         const hitsBlock = args.some((t) => {
-          if (!t.value.startsWith("of=")) return false
-          return isBlockDeviceTarget(t.value.slice(3))
-        })
-        if (hitsBlock) return true
+          if (!t.value.startsWith("of=")) return false;
+          return isBlockDeviceTarget(t.value.slice(3));
+        });
+        if (hitsBlock) return true;
       }
 
       // sgdisk: destructive ops are --zap-all/-Z (wipe everything), -z/--zap
@@ -415,17 +454,23 @@ function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
       // partition). -d requires a following partition-number argument.
       if (base === "sgdisk" && targetsBlock) {
         const destructive = args.some((t) => {
-          const v = t.value
+          const v = t.value;
           return (
             v === "--zap-all" ||
             v === "-Z" ||
             v === "--zap" ||
             v === "-z" ||
             v.startsWith("--delete")
-          )
-        })
-        const deleteShort = args.some((t) => t.value === "-d" || t.value === "--delete")
-        if (destructive || (deleteShort && args.some((t) => /^[0-9]+$/.test(t.value)))) return true
+          );
+        });
+        const deleteShort = args.some(
+          (t) => t.value === "-d" || t.value === "--delete",
+        );
+        if (
+          destructive ||
+          (deleteShort && args.some((t) => /^[0-9]+$/.test(t.value)))
+        )
+          return true;
       }
 
       // sfdisk: --delete (with partition list) and --wipe* destroy data.
@@ -433,21 +478,23 @@ function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
       // share the sgdisk short-flag set.
       if (base === "sfdisk" && targetsBlock) {
         const destructive = args.some((t) => {
-          const v = t.value
-          return v === "--delete" || v.startsWith("--wipe")
-        })
-        if (destructive) return true
+          const v = t.value;
+          return v === "--delete" || v.startsWith("--wipe");
+        });
+        if (destructive) return true;
       }
 
       // parted: `mklabel` rewrites the partition table; `rm N` deletes a
       // partition.
       if (base === "parted" && targetsBlock) {
-        const destructive = args.some((t) => t.value === "mklabel" || t.value === "rm")
-        if (destructive) return true
+        const destructive = args.some(
+          (t) => t.value === "mklabel" || t.value === "rm",
+        );
+        if (destructive) return true;
       }
     }
   }
-  return false
+  return false;
 }
 
 /**
@@ -459,57 +506,67 @@ function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
  */
 function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
   for (const { effective, redirections } of analyzed) {
-    for (let commandIndex = 0; commandIndex < effective.length; commandIndex += 1) {
-      const tokens = effective[commandIndex]!
-      if (tokens.length === 0) continue
-      if (!SECRET_EXPORT_UTILITIES.has(shellBasename(tokens[0]!.value))) continue
+    for (
+      let commandIndex = 0;
+      commandIndex < effective.length;
+      commandIndex += 1
+    ) {
+      const tokens = effective[commandIndex]!;
+      if (tokens.length === 0) continue;
+      if (!SECRET_EXPORT_UTILITIES.has(shellBasename(tokens[0]!.value)))
+        continue;
       const args = [
         ...tokens.slice(1).map((token) => token.value),
         ...(redirections[commandIndex] ?? [])
           .filter((redirection) => redirection.operator.includes("<"))
           .map((redirection) => redirection.target),
-      ].join(" ")
-      if (SECRET_EXPORT_TARGETS.some((pattern) => pattern.test(args))) return true
+      ].join(" ");
+      if (SECRET_EXPORT_TARGETS.some((pattern) => pattern.test(args)))
+        return true;
     }
   }
-  return false
+  return false;
 }
 
-export function emergencyBrakeReason(request: PermissionRequest): string | undefined {
-  if (request.permission !== "bash") return
+export function emergencyBrakeReason(
+  request: PermissionRequest,
+): string | undefined {
+  if (request.permission !== "bash") return;
   const command =
     typeof request.metadata.command === "string"
       ? request.metadata.command
-      : request.patterns.filter((pattern) => typeof pattern === "string").join("\n")
+      : request.patterns
+          .filter((pattern) => typeof pattern === "string")
+          .join("\n");
 
   // Resource limits come first and are their own outcome: an input the static
   // analysis cannot finish is rejected for THAT reason, before any lexing or
   // detector runs, and is never described as detected destruction. The whole
   // command is lexed and resolved exactly once here; detectors share the
   // result instead of re-analyzing the same text once per detector.
-  if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON
+  if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
   // Heredoc bodies are shell input data, not command segments. Analyze the
   // body-free form so quoted payloads cannot trigger false destructive-command
   // matches; dynamic expansions remain visible to the reviewer evidence.
-  const { sanitizedCommand } = extractHeredocs(command)
-  const lex = lexSegmentsBounded(sanitizedCommand)
-  if (lex.truncated) return ANALYSIS_LIMIT_REASON
-  const budget = newAnalysisBudget()
-  const analyzed: AnalyzedSegment[] = []
+  const { sanitizedCommand } = extractHeredocs(command);
+  const lex = lexSegmentsBounded(sanitizedCommand);
+  if (lex.truncated) return ANALYSIS_LIMIT_REASON;
+  const budget = newAnalysisBudget();
+  const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
-    const analysis = analyzeEffectiveCommands(segment, budget)
-    if (analysis.truncated) return ANALYSIS_LIMIT_REASON
+    const analysis = analyzeEffectiveCommands(segment, budget);
+    if (analysis.truncated) return ANALYSIS_LIMIT_REASON;
     analyzed.push({
       segment,
       effective: analysis.commands,
       redirections: analysis.redirections,
-    })
+    });
   }
 
-  if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON
-  if (isFindRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON
-  if (isDeviceDestruction(analyzed)) return ROOT_DESTRUCTION_REASON
+  if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
+  if (isFindRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
+  if (isDeviceDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
   if (ROOT_DESTRUCTION_REGEX.some((pattern) => pattern.test(sanitizedCommand)))
-    return ROOT_DESTRUCTION_REASON
-  if (isObviousSecretExport(analyzed)) return SECRET_EXPORT_REASON
+    return ROOT_DESTRUCTION_REASON;
+  if (isObviousSecretExport(analyzed)) return SECRET_EXPORT_REASON;
 }

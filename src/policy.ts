@@ -1,6 +1,6 @@
-import { DECISION_SCHEMA } from "./decision.ts"
-import { redactSecrets } from "./redact.ts"
-import type { ReviewerOutputFormat } from "./types.ts"
+import { DECISION_SCHEMA } from "./decision.ts";
+import { redactSecrets } from "./redact.ts";
+import type { ReviewerOutputFormat } from "./types.ts";
 
 /*
  * Adapted from the OpenAI Codex Guardian auto-review policy and policy
@@ -59,9 +59,9 @@ export const DEFAULT_TENANT_POLICY = `
 - For git push/fetch/pull/ls-remote, GIT_STATE_ANALYSIS reports remoteTargets and defaultRemotes: each operand (credential userinfo redacted, bounded), whether it is a configured remote, a literal URL, or unmatched, and the push/fetch URLs the remote resolves to. Judge the network destination from that evidence: a remote whose URL matches the repository the session is working on is not an unknown destination, while a configured remote pointing anywhere else is still a destination to judge on its own. An unmatched operand, an unresolved default remote, or a failed resolution stays ambiguous and must not be assumed safe.
 - A verified branch, empty unrelated staging area, explicit planned paths, and matching user intent can make a local commit medium risk and approvable. Missing or contradictory Git state must not be assumed safe.
 - Commands that discard working-tree changes still require authorization for that loss even when the target diff is shown.
-`.trim()
+`.trim();
 
-export const REVIEWER_PROMPT_VERSION = "2.3.1"
+export const REVIEWER_PROMPT_VERSION = "2.3.1";
 
 export const REVIEWER_SYSTEM_PROMPT = `
 You are an automatic approval reviewer for an AI coding agent. Judge exactly one pending action.
@@ -119,7 +119,7 @@ Your job is authorization and safety, not task completion. You have no tools and
 - Return one concise rationale. Be precise about the concrete risk or why the scope is safe.
 
 Follow the tenant policy supplied in the user message exactly; it may be stricter than these defaults but never more permissive.
-`.trim()
+`.trim();
 
 /**
  * Build the reviewer *part* (the user/message content) for `session.prompt`.
@@ -152,7 +152,7 @@ a copy of it in your answer. Output the decision object only.
 \`\`\`json
 ${JSON.stringify(DECISION_SCHEMA, null, 2)}
 \`\`\``
-      : ""
+      : "";
   return `# Tenant policy
 ${redactSecrets(tenantPolicy)}
 
@@ -161,5 +161,5 @@ ${redactSecrets(tenantPolicy)}
 ${evidence}
 </approval_evidence>
 ${outputDirective}
-Return only the required structured decision.`
+Return only the required structured decision.`;
 }

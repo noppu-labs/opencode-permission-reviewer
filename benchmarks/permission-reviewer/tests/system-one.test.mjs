@@ -1,16 +1,16 @@
-import test from "node:test"
-import assert from "node:assert/strict"
-import { requestSystemOne } from "../lib/system-one.mjs"
+import assert from "node:assert/strict";
+import test from "node:test";
+import { requestSystemOne } from "../lib/system-one.mjs";
 
 const model = {
   model: "jev-1.13-free",
   endpoint: "https://opencode.ai/zen",
   apiKeyEnv: "PRB_SYSTEM_ONE_TEST_KEY",
-}
+};
 
 test("System One transport sends only typed state and questions", async () => {
-  process.env.PRB_SYSTEM_ONE_TEST_KEY = "synthetic-test-credential"
-  let request
+  process.env.PRB_SYSTEM_ONE_TEST_KEY = "synthetic-test-credential";
+  let request;
   try {
     const result = await requestSystemOne(
       model,
@@ -31,7 +31,11 @@ test("System One transport sends only typed state and questions", async () => {
       },
       {
         fetchImpl: async (url, options) => {
-          request = { url: String(url), options, body: JSON.parse(String(options.body)) }
+          request = {
+            url: String(url),
+            options,
+            body: JSON.parse(String(options.body)),
+          };
           return new Response(
             JSON.stringify({
               model: "jev-1.13-free",
@@ -46,34 +50,38 @@ test("System One transport sends only typed state and questions", async () => {
               usage: { input_tokens: 12, output_tokens: 4 },
             }),
             { status: 200, headers: { "content-type": "application/json" } },
-          )
+          );
         },
       },
-    )
-    assert(result.ok)
-    assert.equal(request.url, "https://opencode.ai/zen/v1/systemone")
-    assert.equal(request.body.model, "jev-1.13-free")
+    );
+    assert(result.ok);
+    assert.equal(request.url, "https://opencode.ai/zen/v1/systemone");
+    assert.equal(request.body.model, "jev-1.13-free");
     assert.deepEqual(request.body.state, {
       trustedPolicy: { reviewer: "policy", tenant: "tenant" },
       untrustedEvidence: "evidence",
-    })
-    assert.deepEqual(Object.keys(request.body.questions), ["outcome"])
+    });
+    assert.deepEqual(Object.keys(request.body.questions), ["outcome"]);
     assert.equal(
       new Headers(request.options.headers).get("authorization"),
       "Bearer synthetic-test-credential",
-    )
-    assert.deepEqual(result.usage, { prompt_tokens: 12, completion_tokens: 4 })
+    );
+    assert.deepEqual(result.usage, { prompt_tokens: 12, completion_tokens: 4 });
   } finally {
-    delete process.env.PRB_SYSTEM_ONE_TEST_KEY
+    delete process.env.PRB_SYSTEM_ONE_TEST_KEY;
   }
-})
+});
 
 test("Command Code System One profile uses its provider endpoint and model ID", async () => {
-  process.env.PRB_SYSTEM_ONE_TEST_KEY = "synthetic-test-credential"
+  process.env.PRB_SYSTEM_ONE_TEST_KEY = "synthetic-test-credential";
   try {
-    let request
+    let request;
     const result = await requestSystemOne(
-      { ...model, model: "typesafe/jev", endpoint: "https://api.commandcode.ai/provider" },
+      {
+        ...model,
+        model: "typesafe/jev",
+        endpoint: "https://api.commandcode.ai/provider",
+      },
       {
         systemOne: {
           state: "evidence",
@@ -82,26 +90,32 @@ test("Command Code System One profile uses its provider endpoint and model ID", 
       },
       {
         fetchImpl: async (url, options) => {
-          request = { url: String(url), body: JSON.parse(String(options.body)) }
+          request = {
+            url: String(url),
+            body: JSON.parse(String(options.body)),
+          };
           return Response.json({
             model: "typesafe/jev",
             answers: { outcome: { type: "noul", noul: 0.9 } },
             usage: { input_tokens: 10, output_tokens: 0 },
-          })
+          });
         },
       },
-    )
-    assert(result.ok)
-    assert.equal(request.url, "https://api.commandcode.ai/provider/v1/systemone")
-    assert.equal(request.body.model, "typesafe/jev")
-    assert.equal(result.returnedModel, "typesafe/jev")
+    );
+    assert(result.ok);
+    assert.equal(
+      request.url,
+      "https://api.commandcode.ai/provider/v1/systemone",
+    );
+    assert.equal(request.body.model, "typesafe/jev");
+    assert.equal(result.returnedModel, "typesafe/jev");
   } finally {
-    delete process.env.PRB_SYSTEM_ONE_TEST_KEY
+    delete process.env.PRB_SYSTEM_ONE_TEST_KEY;
   }
-})
+});
 
 test("System One transport redacts a credential echoed by an error", async () => {
-  process.env.PRB_SYSTEM_ONE_TEST_KEY = "synthetic-test-credential"
+  process.env.PRB_SYSTEM_ONE_TEST_KEY = "synthetic-test-credential";
   try {
     const result = await requestSystemOne(
       model,
@@ -113,10 +127,10 @@ test("System One transport redacts a credential echoed by an error", async () =>
             headers: { "content-type": "text/plain" },
           }),
       },
-    )
-    assert(!result.ok)
-    assert(!result.error.includes("synthetic-test-credential"))
+    );
+    assert(!result.ok);
+    assert(!result.error.includes("synthetic-test-credential"));
   } finally {
-    delete process.env.PRB_SYSTEM_ONE_TEST_KEY
+    delete process.env.PRB_SYSTEM_ONE_TEST_KEY;
   }
-})
+});

@@ -1,36 +1,45 @@
-import { closeSync, constants as fsConstants, fstatSync, openSync, readSync } from "node:fs"
-import { homedir } from "node:os"
-import { join } from "node:path"
-import { parseJsoncStrict } from "./jsonc.ts"
+import {
+  closeSync,
+  constants as fsConstants,
+  fstatSync,
+  openSync,
+  readSync,
+} from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import {
   countInvalidPolicyRules,
-  resolveConfig,
   DEFAULT_CONFIG,
   DEFAULT_RISK_POLICY,
   isValidEscalationReviewer,
-} from "../config.ts"
-import type { PolicyRule, ReviewerConfig } from "../types.ts"
-import type { InlineOptionsTrust } from "./sources.ts"
+  resolveConfig,
+} from "../config.ts";
+import type { PolicyRule, ReviewerConfig } from "../types.ts";
+import { parseJsoncStrict } from "./jsonc.ts";
+import type { InlineOptionsTrust } from "./sources.ts";
 
-const O_RDONLY = typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0
-const O_NOFOLLOW = typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0
-const O_NONBLOCK = typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0
+const O_RDONLY =
+  typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0;
+const O_NOFOLLOW =
+  typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0;
+const O_NONBLOCK =
+  typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0;
 
 /** Cap on a single config file read: the project layer is repository-controlled
  *  and read at startup, so an unbounded read lets a committed symlink to an
  *  endless source exhaust memory. A file over the cap is treated like any
  *  other unreadable layer (warned about and ignored). */
-const CONFIG_READ_CAP_BYTES = 1024 * 1024
+const CONFIG_READ_CAP_BYTES = 1024 * 1024;
 
-type LayerStatus = "missing" | "ok" | "read-error" | "malformed"
+type LayerStatus = "missing" | "ok" | "read-error" | "malformed";
 
 interface ConfigLayer {
-  raw: Record<string, unknown>
-  status: LayerStatus
+  raw: Record<string, unknown>;
+  status: LayerStatus;
   /** Set when the file exists but could not be interpreted; a silently
    *  unreadable trusted layer must be visible, not indistinguishable from an
    *  absent one. */
-  warning?: string
+  warning?: string;
 }
 
 /** Read a JSONC config file. A missing file is the common case (status
@@ -45,16 +54,16 @@ interface ConfigLayer {
  *  FIFO from blocking before fstat can reject it, fstat requires a regular
  *  file, and the byte cap bounds the read. */
 function readConfigLayer(path: string): ConfigLayer {
-  const read = readLayerText(path)
-  if (!("text" in read)) return read
+  const read = readLayerText(path);
+  if (!("text" in read)) return read;
   try {
-    return { raw: parseJsoncStrict(read.text), status: "ok" }
+    return { raw: parseJsoncStrict(read.text), status: "ok" };
   } catch (error) {
     return {
       raw: {},
       status: "malformed",
       warning: `permission-reviewer config at ${path} is malformed and was ignored (${error instanceof Error ? error.message : String(error)})`,
-    }
+    };
   }
 }
 
@@ -62,54 +71,62 @@ function readConfigLayer(path: string): ConfigLayer {
  *  is the common case (status "missing", no warning); anything else that
  *  prevents honoring the layer degrades to the same warn-and-ignore outcome
  *  the loader already uses for malformed files. Never throws. */
-function readLayerText(path: string): ConfigLayer | { status: "ok"; text: string } {
-  const readError = (warning: string): ConfigLayer => ({ raw: {}, status: "read-error", warning })
-  let fd: number | undefined
+function readLayerText(
+  path: string,
+): ConfigLayer | { status: "ok"; text: string } {
+  const readError = (warning: string): ConfigLayer => ({
+    raw: {},
+    status: "read-error",
+    warning,
+  });
+  let fd: number | undefined;
   try {
     try {
       // Read-only descriptor open of an existing config path; no file is
       // created here and the descriptor must pass the regular-file check below.
       // codeql[js/insecure-temporary-file]
-      fd = openSync(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW)
+      fd = openSync(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
     } catch (error) {
-      const code = (error as { code?: unknown }).code
-      if (code === "ENOENT") return { raw: {}, status: "missing" }
+      const code = (error as { code?: unknown }).code;
+      if (code === "ENOENT") return { raw: {}, status: "missing" };
       return readError(
         `permission-reviewer config at ${path} exists but could not be read (${code ?? "unknown error"}); the layer was ignored`,
-      )
+      );
     }
-    const info = fstatSync(fd)
+    const info = fstatSync(fd);
     if (!info.isFile()) {
       return readError(
         `permission-reviewer config at ${path} is not a regular file and was ignored`,
-      )
+      );
     }
     if (info.size > CONFIG_READ_CAP_BYTES) {
       return readError(
         `permission-reviewer config at ${path} exceeds the size limit (${CONFIG_READ_CAP_BYTES} bytes) and was ignored`,
-      )
+      );
     }
-    const length = info.size
-    const buffer = Buffer.alloc(length)
-    let read = 0
+    const length = info.size;
+    const buffer = Buffer.alloc(length);
+    let read = 0;
     while (read < length) {
-      const count = readSync(fd, buffer, read, length - read, read)
-      if (count === 0) break
-      read += count
+      const count = readSync(fd, buffer, read, length - read, read);
+      if (count === 0) break;
+      read += count;
     }
     // A concurrent shrink can end the read early; decode only the bytes
     // actually read so no zero-padding leaks into the parser.
-    const text = (read < length ? buffer.subarray(0, read) : buffer).toString("utf8")
-    return { status: "ok", text }
+    const text = (read < length ? buffer.subarray(0, read) : buffer).toString(
+      "utf8",
+    );
+    return { status: "ok", text };
   } catch (error) {
-    const code = (error as { code?: unknown }).code
+    const code = (error as { code?: unknown }).code;
     return readError(
       `permission-reviewer config at ${path} exists but could not be read (${code ?? "unknown error"}); the layer was ignored`,
-    )
+    );
   } finally {
     if (fd !== undefined) {
       try {
-        closeSync(fd)
+        closeSync(fd);
       } catch {
         // Best effort; the read already succeeded or failed on its own.
       }
@@ -119,23 +136,24 @@ function readLayerText(path: string): ConfigLayer | { status: "ok"; text: string
 
 /** Optional override used by unit tests so a developer's personal global config
  *  cannot leak into loader assertions. Production always uses the real path. */
-let globalConfigPathOverride: string | undefined
+let globalConfigPathOverride: string | undefined;
 
 /** Path to the global user config. Exposed for testability. */
 export function globalConfigPath(): string {
   return (
-    globalConfigPathOverride ?? join(homedir(), ".config", "opencode", "permission-reviewer.jsonc")
-  )
+    globalConfigPathOverride ??
+    join(homedir(), ".config", "opencode", "permission-reviewer.jsonc")
+  );
 }
 
 /** Test-only: redirect (or clear) the global config path. */
 export function setGlobalConfigPathForTests(path: string | undefined): void {
-  globalConfigPathOverride = path
+  globalConfigPathOverride = path;
 }
 
 /** Path to the project-local config. Exposed for testability. */
 export function projectConfigPath(directory: string): string {
-  return join(directory, ".opencode", "permission-reviewer.jsonc")
+  return join(directory, ".opencode", "permission-reviewer.jsonc");
 }
 
 /** Fields managed by the trust boundary. For these, the boundary's output is
@@ -176,7 +194,7 @@ const TRUST_BOUNDARY_KEYS = new Set([
   "maxParentSessions",
   "askDecisions",
   "debug",
-])
+]);
 
 /** Reviewer resource knobs: how long a review may run and how much context
  *  (transcript, evidence, session chains) it may consume. These are NOT
@@ -197,7 +215,7 @@ const TRUSTED_ONLY_RESOURCE_KEYS = [
   "historyMessages",
   "maxSessionDepth",
   "maxParentSessions",
-] as const
+] as const;
 
 /** Load and merge config from global, project, and inline sources.
  *
@@ -214,47 +232,49 @@ export function loadResolvedConfig(
   directory?: string,
   inlineTrust: InlineOptionsTrust = "trusted",
 ): ReviewerConfig {
-  const globalLayer = readConfigLayer(globalConfigPath())
+  const globalLayer = readConfigLayer(globalConfigPath());
   const projectLayer: ConfigLayer =
     directory !== undefined
       ? readConfigLayer(projectConfigPath(directory))
-      : { raw: {}, status: "missing" }
+      : { raw: {}, status: "missing" };
   for (const layer of [globalLayer, projectLayer]) {
-    if (layer.warning !== undefined) console.warn(layer.warning)
+    if (layer.warning !== undefined) console.warn(layer.warning);
   }
 
   // A TRUSTED layer that exists but cannot be honored may have lost the very
   // restrictions it was supposed to carry (deny rules, enforce mode, stricter
   // thresholds). That must degrade the config — automatic approval stays off
   // until the file is fixed — instead of quietly reactivating defaults.
-  const degraded: string[] = []
+  const degraded: string[] = [];
   if (globalLayer.status === "malformed") {
-    degraded.push("global config file is malformed and was ignored")
+    degraded.push("global config file is malformed and was ignored");
   } else if (globalLayer.status === "read-error") {
-    degraded.push("global config file exists but could not be read")
+    degraded.push("global config file exists but could not be read");
   } else if (globalLayer.status === "ok") {
     if (
       globalLayer.raw.escalationReviewer !== undefined &&
       !isValidEscalationReviewer(globalLayer.raw.escalationReviewer)
     ) {
-      degraded.push("global config escalationReviewer is invalid and was ignored")
+      degraded.push(
+        "global config escalationReviewer is invalid and was ignored",
+      );
       console.warn(
         "permission-reviewer: global config escalationReviewer is invalid and was ignored; automatic approval stays disabled until it is fixed",
-      )
+      );
     }
-    const invalidRules = countInvalidPolicyRules(globalLayer.raw.policyRules)
+    const invalidRules = countInvalidPolicyRules(globalLayer.raw.policyRules);
     if (invalidRules > 0) {
       degraded.push(
         `${invalidRules} policy rule(s) from the global config were dropped by validation`,
-      )
+      );
       console.warn(
         `permission-reviewer: ${invalidRules} policy rule(s) in the global config are invalid and were dropped; automatic approval stays disabled until they are fixed`,
-      )
+      );
     }
     // A mistyped mode silently falls back to the less restrictive default in
     // resolveConfig, so it gets the same fail-closed treatment as a dropped
     // rule: visible degradation instead of a quiet downgrade.
-    const globalEnforcement = globalLayer.raw.enforcementMode
+    const globalEnforcement = globalLayer.raw.enforcementMode;
     if (
       globalEnforcement !== undefined &&
       globalEnforcement !== "enforce" &&
@@ -262,12 +282,12 @@ export function loadResolvedConfig(
     ) {
       degraded.push(
         `global config enforcementMode ${JSON.stringify(globalEnforcement)} is invalid and was ignored`,
-      )
+      );
       console.warn(
         `permission-reviewer: global config enforcementMode ${JSON.stringify(globalEnforcement)} is invalid and was ignored; automatic approval stays disabled until it is fixed`,
-      )
+      );
     }
-    const globalEscalation = globalLayer.raw.escalationMode
+    const globalEscalation = globalLayer.raw.escalationMode;
     if (
       globalEscalation !== undefined &&
       globalEscalation !== "manual" &&
@@ -275,19 +295,21 @@ export function loadResolvedConfig(
     ) {
       degraded.push(
         `global config escalationMode ${JSON.stringify(globalEscalation)} is invalid and was ignored`,
-      )
+      );
       console.warn(
         `permission-reviewer: global config escalationMode ${JSON.stringify(globalEscalation)} is invalid and was ignored; automatic approval stays disabled until it is fixed`,
-      )
+      );
     }
   }
 
   const invalidInlineRules =
-    inlineTrust === "trusted" ? countInvalidPolicyRules(inlineOptions?.policyRules) : 0
+    inlineTrust === "trusted"
+      ? countInvalidPolicyRules(inlineOptions?.policyRules)
+      : 0;
   if (invalidInlineRules > 0) {
     degraded.push(
       `${invalidInlineRules} policy rule(s) from inline config were dropped by validation`,
-    )
+    );
   }
 
   // Same visibility for trusted inline modes (no console.warn, matching the
@@ -298,9 +320,11 @@ export function loadResolvedConfig(
       inlineOptions.escalationReviewer !== undefined &&
       !isValidEscalationReviewer(inlineOptions.escalationReviewer)
     ) {
-      degraded.push("inline config escalationReviewer is invalid and was ignored")
+      degraded.push(
+        "inline config escalationReviewer is invalid and was ignored",
+      );
     }
-    const inlineEnforcement = inlineOptions.enforcementMode
+    const inlineEnforcement = inlineOptions.enforcementMode;
     if (
       inlineEnforcement !== undefined &&
       inlineEnforcement !== "enforce" &&
@@ -308,9 +332,9 @@ export function loadResolvedConfig(
     ) {
       degraded.push(
         `inline config enforcementMode ${JSON.stringify(inlineEnforcement)} is invalid and was ignored`,
-      )
+      );
     }
-    const inlineEscalation = inlineOptions.escalationMode
+    const inlineEscalation = inlineOptions.escalationMode;
     if (
       inlineEscalation !== undefined &&
       inlineEscalation !== "manual" &&
@@ -318,18 +342,20 @@ export function loadResolvedConfig(
     ) {
       degraded.push(
         `inline config escalationMode ${JSON.stringify(inlineEscalation)} is invalid and was ignored`,
-      )
+      );
     }
   }
 
   // Dropped project rules are warned about but never degrade the config:
   // configDegraded describes trusted sources only, and project rules cannot
   // weaken trusted restrictions anyway.
-  const invalidProjectRules = countInvalidPolicyRules(projectLayer.raw.policyRules)
+  const invalidProjectRules = countInvalidPolicyRules(
+    projectLayer.raw.policyRules,
+  );
   if (invalidProjectRules > 0) {
     console.warn(
       `permission-reviewer: ${invalidProjectRules} policy rule(s) in the project config are invalid and were dropped`,
-    )
+    );
   }
 
   // The trusted baseline is seeded with builtin defaults (so clamping always
@@ -339,34 +365,37 @@ export function loadResolvedConfig(
     ...DEFAULT_CONFIG,
     ...globalLayer.raw,
     ...(inlineTrust === "trusted" ? (inlineOptions ?? {}) : {}),
-  }
-  let merged = mergeWithTrustBoundary(trusted, projectLayer.raw)
+  };
+  let merged = mergeWithTrustBoundary(trusted, projectLayer.raw);
   if (inlineTrust !== "trusted") {
     // Unknown-origin options may only contribute boundary-controlled hardening.
     const restrictions = Object.fromEntries(
-      Object.entries(inlineOptions ?? {}).filter(([key]) => TRUST_BOUNDARY_KEYS.has(key)),
-    )
-    merged = mergeWithTrustBoundary(merged, restrictions)
+      Object.entries(inlineOptions ?? {}).filter(([key]) =>
+        TRUST_BOUNDARY_KEYS.has(key),
+      ),
+    );
+    merged = mergeWithTrustBoundary(merged, restrictions);
   }
   // Inline keeps documented precedence over the project layer for every
   // non-security field (the boundary's own keys are exempt: re-applying inline
   // there could undo project hardening clamped against it).
-  const out: Record<string, unknown> = { ...merged }
+  const out: Record<string, unknown> = { ...merged };
   for (const [key, value] of Object.entries(inlineOptions ?? {})) {
-    if (inlineTrust === "trusted" && !TRUST_BOUNDARY_KEYS.has(key)) out[key] = value
+    if (inlineTrust === "trusted" && !TRUST_BOUNDARY_KEYS.has(key))
+      out[key] = value;
   }
-  if (degraded.length > 0) out.configDegraded = degraded
-  return resolveConfig(out)
+  if (degraded.length > 0) out.configDegraded = degraded;
+  return resolveConfig(out);
 }
 
 /** Whether the key is present in the layer (a `null`/wrong-type value must be
  *  handled as a present-but-invalid override, never silently forwarded). */
 function hasKey(object: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(object, key)
+  return Object.prototype.hasOwnProperty.call(object, key);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value)
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Merge the trusted baseline with the untrusted project layer. Project config
@@ -377,12 +406,12 @@ function mergeWithTrustBoundary(
   trusted: Record<string, unknown>,
   project: Record<string, unknown>,
 ): Record<string, unknown> {
-  const clamped = { ...project }
+  const clamped = { ...project };
 
   // configDegraded describes the state of TRUSTED sources; the project layer
   // has no say in it (injecting fake degradation would only tighten, but the
   // field must stay authoritative for the loader that computes it).
-  delete clamped.configDegraded
+  delete clamped.configDegraded;
 
   // Numeric floors: project config can raise but not lower them; non-numeric
   // values (including null) are ignored so they cannot reset a trusted floor.
@@ -395,13 +424,13 @@ function mergeWithTrustBoundary(
   ] as const) {
     if (hasKey(clamped, key)) {
       if (typeof clamped[key] !== "number" || !Number.isFinite(clamped[key])) {
-        delete clamped[key]
+        delete clamped[key];
       } else {
         const floor =
           typeof trusted[key] === "number"
             ? (trusted[key] as number)
-            : (DEFAULT_CONFIG[key as keyof typeof DEFAULT_CONFIG] as number)
-        if (clamped[key] < floor) clamped[key] = floor
+            : (DEFAULT_CONFIG[key as keyof typeof DEFAULT_CONFIG] as number);
+        if (clamped[key] < floor) clamped[key] = floor;
       }
     }
   }
@@ -410,23 +439,23 @@ function mergeWithTrustBoundary(
   // outright: they are not monotonic, so neither raising nor lowering them
   // from a repository is safe. Wrong-typed values are dropped with them.
   for (const key of TRUSTED_ONLY_RESOURCE_KEYS) {
-    delete clamped[key]
+    delete clamped[key];
   }
 
   // audit: project can enable but not disable.
   if (clamped.audit === false && trusted.audit !== false) {
-    delete clamped.audit
+    delete clamped.audit;
   }
 
   // askDecisions: prior user answers are scoped-authorization evidence for
   // the reviewer. Only trusted layers may decide whether the reviewer sees
   // them; a repository can neither strip them nor inject them.
-  delete clamped.askDecisions
+  delete clamped.askDecisions;
 
   // auditPath: only trusted global/inline config may choose the audit
   // destination. A repository must never be able to redirect or silence the
   // audit trail by pointing it at /dev/null or a path it controls.
-  delete clamped.auditPath
+  delete clamped.auditPath;
 
   // model and policy: the reviewer destination and the tenant policy text are
   // trusted decisions. A repository must not choose where code/context is sent
@@ -434,18 +463,18 @@ function mergeWithTrustBoundary(
   // variant, the decision output format, and review-session retention are the
   // same class of decision: a weaker variant, a looser output format, or
   // silenced retention must not be selectable from a repository.
-  delete clamped.model
-  delete clamped.escalationReviewer
-  delete clamped.policy
-  delete clamped.variant
-  delete clamped.outputFormat
-  delete clamped.retainReviewSessions
-  delete clamped.debug
+  delete clamped.model;
+  delete clamped.escalationReviewer;
+  delete clamped.policy;
+  delete clamped.variant;
+  delete clamped.outputFormat;
+  delete clamped.retainReviewSessions;
+  delete clamped.debug;
 
   // repositoryTrust: the project layer may only declare its own repository
   // untrusted; it cannot grant "trusted" or reset a trusted "untrusted".
   if (clamped.repositoryTrust !== "untrusted") {
-    delete clamped.repositoryTrust
+    delete clamped.repositoryTrust;
   }
 
   // actorProfiles: name→profile mappings are a trust delegation (which agent
@@ -453,15 +482,18 @@ function mergeWithTrustBoundary(
   // grant them; otherwise a repository could promote its own agent to a
   // higher-privilege profile ("build" → "operator"). trustedProjects opt-in is
   // a future item; until then the project layer cannot define mappings at all.
-  delete clamped.actorProfiles
+  delete clamped.actorProfiles;
 
   // enforcementMode: project cannot enable OR disable enforcement — only
   // global/inline can. A project "enforce" is deleted (can't enable), and a
   // project "observe" when the trusted baseline is "enforce" is also deleted
   // (can't downgrade from a global enforcement setting).
   if (clamped.enforcementMode !== undefined) {
-    if (clamped.enforcementMode === "enforce" || trusted.enforcementMode === "enforce") {
-      delete clamped.enforcementMode
+    if (
+      clamped.enforcementMode === "enforce" ||
+      trusted.enforcementMode === "enforce"
+    ) {
+      delete clamped.enforcementMode;
     }
   }
 
@@ -472,10 +504,10 @@ function mergeWithTrustBoundary(
     if (isPlainObject(clamped.riskPolicy)) {
       const trustedPolicy = isPlainObject(trusted.riskPolicy)
         ? trusted.riskPolicy
-        : (DEFAULT_RISK_POLICY as unknown as Record<string, unknown>)
-      clamped.riskPolicy = clampRiskPolicy(clamped.riskPolicy, trustedPolicy)
+        : (DEFAULT_RISK_POLICY as unknown as Record<string, unknown>);
+      clamped.riskPolicy = clampRiskPolicy(clamped.riskPolicy, trustedPolicy);
     } else {
-      delete clamped.riskPolicy
+      delete clamped.riskPolicy;
     }
   }
 
@@ -483,10 +515,16 @@ function mergeWithTrustBoundary(
   // manual. Invalid values are dropped so they cannot override a trusted deny
   // through resolveConfig's "anything but deny → manual" fallback.
   if (clamped.escalationMode !== undefined) {
-    if (clamped.escalationMode !== "manual" && clamped.escalationMode !== "deny") {
-      delete clamped.escalationMode
-    } else if (clamped.escalationMode === "manual" && trusted.escalationMode === "deny") {
-      delete clamped.escalationMode
+    if (
+      clamped.escalationMode !== "manual" &&
+      clamped.escalationMode !== "deny"
+    ) {
+      delete clamped.escalationMode;
+    } else if (
+      clamped.escalationMode === "manual" &&
+      trusted.escalationMode === "deny"
+    ) {
+      delete clamped.escalationMode;
     }
   }
 
@@ -497,18 +535,22 @@ function mergeWithTrustBoundary(
   // rules are also re-tagged source:"project" so they cannot spoof
   // source:"inline" to bypass the project-allow filter.
   if (Array.isArray(clamped.policyRules)) {
-    const projectRules = (clamped.policyRules as Array<Record<string, unknown>>).map((rule) => ({
+    const projectRules = (
+      clamped.policyRules as Array<Record<string, unknown>>
+    ).map((rule) => ({
       ...rule,
       source: "project" as PolicyRule["source"],
-    }))
-    const trustedRules = Array.isArray(trusted.policyRules) ? trusted.policyRules : []
-    clamped.policyRules = [...trustedRules, ...projectRules]
+    }));
+    const trustedRules = Array.isArray(trusted.policyRules)
+      ? trusted.policyRules
+      : [];
+    clamped.policyRules = [...trustedRules, ...projectRules];
   } else if (Array.isArray(trusted.policyRules)) {
     // Project omitted policyRules entirely: preserve the trusted rules.
-    clamped.policyRules = trusted.policyRules
+    clamped.policyRules = trusted.policyRules;
   }
 
-  return { ...trusted, ...clamped }
+  return { ...trusted, ...clamped };
 }
 
 /** Ensure project riskPolicy can only tighten the trusted baseline. */
@@ -519,55 +561,77 @@ function clampRiskPolicy(
   const projectAllow =
     typeof project.allow === "object" && project.allow !== null
       ? (project.allow as Record<string, unknown>)
-      : undefined
+      : undefined;
   const trustedAllow =
     typeof trusted.allow === "object" && trusted.allow !== null
       ? (trusted.allow as Record<string, unknown>)
-      : {}
-  const clampedAllow: Record<string, unknown> = {}
+      : {};
+  const clampedAllow: Record<string, unknown> = {};
   for (const risk of ["low", "medium", "high", "critical"] as const) {
-    const trustedCell = Array.isArray(trustedAllow[risk]) ? (trustedAllow[risk] as unknown[]) : []
+    const trustedCell = Array.isArray(trustedAllow[risk])
+      ? (trustedAllow[risk] as unknown[])
+      : [];
     if (projectAllow === undefined) {
       // Project omitted allow entirely: keep the trusted cells.
-      clampedAllow[risk] = trustedCell
-      continue
+      clampedAllow[risk] = trustedCell;
+      continue;
     }
-    const projectCell = Array.isArray(projectAllow[risk]) ? (projectAllow[risk] as unknown[]) : []
+    const projectCell = Array.isArray(projectAllow[risk])
+      ? (projectAllow[risk] as unknown[])
+      : [];
     // Intersection: project can only remove, never add. Missing project cell →
     // empty intersection (most restrictive) when the project provided an allow
     // object at all.
-    clampedAllow[risk] = trustedCell.filter((auth) => projectCell.includes(auth))
+    clampedAllow[risk] = trustedCell.filter((auth) =>
+      projectCell.includes(auth),
+    );
   }
 
   // Start from trusted so partial project objects cannot wipe failure knobs.
   const out: Record<string, unknown> = {
     ...trusted,
     allow: clampedAllow,
-  }
+  };
 
   // Failure knobs: project may harden manual → deny only.
-  if (project.onInvalidDecision === "deny" || trusted.onInvalidDecision === "deny") {
-    out.onInvalidDecision = "deny"
-  } else if (project.onInvalidDecision === "manual" || project.onInvalidDecision === undefined) {
-    out.onInvalidDecision = trusted.onInvalidDecision ?? "manual"
+  if (
+    project.onInvalidDecision === "deny" ||
+    trusted.onInvalidDecision === "deny"
+  ) {
+    out.onInvalidDecision = "deny";
+  } else if (
+    project.onInvalidDecision === "manual" ||
+    project.onInvalidDecision === undefined
+  ) {
+    out.onInvalidDecision = trusted.onInvalidDecision ?? "manual";
   }
 
-  if (project.onReviewerFailure === "deny" || trusted.onReviewerFailure === "deny") {
-    out.onReviewerFailure = "deny"
-  } else if (project.onReviewerFailure === "manual" || project.onReviewerFailure === undefined) {
-    out.onReviewerFailure = trusted.onReviewerFailure ?? "manual"
+  if (
+    project.onReviewerFailure === "deny" ||
+    trusted.onReviewerFailure === "deny"
+  ) {
+    out.onReviewerFailure = "deny";
+  } else if (
+    project.onReviewerFailure === "manual" ||
+    project.onReviewerFailure === undefined
+  ) {
+    out.onReviewerFailure = trusted.onReviewerFailure ?? "manual";
   }
 
   // minimumConfidence: project can raise but not lower.
   const trustedMin =
-    typeof trusted.minimumConfidence === "number" && Number.isFinite(trusted.minimumConfidence)
+    typeof trusted.minimumConfidence === "number" &&
+    Number.isFinite(trusted.minimumConfidence)
       ? trusted.minimumConfidence
-      : DEFAULT_RISK_POLICY.minimumConfidence
-  if (typeof project.minimumConfidence === "number" && Number.isFinite(project.minimumConfidence)) {
-    out.minimumConfidence = Math.max(trustedMin, project.minimumConfidence)
+      : DEFAULT_RISK_POLICY.minimumConfidence;
+  if (
+    typeof project.minimumConfidence === "number" &&
+    Number.isFinite(project.minimumConfidence)
+  ) {
+    out.minimumConfidence = Math.max(trustedMin, project.minimumConfidence);
   } else {
-    out.minimumConfidence = trustedMin
+    out.minimumConfidence = trustedMin;
   }
 
-  return out
+  return out;
 }

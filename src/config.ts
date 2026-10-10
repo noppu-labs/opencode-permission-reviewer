@@ -2,14 +2,14 @@ import type {
   ActorProfile,
   CapabilityActionClass,
   EscalationMode,
+  EscalationReviewerConfig,
   PolicyCondition,
   PolicyRule,
-  RiskPolicy,
   RepositoryTrust,
   ReviewerConfig,
-  EscalationReviewerConfig,
+  RiskPolicy,
   UserAuthorization,
-} from "./types.ts"
+} from "./types.ts";
 
 /** Default risk×authorization matrix. Reproduces exactly the previous
  *  hard-coded gate: critical never auto-allows; high needs at least medium auth;
@@ -24,7 +24,7 @@ export const DEFAULT_RISK_POLICY: RiskPolicy = {
   minimumConfidence: 0.7,
   onInvalidDecision: "manual",
   onReviewerFailure: "manual",
-}
+};
 
 export const DEFAULT_CONFIG: ReviewerConfig = {
   model: "openai/gpt-6-luna",
@@ -53,21 +53,31 @@ export const DEFAULT_CONFIG: ReviewerConfig = {
   repositoryTrust: "unknown",
   policyRules: [],
   askDecisions: true,
-}
+};
 
 /** Total deadline for a review, shared by the server and TUI watchdog. */
 export function reviewBudgetMs(config: ReviewerConfig): number {
-  return config.reviewBudgetMs ?? config.timeoutMs * 2 + 60_000
+  return config.reviewBudgetMs ?? config.timeoutMs * 2 + 60_000;
 }
 
-function boundedInteger(value: unknown, fallback: number, min: number, max: number): number {
-  if (typeof value !== "number" || !Number.isInteger(value)) return fallback
-  return Math.min(max, Math.max(min, value))
+function boundedInteger(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (typeof value !== "number" || !Number.isInteger(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
 }
 
-function boundedNumber(value: unknown, fallback: number, min: number, max: number): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) return fallback
-  return Math.min(max, Math.max(min, value))
+function boundedNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.min(max, Math.max(min, value));
 }
 
 const ACTOR_PROFILES: ReadonlySet<ActorProfile> = new Set([
@@ -77,7 +87,7 @@ const ACTOR_PROFILES: ReadonlySet<ActorProfile> = new Set([
   "operator",
   "reviewer",
   "unknown",
-])
+]);
 
 /** Every action class the capability analyzer can produce. The `satisfies`
  *  clause keeps this list in sync with the union type: adding a member to
@@ -97,93 +107,115 @@ const ACTION_CLASS_MEMBERS = {
   persistence: true,
   "privilege-escalation": true,
   unknown: true,
-} satisfies Record<CapabilityActionClass, true>
+} satisfies Record<CapabilityActionClass, true>;
 
-const VALID_ACTION_CLASS: ReadonlySet<string> = new Set(Object.keys(ACTION_CLASS_MEMBERS))
+const VALID_ACTION_CLASS: ReadonlySet<string> = new Set(
+  Object.keys(ACTION_CLASS_MEMBERS),
+);
 
-const VALID_REPOSITORY_TRUST: ReadonlySet<string> = new Set(["trusted", "untrusted", "unknown"])
+const VALID_REPOSITORY_TRUST: ReadonlySet<string> = new Set([
+  "trusted",
+  "untrusted",
+  "unknown",
+]);
 
 /** Parse a trusted name→profile mapping. Invalid entries are dropped. */
 function resolveActorProfiles(value: unknown): Record<string, ActorProfile> {
-  if (typeof value !== "object" || value === null) return {}
-  const out: Record<string, ActorProfile> = {}
-  for (const [name, profile] of Object.entries(value as Record<string, unknown>)) {
-    if (typeof profile === "string" && ACTOR_PROFILES.has(profile as ActorProfile)) {
-      out[name] = profile as ActorProfile
+  if (typeof value !== "object" || value === null) return {};
+  const out: Record<string, ActorProfile> = {};
+  for (const [name, profile] of Object.entries(
+    value as Record<string, unknown>,
+  )) {
+    if (
+      typeof profile === "string" &&
+      ACTOR_PROFILES.has(profile as ActorProfile)
+    ) {
+      out[name] = profile as ActorProfile;
     }
   }
-  return out
+  return out;
 }
 
-const VALID_AUTH = new Set(["high", "medium", "low", "unknown"])
+const VALID_AUTH = new Set(["high", "medium", "low", "unknown"]);
 
 /** Parse a risk×authorization matrix. Invalid or partial entries fall back to
  *  the conservative default. Failure-mode knobs only accept the stricter
  *  `"deny"` override; anything else keeps the default `"manual"`. */
 function resolveRiskPolicy(value: unknown): RiskPolicy {
   if (typeof value !== "object" || value === null)
-    return { ...DEFAULT_RISK_POLICY, allow: { ...DEFAULT_RISK_POLICY.allow } }
-  const src = value as Record<string, unknown>
-  const allowSrc = typeof src.allow === "object" && src.allow !== null ? src.allow : {}
+    return { ...DEFAULT_RISK_POLICY, allow: { ...DEFAULT_RISK_POLICY.allow } };
+  const src = value as Record<string, unknown>;
+  const allowSrc =
+    typeof src.allow === "object" && src.allow !== null ? src.allow : {};
   const merged: RiskPolicy = {
     allow: { ...DEFAULT_RISK_POLICY.allow },
     minimumConfidence: DEFAULT_RISK_POLICY.minimumConfidence,
     // Prefer an explicit deny from either the field or a pre-clamped trusted
     // baseline (loader may have already hardened the knob).
     onInvalidDecision:
-      src.onInvalidDecision === "deny" ? "deny" : DEFAULT_RISK_POLICY.onInvalidDecision,
+      src.onInvalidDecision === "deny"
+        ? "deny"
+        : DEFAULT_RISK_POLICY.onInvalidDecision,
     onReviewerFailure:
-      src.onReviewerFailure === "deny" ? "deny" : DEFAULT_RISK_POLICY.onReviewerFailure,
-  }
+      src.onReviewerFailure === "deny"
+        ? "deny"
+        : DEFAULT_RISK_POLICY.onReviewerFailure,
+  };
   for (const risk of ["low", "medium", "high", "critical"] as const) {
-    const cell = (allowSrc as Record<string, unknown>)[risk]
-    if (!Array.isArray(cell)) continue
+    const cell = (allowSrc as Record<string, unknown>)[risk];
+    if (!Array.isArray(cell)) continue;
     const auths = cell.filter(
       (a) => typeof a === "string" && VALID_AUTH.has(a),
-    ) as UserAuthorization[]
-    merged.allow[risk] = auths
+    ) as UserAuthorization[];
+    merged.allow[risk] = auths;
   }
-  if (typeof src.minimumConfidence === "number" && Number.isFinite(src.minimumConfidence)) {
-    merged.minimumConfidence = Math.min(1, Math.max(0.5, src.minimumConfidence))
+  if (
+    typeof src.minimumConfidence === "number" &&
+    Number.isFinite(src.minimumConfidence)
+  ) {
+    merged.minimumConfidence = Math.min(
+      1,
+      Math.max(0.5, src.minimumConfidence),
+    );
   }
-  return merged
+  return merged;
 }
 
 function resolveEscalationMode(value: unknown): EscalationMode {
-  return value === "deny" ? "deny" : "manual"
+  return value === "deny" ? "deny" : "manual";
 }
 
 function resolveRepositoryTrust(value: unknown): RepositoryTrust {
-  if (value === "trusted") return "trusted"
-  if (value === "untrusted") return "untrusted"
-  return "unknown"
+  if (value === "trusted") return "trusted";
+  if (value === "untrusted") return "untrusted";
+  return "unknown";
 }
 
-const VALID_EFFECTS = new Set(["review", "manual", "deny", "allow"])
-const VALID_SOURCES = new Set(["builtin", "global", "project", "inline"])
+const VALID_EFFECTS = new Set(["review", "manual", "deny", "allow"]);
+const VALID_SOURCES = new Set(["builtin", "global", "project", "inline"]);
 
 /** Parse one declarative policy rule. Malformed entries return null so the
  *  caller decides whether dropping them is safe (untrusted layer) or must
  *  degrade the config (trusted layer — a dropped restriction may be the whole
  *  point of the rule). A missing `when` is a valid universal rule. */
 function parsePolicyRule(raw: unknown): PolicyRule | null {
-  if (typeof raw !== "object" || raw === null) return null
-  const r = raw as Record<string, unknown>
-  if (typeof r.id !== "string" || r.id.length === 0) return null
-  if (typeof r.source !== "string" || !VALID_SOURCES.has(r.source)) return null
-  if (typeof r.effect !== "string" || !VALID_EFFECTS.has(r.effect)) return null
-  if (typeof r.reason !== "string" || r.reason.length === 0) return null
+  if (typeof raw !== "object" || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  if (typeof r.id !== "string" || r.id.length === 0) return null;
+  if (typeof r.source !== "string" || !VALID_SOURCES.has(r.source)) return null;
+  if (typeof r.effect !== "string" || !VALID_EFFECTS.has(r.effect)) return null;
+  if (typeof r.reason !== "string" || r.reason.length === 0) return null;
   if (r.when !== undefined) {
-    if (typeof r.when !== "object" || r.when === null) return null
-    const when = validateCondition(r.when as Record<string, unknown>)
-    if (when === null) return null
+    if (typeof r.when !== "object" || r.when === null) return null;
+    const when = validateCondition(r.when as Record<string, unknown>);
+    if (when === null) return null;
     return {
       id: r.id,
       source: r.source as PolicyRule["source"],
       when,
       effect: r.effect as PolicyRule["effect"],
       reason: r.reason,
-    }
+    };
   }
   // No `when` at all: a universal rule. `{ always: true }` is the explicit
   // spelling of the same thing for admins who prefer it.
@@ -192,18 +224,18 @@ function parsePolicyRule(raw: unknown): PolicyRule | null {
     source: r.source as PolicyRule["source"],
     effect: r.effect as PolicyRule["effect"],
     reason: r.reason,
-  }
+  };
 }
 
 /** Parse declarative policy rules. Malformed entries are dropped. */
 function resolvePolicyRules(value: unknown): PolicyRule[] {
-  if (!Array.isArray(value)) return []
-  const out: PolicyRule[] = []
+  if (!Array.isArray(value)) return [];
+  const out: PolicyRule[] = [];
   for (const raw of value) {
-    const rule = parsePolicyRule(raw)
-    if (rule !== null) out.push(rule)
+    const rule = parsePolicyRule(raw);
+    if (rule !== null) out.push(rule);
   }
-  return out
+  return out;
 }
 
 /** How many entries a policyRules array would silently drop under
@@ -211,13 +243,17 @@ function resolvePolicyRules(value: unknown): PolicyRule[] {
  *  an admin rule that vanishes on a typo must block auto-approval, not just
  *  disappear. */
 export function countInvalidPolicyRules(value: unknown): number {
-  if (value === undefined) return 0
-  if (!Array.isArray(value)) return 1
-  return value.filter((raw) => parsePolicyRule(raw) === null).length
+  if (value === undefined) return 0;
+  if (!Array.isArray(value)) return 1;
+  return value.filter((raw) => parsePolicyRule(raw) === null).length;
 }
 /** Validate a policy condition's sub-fields; return null if malformed (so a bad
  *  rule is dropped rather than crashing the engine at match time). */
-const CONDITION_LIST_KEYS = ["actionClass", "actorProfile", "repositoryTrust"] as const
+const CONDITION_LIST_KEYS = [
+  "actionClass",
+  "actorProfile",
+  "repositoryTrust",
+] as const;
 const CONDITION_FLAG_KEYS = [
   "writesWorkspace",
   "writesExternal",
@@ -232,22 +268,28 @@ const CONDITION_FLAG_KEYS = [
   "privilegeEscalation",
   "remoteEnabled",
   "persistence",
-] as const
+] as const;
 
-function validateCondition(value: Record<string, unknown>): PolicyCondition | null {
+function validateCondition(
+  value: Record<string, unknown>,
+): PolicyCondition | null {
   // An unknown key (usually a typo) must drop the rule: silently discarding it
   // could strip the rule's only condition and turn a narrow rule into a
   // universal match.
-  const knownKeys = new Set<string>(["always", ...CONDITION_LIST_KEYS, ...CONDITION_FLAG_KEYS])
+  const knownKeys = new Set<string>([
+    "always",
+    ...CONDITION_LIST_KEYS,
+    ...CONDITION_FLAG_KEYS,
+  ]);
   for (const key of Object.keys(value)) {
-    if (!knownKeys.has(key)) return null
+    if (!knownKeys.has(key)) return null;
   }
   // `always` is the explicit catch-all spelling; it makes sense only alone.
   if (value.always !== undefined) {
-    if (value.always !== true || Object.keys(value).length !== 1) return null
-    return { always: true }
+    if (value.always !== true || Object.keys(value).length !== 1) return null;
+    return { always: true };
   }
-  const out: Record<string, unknown> = {}
+  const out: Record<string, unknown> = {};
   // List conditions are matched with `includes()` at match time, so a member
   // outside the closed set (usually a typo) would never match and would
   // silently disable the rule. Rejecting it drops the rule through the normal
@@ -255,85 +297,116 @@ function validateCondition(value: Record<string, unknown>): PolicyCondition | nu
   // restriction quietly. Empty lists never match either, so they are rejected
   // for the same reason.
   if (value.actionClass !== undefined) {
-    if (!isClosedSetMemberArray(value.actionClass, VALID_ACTION_CLASS)) return null
-    out.actionClass = value.actionClass
+    if (!isClosedSetMemberArray(value.actionClass, VALID_ACTION_CLASS))
+      return null;
+    out.actionClass = value.actionClass;
   }
   if (value.actorProfile !== undefined) {
-    if (!isClosedSetMemberArray(value.actorProfile, ACTOR_PROFILES as ReadonlySet<string>))
-      return null
-    out.actorProfile = value.actorProfile
+    if (
+      !isClosedSetMemberArray(
+        value.actorProfile,
+        ACTOR_PROFILES as ReadonlySet<string>,
+      )
+    )
+      return null;
+    out.actorProfile = value.actorProfile;
   }
   if (value.repositoryTrust !== undefined) {
-    if (!isClosedSetMemberArray(value.repositoryTrust, VALID_REPOSITORY_TRUST)) return null
-    out.repositoryTrust = value.repositoryTrust
+    if (!isClosedSetMemberArray(value.repositoryTrust, VALID_REPOSITORY_TRUST))
+      return null;
+    out.repositoryTrust = value.repositoryTrust;
   }
   for (const flag of CONDITION_FLAG_KEYS) {
     if (value[flag] !== undefined) {
-      if (typeof value[flag] !== "boolean") return null
+      if (typeof value[flag] !== "boolean") return null;
       // Capability facts are `true | "unknown"` — never false — so a `false`
       // condition could never match. Reject it instead of ignoring the filter:
       // an ignored condition widens the rule.
-      if (value[flag] === false) return null
-      out[flag] = value[flag]
+      if (value[flag] === false) return null;
+      out[flag] = value[flag];
     }
   }
   // A condition that validated to nothing would match every request while
   // LOOKING conditioned; catch-alls must be spelled unambiguously (omit `when`
   // entirely, or `{ always: true }`).
-  if (Object.keys(out).length === 0) return null
-  return out as PolicyCondition
+  if (Object.keys(out).length === 0) return null;
+  return out as PolicyCondition;
 }
 
 function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every((v) => typeof v === "string")
+  return Array.isArray(value) && value.every((v) => typeof v === "string");
 }
 
 /** A non-empty string array whose members all belong to the closed set. */
-function isClosedSetMemberArray(value: unknown, valid: ReadonlySet<string>): value is string[] {
+function isClosedSetMemberArray(
+  value: unknown,
+  valid: ReadonlySet<string>,
+): value is string[] {
   return (
     Array.isArray(value) &&
     value.length > 0 &&
     value.every((v) => typeof v === "string" && valid.has(v))
-  )
+  );
 }
 
-export function resolveConfig(options: Record<string, unknown> | undefined): ReviewerConfig {
-  const source = options ?? {}
+export function resolveConfig(
+  options: Record<string, unknown> | undefined,
+): ReviewerConfig {
+  const source = options ?? {};
   const model =
     typeof source.model === "string" && source.model.includes("/")
       ? source.model
-      : DEFAULT_CONFIG.model
+      : DEFAULT_CONFIG.model;
   const variant =
     typeof source.variant === "string" && source.variant.length > 0
       ? source.variant
-      : DEFAULT_CONFIG.variant
-  const outputFormat = source.outputFormat === "text" ? "text" : "json_schema"
-  const escalationReviewer = resolveEscalationReviewer(source.escalationReviewer)
+      : DEFAULT_CONFIG.variant;
+  const outputFormat = source.outputFormat === "text" ? "text" : "json_schema";
+  const escalationReviewer = resolveEscalationReviewer(
+    source.escalationReviewer,
+  );
   const policy =
     typeof source.policy === "string" && source.policy.trim().length > 0
       ? source.policy.trim()
-      : undefined
+      : undefined;
   const auditPath =
     typeof source.auditPath === "string" && source.auditPath.trim().length > 0
       ? source.auditPath.trim()
-      : undefined
+      : undefined;
 
   return {
     model,
     variant,
     outputFormat,
     ...(escalationReviewer === undefined ? {} : { escalationReviewer }),
-    timeoutMs: boundedInteger(source.timeoutMs, DEFAULT_CONFIG.timeoutMs, 5_000, 600_000),
+    timeoutMs: boundedInteger(
+      source.timeoutMs,
+      DEFAULT_CONFIG.timeoutMs,
+      5_000,
+      600_000,
+    ),
     ...(source.reviewBudgetMs === undefined
       ? {}
-      : { reviewBudgetMs: boundedInteger(source.reviewBudgetMs, 180_000, 5_000, 900_000) }),
+      : {
+          reviewBudgetMs: boundedInteger(
+            source.reviewBudgetMs,
+            180_000,
+            5_000,
+            900_000,
+          ),
+        }),
     maxContextChars: boundedInteger(
       source.maxContextChars,
       DEFAULT_CONFIG.maxContextChars,
       4_000,
       200_000,
     ),
-    maxPartChars: boundedInteger(source.maxPartChars, DEFAULT_CONFIG.maxPartChars, 500, 50_000),
+    maxPartChars: boundedInteger(
+      source.maxPartChars,
+      DEFAULT_CONFIG.maxPartChars,
+      500,
+      50_000,
+    ),
     maxEnrichmentChars: boundedInteger(
       source.maxEnrichmentChars,
       DEFAULT_CONFIG.maxEnrichmentChars,
@@ -352,7 +425,12 @@ export function resolveConfig(options: Record<string, unknown> | undefined): Rev
       1,
       100,
     ),
-    intentMessages: boundedInteger(source.intentMessages, DEFAULT_CONFIG.intentMessages, 1, 50),
+    intentMessages: boundedInteger(
+      source.intentMessages,
+      DEFAULT_CONFIG.intentMessages,
+      1,
+      50,
+    ),
     historyMessages: boundedInteger(
       source.historyMessages,
       DEFAULT_CONFIG.historyMessages,
@@ -381,14 +459,23 @@ export function resolveConfig(options: Record<string, unknown> | undefined): Rev
       typeof source.retainReviewSessions === "boolean"
         ? source.retainReviewSessions
         : DEFAULT_CONFIG.retainReviewSessions,
-    audit: typeof source.audit === "boolean" ? source.audit : DEFAULT_CONFIG.audit,
+    audit:
+      typeof source.audit === "boolean" ? source.audit : DEFAULT_CONFIG.audit,
     ...(auditPath === undefined ? {} : { auditPath }),
     ...(policy === undefined ? {} : { policy }),
-    debug: typeof source.debug === "boolean" ? source.debug : DEFAULT_CONFIG.debug,
+    debug:
+      typeof source.debug === "boolean" ? source.debug : DEFAULT_CONFIG.debug,
     enforcementMode:
-      source.enforcementMode === "enforce" ? "enforce" : DEFAULT_CONFIG.enforcementMode,
+      source.enforcementMode === "enforce"
+        ? "enforce"
+        : DEFAULT_CONFIG.enforcementMode,
     escalationMode: resolveEscalationMode(source.escalationMode),
-    maxSessionDepth: boundedInteger(source.maxSessionDepth, DEFAULT_CONFIG.maxSessionDepth, 1, 32),
+    maxSessionDepth: boundedInteger(
+      source.maxSessionDepth,
+      DEFAULT_CONFIG.maxSessionDepth,
+      1,
+      32,
+    ),
     maxParentSessions: boundedInteger(
       source.maxParentSessions,
       DEFAULT_CONFIG.maxParentSessions,
@@ -400,22 +487,27 @@ export function resolveConfig(options: Record<string, unknown> | undefined): Rev
     repositoryTrust: resolveRepositoryTrust(source.repositoryTrust),
     policyRules: resolvePolicyRules(source.policyRules),
     askDecisions:
-      typeof source.askDecisions === "boolean" ? source.askDecisions : DEFAULT_CONFIG.askDecisions,
+      typeof source.askDecisions === "boolean"
+        ? source.askDecisions
+        : DEFAULT_CONFIG.askDecisions,
     ...(isStringArray(source.configDegraded) && source.configDegraded.length > 0
       ? { configDegraded: source.configDegraded }
       : {}),
-  }
+  };
 }
 
-function resolveEscalationReviewer(value: unknown): EscalationReviewerConfig | undefined {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return
-  const source = value as Record<string, unknown>
+function resolveEscalationReviewer(
+  value: unknown,
+): EscalationReviewerConfig | undefined {
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return;
+  const source = value as Record<string, unknown>;
   if (
     typeof source.model !== "string" ||
     !source.model.includes("/") ||
     isSystemOneReviewerModel(source.model)
   )
-    return
+    return;
   return {
     model: source.model,
     variant:
@@ -423,57 +515,73 @@ function resolveEscalationReviewer(value: unknown): EscalationReviewerConfig | u
         ? source.variant
         : DEFAULT_CONFIG.variant,
     outputFormat: source.outputFormat === "text" ? "text" : "json_schema",
-    timeoutMs: boundedInteger(source.timeoutMs, DEFAULT_CONFIG.timeoutMs, 5_000, 600_000),
-  }
+    timeoutMs: boundedInteger(
+      source.timeoutMs,
+      DEFAULT_CONFIG.timeoutMs,
+      5_000,
+      600_000,
+    ),
+  };
 }
 
 export function isValidEscalationReviewer(value: unknown): boolean {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false
-  const source = value as Record<string, unknown>
+  if (typeof value !== "object" || value === null || Array.isArray(value))
+    return false;
+  const source = value as Record<string, unknown>;
   if (
     typeof source.model !== "string" ||
     !source.model.includes("/") ||
     isSystemOneReviewerModel(source.model)
   )
-    return false
-  if (source.variant !== undefined && (typeof source.variant !== "string" || !source.variant))
-    return false
+    return false;
+  if (
+    source.variant !== undefined &&
+    (typeof source.variant !== "string" || !source.variant)
+  )
+    return false;
   if (
     source.outputFormat !== undefined &&
     source.outputFormat !== "text" &&
     source.outputFormat !== "json_schema"
   )
-    return false
+    return false;
   if (
     source.timeoutMs !== undefined &&
-    (typeof source.timeoutMs !== "number" || !Number.isInteger(source.timeoutMs))
+    (typeof source.timeoutMs !== "number" ||
+      !Number.isInteger(source.timeoutMs))
   )
-    return false
-  return true
+    return false;
+  return true;
 }
 
-export function splitModel(model: string): { providerID: string; modelID: string } {
-  const slash = model.indexOf("/")
+export function splitModel(model: string): {
+  providerID: string;
+  modelID: string;
+} {
+  const slash = model.indexOf("/");
   if (slash <= 0 || slash === model.length - 1) {
-    throw new Error(`Invalid reviewer model "${model}"; expected provider/model`)
+    throw new Error(
+      `Invalid reviewer model "${model}"; expected provider/model`,
+    );
   }
   return {
     providerID: model.slice(0, slash),
     modelID: model.slice(slash + 1),
-  }
+  };
 }
 
 export function isSystemOneReviewerModel(model: string): boolean {
-  let parsed: { providerID: string; modelID: string }
+  let parsed: { providerID: string; modelID: string };
   try {
-    parsed = splitModel(model)
+    parsed = splitModel(model);
   } catch {
-    return false
+    return false;
   }
   // Jev uses the typed System One API rather than a chat-session transport.
   return (
-    ((parsed.providerID === "opencode" || parsed.providerID === "typesafe-ai") &&
+    ((parsed.providerID === "opencode" ||
+      parsed.providerID === "typesafe-ai") &&
       /^jev(?:-|$)/.test(parsed.modelID)) ||
     (parsed.providerID === "commandcode" && parsed.modelID === "typesafe/jev")
-  )
+  );
 }

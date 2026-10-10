@@ -1,7 +1,7 @@
-import { expect, test } from "bun:test"
-import { resolveReviewTheme, setupTuiV2, testRender } from "./tui-loader.ts"
-import { createUiStatus } from "../src/ui-protocol.ts"
-import { request } from "./helpers.ts"
+import { expect, test } from "bun:test";
+import { createUiStatus } from "../src/ui-protocol.ts";
+import { request } from "./helpers.ts";
+import { resolveReviewTheme, setupTuiV2, testRender } from "./tui-loader.ts";
 
 test("TUI resolves nested, flat, and unavailable host themes", () => {
   expect(
@@ -24,7 +24,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
     info: "nested-info",
     success: "nested-success",
     error: "nested-error",
-  })
+  });
   expect(
     resolveReviewTheme({
       background: { raised: { base: "current-background" } },
@@ -45,7 +45,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
     info: "current-info",
     success: "current-success",
     error: "current-error",
-  })
+  });
   expect(
     resolveReviewTheme({
       backgroundPanel: "flat-background",
@@ -62,24 +62,24 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
     info: "flat-info",
     success: "flat-success",
     error: "flat-error",
-  })
+  });
   expect(resolveReviewTheme(undefined)).toMatchObject({
     backgroundPanel: expect.any(String),
     text: expect.any(String),
-  })
-})
+  });
+});
 
 test("TUI restores authoritative snapshots after disconnect and isolates routes, revisions, and generations", async () => {
-  const directory = "/workspace/fixture"
-  let sessionID = "ses_main"
-  let modeDepth = 0
-  let snapshots = 0
-  let releaseSnapshot!: () => void
+  const directory = "/workspace/fixture";
+  let sessionID = "ses_main";
+  let modeDepth = 0;
+  let snapshots = 0;
+  let releaseSnapshot!: () => void;
   const snapshotGate = new Promise<void>((resolve) => {
-    releaseSnapshot = resolve
-  })
-  let render!: () => unknown
-  const toasts: unknown[] = []
+    releaseSnapshot = resolve;
+  });
+  let render!: () => unknown;
+  const toasts: unknown[] = [];
   const reviewing = {
     ...createUiStatus(request(), "reviewing", {
       model: "fixture/reviewer",
@@ -87,20 +87,25 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
       timeoutMs: 10000,
     }),
     action: `printf ${"long action ".repeat(30)}\nsecond line\tend`,
-  }
-  let snapshot = { directory, generation: "generation_first", revision: 1, reviews: [reviewing] }
-  type Channel = { queue: unknown[]; ended: boolean; wake?: () => void }
-  const channels: Channel[] = []
+  };
+  let snapshot = {
+    directory,
+    generation: "generation_first",
+    revision: 1,
+    reviews: [reviewing],
+  };
+  type Channel = { queue: unknown[]; ended: boolean; wake?: () => void };
+  const channels: Channel[] = [];
   const ctx = {
     location: { directory },
     data: { session: { get: () => ({ location: { directory } }) } },
     keymap: {
       mode: {
         push: () => {
-          modeDepth++
+          modeDepth++;
           return () => {
-            modeDepth--
-          }
+            modeDepth--;
+          };
         },
       },
     },
@@ -108,74 +113,87 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
       router: { current: () => ({ type: "session", sessionID }) },
       toast: { show: (value: unknown) => toasts.push(value) },
       slot: (definition: { render(): unknown }) => {
-        render = definition.render
-        return () => {}
+        render = definition.render;
+        return () => {};
       },
     },
     client: {
       event: {
         subscribe: () => {
-          throw new Error("TUI snapshot loading must not depend on a generic host event")
+          throw new Error(
+            "TUI snapshot loading must not depend on a generic host event",
+          );
         },
       },
       rpc: () => ({
         snapshot: async () => {
-          snapshots++
-          if (snapshots > 1) await snapshotGate
-          return snapshot
+          snapshots++;
+          if (snapshots > 1) await snapshotGate;
+          return snapshot;
         },
         events: {
-          subscribe: async function* (_name: string, { signal }: { signal: AbortSignal }) {
-            const channel: Channel = { queue: [], ended: false }
-            channels.push(channel)
-            const wake = () => channel.wake?.()
-            signal.addEventListener("abort", wake)
+          subscribe: async function* (
+            _name: string,
+            { signal }: { signal: AbortSignal },
+          ) {
+            const channel: Channel = { queue: [], ended: false };
+            channels.push(channel);
+            const wake = () => channel.wake?.();
+            signal.addEventListener("abort", wake);
             try {
               while (!signal.aborted && !channel.ended) {
-                if (channel.queue.length) yield channel.queue.shift()
+                if (channel.queue.length) yield channel.queue.shift();
                 else
                   await new Promise<void>((resolve) => {
-                    channel.wake = resolve
-                  })
+                    channel.wake = resolve;
+                  });
               }
             } finally {
-              signal.removeEventListener("abort", wake)
+              signal.removeEventListener("abort", wake);
             }
           },
         },
       }),
     },
-  } as unknown as Parameters<typeof setupTuiV2>[0]
-  const dispose = await setupTuiV2(ctx)
-  const view = await testRender(() => render() as Element, { width: 100, height: 24 })
+  } as unknown as Parameters<typeof setupTuiV2>[0];
+  const dispose = await setupTuiV2(ctx);
+  const view = await testRender(() => render() as Element, {
+    width: 100,
+    height: 24,
+  });
   const waitForFrame = async (text: string, present = true) => {
-    const deadline = Date.now() + 3000
+    const deadline = Date.now() + 3000;
     do {
-      await view.flush()
-      if (view.captureCharFrame().includes(text) === present) return
-      await Bun.sleep(10)
-    } while (Date.now() < deadline)
-    expect(view.captureCharFrame().includes(text), view.captureCharFrame()).toBe(present)
-  }
+      await view.flush();
+      if (view.captureCharFrame().includes(text) === present) return;
+      await Bun.sleep(10);
+    } while (Date.now() < deadline);
+    expect(
+      view.captureCharFrame().includes(text),
+      view.captureCharFrame(),
+    ).toBe(present);
+  };
   try {
-    await waitForFrame("Reviewing this permission")
-    const progressFrame = view.captureCharFrame()
-    const occupied = progressFrame.split("\n").filter((line) => line.trim())
-    expect(occupied).toHaveLength(2)
-    expect(progressFrame.split("\n").findIndex((line) => line.trim())).toBe(22)
-    expect(occupied[0]).toContain("fixture/reviewer")
-    expect(occupied[1]).toContain("printf long action")
-    const firstElapsed = Number(progressFrame.match(/(\d+\.\d)s/)?.[1])
-    await Bun.sleep(700)
-    await view.flush()
-    expect(Number(view.captureCharFrame().match(/(\d+\.\d)s/)?.[1])).toBeGreaterThan(firstElapsed)
-    expect(modeDepth).toBe(1)
-    sessionID = "ses_other"
-    await waitForFrame("Reviewing this permission", false)
-    expect(modeDepth).toBe(0)
-    sessionID = "ses_main"
-    await waitForFrame("Reviewing this permission")
-    expect(modeDepth).toBe(1)
+    await waitForFrame("Reviewing this permission");
+    const progressFrame = view.captureCharFrame();
+    const occupied = progressFrame.split("\n").filter((line) => line.trim());
+    expect(occupied).toHaveLength(2);
+    expect(progressFrame.split("\n").findIndex((line) => line.trim())).toBe(22);
+    expect(occupied[0]).toContain("fixture/reviewer");
+    expect(occupied[1]).toContain("printf long action");
+    const firstElapsed = Number(progressFrame.match(/(\d+\.\d)s/)?.[1]);
+    await Bun.sleep(700);
+    await view.flush();
+    expect(
+      Number(view.captureCharFrame().match(/(\d+\.\d)s/)?.[1]),
+    ).toBeGreaterThan(firstElapsed);
+    expect(modeDepth).toBe(1);
+    sessionID = "ses_other";
+    await waitForFrame("Reviewing this permission", false);
+    expect(modeDepth).toBe(0);
+    sessionID = "ses_main";
+    await waitForFrame("Reviewing this permission");
+    expect(modeDepth).toBe(1);
 
     snapshot = {
       directory,
@@ -189,17 +207,17 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
           reason: "Authoritative denial",
         }),
       ],
-    }
-    channels[0]!.ended = true
-    channels[0]!.wake?.()
-    await waitForFrame("Review status unavailable")
-    expect(view.captureCharFrame()).not.toContain("Review approved")
-    expect(modeDepth).toBe(0)
-    releaseSnapshot()
-    await waitForFrame("Review blocked")
-    expect(snapshots).toBe(2)
-    expect(view.captureCharFrame()).toContain("Review blocked")
-    const channel = channels.at(-1)!
+    };
+    channels[0]!.ended = true;
+    channels[0]!.wake?.();
+    await waitForFrame("Review status unavailable");
+    expect(view.captureCharFrame()).not.toContain("Review approved");
+    expect(modeDepth).toBe(0);
+    releaseSnapshot();
+    await waitForFrame("Review blocked");
+    expect(snapshots).toBe(2);
+    expect(view.captureCharFrame()).toContain("Review blocked");
+    const channel = channels.at(-1)!;
     channel.queue.push(
       {
         location: { directory },
@@ -239,17 +257,17 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
           }),
         },
       },
-    )
-    channel.wake?.()
-    await Bun.sleep(10)
-    await view.flush()
-    expect(view.captureCharFrame()).toContain("Review blocked")
-    expect(view.captureCharFrame()).not.toContain("Review approved")
-    expect(toasts).toHaveLength(0)
+    );
+    channel.wake?.();
+    await Bun.sleep(10);
+    await view.flush();
+    expect(view.captureCharFrame()).toContain("Review blocked");
+    expect(view.captureCharFrame()).not.toContain("Review approved");
+    expect(toasts).toHaveLength(0);
   } finally {
-    releaseSnapshot()
-    dispose()
-    view.renderer.destroy()
+    releaseSnapshot();
+    dispose();
+    view.renderer.destroy();
   }
-  expect(modeDepth).toBe(0)
-}, 10000)
+  expect(modeDepth).toBe(0);
+}, 10000);

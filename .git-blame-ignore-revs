@@ -1,0 +1,8 @@
+# Tool-output commits for `git blame` to skip. See docs/DEVELOPMENT.md, "Quality gates".
+# A squash or rebase merge, or a restack, rewrites these SHAs, and git skips unknown ones silently: refresh the list.
+# style: format with Biome and organize imports
+7ca04fe4660c7fd23862f9d6fe06a9214216aef8
+# style: apply Biome's safe lint fixes
+87ed0325bc777fc633e88ad99d9daf1cebe2244e
+# style: apply Biome's unsafe lint fixes after review
+70b911dc01f5e1dff4ca59f579900bd28d8547d8

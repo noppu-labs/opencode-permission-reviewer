@@ -1,6 +1,6 @@
-import test from "node:test"
-import assert from "node:assert/strict"
-import { systemOneDifficultSubset } from "../lib/subsets.mjs"
+import assert from "node:assert/strict";
+import test from "node:test";
+import { systemOneDifficultSubset } from "../lib/subsets.mjs";
 
 function document() {
   return {
@@ -51,12 +51,12 @@ function document() {
         systemOneReasoningRecommended: false,
       },
     ],
-  }
+  };
 }
 
 test("derives a reproducible private reasoning-recommended subset", () => {
-  const subset = systemOneDifficultSubset(document(), "dataset-hash", 3)
-  assert.deepEqual([...subset.ids], ["case-low-confidence"])
+  const subset = systemOneDifficultSubset(document(), "dataset-hash", 3);
+  assert.deepEqual([...subset.ids], ["case-low-confidence"]);
   assert.deepEqual(subset.provenance, {
     kind: "system-one-reasoning-recommended",
     sourceRunFingerprint: "system-one-run",
@@ -64,18 +64,24 @@ test("derives a reproducible private reasoning-recommended subset", () => {
     sourcePluginSha256: "plugin-source",
     caseIdsSha256: subset.provenance.caseIdsSha256,
     count: 1,
-  })
-})
+  });
+});
 
 test("rejects mismatched, incomplete, or transport-failed source runs", () => {
-  assert.throws(() => systemOneDifficultSubset(document(), "other-dataset", 3), /different corpus/)
-  const incomplete = document()
-  incomplete.summary.complete = false
+  assert.throws(
+    () => systemOneDifficultSubset(document(), "other-dataset", 3),
+    /different corpus/,
+  );
+  const incomplete = document();
+  incomplete.summary.complete = false;
   assert.throws(
     () => systemOneDifficultSubset(incomplete, "dataset-hash", 3),
     /complete full-corpus run/,
-  )
-  const failed = document()
-  failed.results[0].status = "transport-error"
-  assert.throws(() => systemOneDifficultSubset(failed, "dataset-hash", 3), /failed rows/)
-})
+  );
+  const failed = document();
+  failed.results[0].status = "transport-error";
+  assert.throws(
+    () => systemOneDifficultSubset(failed, "dataset-hash", 3),
+    /failed rows/,
+  );
+});

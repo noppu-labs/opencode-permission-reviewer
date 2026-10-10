@@ -6,42 +6,43 @@
  * a malformed file. Supports --dry-run, --print, and --yes for non-interactive
  * use. Never prints the full config contents (user configs may carry secrets).
  */
-import { parseArgs } from "node:util"
-import { homedir } from "node:os"
-import { createHash } from "node:crypto"
-import { satisfies } from "semver"
-import { applyEdits, modify } from "jsonc-parser"
+
+import { createHash } from "node:crypto";
 import {
   closeSync,
-  constants as fsConstants,
   existsSync,
+  constants as fsConstants,
   fstatSync,
-  ftruncateSync,
   fsyncSync,
+  ftruncateSync,
   mkdirSync,
   openSync,
   readFileSync,
   realpathSync,
   writeFileSync,
   writeSync,
-} from "node:fs"
-import { dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
-import { SUPPORTED_V2_RANGE } from "../opencode/host-guard.ts"
-import { stripCommentsAndTrailingCommas } from "../config/jsonc.ts"
+} from "node:fs";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { parseArgs } from "node:util";
+import { applyEdits, modify } from "jsonc-parser";
+import { satisfies } from "semver";
+import { stripCommentsAndTrailingCommas } from "../config/jsonc.ts";
+import { SUPPORTED_V2_RANGE } from "../opencode/host-guard.ts";
 
 interface PackageInfo {
-  name: string
-  version: string
-  engines: { bun?: string; opencode?: string }
-  root: string
+  name: string;
+  version: string;
+  engines: { bun?: string; opencode?: string };
+  root: string;
 }
 
-type HostGeneration = "v1" | "v2"
+type HostGeneration = "v1" | "v2";
 type PluginEntry =
   | string
   | [string, Record<string, unknown>]
-  | { package: string; options?: Record<string, unknown> }
+  | { package: string; options?: Record<string, unknown> };
 
 export async function runInit(argv: string[]): Promise<number> {
   const { values } = parseArgs({
@@ -61,60 +62,82 @@ export async function runInit(argv: string[]): Promise<number> {
     },
     strict: true,
     allowPositionals: false,
-  })
+  });
 
   if (values.help) {
-    process.stderr.write(usage())
-    return 0
+    process.stderr.write(usage());
+    return 0;
   }
 
-  const directory = values.project ?? process.cwd()
+  const directory = values.project ?? process.cwd();
   if (!existsSync(directory)) {
-    console.error(`init: project directory does not exist: ${directory}`)
-    return 1
+    console.error(`init: project directory does not exist: ${directory}`);
+    return 1;
   }
 
-  const pkg = readPackageInfo()
+  const pkg = readPackageInfo();
   if (!["auto", "v1", "v2"].includes(values.host!)) {
-    console.error("init: --host must be auto, v1, or v2")
-    return 2
+    console.error("init: --host must be auto, v1, or v2");
+    return 2;
   }
-  const versionChecks = await runVersionChecks(pkg, values.binary!)
-  if (values.host === "auto" && !versionChecks.find((check) => check.name === "opencode")?.ok) {
-    console.error("init: detected host is unavailable or unsupported; no configuration was written")
-    return 2
+  const versionChecks = await runVersionChecks(pkg, values.binary!);
+  if (
+    values.host === "auto" &&
+    !versionChecks.find((check) => check.name === "opencode")?.ok
+  ) {
+    console.error(
+      "init: detected host is unavailable or unsupported; no configuration was written",
+    );
+    return 2;
   }
-  const version = versionChecks.find((check) => check.name === "opencode")?.version
-  const detected = version?.startsWith("1.") ? "v1" : version?.startsWith("2.") ? "v2" : undefined
-  const host = values.host === "auto" ? detected : (values.host as HostGeneration)
+  const version = versionChecks.find(
+    (check) => check.name === "opencode",
+  )?.version;
+  const detected = version?.startsWith("1.")
+    ? "v1"
+    : version?.startsWith("2.")
+      ? "v2"
+      : undefined;
+  const host =
+    values.host === "auto" ? detected : (values.host as HostGeneration);
   if (!host) {
-    console.error("init: cannot determine the host; pass --host v1 or --host v2")
-    return 2
+    console.error(
+      "init: cannot determine the host; pass --host v1 or --host v2",
+    );
+    return 2;
   }
-  const entry = buildEntry(pkg, Boolean(values.npm), host)
-  const targets = resolveTargets(directory, Boolean(values.global), Boolean(values.tui), host)
-  const existingSnapshot = readConfigFile(targets.config)
-  const existingConfig = existingSnapshot.status === "read" ? existingSnapshot.config : undefined
+  const entry = buildEntry(pkg, Boolean(values.npm), host);
+  const targets = resolveTargets(
+    directory,
+    Boolean(values.global),
+    Boolean(values.tui),
+    host,
+  );
+  const existingSnapshot = readConfigFile(targets.config);
+  const existingConfig =
+    existingSnapshot.status === "read" ? existingSnapshot.config : undefined;
   if (
     values.host === "auto" &&
     existingConfig &&
     ((host === "v1" && "plugins" in existingConfig) ||
       (host === "v2" && "plugin" in existingConfig))
   ) {
-    console.error("init: binary version and config format disagree; select --host explicitly")
-    return 2
+    console.error(
+      "init: binary version and config format disagree; select --host explicitly",
+    );
+    return 2;
   }
 
-  const plans = [targets.config, ...(targets.tui ? [targets.tui] : [])].map((p) =>
-    planFileChange(p, pkg, host),
-  )
+  const plans = [targets.config, ...(targets.tui ? [targets.tui] : [])].map(
+    (p) => planFileChange(p, pkg, host),
+  );
 
   // --- output -------------------------------------------------------------
 
   if (values.print) {
     // Only the entry, never the full config (may contain secrets).
-    console.log(JSON.stringify(entry, null, 2))
-    return 0
+    console.log(JSON.stringify(entry, null, 2));
+    return 0;
   }
 
   if (values.json) {
@@ -141,46 +164,48 @@ export async function runInit(argv: string[]): Promise<number> {
         null,
         2,
       ),
-    )
-    return 0
+    );
+    return 0;
   }
 
   // Human report (stderr so --json/--print stdout stays clean).
-  console.error(`init: opencode-permission-reviewer ${pkg.version}`)
+  console.error(`init: opencode-permission-reviewer ${pkg.version}`);
   for (const c of versionChecks) {
-    const tag = c.ok ? "ok" : "warning"
-    console.error(`  ${c.name}: ${c.version} (${c.range}) ${tag}`)
+    const tag = c.ok ? "ok" : "warning";
+    console.error(`  ${c.name}: ${c.version} (${c.range}) ${tag}`);
   }
-  console.error(`  entry: ${JSON.stringify(entry)}`)
+  console.error(`  entry: ${JSON.stringify(entry)}`);
 
   for (const plan of plans) {
-    console.error(`  ${plan.path}: ${plan.action}`)
+    console.error(`  ${plan.path}: ${plan.action}`);
   }
 
   if (values["dry-run"]) {
-    console.error("init: dry-run, no files written")
-    console.error("rollback: (nothing was changed)")
-    return 0
+    console.error("init: dry-run, no files written");
+    console.error("rollback: (nothing was changed)");
+    return 0;
   }
 
   // --- interactive gate ---------------------------------------------------
 
   if (!values.yes) {
     if (!process.stdin.isTTY) {
-      console.error("init: not a TTY; pass --yes to apply changes non-interactively")
-      return 2
+      console.error(
+        "init: not a TTY; pass --yes to apply changes non-interactively",
+      );
+      return 2;
     }
-    process.stderr.write("Apply these changes? [y/N] ")
-    const answer = (await readStdin()).trim().toLowerCase()
+    process.stderr.write("Apply these changes? [y/N] ");
+    const answer = (await readStdin()).trim().toLowerCase();
     if (answer !== "y" && answer !== "yes") {
-      console.error("init: aborted, nothing changed")
-      return 0
+      console.error("init: aborted, nothing changed");
+      return 0;
     }
   }
 
   // --- write --------------------------------------------------------------
 
-  return applyPlannedWrites(plans, entry, pkg, host)
+  return applyPlannedWrites(plans, entry, pkg, host);
 }
 
 /** Apply precomputed file plans. Each plan is re-resolved against the current
@@ -195,51 +220,61 @@ export function applyPlannedWrites(
   pkg: PackageInfo,
   host: HostGeneration = "v1",
 ): number {
-  const written: string[] = []
+  const written: string[] = [];
   for (const plan of plans) {
-    if (plan.action === "noop") continue
-    const fresh = planFileChange(plan.path, pkg, host)
+    if (plan.action === "noop") continue;
+    const fresh = planFileChange(plan.path, pkg, host);
     if (
       fresh.action !== plan.action ||
       (plan.fingerprint !== undefined && fresh.fingerprint !== plan.fingerprint)
     ) {
       console.error(
         `init: ${plan.path} changed since planning (was ${plan.action}, now ${fresh.action}); refusing to write`,
-      )
-      return 1
+      );
+      return 1;
     }
     if (fresh.action === "error") {
       console.error(
         `init: ${plan.path} is malformed or has a non-array "plugin" key; refusing to write`,
-      )
-      return 1
+      );
+      return 1;
     }
     // append or create
     if (fresh.backup !== undefined && existsSync(plan.path)) {
-      console.error(`  backup: ${writeBackup(plan.path, fresh.backup)}`)
+      console.error(`  backup: ${writeBackup(plan.path, fresh.backup)}`);
     }
     try {
-      writeEntry(plan.path, entry, fresh.action === "create", host, fresh.fingerprint)
+      writeEntry(
+        plan.path,
+        entry,
+        fresh.action === "create",
+        host,
+        fresh.fingerprint,
+      );
     } catch (error) {
       // A file created in the residual race between re-planning and writing
       // must never be clobbered; anything else is unexpected and propagates.
-      if ((error as { code?: unknown }).code !== "EEXIST") throw error
-      console.error(`init: ${plan.path} was created concurrently; refusing to overwrite`)
-      return 1
+      if ((error as { code?: unknown }).code !== "EEXIST") throw error;
+      console.error(
+        `init: ${plan.path} was created concurrently; refusing to overwrite`,
+      );
+      return 1;
     }
-    written.push(plan.path)
+    written.push(plan.path);
   }
 
-  console.error("init: done")
-  console.error("next: restart OpenCode to load the plugin")
+  console.error("init: done");
+  console.error("next: restart OpenCode to load the plugin");
   console.error(
     'next: ensure at least one permission "ask" rule (e.g. bash), or the plugin is a no-op',
-  )
+  );
   if (plans.some((p) => p.backup)) {
-    console.error("rollback: restore from the .bak file above and restart OpenCode")
+    console.error(
+      "rollback: restore from the .bak file above and restart OpenCode",
+    );
   }
 
-  return 0
+  return 0;
 }
 
 /** Copy the current file to a backup name, claiming the destination
@@ -247,26 +282,27 @@ export function applyPlannedWrites(
  *  rotation name is used instead of overwriting the collision. Returns the
  *  backup path actually written. Exported for unit tests. */
 export function writeBackup(source: string, preferred: string): string {
-  let sourceFd: number | undefined
-  let data: Buffer
+  let sourceFd: number | undefined;
+  let data: Buffer;
   try {
     sourceFd = openSync(
       source,
       fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK,
-    )
-    if (!fstatSync(sourceFd).isFile()) throw new Error(`Config is not a regular file: ${source}`)
-    data = readFileSync(sourceFd)
+    );
+    if (!fstatSync(sourceFd).isFile())
+      throw new Error(`Config is not a regular file: ${source}`);
+    data = readFileSync(sourceFd);
   } finally {
-    if (sourceFd !== undefined) closeSync(sourceFd)
+    if (sourceFd !== undefined) closeSync(sourceFd);
   }
-  let dest = preferred
+  let dest = preferred;
   for (;;) {
     try {
-      writeFileSync(dest, data, { flag: "wx", mode: 0o600 })
-      return dest
+      writeFileSync(dest, data, { flag: "wx", mode: 0o600 });
+      return dest;
     } catch (error) {
-      if ((error as { code?: unknown }).code !== "EEXIST") throw error
-      dest = backupPath(source)
+      if ((error as { code?: unknown }).code !== "EEXIST") throw error;
+      dest = backupPath(source);
     }
   }
 }
@@ -292,43 +328,47 @@ registered entry or a malformed config.
   --print           print only the plugin entry JSON to stdout
   --yes             skip confirmation (required when stdin is not a TTY)
   --json            print planned changes as JSON without writing files
-`
+`;
 }
 
 function readPackageInfo(): PackageInfo {
-  let dir = import.meta.dirname ?? process.cwd()
+  let dir = import.meta.dirname ?? process.cwd();
   for (let depth = 0; depth < 8; depth++) {
-    const candidate = join(dir, "package.json")
+    const candidate = join(dir, "package.json");
     if (existsSync(candidate)) {
       const raw = JSON.parse(readFileSync(candidate, "utf8")) as {
-        name?: string
-        version?: string
-        engines?: { bun?: string; opencode?: string }
-      }
+        name?: string;
+        version?: string;
+        engines?: { bun?: string; opencode?: string };
+      };
       return {
         name: raw.name ?? "opencode-permission-reviewer",
         version: raw.version ?? "0.0.0",
         engines: raw.engines ?? {},
         root: dir,
-      }
+      };
     }
-    const parent = dirname(dir)
-    if (parent === dir) break
-    dir = parent
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
   }
-  throw new Error("init: could not locate package.json")
+  throw new Error("init: could not locate package.json");
 }
 
-function buildEntry(pkg: PackageInfo, npm: boolean, host: HostGeneration): PluginEntry {
+function buildEntry(
+  pkg: PackageInfo,
+  npm: boolean,
+  host: HostGeneration,
+): PluginEntry {
   // When installed via npm the root is under node_modules; emit a bare spec so
   // opencode resolves it from its own node_modules. Otherwise emit an absolute
   // path reference (the documented dev workflow).
-  const fromNodeModules = pkg.root.includes(join("node_modules", ""))
+  const fromNodeModules = pkg.root.includes(join("node_modules", ""));
   if (npm || fromNodeModules) {
-    const name = `${pkg.name}@^${pkg.version}`
-    return host === "v2" ? { package: name, options: {} } : name
+    const name = `${pkg.name}@^${pkg.version}`;
+    return host === "v2" ? { package: name, options: {} } : name;
   }
-  return host === "v2" ? { package: pkg.root, options: {} } : pkg.root
+  return host === "v2" ? { package: pkg.root, options: {} } : pkg.root;
 }
 
 function resolveTargets(
@@ -337,146 +377,174 @@ function resolveTargets(
   wantTui: boolean,
   host: HostGeneration,
 ): { config: string; tui?: string } {
-  const globalDir = join(process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"), "opencode")
+  const globalDir = join(
+    process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
+    "opencode",
+  );
   const globalCfg = pickExisting([
     join(globalDir, "opencode.json"),
     join(globalDir, "opencode.jsonc"),
-  ])
+  ]);
   const projectCfg = pickExisting([
     join(directory, "opencode.json"),
     join(directory, "opencode.jsonc"),
     join(directory, ".opencode", "opencode.json"),
     join(directory, ".opencode", "opencode.jsonc"),
-  ])
+  ]);
   const configPath = forceGlobal
     ? (globalCfg ?? join(globalDir, "opencode.json"))
-    : (projectCfg ?? globalCfg ?? join(directory, "opencode.json"))
+    : (projectCfg ?? globalCfg ?? join(directory, "opencode.json"));
 
-  if (!wantTui) return { config: configPath }
-  if (host === "v2") return { config: configPath, tui: join(globalDir, "cli.json") }
+  if (!wantTui) return { config: configPath };
+  if (host === "v2")
+    return { config: configPath, tui: join(globalDir, "cli.json") };
 
-  const tuiDir = forceGlobal ? globalDir : dirname(configPath)
+  const tuiDir = forceGlobal ? globalDir : dirname(configPath);
   const tuiPath =
-    pickExisting([join(tuiDir, "tui.json"), join(tuiDir, "tui.jsonc")]) ?? join(tuiDir, "tui.json")
-  return { config: configPath, tui: tuiPath }
+    pickExisting([join(tuiDir, "tui.json"), join(tuiDir, "tui.jsonc")]) ??
+    join(tuiDir, "tui.json");
+  return { config: configPath, tui: tuiPath };
 }
 
 function pickExisting(candidates: string[]): string | undefined {
-  return candidates.find((p) => existsSync(p))
+  return candidates.find((p) => existsSync(p));
 }
 
 type ConfigSnapshot =
   | { status: "read"; config: Record<string, unknown>; fingerprint: string }
   | { status: "missing" }
-  | { status: "error" }
+  | { status: "error" };
 
 function readConfigFile(path: string): ConfigSnapshot {
-  let fd: number | undefined
+  let fd: number | undefined;
   try {
     // The parsed config and fingerprint must describe the same opened file.
-    fd = openSync(path, fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK)
-    if (!fstatSync(fd).isFile()) return { status: "error" }
-    const raw = readFileSync(fd)
-    const config = parseConfigText(raw.toString("utf8"))
-    if (config === null) return { status: "error" }
-    return { status: "read", config, fingerprint: createHash("sha256").update(raw).digest("hex") }
+    fd = openSync(
+      path,
+      fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK,
+    );
+    if (!fstatSync(fd).isFile()) return { status: "error" };
+    const raw = readFileSync(fd);
+    const config = parseConfigText(raw.toString("utf8"));
+    if (config === null) return { status: "error" };
+    return {
+      status: "read",
+      config,
+      fingerprint: createHash("sha256").update(raw).digest("hex"),
+    };
   } catch (error) {
-    return { status: (error as { code?: unknown }).code === "ENOENT" ? "missing" : "error" }
+    return {
+      status:
+        (error as { code?: unknown }).code === "ENOENT" ? "missing" : "error",
+    };
   } finally {
-    if (fd !== undefined) closeSync(fd)
+    if (fd !== undefined) closeSync(fd);
   }
 }
 
 function parseConfigText(raw: string): Record<string, unknown> | null {
-  if (raw.trim() === "") return {}
+  if (raw.trim() === "") return {};
   try {
-    const parsed: unknown = JSON.parse(stripCommentsAndTrailingCommas(raw))
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return null
-    return parsed as Record<string, unknown>
+    const parsed: unknown = JSON.parse(stripCommentsAndTrailingCommas(raw));
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+      return null;
+    return parsed as Record<string, unknown>;
   } catch {
-    return null
+    return null;
   }
 }
 
-function isOurEntry(entry: unknown, pkg: PackageInfo, directory: string): boolean {
-  let head: string | undefined
+function isOurEntry(
+  entry: unknown,
+  pkg: PackageInfo,
+  directory: string,
+): boolean {
+  let head: string | undefined;
   if (typeof entry === "string") {
-    head = entry
+    head = entry;
   } else if (Array.isArray(entry) && typeof entry[0] === "string") {
-    head = entry[0]
+    head = entry[0];
   } else if (
     typeof entry === "object" &&
     entry !== null &&
     "package" in entry &&
     typeof entry.package === "string"
   ) {
-    head = entry.package
+    head = entry.package;
   }
-  if (head === undefined) return false
-  if (head === pkg.root || head === pkg.name || head.startsWith(`${pkg.name}@`)) return true
+  if (head === undefined) return false;
+  if (head === pkg.root || head === pkg.name || head.startsWith(`${pkg.name}@`))
+    return true;
   try {
-    const path = head.startsWith("file:") ? fileURLToPath(head) : resolve(directory, head)
-    return realpathSync(path) === realpathSync(pkg.root)
+    const path = head.startsWith("file:")
+      ? fileURLToPath(head)
+      : resolve(directory, head);
+    return realpathSync(path) === realpathSync(pkg.root);
   } catch {
-    return false
+    return false;
   }
 }
 
 interface FilePlan {
-  path: string
-  action: "create" | "append" | "noop" | "error"
-  backup?: string
-  fingerprint?: string
+  path: string;
+  action: "create" | "append" | "noop" | "error";
+  backup?: string;
+  fingerprint?: string;
 }
 
-export type { FilePlan, PackageInfo, PluginEntry }
+export type { FilePlan, PackageInfo, PluginEntry };
 
 export function planFileChange(
   path: string,
   pkg: PackageInfo,
   host: HostGeneration = "v1",
 ): FilePlan {
-  const snapshot = readConfigFile(path)
-  if (snapshot.status === "missing") return { path, action: "create" }
-  if (snapshot.status === "error") return { path, action: "error" }
-  const { config: cfg, fingerprint } = snapshot
-  const plugin = cfg[host === "v2" ? "plugins" : "plugin"]
+  const snapshot = readConfigFile(path);
+  if (snapshot.status === "missing") return { path, action: "create" };
+  if (snapshot.status === "error") return { path, action: "error" };
+  const { config: cfg, fingerprint } = snapshot;
+  const plugin = cfg[host === "v2" ? "plugins" : "plugin"];
   if (plugin === undefined) {
-    return { path, action: "append", backup: backupPath(path), fingerprint }
+    return { path, action: "append", backup: backupPath(path), fingerprint };
   }
   if (!Array.isArray(plugin)) {
-    return { path, action: "error" }
+    return { path, action: "error" };
   }
-  const matching = plugin.filter((entry) => isOurEntry(entry, pkg, dirname(path)))
-  if (matching.length > 1) return { path, action: "error" }
+  const matching = plugin.filter((entry) =>
+    isOurEntry(entry, pkg, dirname(path)),
+  );
+  if (matching.length > 1) return { path, action: "error" };
   if (matching.length === 1) {
-    const existing = matching[0]
-    const isObject = typeof existing === "object" && existing !== null && !Array.isArray(existing)
-    if (isObject !== (host === "v2")) return { path, action: "error" }
+    const existing = matching[0];
+    const isObject =
+      typeof existing === "object" &&
+      existing !== null &&
+      !Array.isArray(existing);
+    if (isObject !== (host === "v2")) return { path, action: "error" };
     const spec =
       typeof existing === "string"
         ? existing
         : Array.isArray(existing)
           ? existing[0]
-          : existing.package
+          : existing.package;
     if (
       typeof spec === "string" &&
       spec.startsWith(`${pkg.name}@`) &&
       spec !== `${pkg.name}@${pkg.version}`
     )
-      return { path, action: "error" }
-    return { path, action: "noop" }
+      return { path, action: "error" };
+    return { path, action: "noop" };
   }
-  return { path, action: "append", backup: backupPath(path), fingerprint }
+  return { path, action: "append", backup: backupPath(path), fingerprint };
 }
 
 function backupPath(path: string): string {
-  const d = new Date()
-  const pad = (n: number) => String(n).padStart(2, "0")
-  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`
-  let bak = `${path}.bak-${stamp}`
-  for (let i = 2; existsSync(bak); i++) bak = `${path}.bak-${stamp}-${i}`
-  return bak
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  let bak = `${path}.bak-${stamp}`;
+  for (let i = 2; existsSync(bak); i++) bak = `${path}.bak-${stamp}-${i}`;
+  return bak;
 }
 
 export function writeEntry(
@@ -486,38 +554,45 @@ export function writeEntry(
   host: HostGeneration = "v1",
   fingerprint?: string,
 ): void {
-  const key = host === "v2" ? "plugins" : "plugin"
+  const key = host === "v2" ? "plugins" : "plugin";
   if (create) {
-    mkdirSync(dirname(path), { recursive: true })
+    mkdirSync(dirname(path), { recursive: true });
     const schema =
       path.includes("tui.json") || path.includes("tui.jsonc")
         ? "https://opencode.ai/tui.json"
-        : "https://opencode.ai/config.json"
+        : "https://opencode.ai/config.json";
     const fresh: Record<string, unknown> = path.endsWith("cli.json")
       ? { [key]: [entry] }
-      : { $schema: schema, [key]: [entry] }
+      : { $schema: schema, [key]: [entry] };
     // Exclusive create: a file that appeared after planning is never
     // clobbered; the EEXIST failure maps to a refusal in the caller.
-    writeFileSync(path, `${JSON.stringify(fresh, null, 2)}\n`, { encoding: "utf8", flag: "wx" })
-    return
+    writeFileSync(path, `${JSON.stringify(fresh, null, 2)}\n`, {
+      encoding: "utf8",
+      flag: "wx",
+    });
+    return;
   }
-  let fd: number | undefined
+  let fd: number | undefined;
   try {
     // Hold one no-follow descriptor from validation through the write. A config
     // swapped for a symlink between those steps can no longer redirect the CLI
     // into overwriting another file.
-    fd = openSync(path, fsConstants.O_RDWR | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK)
-    if (!fstatSync(fd).isFile()) throw new Error("Config is not a regular file")
-    const raw = readFileSync(fd, "utf8")
+    fd = openSync(
+      path,
+      fsConstants.O_RDWR | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK,
+    );
+    if (!fstatSync(fd).isFile())
+      throw new Error("Config is not a regular file");
+    const raw = readFileSync(fd, "utf8");
     if (
       fingerprint !== undefined &&
       createHash("sha256").update(raw).digest("hex") !== fingerprint
     ) {
-      throw new Error("Config changed after planning; refusing to overwrite")
+      throw new Error("Config changed after planning; refusing to overwrite");
     }
-    const cfg = parseConfigText(raw)
+    const cfg = parseConfigText(raw);
     if (!cfg || (cfg[key] !== undefined && !Array.isArray(cfg[key])))
-      throw new Error("Invalid plugin config")
+      throw new Error("Invalid plugin config");
     const edits = modify(
       raw.trim() ? raw : "{}",
       cfg[key] === undefined ? [key] : [key, -1],
@@ -525,38 +600,44 @@ export function writeEntry(
       {
         formattingOptions: { insertSpaces: true, tabSize: 2, eol: "\n" },
       },
-    )
-    const data = Buffer.from(applyEdits(raw.trim() ? raw : "{}", edits), "utf8")
-    ftruncateSync(fd, 0)
-    let written = 0
+    );
+    const data = Buffer.from(
+      applyEdits(raw.trim() ? raw : "{}", edits),
+      "utf8",
+    );
+    ftruncateSync(fd, 0);
+    let written = 0;
     while (written < data.length) {
-      written += writeSync(fd, data, written, data.length - written, written)
+      written += writeSync(fd, data, written, data.length - written, written);
     }
-    fsyncSync(fd)
+    fsyncSync(fd);
   } finally {
-    if (fd !== undefined) closeSync(fd)
+    if (fd !== undefined) closeSync(fd);
   }
 }
 
 interface VersionCheck {
-  name: string
-  version: string
-  range: string
-  ok: boolean
+  name: string;
+  version: string;
+  range: string;
+  ok: boolean;
 }
 
-async function runVersionChecks(pkg: PackageInfo, binary: string): Promise<VersionCheck[]> {
-  const checks: VersionCheck[] = []
-  const bunVer = process.versions.bun ?? process.versions.node ?? "0.0.0"
-  const bunRange = pkg.engines.bun ?? "(unstated)"
+async function runVersionChecks(
+  pkg: PackageInfo,
+  binary: string,
+): Promise<VersionCheck[]> {
+  const checks: VersionCheck[] = [];
+  const bunVer = process.versions.bun ?? process.versions.node ?? "0.0.0";
+  const bunRange = pkg.engines.bun ?? "(unstated)";
   checks.push({
     name: "bun",
     version: bunVer,
     range: bunRange,
     ok: !pkg.engines.bun || satisfies(bunVer, pkg.engines.bun),
-  })
-  const ocVersion = await probeOpencodeVersion(binary)
-  const ocRange = pkg.engines.opencode ?? "(unstated)"
+  });
+  const ocVersion = await probeOpencodeVersion(binary);
+  const ocRange = pkg.engines.opencode ?? "(unstated)";
   checks.push({
     name: "opencode",
     version: ocVersion ?? "(not found)",
@@ -565,23 +646,34 @@ async function runVersionChecks(pkg: PackageInfo, binary: string): Promise<Versi
       ocVersion !== undefined &&
       (!pkg.engines.opencode || satisfies(ocVersion, pkg.engines.opencode)) &&
       (!ocVersion.startsWith("2.") || satisfies(ocVersion, SUPPORTED_V2_RANGE)),
-  })
-  return checks
+  });
+  return checks;
 }
 
-export async function probeOpencodeVersion(binary = "opencode"): Promise<string | undefined> {
+export async function probeOpencodeVersion(
+  binary = "opencode",
+): Promise<string | undefined> {
   try {
-    const proc = Bun.spawn({ cmd: [binary, "--version"], stdout: "pipe", stderr: "pipe" })
-    const timer = setTimeout(() => proc.kill(), 2000)
-    const [code, out] = await Promise.all([proc.exited, new Response(proc.stdout).text()])
-    clearTimeout(timer)
-    if (code !== 0) return undefined
-    return (out.match(/\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/) ?? [])[0]
+    const proc = Bun.spawn({
+      cmd: [binary, "--version"],
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const timer = setTimeout(() => proc.kill(), 2000);
+    const [code, out] = await Promise.all([
+      proc.exited,
+      new Response(proc.stdout).text(),
+    ]);
+    clearTimeout(timer);
+    if (code !== 0) return undefined;
+    return (out.match(
+      /\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/,
+    ) ?? [])[0];
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
 async function readStdin(): Promise<string> {
-  return new Response(await Bun.stdin.text()).text()
+  return new Response(await Bun.stdin.text()).text();
 }

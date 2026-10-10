@@ -1,10 +1,22 @@
-import { afterEach, describe, expect, test } from "bun:test"
-import { existsSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-import { execFileSync } from "node:child_process"
-import { applyPlannedWrites, planFileChange, writeBackup, writeEntry } from "../src/cli/init.ts"
-import type { PackageInfo, PluginEntry } from "../src/cli/init.ts"
+import { afterEach, describe, expect, test } from "bun:test";
+import { execFileSync } from "node:child_process";
+import {
+  existsSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import type { PackageInfo, PluginEntry } from "../src/cli/init.ts";
+import {
+  applyPlannedWrites,
+  planFileChange,
+  writeBackup,
+  writeEntry,
+} from "../src/cli/init.ts";
 
 async function run(
   args: string[],
@@ -12,50 +24,56 @@ async function run(
   timeoutMs?: number,
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const isolatedArgs =
-    args.includes("--host") || args.includes("--binary") ? [...args] : ["--host", "v1", ...args]
-  if (!isolatedArgs.includes("--binary")) isolatedArgs.push("--binary", "/missing/opencode")
+    args.includes("--host") || args.includes("--binary")
+      ? [...args]
+      : ["--host", "v1", ...args];
+  if (!isolatedArgs.includes("--binary"))
+    isolatedArgs.push("--binary", "/missing/opencode");
   // The host session (this suite often runs inside OpenCode) may export
   // XDG_CONFIG_HOME or OPENCODE_CONFIG* pointing at a real config where this
   // plugin is already registered; init would resolve that config instead of
   // the isolated HOME and plan phantom "noop" writes.
-  const inherited: Record<string, string | undefined> = { ...process.env }
-  delete inherited.XDG_CONFIG_HOME
-  delete inherited.OPENCODE_CONFIG
-  delete inherited.OPENCODE_CONFIG_DIR
-  delete inherited.OPENCODE_CONFIG_CONTENT
+  const inherited: Record<string, string | undefined> = { ...process.env };
+  delete inherited.XDG_CONFIG_HOME;
+  delete inherited.OPENCODE_CONFIG;
+  delete inherited.OPENCODE_CONFIG_DIR;
+  delete inherited.OPENCODE_CONFIG_CONTENT;
   const proc = Bun.spawn({
     cmd: ["bun", "run", "src/cli/explain.ts", "init", ...isolatedArgs],
-    cwd: import.meta.dir + "/..",
+    cwd: `${import.meta.dir}/..`,
     stdout: "pipe",
     stderr: "pipe",
     env: { ...inherited, ...env },
-  })
-  const timer = timeoutMs === undefined ? undefined : setTimeout(() => proc.kill(), timeoutMs)
+  });
+  const timer =
+    timeoutMs === undefined
+      ? undefined
+      : setTimeout(() => proc.kill(), timeoutMs);
   try {
     const [code, stdout, stderr] = await Promise.all([
       proc.exited,
       new Response(proc.stdout).text(),
       new Response(proc.stderr).text(),
-    ])
-    return { code, stdout, stderr }
+    ]);
+    return { code, stdout, stderr };
   } finally {
-    if (timer !== undefined) clearTimeout(timer)
+    if (timer !== undefined) clearTimeout(timer);
   }
 }
 
 describe("cli init", () => {
-  let home: string
-  let project: string
+  let home: string;
+  let project: string;
 
   afterEach(() => {
-    if (home) rmSync(home, { recursive: true, force: true })
-    if (project) rmSync(project, { recursive: true, force: true })
-  })
+    if (home) rmSync(home, { recursive: true, force: true });
+    if (project) rmSync(project, { recursive: true, force: true });
+  });
 
   test("V2 writes object entries and global cli config idempotently", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const env = { HOME: home, XDG_CONFIG_HOME: join(home, ".config") }
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const env = { HOME: home, XDG_CONFIG_HOME: join(home, ".config") };
     const args = [
       "--host",
       "v2",
@@ -65,35 +83,47 @@ describe("cli init", () => {
       "--tui",
       "--project",
       project,
-    ]
-    expect((await run(args, env)).code).toBe(0)
-    expect((await run(args, env)).code).toBe(0)
-    const config = JSON.parse(readFileSync(join(project, "opencode.json"), "utf8"))
-    expect(config.plugins).toHaveLength(1)
-    expect(typeof config.plugins[0].package).toBe("string")
-    expect(config.plugin).toBeUndefined()
-    const cli = JSON.parse(readFileSync(join(home, ".config", "opencode", "cli.json"), "utf8"))
-    expect(cli.plugins).toHaveLength(1)
-    expect(existsSync(join(project, "tui.json"))).toBe(false)
-  })
+    ];
+    expect((await run(args, env)).code).toBe(0);
+    expect((await run(args, env)).code).toBe(0);
+    const config = JSON.parse(
+      readFileSync(join(project, "opencode.json"), "utf8"),
+    );
+    expect(config.plugins).toHaveLength(1);
+    expect(typeof config.plugins[0].package).toBe("string");
+    expect(config.plugin).toBeUndefined();
+    const cli = JSON.parse(
+      readFileSync(join(home, ".config", "opencode", "cli.json"), "utf8"),
+    );
+    expect(cli.plugins).toHaveLength(1);
+    expect(existsSync(join(project, "tui.json"))).toBe(false);
+  });
 
   test("auto refuses unknown hosts and JSON reports never claim unapplied writes", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const env = { HOME: home }
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const env = { HOME: home };
     expect(
-      (await run(["--binary", "/missing/opencode", "--yes", "--project", project], env)).code,
-    ).toBe(2)
-    const result = await run(["--host", "v2", "--json", "--project", project], env)
-    expect(JSON.parse(result.stdout).writes).toEqual([])
-    expect(JSON.parse(result.stdout).plannedWrites).toHaveLength(1)
-    expect(existsSync(join(project, "opencode.json"))).toBe(false)
-  })
+      (
+        await run(
+          ["--binary", "/missing/opencode", "--yes", "--project", project],
+          env,
+        )
+      ).code,
+    ).toBe(2);
+    const result = await run(
+      ["--host", "v2", "--json", "--project", project],
+      env,
+    );
+    expect(JSON.parse(result.stdout).writes).toEqual([]);
+    expect(JSON.parse(result.stdout).plannedWrites).toHaveLength(1);
+    expect(existsSync(join(project, "opencode.json"))).toBe(false);
+  });
 
   test("auto accepts supported versions and refuses unsupported versions without writes", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const binary = join(home, "fixture-opencode")
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const binary = join(home, "fixture-opencode");
     for (const [version, supported] of [
       ["1.18.28", false],
       ["1.18.29", true],
@@ -106,133 +136,164 @@ describe("cli init", () => {
       ["2.0.3-beta.1", false],
       ["3.0.0", false],
     ] as const) {
-      writeFileSync(binary, `#!/bin/sh\nprintf '${version}\\n'\n`, { mode: 0o700 })
-      const result = await run(["--binary", binary, "--dry-run", "--project", project], {
-        HOME: home,
-      })
-      expect(result.code).toBe(supported ? 0 : 2)
-      expect(existsSync(join(project, "opencode.json"))).toBe(false)
+      writeFileSync(binary, `#!/bin/sh\nprintf '${version}\\n'\n`, {
+        mode: 0o700,
+      });
+      const result = await run(
+        ["--binary", binary, "--dry-run", "--project", project],
+        {
+          HOME: home,
+        },
+      );
+      expect(result.code).toBe(supported ? 0 : 2);
+      expect(existsSync(join(project, "opencode.json"))).toBe(false);
     }
-  })
+  });
 
   test("--dry-run writes nothing", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const { code, stderr } = await run(["--dry-run", "--project", project], { HOME: home })
-    expect(code).toBe(0)
-    expect(stderr).toContain("dry-run")
-    expect(existsSync(join(project, "opencode.json"))).toBe(false)
-  })
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const { code, stderr } = await run(["--dry-run", "--project", project], {
+      HOME: home,
+    });
+    expect(code).toBe(0);
+    expect(stderr).toContain("dry-run");
+    expect(existsSync(join(project, "opencode.json"))).toBe(false);
+  });
 
   test("--print outputs the entry JSON to stdout", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const { code, stdout } = await run(["--print", "--project", project], { HOME: home })
-    expect(code).toBe(0)
-    const entry = JSON.parse(stdout)
-    expect(typeof entry).toBe("string")
-  })
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const { code, stdout } = await run(["--print", "--project", project], {
+      HOME: home,
+    });
+    expect(code).toBe(0);
+    const entry = JSON.parse(stdout);
+    expect(typeof entry).toBe("string");
+  });
 
   test("--yes creates the config file with schema and plugin", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const { code } = await run(["--yes", "--project", project], { HOME: home })
-    expect(code).toBe(0)
-    const cfg = JSON.parse(readFileSync(join(project, "opencode.json"), "utf8"))
-    expect(cfg.$schema).toBe("https://opencode.ai/config.json")
-    expect(Array.isArray(cfg.plugin)).toBe(true)
-    expect(typeof cfg.plugin[0]).toBe("string")
-  })
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const { code } = await run(["--yes", "--project", project], { HOME: home });
+    expect(code).toBe(0);
+    const cfg = JSON.parse(
+      readFileSync(join(project, "opencode.json"), "utf8"),
+    );
+    expect(cfg.$schema).toBe("https://opencode.ai/config.json");
+    expect(Array.isArray(cfg.plugin)).toBe(true);
+    expect(typeof cfg.plugin[0]).toBe("string");
+  });
 
   test("noop when already registered", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
     // Seed with an entry pointing at this repo root.
-    const root = join(import.meta.dir, "..")
-    writeFileSync(join(project, "opencode.json"), JSON.stringify({ plugin: [[root, {}]] }))
-    const before = readFileSync(join(project, "opencode.json"), "utf8")
-    const { code, stderr } = await run(["--yes", "--project", project], { HOME: home })
-    expect(code).toBe(0)
-    expect(stderr).toContain("noop")
-    const after = readFileSync(join(project, "opencode.json"), "utf8")
-    expect(after).toBe(before)
-  })
+    const root = join(import.meta.dir, "..");
+    writeFileSync(
+      join(project, "opencode.json"),
+      JSON.stringify({ plugin: [[root, {}]] }),
+    );
+    const before = readFileSync(join(project, "opencode.json"), "utf8");
+    const { code, stderr } = await run(["--yes", "--project", project], {
+      HOME: home,
+    });
+    expect(code).toBe(0);
+    expect(stderr).toContain("noop");
+    const after = readFileSync(join(project, "opencode.json"), "utf8");
+    expect(after).toBe(before);
+  });
 
   test("--yes merge preserves other plugins and keys", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
     writeFileSync(
       join(project, "opencode.json"),
       JSON.stringify({ plugin: ["other@1.0.0"], permission: { bash: "ask" } }),
-    )
-    const { code } = await run(["--yes", "--project", project], { HOME: home })
-    expect(code).toBe(0)
-    const cfg = JSON.parse(readFileSync(join(project, "opencode.json"), "utf8"))
-    expect(cfg.plugin).toHaveLength(2)
-    expect(cfg.plugin[0]).toBe("other@1.0.0")
-    expect(cfg.permission).toEqual({ bash: "ask" })
-  })
+    );
+    const { code } = await run(["--yes", "--project", project], { HOME: home });
+    expect(code).toBe(0);
+    const cfg = JSON.parse(
+      readFileSync(join(project, "opencode.json"), "utf8"),
+    );
+    expect(cfg.plugin).toHaveLength(2);
+    expect(cfg.plugin[0]).toBe("other@1.0.0");
+    expect(cfg.permission).toEqual({ bash: "ask" });
+  });
 
   test("backup is created when writing to an existing file", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const original = '{"plugin":["other@1.0.0"]}'
-    writeFileSync(join(project, "opencode.json"), original)
-    const { code, stderr } = await run(["--yes", "--project", project], { HOME: home })
-    expect(code).toBe(0)
-    expect(stderr).toContain("backup")
-    const backups = readdirSync(project).filter((f) => f.includes(".bak-"))
-    expect(backups.length).toBeGreaterThanOrEqual(1)
-  })
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const original = '{"plugin":["other@1.0.0"]}';
+    writeFileSync(join(project, "opencode.json"), original);
+    const { code, stderr } = await run(["--yes", "--project", project], {
+      HOME: home,
+    });
+    expect(code).toBe(0);
+    expect(stderr).toContain("backup");
+    const backups = readdirSync(project).filter((f) => f.includes(".bak-"));
+    expect(backups.length).toBeGreaterThanOrEqual(1);
+  });
 
   test("malformed config exits with error and no backup", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    writeFileSync(join(project, "opencode.json"), '{ "plugin": [')
-    const { code, stderr } = await run(["--yes", "--project", project], { HOME: home })
-    expect(code).toBe(1)
-    expect(stderr).toContain("malformed")
-    const backups = readdirSync(project).filter((f) => f.includes(".bak-"))
-    expect(backups).toHaveLength(0)
-  })
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    writeFileSync(join(project, "opencode.json"), '{ "plugin": [');
+    const { code, stderr } = await run(["--yes", "--project", project], {
+      HOME: home,
+    });
+    expect(code).toBe(1);
+    expect(stderr).toContain("malformed");
+    const backups = readdirSync(project).filter((f) => f.includes(".bak-"));
+    expect(backups).toHaveLength(0);
+  });
 
   test("planning refuses a config linked to a FIFO without reading or blocking", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const fifo = join(home, "config-fifo")
-    execFileSync("mkfifo", [fifo])
-    symlinkSync(fifo, join(project, "opencode.json"))
-    const result = await run(["--yes", "--project", project], { HOME: home }, 3000)
-    expect(result.code).toBe(1)
-    expect(result.stderr).toContain("malformed")
-    expect(readdirSync(project)).toEqual(["opencode.json"])
-  }, 10_000)
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const fifo = join(home, "config-fifo");
+    execFileSync("mkfifo", [fifo]);
+    symlinkSync(fifo, join(project, "opencode.json"));
+    const result = await run(
+      ["--yes", "--project", project],
+      { HOME: home },
+      3000,
+    );
+    expect(result.code).toBe(1);
+    expect(result.stderr).toContain("malformed");
+    expect(readdirSync(project)).toEqual(["opencode.json"]);
+  }, 10_000);
 
   test("non-TTY without --yes exits 2", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
     // spawn pipes stdin (not a TTY).
-    const { code, stderr } = await run(["--project", project], { HOME: home })
-    expect(code).toBe(2)
-    expect(stderr).toContain("--yes")
-  })
+    const { code, stderr } = await run(["--project", project], { HOME: home });
+    expect(code).toBe(2);
+    expect(stderr).toContain("--yes");
+  });
 
   test("--json outputs a machine-readable report", async () => {
-    home = mkdtempSync(join(tmpdir(), "init-home-"))
-    project = mkdtempSync(join(tmpdir(), "init-proj-"))
-    const { code, stdout } = await run(["--dry-run", "--json", "--project", project], {
-      HOME: home,
-    })
-    expect(code).toBe(0)
-    const report = JSON.parse(stdout)
-    expect(report.command).toBe("init")
+    home = mkdtempSync(join(tmpdir(), "init-home-"));
+    project = mkdtempSync(join(tmpdir(), "init-proj-"));
+    const { code, stdout } = await run(
+      ["--dry-run", "--json", "--project", project],
+      {
+        HOME: home,
+      },
+    );
+    expect(code).toBe(0);
+    const report = JSON.parse(stdout);
+    expect(report.command).toBe("init");
     expect(report.package.name).toBe(
-      JSON.parse(readFileSync(join(import.meta.dir, "..", "package.json"), "utf8")).name,
-    )
-    expect(report.versionChecks.length).toBeGreaterThanOrEqual(1)
-    expect(report.targets[0].action).toBe("create")
-  })
-})
+      JSON.parse(
+        readFileSync(join(import.meta.dir, "..", "package.json"), "utf8"),
+      ).name,
+    );
+    expect(report.versionChecks.length).toBeGreaterThanOrEqual(1);
+    expect(report.targets[0].action).toBe("create");
+  });
+});
 
 describe("cli init apply guards", () => {
   const pkg: PackageInfo = {
@@ -240,115 +301,128 @@ describe("cli init apply guards", () => {
     version: "9.9.9",
     engines: {},
     root: "/nonexistent-plugin-root",
-  }
-  const entry: PluginEntry = "test-plugin@^9.9.9"
+  };
+  const entry: PluginEntry = "test-plugin@^9.9.9";
 
-  let dir: string
+  let dir: string;
 
   afterEach(() => {
-    if (dir) rmSync(dir, { recursive: true, force: true })
-  })
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  });
 
   function freshDir(): string {
-    dir = mkdtempSync(join(tmpdir(), "init-guard-"))
-    return dir
+    dir = mkdtempSync(join(tmpdir(), "init-guard-"));
+    return dir;
   }
 
   test("incompatible entry shapes, versions, and duplicates require explicit migration", () => {
-    const path = join(freshDir(), "opencode.json")
-    for (const entry of [pkg.name, [pkg.name, {}], { package: `${pkg.name}@1.0.0` }]) {
-      writeFileSync(path, JSON.stringify({ plugins: [entry] }))
-      expect(planFileChange(path, pkg, "v2").action).toBe("error")
+    const path = join(freshDir(), "opencode.json");
+    for (const entry of [
+      pkg.name,
+      [pkg.name, {}],
+      { package: `${pkg.name}@1.0.0` },
+    ]) {
+      writeFileSync(path, JSON.stringify({ plugins: [entry] }));
+      expect(planFileChange(path, pkg, "v2").action).toBe("error");
     }
-    writeFileSync(path, JSON.stringify({ plugins: [{ package: pkg.name }, { package: pkg.name }] }))
-    expect(planFileChange(path, pkg, "v2").action).toBe("error")
-    writeFileSync(path, JSON.stringify({ plugin: [{ package: pkg.name }] }))
-    expect(planFileChange(path, pkg, "v1").action).toBe("error")
-  })
+    writeFileSync(
+      path,
+      JSON.stringify({
+        plugins: [{ package: pkg.name }, { package: pkg.name }],
+      }),
+    );
+    expect(planFileChange(path, pkg, "v2").action).toBe("error");
+    writeFileSync(path, JSON.stringify({ plugin: [{ package: pkg.name }] }));
+    expect(planFileChange(path, pkg, "v1").action).toBe("error");
+  });
 
   test("refuses a create write when the file appeared after planning", () => {
-    const directory = freshDir()
-    const path = join(directory, "opencode.json")
-    const stale = planFileChange(path, pkg)
-    expect(stale.action).toBe("create")
+    const directory = freshDir();
+    const path = join(directory, "opencode.json");
+    const stale = planFileChange(path, pkg);
+    expect(stale.action).toBe("create");
     // Another process creates the file before the apply step runs.
-    const arrived = '{"plugin":["other@1.0.0"]}'
-    writeFileSync(path, arrived)
-    expect(applyPlannedWrites([stale], entry, pkg)).toBe(1)
+    const arrived = '{"plugin":["other@1.0.0"]}';
+    writeFileSync(path, arrived);
+    expect(applyPlannedWrites([stale], entry, pkg)).toBe(1);
     // Nothing was clobbered or merged; the late file is untouched.
-    expect(readFileSync(path, "utf8")).toBe(arrived)
-  })
+    expect(readFileSync(path, "utf8")).toBe(arrived);
+  });
 
   test("refuses an append write when the file turned malformed after planning", () => {
-    const directory = freshDir()
-    const path = join(directory, "opencode.json")
-    writeFileSync(path, '{"plugin":["other@1.0.0"]}')
-    const stale = planFileChange(path, pkg)
-    expect(stale.action).toBe("append")
-    writeFileSync(path, '{ "plugin": [')
-    expect(applyPlannedWrites([stale], entry, pkg)).toBe(1)
+    const directory = freshDir();
+    const path = join(directory, "opencode.json");
+    writeFileSync(path, '{"plugin":["other@1.0.0"]}');
+    const stale = planFileChange(path, pkg);
+    expect(stale.action).toBe("append");
+    writeFileSync(path, '{ "plugin": [');
+    expect(applyPlannedWrites([stale], entry, pkg)).toBe(1);
     // No backup of the malformed file and no rewrite happened.
-    expect(readFileSync(path, "utf8")).toBe('{ "plugin": [')
-    expect(readdirSync(directory).filter((f) => f.includes(".bak-"))).toHaveLength(0)
-  })
+    expect(readFileSync(path, "utf8")).toBe('{ "plugin": [');
+    expect(
+      readdirSync(directory).filter((f) => f.includes(".bak-")),
+    ).toHaveLength(0);
+  });
 
   test("applies a clean create plan", () => {
-    const directory = freshDir()
-    const path = join(directory, "opencode.json")
-    const plan = planFileChange(path, pkg)
-    expect(applyPlannedWrites([plan], entry, pkg)).toBe(0)
-    const cfg = JSON.parse(readFileSync(path, "utf8")) as { plugin: unknown[] }
-    expect(cfg.plugin).toEqual([entry])
-  })
+    const directory = freshDir();
+    const path = join(directory, "opencode.json");
+    const plan = planFileChange(path, pkg);
+    expect(applyPlannedWrites([plan], entry, pkg)).toBe(0);
+    const cfg = JSON.parse(readFileSync(path, "utf8")) as { plugin: unknown[] };
+    expect(cfg.plugin).toEqual([entry]);
+  });
 
   test("writeEntry with create refuses to clobber an existing file", () => {
-    const directory = freshDir()
-    const path = join(directory, "opencode.json")
-    const original = '{"plugin":["other@1.0.0"]}'
-    writeFileSync(path, original)
-    let code: unknown
+    const directory = freshDir();
+    const path = join(directory, "opencode.json");
+    const original = '{"plugin":["other@1.0.0"]}';
+    writeFileSync(path, original);
+    let code: unknown;
     try {
-      writeEntry(path, entry, true)
+      writeEntry(path, entry, true);
     } catch (error) {
-      code = (error as { code?: unknown }).code
+      code = (error as { code?: unknown }).code;
     }
-    expect(code).toBe("EEXIST")
-    expect(readFileSync(path, "utf8")).toBe(original)
-  })
+    expect(code).toBe("EEXIST");
+    expect(readFileSync(path, "utf8")).toBe(original);
+  });
 
   test("writeBackup never overwrites a colliding backup name", () => {
-    const directory = freshDir()
-    const source = join(directory, "opencode.json")
-    writeFileSync(source, '{"plugin":["other@1.0.0"]}')
-    const preferred = join(directory, "opencode.json.bak-taken")
-    writeFileSync(preferred, "unrelated backup")
-    const actual = writeBackup(source, preferred)
-    expect(actual).not.toBe(preferred)
-    expect(readFileSync(actual, "utf8")).toBe('{"plugin":["other@1.0.0"]}')
-    expect(readFileSync(preferred, "utf8")).toBe("unrelated backup")
-  })
+    const directory = freshDir();
+    const source = join(directory, "opencode.json");
+    writeFileSync(source, '{"plugin":["other@1.0.0"]}');
+    const preferred = join(directory, "opencode.json.bak-taken");
+    writeFileSync(preferred, "unrelated backup");
+    const actual = writeBackup(source, preferred);
+    expect(actual).not.toBe(preferred);
+    expect(readFileSync(actual, "utf8")).toBe('{"plugin":["other@1.0.0"]}');
+    expect(readFileSync(preferred, "utf8")).toBe("unrelated backup");
+  });
 
   test("refuses symlinked configs and backups without touching their target", () => {
-    const directory = freshDir()
-    const target = join(directory, "target.json")
-    const linked = join(directory, "opencode.json")
-    const original = '{"plugin":["other@1.0.0"]}'
-    writeFileSync(target, original)
-    symlinkSync(target, linked)
-    expect(planFileChange(linked, pkg).action).toBe("error")
-    expect(() => writeEntry(linked, entry, false)).toThrow()
-    expect(() => writeBackup(linked, join(directory, "backup"))).toThrow()
-    expect(readFileSync(target, "utf8")).toBe(original)
-  })
+    const directory = freshDir();
+    const target = join(directory, "target.json");
+    const linked = join(directory, "opencode.json");
+    const original = '{"plugin":["other@1.0.0"]}';
+    writeFileSync(target, original);
+    symlinkSync(target, linked);
+    expect(planFileChange(linked, pkg).action).toBe("error");
+    expect(() => writeEntry(linked, entry, false)).toThrow();
+    expect(() => writeBackup(linked, join(directory, "backup"))).toThrow();
+    expect(readFileSync(target, "utf8")).toBe(original);
+  });
 
   test("planning distinguishes a dangling config link from a missing file", () => {
-    const directory = freshDir()
-    const linked = join(directory, "opencode.json")
-    symlinkSync(join(directory, "missing-target.json"), linked)
-    expect(planFileChange(linked, pkg).action).toBe("error")
-    expect(planFileChange(join(directory, "missing-config.json"), pkg).action).toBe("create")
-  })
-})
+    const directory = freshDir();
+    const linked = join(directory, "opencode.json");
+    symlinkSync(join(directory, "missing-target.json"), linked);
+    expect(planFileChange(linked, pkg).action).toBe("error");
+    expect(
+      planFileChange(join(directory, "missing-config.json"), pkg).action,
+    ).toBe("create");
+  });
+});
 
 // Import at the bottom to avoid circular issues in Bun's test runner.
-import { readdirSync } from "node:fs"
+import { readdirSync } from "node:fs";

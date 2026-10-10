@@ -9,6 +9,10 @@
 // extractPermissionRequest from ./opencode/event-normalizer.ts directly so it
 // never evaluates the server engine.
 
-export { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts"
-export type { ClientResponse, OpenCodeClientLike, RuntimeContext } from "./opencode/types.ts"
-export { extractPermissionRequest } from "./opencode/event-normalizer.ts"
+export { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
+export { extractPermissionRequest } from "./opencode/event-normalizer.ts";
+export type {
+  ClientResponse,
+  OpenCodeClientLike,
+  RuntimeContext,
+} from "./opencode/types.ts";

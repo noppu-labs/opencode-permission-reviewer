@@ -1,4 +1,8 @@
 #!/usr/bin/env bun
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync } from "node:fs";
+import { mkdir, open } from "node:fs/promises";
+import { dirname, join } from "node:path";
 /*
  * opencode-permission-reviewer CLI.
  *
@@ -12,71 +16,85 @@
  * Backward compatible: invoked with no subcommand (or with a flag first), it
  * runs `explain` against stdin/`--event`, matching the original behavior.
  */
-import { parseArgs } from "node:util"
-import { createHash } from "node:crypto"
-import { existsSync, readFileSync } from "node:fs"
-import { mkdir, open } from "node:fs/promises"
-import { dirname, join } from "node:path"
-import { resolveConfig } from "../config.ts"
-import { loadResolvedConfig, globalConfigPath, projectConfigPath } from "../config/loader.ts"
-import { parseCommand } from "../capability/command-parser.ts"
-import { analyzeCapability } from "../capability/bash-analyzer.ts"
+import { parseArgs } from "node:util";
+import { OpenCode } from "@opencode/client";
+import {
+  type AuditSummary,
+  expandHome,
+  readAuditSummary,
+  resolveAuditPath,
+} from "../audit.ts";
+import { analyzeCapability } from "../capability/bash-analyzer.ts";
+import { parseCommand } from "../capability/command-parser.ts";
+import {
+  globalConfigPath,
+  loadResolvedConfig,
+  projectConfigPath,
+} from "../config/loader.ts";
+import { resolveConfig } from "../config.ts";
+import { validateHostEndpoint } from "../opencode/v2/connection.ts";
+import { normalizeV2Permission } from "../opencode/v2/permission-codec.ts";
 import {
   evaluatePolicy,
   filterProjectAllowRules,
   hashEffectivePolicy,
-} from "../policy/policy-engine.ts"
-import { expandHome, resolveAuditPath, readAuditSummary, type AuditSummary } from "../audit.ts"
-import { runInit, probeOpencodeVersion } from "./init.ts"
-import { normalizeV2Permission } from "../opencode/v2/permission-codec.ts"
-import { validateHostEndpoint } from "../opencode/v2/connection.ts"
-import { ReviewerRpc } from "../ui/rpc.ts"
-import { OpenCode } from "@opencode/client"
-import type { PermissionRequest, PermissionToolSource, ReviewerConfig } from "../types.ts"
-import { includeEvidenceFile } from "../ssh-evidence.ts"
-import { renderVerifiedSshScriptCommand, VERIFIED_SCRIPT_LIMIT } from "../verified-ssh-script.ts"
-import { redactSecrets } from "../redact.ts"
+} from "../policy/policy-engine.ts";
+import { redactSecrets } from "../redact.ts";
+import { includeEvidenceFile } from "../ssh-evidence.ts";
+import type {
+  PermissionRequest,
+  PermissionToolSource,
+  ReviewerConfig,
+} from "../types.ts";
+import { ReviewerRpc } from "../ui/rpc.ts";
+import {
+  renderVerifiedSshScriptCommand,
+  VERIFIED_SCRIPT_LIMIT,
+} from "../verified-ssh-script.ts";
+import { probeOpencodeVersion, runInit } from "./init.ts";
 
 // Guarded so importing the module (e.g. via the "./cli" export or in tests)
 // never triggers the CLI or kills the importing process; only a direct
 // `bun run`/bin invocation runs the dispatcher.
 if (import.meta.main) {
-  const code = await runCli(process.argv.slice(2))
-  process.exit(code)
+  const code = await runCli(process.argv.slice(2));
+  process.exit(code);
 }
 
 // --- dispatcher --------------------------------------------------------------
 
 export async function runCli(argv: string[]): Promise<number> {
-  const first = argv[0]
-  const explicit = first !== undefined && !first.startsWith("-")
-  const command = explicit ? first! : "explain"
-  const rest = explicit ? argv.slice(1) : argv
+  const first = argv[0];
+  const explicit = first !== undefined && !first.startsWith("-");
+  const command = explicit ? first! : "explain";
+  const rest = explicit ? argv.slice(1) : argv;
   try {
     switch (command) {
       case "init":
-        return await runInit(rest)
+        return await runInit(rest);
       case "explain":
-        return await runExplain(rest)
+        return await runExplain(rest);
       case "doctor":
-        return await runDoctor(rest)
+        return await runDoctor(rest);
       case "config":
-        return await runConfig(rest)
+        return await runConfig(rest);
       case "audit":
-        return await runAudit(rest)
+        return await runAudit(rest);
       case "script":
-        return await runScript(rest)
+        return await runScript(rest);
       default:
-        console.error(`unknown command: ${command}\n${usage()}`)
-        return 2
+        console.error(`unknown command: ${command}\n${usage()}`);
+        return 2;
     }
   } catch (error) {
-    if ((error as NodeJS.ErrnoException)?.code === "ERR_PARSE_ARGS_INVALID_OPTION") {
-      console.error(String((error as Error).message ?? error))
-      return 2
+    if (
+      (error as NodeJS.ErrnoException)?.code === "ERR_PARSE_ARGS_INVALID_OPTION"
+    ) {
+      console.error(String((error as Error).message ?? error));
+      return 2;
     }
-    console.error(String((error as Error)?.message ?? error))
-    return 2
+    console.error(String((error as Error)?.message ?? error));
+    return 2;
   }
 }
 
@@ -87,7 +105,7 @@ function usage(): string {
   opencode-permission-reviewer doctor [--project <dir>] [--json]
   opencode-permission-reviewer config print-effective [--project <dir>]
   opencode-permission-reviewer audit report [--path <file>] [--project <dir>] [--json]
-  opencode-permission-reviewer script command --file <path> --host <host> [--port <port>] [--shell bash|sh]`
+  opencode-permission-reviewer script command --file <path> --host <host> [--port <port>] [--shell bash|sh]`;
 }
 
 async function runScript(argv: string[]): Promise<number> {
@@ -101,11 +119,11 @@ async function runScript(argv: string[]): Promise<number> {
     },
     strict: true,
     allowPositionals: true,
-  })
-  const file = values.file
-  const host = values.host
-  const shell = values.shell ?? "bash"
-  const port = values.port === undefined ? undefined : Number(values.port)
+  });
+  const file = values.file;
+  const host = values.host;
+  const shell = values.shell ?? "bash";
+  const port = values.port === undefined ? undefined : Number(values.port);
   if (
     positionals.length !== 1 ||
     positionals[0] !== "command" ||
@@ -115,21 +133,22 @@ async function runScript(argv: string[]): Promise<number> {
     !/^[A-Za-z0-9_.@-]+$/.test(host) ||
     host.startsWith("-") ||
     (shell !== "bash" && shell !== "sh") ||
-    (port !== undefined && (!Number.isInteger(port) || port < 1 || port > 65535))
+    (port !== undefined &&
+      (!Number.isInteger(port) || port < 1 || port > 65535))
   ) {
     console.error(
       "Usage: script command --file <simple-path> --host <host> [--port <port>] [--shell bash|sh]",
-    )
-    return 2
+    );
+    return 2;
   }
-  const directory = process.cwd()
+  const directory = process.cwd();
   const evidence = await includeEvidenceFile(
     file,
     directory,
     directory,
     directory,
     VERIFIED_SCRIPT_LIMIT,
-  )
+  );
   if (
     evidence.status !== "included" ||
     evidence.includedSha256 === undefined ||
@@ -138,8 +157,8 @@ async function runScript(argv: string[]): Promise<number> {
   ) {
     console.error(
       `Script cannot be fully inspected (${evidence.status}). Use a text file of at most 64 KiB inside the workspace or /tmp/opencode, without secrets.`,
-    )
-    return 1
+    );
+    return 1;
   }
   console.log(
     renderVerifiedSshScriptCommand({
@@ -149,8 +168,8 @@ async function runScript(argv: string[]): Promise<number> {
       sha256: evidence.includedSha256,
       shell,
     }),
-  )
-  return 0
+  );
+  return 0;
 }
 
 // --- explain -----------------------------------------------------------------
@@ -166,48 +185,52 @@ async function runExplain(argv: string[]): Promise<number> {
     },
     strict: true,
     allowPositionals: false,
-  })
+  });
   if (values.help) {
     console.error(`Usage: explain --event <fixture.json> [--project <dir>]
 Reads a permission request JSON, runs the capability analyzer and policy engine
-(observe mode), and prints the result as JSON.`)
-    return 0
+(observe mode), and prints the result as JSON.`);
+    return 0;
   }
 
-  let raw: string
+  let raw: string;
   if (values.event) {
-    raw = readFileSync(values.event, "utf8")
+    raw = readFileSync(values.event, "utf8");
   } else {
-    raw = await readStdin()
+    raw = await readStdin();
   }
 
-  let parsed: unknown
+  let parsed: unknown;
   try {
-    parsed = JSON.parse(raw)
+    parsed = JSON.parse(raw);
   } catch {
-    console.error("explain: input is not valid JSON")
-    return 2
+    console.error("explain: input is not valid JSON");
+    return 2;
   }
 
-  const normalized = normalizeRequest(parsed)
+  const normalized = normalizeRequest(parsed);
   if (normalized === undefined) {
-    console.error('explain: input must have "permission" and "metadata.command" or "patterns"')
-    return 2
+    console.error(
+      'explain: input must have "permission" and "metadata.command" or "patterns"',
+    );
+    return 2;
   }
-  const request = normalized.request
+  const request = normalized.request;
 
-  const directory = values.project ?? process.cwd()
+  const directory = values.project ?? process.cwd();
   const config = values.defaults
     ? resolveConfig(undefined)
-    : loadResolvedConfig(undefined, directory)
-  const worktree = directory
-  const nativeResources = normalized.nativeAction !== undefined
+    : loadResolvedConfig(undefined, directory);
+  const worktree = directory;
+  const nativeResources = normalized.nativeAction !== undefined;
   const command =
     typeof request.metadata?.command === "string"
       ? request.metadata.command
       : nativeResources
         ? ""
-        : (request.patterns ?? []).filter((p) => typeof p === "string").join("\n")
+        : (request.patterns ?? [])
+            .filter((p) => typeof p === "string")
+            .join("\n");
 
   const result: Record<string, unknown> = {
     permission: request.permission,
@@ -221,19 +244,29 @@ Reads a permission request JSON, runs the capability analyzer and policy engine
           nativeAction: normalized.nativeAction,
         }
       : {}),
-  }
+  };
   if (request.permission === "bash" && command.trim()) {
-    const parsedCmd = parseCommand(command)
-    const capability = analyzeCapability(parsedCmd, directory, worktree)
-    const policyTrace = evaluatePolicy(capability, undefined, config, config.policyRules)
-    result.capability = capability
-    result.policyTrace = policyTrace
+    const parsedCmd = parseCommand(command);
+    const capability = analyzeCapability(parsedCmd, directory, worktree);
+    const policyTrace = evaluatePolicy(
+      capability,
+      undefined,
+      config,
+      config.policyRules,
+    );
+    result.capability = capability;
+    result.policyTrace = policyTrace;
   } else {
-    result.capability = null
-    result.policyTrace = evaluatePolicy(undefined, undefined, config, config.policyRules)
+    result.capability = null;
+    result.policyTrace = evaluatePolicy(
+      undefined,
+      undefined,
+      config,
+      config.policyRules,
+    );
   }
-  console.log(JSON.stringify(result, null, 2))
-  return 0
+  console.log(JSON.stringify(result, null, 2));
+  return 0;
 }
 
 // --- doctor ------------------------------------------------------------------
@@ -250,35 +283,47 @@ async function runDoctor(argv: string[]): Promise<number> {
     },
     strict: true,
     allowPositionals: false,
-  })
+  });
   if (values.help) {
-    console.error("Usage: doctor [--project <dir>] [--json]")
-    return 0
+    console.error("Usage: doctor [--project <dir>] [--json]");
+    return 0;
   }
-  const directory = values.project ?? process.cwd()
-  const pkg = readPackageJson()
-  const config = loadResolvedConfig(undefined, directory)
-  const sources = inspectConfigSources(directory)
-  const effectiveHash = hashEffectivePolicy(filterProjectAllowRules(config.policyRules), config)
-  const auditPath = resolveAuditPath(config)
-  const auditWritable = await checkWritable(auditPath)
-  let connected: unknown
+  const directory = values.project ?? process.cwd();
+  const pkg = readPackageJson();
+  const config = loadResolvedConfig(undefined, directory);
+  const sources = inspectConfigSources(directory);
+  const effectiveHash = hashEffectivePolicy(
+    filterProjectAllowRules(config.policyRules),
+    config,
+  );
+  const auditPath = resolveAuditPath(config);
+  const auditWritable = await checkWritable(auditPath);
+  let connected: unknown;
   if (values.endpoint) {
-    const password = process.env.OPENCODE_PASSWORD ?? process.env.OPENCODE_SERVER_PASSWORD
-    if (!password) throw new Error("Connected doctor requires OPENCODE_PASSWORD")
+    const password =
+      process.env.OPENCODE_PASSWORD ?? process.env.OPENCODE_SERVER_PASSWORD;
+    if (!password)
+      throw new Error("Connected doctor requires OPENCODE_PASSWORD");
     const client = OpenCode.make({
       baseUrl: validateHostEndpoint(values.endpoint).href,
-      headers: { authorization: `Basic ${Buffer.from(`opencode:${password}`).toString("base64")}` },
-    })
+      headers: {
+        authorization: `Basic ${Buffer.from(`opencode:${password}`).toString("base64")}`,
+      },
+    });
     connected = await client
       .rpc(ReviewerRpc)
-      .status({}, { location: { directory }, signal: AbortSignal.timeout(5000) })
+      .status(
+        {},
+        { location: { directory }, signal: AbortSignal.timeout(5000) },
+      );
   }
 
   const report = {
     mode: values.endpoint ? "connected" : "local-only",
     host: {
-      binaryVersion: values.binary ? ((await probeOpencodeVersion(values.binary)) ?? null) : null,
+      binaryVersion: values.binary
+        ? ((await probeOpencodeVersion(values.binary)) ?? null)
+        : null,
       runtime: connected ?? null,
     },
     version: {
@@ -300,38 +345,40 @@ async function runDoctor(argv: string[]): Promise<number> {
       writable: auditWritable.ok,
       ...(auditWritable.error ? { error: auditWritable.error } : {}),
     },
-  }
+  };
 
   if (values.json) {
-    console.log(JSON.stringify(report, null, 2))
-    return 0
+    console.log(JSON.stringify(report, null, 2));
+    return 0;
   }
-  console.error(`opencode-permission-reviewer doctor ${pkg.version}`)
-  console.error(`diagnostic mode: ${report.mode}`)
-  console.error(`version`)
-  console.error(`  package:    ${report.version.package}`)
-  console.error(`  opencode:   ${report.version.opencodeRange} (engines.opencode)`)
-  console.error(`  runtime:    ${report.version.runtime}`)
-  console.error(`config`)
-  console.error(`  global:     ${fmtSource(sources.global)}`)
-  console.error(`  project:    ${fmtSource(sources.project)}`)
-  console.error(`  model:      ${report.config.model}`)
+  console.error(`opencode-permission-reviewer doctor ${pkg.version}`);
+  console.error(`diagnostic mode: ${report.mode}`);
+  console.error(`version`);
+  console.error(`  package:    ${report.version.package}`);
+  console.error(
+    `  opencode:   ${report.version.opencodeRange} (engines.opencode)`,
+  );
+  console.error(`  runtime:    ${report.version.runtime}`);
+  console.error(`config`);
+  console.error(`  global:     ${fmtSource(sources.global)}`);
+  console.error(`  project:    ${fmtSource(sources.project)}`);
+  console.error(`  model:      ${report.config.model}`);
   // The mode gates declarative rules only; the reviewer still auto-allows or denies.
   const modeNote =
     report.config.enforcementMode === "observe"
       ? "declarative rules audited only; reviewer auto-allow/deny remains active"
-      : "declarative rules enforced; reviewer decisions unchanged"
-  console.error(`  mode:       ${report.config.enforcementMode} (${modeNote})`)
-  console.error(`  trust:      ${report.config.repositoryTrust}`)
+      : "declarative rules enforced; reviewer decisions unchanged";
+  console.error(`  mode:       ${report.config.enforcementMode} (${modeNote})`);
+  console.error(`  trust:      ${report.config.repositoryTrust}`);
   console.error(
     `  rules:      ${report.config.policyRuleCount} (effectivePolicyHash: ${effectiveHash})`,
-  )
-  console.error(`audit`)
-  console.error(`  path:       ${auditPath}`)
+  );
+  console.error(`audit`);
+  console.error(`  path:       ${auditPath}`);
   console.error(
     `  writable:   ${auditWritable.ok ? "yes" : "no"}${auditWritable.error ? ` (${auditWritable.error})` : ""}`,
-  )
-  return 0
+  );
+  return 0;
 }
 
 // --- config print-effective --------------------------------------------------
@@ -339,17 +386,20 @@ async function runDoctor(argv: string[]): Promise<number> {
 async function runConfig(argv: string[]): Promise<number> {
   const { values, positionals } = parseArgs({
     args: argv,
-    options: { project: { type: "string" }, help: { type: "boolean", short: "h" } },
+    options: {
+      project: { type: "string" },
+      help: { type: "boolean", short: "h" },
+    },
     strict: true,
     allowPositionals: true,
-  })
+  });
   if (values.help || positionals[0] !== "print-effective") {
-    console.error("Usage: config print-effective [--project <dir>]")
-    return 2
+    console.error("Usage: config print-effective [--project <dir>]");
+    return 2;
   }
-  const directory = values.project ?? process.cwd()
-  const config = loadResolvedConfig(undefined, directory)
-  const sources = inspectConfigSources(directory)
+  const directory = values.project ?? process.cwd();
+  const config = loadResolvedConfig(undefined, directory);
+  const sources = inspectConfigSources(directory);
   const report = {
     command: "print-effective",
     directory,
@@ -357,11 +407,14 @@ async function runConfig(argv: string[]): Promise<number> {
     config: redactConfig(config),
     policy: {
       ruleCount: config.policyRules.length,
-      effectivePolicyHash: hashEffectivePolicy(filterProjectAllowRules(config.policyRules), config),
+      effectivePolicyHash: hashEffectivePolicy(
+        filterProjectAllowRules(config.policyRules),
+        config,
+      ),
     },
-  }
-  console.log(JSON.stringify(report, null, 2))
-  return 0
+  };
+  console.log(JSON.stringify(report, null, 2));
+  return 0;
 }
 
 // --- audit report ------------------------------------------------------------
@@ -377,56 +430,67 @@ async function runAudit(argv: string[]): Promise<number> {
     },
     strict: true,
     allowPositionals: true,
-  })
+  });
   if (values.help || positionals[0] !== "report") {
-    console.error("Usage: audit report [--path <file>] [--project <dir>] [--json]")
-    return 2
+    console.error(
+      "Usage: audit report [--path <file>] [--project <dir>] [--json]",
+    );
+    return 2;
   }
-  const directory = values.project ?? process.cwd()
-  const config = loadResolvedConfig(undefined, directory)
-  const auditPath = values.path ? expandHome(values.path) : resolveAuditPath(config)
-  const summary = readAuditSummary(auditPath)
+  const directory = values.project ?? process.cwd();
+  const config = loadResolvedConfig(undefined, directory);
+  const auditPath = values.path
+    ? expandHome(values.path)
+    : resolveAuditPath(config);
+  const summary = readAuditSummary(auditPath);
   if (!summary.exists) {
-    console.error(`audit report: ${auditPath}: no such file`)
-    return 1
+    console.error(`audit report: ${auditPath}: no such file`);
+    return 1;
   }
   if (values.json) {
-    console.log(JSON.stringify(summary, null, 2))
-    return 0
+    console.log(JSON.stringify(summary, null, 2));
+    return 0;
   }
-  printAuditHuman(summary)
-  return 0
+  printAuditHuman(summary);
+  return 0;
 }
 
 function printAuditHuman(s: AuditSummary): void {
-  console.log(`audit report: ${s.path}`)
+  console.log(`audit report: ${s.path}`);
   if (s.truncated) {
-    console.log("  NOTE: only the most recent 64 MiB were summarized; counts and")
-    console.log("  timestamps describe that tail, not the whole file.")
+    console.log(
+      "  NOTE: only the most recent 64 MiB were summarized; counts and",
+    );
+    console.log("  timestamps describe that tail, not the whole file.");
   }
-  console.log(`  valid records:     ${s.validRecords} (invalid lines: ${s.invalidLines})`)
-  console.log(`  schema versions:   ${fmtCounts(s.bySchemaVersion)}`)
-  console.log(`  host generations:  ${fmtCounts(s.byHostGeneration)}`)
-  console.log(`  application states:${fmtCounts(s.byApplication)}`)
+  console.log(
+    `  valid records:     ${s.validRecords} (invalid lines: ${s.invalidLines})`,
+  );
+  console.log(`  schema versions:   ${fmtCounts(s.bySchemaVersion)}`);
+  console.log(`  host generations:  ${fmtCounts(s.byHostGeneration)}`);
+  console.log(`  application states:${fmtCounts(s.byApplication)}`);
   if (s.firstTimestamp || s.lastTimestamp) {
-    console.log(`  time range:        ${s.firstTimestamp ?? "?"} → ${s.lastTimestamp ?? "?"}`)
+    console.log(
+      `  time range:        ${s.firstTimestamp ?? "?"} → ${s.lastTimestamp ?? "?"}`,
+    );
   }
-  console.log(`  by outcome:        ${fmtCounts(s.byOutcome)}`)
-  console.log(`  by risk level:     ${fmtCounts(s.byRiskLevel)}`)
+  console.log(`  by outcome:        ${fmtCounts(s.byOutcome)}`);
+  console.log(`  by risk level:     ${fmtCounts(s.byRiskLevel)}`);
   if (Object.keys(s.byDecisionSource).length > 0) {
-    console.log(`  by decision source:${fmtCounts(s.byDecisionSource)}`)
+    console.log(`  by decision source:${fmtCounts(s.byDecisionSource)}`);
   }
   if (Object.keys(s.byPermission).length > 0) {
-    console.log(`  by permission:     ${fmtCounts(s.byPermission)}`)
+    console.log(`  by permission:     ${fmtCounts(s.byPermission)}`);
   }
   if (s.unknownActorNames.length > 0) {
-    console.log(`  unknown actors:    ${s.unknownActorNames.length}`)
-    for (const a of s.unknownActorNames.slice(0, 10)) console.log(`    ${a.name} (${a.count})`)
+    console.log(`  unknown actors:    ${s.unknownActorNames.length}`);
+    for (const a of s.unknownActorNames.slice(0, 10))
+      console.log(`    ${a.name} (${a.count})`);
   }
   if (s.missingRequiredFields.length > 0) {
-    console.log(`  missing required fields: ${s.missingRequiredFields.length}`)
+    console.log(`  missing required fields: ${s.missingRequiredFields.length}`);
     for (const m of s.missingRequiredFields.slice(0, 10)) {
-      console.log(`    line ${m.lineNo}: missing ${m.missing.join(", ")}`)
+      console.log(`    line ${m.lineNo}: missing ${m.missing.join(", ")}`);
     }
   }
 }
@@ -437,98 +501,111 @@ function printAuditHuman(s: AuditSummary): void {
  *  lives at <root>/src/cli (source) or <root>/dist (bundle), so the package
  *  root is a different number of levels up in each layout; searching upward
  *  works for both. */
-function readPackageJson(): { version: string; engines: { opencode?: string; bun?: string } } {
-  let dir = import.meta.dirname
+function readPackageJson(): {
+  version: string;
+  engines: { opencode?: string; bun?: string };
+} {
+  let dir = import.meta.dirname;
   for (let depth = 0; depth < 8; depth++) {
-    const candidate = join(dir, "package.json")
+    const candidate = join(dir, "package.json");
     if (existsSync(candidate)) {
       const raw = JSON.parse(readFileSync(candidate, "utf8")) as {
-        version: string
-        engines?: { opencode?: string; bun?: string }
-      }
-      return { version: raw.version, engines: raw.engines ?? {} }
+        version: string;
+        engines?: { opencode?: string; bun?: string };
+      };
+      return { version: raw.version, engines: raw.engines ?? {} };
     }
-    const parent = dirname(dir)
-    if (parent === dir) break
-    dir = parent
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
   }
-  throw new Error("could not locate package.json")
+  throw new Error("could not locate package.json");
 }
 
 interface SourceInfo {
-  path: string
-  exists: boolean
-  sha256: string | null
+  path: string;
+  exists: boolean;
+  sha256: string | null;
 }
 
-function inspectConfigSources(directory: string): { global: SourceInfo; project: SourceInfo } {
+function inspectConfigSources(directory: string): {
+  global: SourceInfo;
+  project: SourceInfo;
+} {
   return {
     global: inspectFile(globalConfigPath()),
     project: inspectFile(projectConfigPath(directory)),
-  }
+  };
 }
 
 function inspectFile(path: string): SourceInfo {
   try {
-    const content = readFileSync(path, "utf8")
-    return { path, exists: true, sha256: sha256hex(content).slice(0, 16) }
+    const content = readFileSync(path, "utf8");
+    return { path, exists: true, sha256: sha256hex(content).slice(0, 16) };
   } catch {
-    return { path, exists: false, sha256: null }
+    return { path, exists: false, sha256: null };
   }
 }
 
 function fmtSource(s: SourceInfo): string {
-  return `${s.path}  exists=${s.exists ? "yes" : "no"}  sha256=${s.sha256 ?? "-"}`
+  return `${s.path}  exists=${s.exists ? "yes" : "no"}  sha256=${s.sha256 ?? "-"}`;
 }
 
 function fmtCounts(map: Record<string, number>): string {
-  const entries = Object.entries(map)
-  if (entries.length === 0) return "(none)"
+  const entries = Object.entries(map);
+  if (entries.length === 0) return "(none)";
   return entries
     .sort((a, b) => b[1] - a[1])
     .map(([k, v]) => `${k} ${v}`)
-    .join(" | ")
+    .join(" | ");
 }
 
-async function checkWritable(path: string): Promise<{ ok: boolean; error?: string }> {
+async function checkWritable(
+  path: string,
+): Promise<{ ok: boolean; error?: string }> {
   try {
-    await mkdir(dirname(path), { recursive: true })
+    await mkdir(dirname(path), { recursive: true });
     // Match the writer's 0600 mode so a doctor probe never leaves a
     // world-readable audit trail behind.
-    const fh = await open(path, "a", 0o600)
-    await fh.close()
-    return { ok: true }
+    const fh = await open(path, "a", 0o600);
+    await fh.close();
+    return { ok: true };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : String(error) }
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error),
+    };
   }
 }
 
 function sha256hex(value: string): string {
-  return createHash("sha256").update(value).digest("hex")
+  return createHash("sha256").update(value).digest("hex");
 }
 
 /** Defensive redaction: no ReviewerConfig field is sensitive today, but this
  *  guards against future additions (tokens, keys) leaking via print-effective. */
 function redactConfig(config: ReviewerConfig): ReviewerConfig {
-  return config
+  return config;
 }
 
 function readStdin(): Promise<string> {
   return new Promise((resolve) => {
-    let data = ""
-    process.stdin.setEncoding("utf8")
-    process.stdin.on("data", (chunk) => (data += chunk))
-    process.stdin.on("end", () => resolve(data))
-  })
+    let data = "";
+    process.stdin.setEncoding("utf8");
+    process.stdin.on("data", (chunk) => (data += chunk));
+    process.stdin.on("end", () => resolve(data));
+  });
 }
 
-function normalizeRequest(
-  value: unknown,
-):
-  | { request: PermissionRequest; nativeAction?: string; actionEvidenceComplete?: boolean }
+function normalizeRequest(value: unknown):
+  | {
+      request: PermissionRequest;
+      nativeAction?: string;
+      actionEvidenceComplete?: boolean;
+    }
   | undefined {
-  if (typeof value !== "object" || value === null) return
-  const v = value as Record<string, unknown>
+  if (typeof value !== "object" || value === null) return;
+  const v = value as Record<string, unknown>;
   if (
     typeof v.action === "string" &&
     Array.isArray(v.resources) &&
@@ -536,7 +613,8 @@ function normalizeRequest(
   ) {
     return normalizeV2Permission(
       {
-        sessionID: typeof v.sessionID === "string" ? v.sessionID : "explain-session",
+        sessionID:
+          typeof v.sessionID === "string" ? v.sessionID : "explain-session",
         action: v.action,
         resources: v.resources,
         effect: "ask",
@@ -546,14 +624,20 @@ function normalizeRequest(
             ? (v.metadata as Record<string, unknown>)
             : {},
       },
-      { reviewID: "explain-dry-run", generation: "explain", directory: "", hostVersion: "2.0.3" },
+      {
+        reviewID: "explain-dry-run",
+        generation: "explain",
+        directory: "",
+        hostVersion: "2.0.3",
+      },
       v.input,
-    )
+    );
   }
-  if (typeof v.permission !== "string") return
+  if (typeof v.permission !== "string") return;
   const req: PermissionRequest = {
     id: typeof v.id === "string" ? v.id : "explain-dry-run",
-    sessionID: typeof v.sessionID === "string" ? v.sessionID : "explain-session",
+    sessionID:
+      typeof v.sessionID === "string" ? v.sessionID : "explain-session",
     permission: v.permission,
     patterns: Array.isArray(v.patterns) ? v.patterns : [],
     always: Array.isArray(v.always) ? v.always : [],
@@ -561,13 +645,13 @@ function normalizeRequest(
       typeof v.metadata === "object" && v.metadata !== null
         ? (v.metadata as Record<string, unknown>)
         : {},
-  }
+  };
   if (
     typeof v.tool === "object" &&
     v.tool !== null &&
     typeof (v.tool as Record<string, unknown>).messageID === "string"
   ) {
-    req.tool = v.tool as PermissionToolSource
+    req.tool = v.tool as PermissionToolSource;
   }
-  return { request: req }
+  return { request: req };
 }

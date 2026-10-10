@@ -1,7 +1,11 @@
 {
   "session": { "location": "/workspace/fixture", "parent": null },
   "context": [
-    { "type": "user", "text": "Read-only contract fixture.", "matchesAdmission": true },
+    {
+      "type": "user",
+      "text": "Read-only contract fixture.",
+      "matchesAdmission": true
+    },
     { "type": "assistant" },
     { "type": "idle" }
   ],

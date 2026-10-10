@@ -4,35 +4,50 @@
  * The host binary resolves from the pinned V1 host path printed by the
  * compatibility installer, with fallback to `opencode` on PATH;
  * authentication uses REVIEWER_LIVE_PASSWORD. */
-import { strict as assert } from "node:assert"
-import { createHash } from "node:crypto"
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
-import { createOpencodeClient } from "@opencode-ai/sdk"
-import { ApprovalReviewerRuntime, resolveConfig, loadResolvedConfig } from "../dist/index.js"
-import { probeCapabilities } from "../src/opencode/capability-detection.ts"
-import { decision, request } from "./helpers.ts"
-import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-script.ts"
-import type { OpenCodeClientLike } from "../src/opencode/types.ts"
+import { strict as assert } from "node:assert";
+import { createHash } from "node:crypto";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createOpencodeClient } from "@opencode-ai/sdk";
+import {
+  ApprovalReviewerRuntime,
+  loadResolvedConfig,
+  resolveConfig,
+} from "../dist/index.js";
+import { probeCapabilities } from "../src/opencode/capability-detection.ts";
+import type { OpenCodeClientLike } from "../src/opencode/types.ts";
+import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-script.ts";
+import { decision, request } from "./helpers.ts";
 
-const root = await mkdtemp(join(tmpdir(), "reviewer-host-regression-"))
+const root = await mkdtemp(join(tmpdir(), "reviewer-host-regression-"));
 // Unique directory for the host output so concurrent runs never share a path.
-const logDirectory = await mkdtemp(join(tmpdir(), "reviewer-host-regression-log-"))
-const captured: Array<{ tools?: Array<{ function: { name: string } }>; messages: unknown }> = []
+const logDirectory = await mkdtemp(
+  join(tmpdir(), "reviewer-host-regression-log-"),
+);
+const captured: Array<{
+  tools?: Array<{ function: { name: string } }>;
+  messages: unknown;
+}> = [];
 const provider = Bun.serve({
   hostname: "127.0.0.1",
   port: 0,
   async fetch(req) {
-    const body = (await req.json()) as (typeof captured)[number] & { stream?: boolean }
-    captured.push(body)
-    const tool = body.tools?.find((tool) => tool.function.name === "StructuredOutput")
-    const scriptAnalysis = JSON.stringify(body.messages).includes("status: full content")
+    const body = (await req.json()) as (typeof captured)[number] & {
+      stream?: boolean;
+    };
+    captured.push(body);
+    const tool = body.tools?.find(
+      (tool) => tool.function.name === "StructuredOutput",
+    );
+    const scriptAnalysis = JSON.stringify(body.messages).includes(
+      "status: full content",
+    )
       ? {
           script_analysis:
             "Runs a fixed synthetic diagnostic without deleting data or reading credentials.",
         }
-      : {}
+      : {};
     const delta = tool
       ? {
           tool_calls: [
@@ -47,29 +62,29 @@ const provider = Bun.serve({
             },
           ],
         }
-      : { content: JSON.stringify(decision("allow", scriptAnalysis)) }
+      : { content: JSON.stringify(decision("allow", scriptAnalysis)) };
     const chunk = (delta: unknown, finish_reason: string | null) => ({
       id: "completion_synthetic",
       object: "chat.completion.chunk",
       created: 1,
       model: "reviewer",
       choices: [{ index: 0, delta, finish_reason }],
-    })
+    });
     return new Response(
-      [chunk(delta, null), chunk({}, tool ? "tool_calls" : "stop")]
+      `${[chunk(delta, null), chunk({}, tool ? "tool_calls" : "stop")]
         .map((chunk) => `data: ${JSON.stringify(chunk)}\n\n`)
-        .join("") + "data: [DONE]\n\n",
+        .join("")}data: [DONE]\n\n`,
       { headers: { "content-type": "text/event-stream" } },
-    )
+    );
   },
-})
-const configHome = join(root, "config")
-await mkdir(join(configHome, "opencode"), { recursive: true })
-const project = join(root, "project")
-await mkdir(project)
+});
+const configHome = join(root, "config");
+await mkdir(join(configHome, "opencode"), { recursive: true });
+const project = join(root, "project");
+await mkdir(project);
 // A real stdio MCP tool, outside the host's built-in tool registry.
-const mcpPath = join(root, "mcp.ts")
-const mcpStartsPath = join(root, "mcp-starts.txt")
+const mcpPath = join(root, "mcp.ts");
+const mcpStartsPath = join(root, "mcp-starts.txt");
 await writeFile(
   mcpPath,
   `import { createInterface } from "node:readline";
@@ -80,7 +95,7 @@ for await (const line of createInterface({ input: process.stdin })) {
   const result = r.method === "initialize" ? {protocolVersion:"2024-11-05",capabilities:{tools:{}},serverInfo:{name:"synthetic",version:"1"}} : r.method === "tools/list" ? {tools:[{name:"demo",description:"Synthetic operational tool",inputSchema:{type:"object",properties:{}}}]} : {};
   console.log(JSON.stringify({jsonrpc:"2.0",id:r.id,result}));
 }`,
-)
+);
 await writeFile(
   join(configHome, "opencode", "opencode.json"),
   JSON.stringify({
@@ -88,30 +103,47 @@ await writeFile(
       synthetic: {
         npm: "@ai-sdk/openai-compatible",
         name: "Synthetic provider",
-        options: { baseURL: `http://127.0.0.1:${provider.port}/v1`, apiKey: "synthetic" },
-        models: { reviewer: { name: "reviewer", limit: { context: 100000, output: 4096 } } },
+        options: {
+          baseURL: `http://127.0.0.1:${provider.port}/v1`,
+          apiKey: "synthetic",
+        },
+        models: {
+          reviewer: {
+            name: "reviewer",
+            limit: { context: 100000, output: 4096 },
+          },
+        },
       },
     },
     model: "synthetic/reviewer",
     small_model: "synthetic/reviewer",
     permission: "allow",
-    mcp: { synthetic: { type: "local", command: ["bun", mcpPath], enabled: true } },
+    mcp: {
+      synthetic: { type: "local", command: ["bun", mcpPath], enabled: true },
+    },
   }),
-)
-const portReservation = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: () => new Response() })
-const port = portReservation.port
-portReservation.stop(true)
+);
+const portReservation = Bun.serve({
+  hostname: "127.0.0.1",
+  port: 0,
+  fetch: () => new Response(),
+});
+const port = portReservation.port;
+portReservation.stop(true);
 // Resolve the host the same way the compatibility matrix does: a pinned
 // opencode-ai binary, falling back to PATH. The
 // desktop runtime on PATH serves only the web SPA and cannot run this file.
-const hostBinary = process.env.OPENCODE_V1_1_18_32 ?? "opencode"
+const hostBinary = process.env.OPENCODE_V1_1_18_32 ?? "opencode";
 // The pinned host honors a known server password; the client sends it back as
 // Basic auth on every request, including the readiness poll below.
-const hostPassword = process.env.REVIEWER_LIVE_PASSWORD ?? "synthetic-local-host-password"
+const hostPassword =
+  process.env.REVIEWER_LIVE_PASSWORD ?? "synthetic-local-host-password";
 const hostHeaders: Record<string, string> =
   hostPassword === ""
     ? {}
-    : { Authorization: `Basic ${Buffer.from(`opencode:${hostPassword}`).toString("base64")}` }
+    : {
+        Authorization: `Basic ${Buffer.from(`opencode:${hostPassword}`).toString("base64")}`,
+      };
 const hostEnv: Record<string, string | undefined> = {
   ...process.env,
   // Isolate HOME like the compatibility harness does: the host resolves
@@ -124,48 +156,57 @@ const hostEnv: Record<string, string | undefined> = {
   OPENCODE_CONFIG: join(configHome, "opencode", "opencode.json"),
   OPENCODE_CONFIG_CONTENT: "{}",
   OPENCODE_SERVER_PASSWORD: hostPassword,
-}
+};
 // A desktop shell may export a profile config dir for the V2 runtime; the
 // pinned host would load that user config instead of the isolated one, so
 // drop the variable and let XDG isolation apply.
-delete hostEnv.OPENCODE_CONFIG_DIR
-const host = Bun.spawn([hostBinary, "serve", "--hostname", "127.0.0.1", "--port", String(port)], {
-  cwd: project,
-  env: hostEnv,
-  stdout: "pipe",
-  stderr: "pipe",
-})
-const stdout = new Response(host.stdout).text()
-const stderr = new Response(host.stderr).text()
+delete hostEnv.OPENCODE_CONFIG_DIR;
+const host = Bun.spawn(
+  [hostBinary, "serve", "--hostname", "127.0.0.1", "--port", String(port)],
+  {
+    cwd: project,
+    env: hostEnv,
+    stdout: "pipe",
+    stderr: "pipe",
+  },
+);
+const stdout = new Response(host.stdout).text();
+const stderr = new Response(host.stderr).text();
 try {
-  const baseUrl = `http://127.0.0.1:${port}`
-  let ready = false
+  const baseUrl = `http://127.0.0.1:${port}`;
+  let ready = false;
   for (let attempt = 0; attempt < 200; attempt++) {
     ready = await fetch(`${baseUrl}/global/health`, {
       headers: hostHeaders,
       signal: AbortSignal.timeout(1000),
     })
       .then((r) => r.ok)
-      .catch(() => false)
-    if (ready) break
-    await Bun.sleep(100)
+      .catch(() => false);
+    if (ready) break;
+    await Bun.sleep(100);
   }
-  assert(ready, "fresh host did not start")
+  assert(ready, "fresh host did not start");
   const sdk = createOpencodeClient({
     baseUrl,
     headers: hostHeaders,
     fetch: (req) => fetch(req, { signal: AbortSignal.timeout(45000) }),
-  })
+  });
   const session = await sdk.session.create({
     query: { directory: project },
     body: { title: "Synthetic requester" },
-  })
-  assert(session.data?.id)
-  const operationalMcp = (await fetch(`${baseUrl}/mcp?directory=${encodeURIComponent(project)}`, {
-    headers: hostHeaders,
-  }).then((r) => r.json())) as Record<string, { status: string }>
-  assert.equal(operationalMcp.synthetic?.status, "connected")
-  assert.equal((await Bun.file(mcpStartsPath).text()).trim().split("\n").length, 1)
+  });
+  assert(session.data?.id);
+  const operationalMcp = (await fetch(
+    `${baseUrl}/mcp?directory=${encodeURIComponent(project)}`,
+    {
+      headers: hostHeaders,
+    },
+  ).then((r) => r.json())) as Record<string, { status: string }>;
+  assert.equal(operationalMcp.synthetic?.status, "connected");
+  assert.equal(
+    (await Bun.file(mcpStartsPath).text()).trim().split("\n").length,
+    1,
+  );
   const client: OpenCodeClientLike = {
     session: {
       create: sdk.session.create.bind(sdk.session),
@@ -176,9 +217,13 @@ try {
     },
     tool: { ids: sdk.tool.ids.bind(sdk.tool) },
     mcp: { status: sdk.mcp.status.bind(sdk.mcp) },
-  } as OpenCodeClientLike
-  const replies: unknown[] = []
-  const config = resolveConfig({ model: "synthetic/reviewer", timeoutMs: 30000, audit: false })
+  } as OpenCodeClientLike;
+  const replies: unknown[] = [];
+  const config = resolveConfig({
+    model: "synthetic/reviewer",
+    timeoutMs: 30000,
+    audit: false,
+  });
   const ctx = {
     client,
     directory: project,
@@ -186,96 +231,131 @@ try {
     reviewerDirectoryBase: join(root, "isolated"),
     capabilities: probeCapabilities(client),
     permissionReply: async (reply: unknown) => {
-      replies.push(reply)
-      return { data: true }
+      replies.push(reply);
+      return { data: true };
     },
-  }
-  const run = async (overrides = {}, context = ctx, command = "printf safe") => {
-    replies.length = 0
-    return new ApprovalReviewerRuntime(context, { ...config, ...overrides }, undefined, []).process(
-      request({ sessionID: session.data!.id, metadata: { command }, patterns: [command] }),
-    )
-  }
-  const result = await run()
-  assert.equal(result.kind, "allow", JSON.stringify(result))
-  assert.equal(replies.length, 1)
-  const scriptPath = join(project, "verified.sh")
-  const scriptContent = "echo synthetic-diagnostic\n".repeat(1100)
-  await writeFile(scriptPath, scriptContent)
+  };
+  const run = async (
+    overrides = {},
+    context = ctx,
+    command = "printf safe",
+  ) => {
+    replies.length = 0;
+    return new ApprovalReviewerRuntime(
+      context,
+      { ...config, ...overrides },
+      undefined,
+      [],
+    ).process(
+      request({
+        sessionID: session.data!.id,
+        metadata: { command },
+        patterns: [command],
+      }),
+    );
+  };
+  const result = await run();
+  assert.equal(result.kind, "allow", JSON.stringify(result));
+  assert.equal(replies.length, 1);
+  const scriptPath = join(project, "verified.sh");
+  const scriptContent = "echo synthetic-diagnostic\n".repeat(1100);
+  await writeFile(scriptPath, scriptContent);
   const scriptCommand = renderVerifiedSshScriptCommand({
     path: scriptPath,
     destination: "synthetic.invalid",
     sha256: createHash("sha256").update(scriptContent).digest("hex"),
     shell: "bash",
-  })
-  const scriptRuntime = new ApprovalReviewerRuntime(ctx, config, undefined, [])
+  });
+  const scriptRuntime = new ApprovalReviewerRuntime(ctx, config, undefined, []);
   const scriptRequest = request({
     id: "per_verified_first",
     sessionID: session.data!.id,
     patterns: [scriptCommand],
     metadata: { command: scriptCommand },
-  })
-  assert.equal((await scriptRuntime.process(scriptRequest)).kind, "allow")
-  const fullPrompt = JSON.stringify(captured.at(-1)?.messages)
-  const escapedScript = JSON.stringify(scriptContent).slice(1, -1)
-  assert(fullPrompt.includes(escapedScript))
+  });
+  assert.equal((await scriptRuntime.process(scriptRequest)).kind, "allow");
+  const fullPrompt = JSON.stringify(captured.at(-1)?.messages);
+  const escapedScript = JSON.stringify(scriptContent).slice(1, -1);
+  assert(fullPrompt.includes(escapedScript));
   assert.equal(
-    (await scriptRuntime.process({ ...scriptRequest, id: "per_verified_second" })).kind,
+    (
+      await scriptRuntime.process({
+        ...scriptRequest,
+        id: "per_verified_second",
+      })
+    ).kind,
     "allow",
-  )
-  const compactPrompt = JSON.stringify(captured.at(-1)?.messages)
-  assert(compactPrompt.includes("Prior model-generated script analysis"))
-  assert(!compactPrompt.includes(escapedScript))
+  );
+  const compactPrompt = JSON.stringify(captured.at(-1)?.messages);
+  assert(compactPrompt.includes("Prior model-generated script analysis"));
+  assert(!compactPrompt.includes(escapedScript));
   const reviewRequests = captured.filter((r) =>
     JSON.stringify(r.messages).includes("PENDING_PERMISSION"),
-  )
-  assert(reviewRequests.length > 0)
+  );
+  assert(reviewRequests.length > 0);
   for (const r of reviewRequests)
     assert.deepEqual(
       r.tools?.map((t) => t.function.name),
       ["StructuredOutput"],
-    )
+    );
   const mcp = (await fetch(
     `${baseUrl}/mcp?directory=${encodeURIComponent(ctx.reviewerDirectoryBase)}`,
     { headers: hostHeaders },
-  ).then((r) => r.json())) as Record<string, { status: string }>
+  ).then((r) => r.json())) as Record<string, { status: string }>;
   assert.equal(
     mcp.synthetic,
     undefined,
     "the reviewer isolation location must exclude configured MCP servers",
-  )
-  assert.equal(Object.keys(mcp).length, 0)
+  );
+  assert.equal(Object.keys(mcp).length, 0);
 
-  const textResult = await run({ outputFormat: "text" })
-  assert.equal(textResult.kind, "allow")
-  assert.equal(captured.at(-1)?.tools?.length ?? 0, 0)
-  const beforeFailure = captured.length
+  const textResult = await run({ outputFormat: "text" });
+  assert.equal(textResult.kind, "allow");
+  assert.equal(captured.at(-1)?.tools?.length ?? 0, 0);
+  const beforeFailure = captured.length;
   const refused = {
     ...client,
-    session: { ...client.session, create: async () => ({ error: "isolated directory refused" }) },
-  } as OpenCodeClientLike
-  assert.equal((await run({}, { ...ctx, client: refused })).kind, "escalate")
-  assert.equal(replies.length, 0)
-  await writeFile(join(root, "file"), "not a directory")
+    session: {
+      ...client.session,
+      create: async () => ({ error: "isolated directory refused" }),
+    },
+  } as OpenCodeClientLike;
+  assert.equal((await run({}, { ...ctx, client: refused })).kind, "escalate");
+  assert.equal(replies.length, 0);
+  await writeFile(join(root, "file"), "not a directory");
   assert.equal(
-    (await run({}, { ...ctx, reviewerDirectoryBase: join(root, "file", "child") })).kind,
+    (
+      await run(
+        {},
+        { ...ctx, reviewerDirectoryBase: join(root, "file", "child") },
+      )
+    ).kind,
     "escalate",
-  )
-  assert.equal(replies.length, 0)
-  assert.equal(captured.length, beforeFailure)
-  assert.equal((await run({}, ctx, `printf '${"x".repeat(18000)}'`)).kind, "escalate")
-  assert.equal(replies.length, 0)
-  const configInvalid = loadResolvedConfig({ policyRules: { effect: "deny" } })
-  assert.equal((await run({ configDegraded: configInvalid.configDegraded })).kind, "escalate")
-  assert.equal(replies.length, 0)
+  );
+  assert.equal(replies.length, 0);
+  assert.equal(captured.length, beforeFailure);
+  assert.equal(
+    (await run({}, ctx, `printf '${"x".repeat(18000)}'`)).kind,
+    "escalate",
+  );
+  assert.equal(replies.length, 0);
+  const configInvalid = loadResolvedConfig({ policyRules: { effect: "deny" } });
+  assert.equal(
+    (await run({ configDegraded: configInvalid.configDegraded })).kind,
+    "escalate",
+  );
+  assert.equal(replies.length, 0);
   const largeMessages = [1, 2, 3].map((id) => ({
     info: { id: `user_${id}`, role: "user" },
     parts: [{ type: "text", text: "a".repeat(7900) }],
-  }))
+  }));
   const withMessages = {
     ...client,
-    session: { ...client.session, messages: async () => ({ data: largeMessages }) },
-  }
+    session: {
+      ...client.session,
+      messages: async () => ({ data: largeMessages }),
+    },
+  };
   assert.equal(
     (
       await run(
@@ -289,8 +369,8 @@ try {
       )
     ).kind,
     "allow",
-  )
-  assert(JSON.stringify(captured.at(-1)?.messages).includes("printf safe"))
+  );
+  assert(JSON.stringify(captured.at(-1)?.messages).includes("printf safe"));
   for (const origin of ["delegated", "unknown"]) {
     const child = {
       ...withMessages,
@@ -301,18 +381,23 @@ try {
             ? { error: "metadata unavailable" }
             : { data: { id: session.data!.id, parentID: "ses_missing" } },
       },
-    }
-    await run({ maxParentSessions: 0 }, { ...ctx, client: child })
-    const messages = JSON.stringify(captured.at(-1)?.messages)
-    assert(!messages.includes('\\"actor\\": \\"user\\"'))
-    assert(messages.includes(origin))
+    };
+    await run({ maxParentSessions: 0 }, { ...ctx, client: child });
+    const messages = JSON.stringify(captured.at(-1)?.messages);
+    assert(!messages.includes('\\"actor\\": \\"user\\"'));
+    assert(messages.includes(origin));
   }
-  const starts = (await Bun.file(mcpStartsPath).text()).trim().split("\n").length
-  assert.equal(starts, 1, "Reviews must not start additional MCP processes")
-  const operationalAfter = (await fetch(`${baseUrl}/mcp?directory=${encodeURIComponent(project)}`, {
-    headers: hostHeaders,
-  }).then((r) => r.json())) as Record<string, { status: string }>
-  assert.equal(operationalAfter.synthetic?.status, "connected")
+  const starts = (await Bun.file(mcpStartsPath).text())
+    .trim()
+    .split("\n").length;
+  assert.equal(starts, 1, "Reviews must not start additional MCP processes");
+  const operationalAfter = (await fetch(
+    `${baseUrl}/mcp?directory=${encodeURIComponent(project)}`,
+    {
+      headers: hostHeaders,
+    },
+  ).then((r) => r.json())) as Record<string, { status: string }>;
+  assert.equal(operationalAfter.synthetic?.status, "connected");
   console.log(
     JSON.stringify({
       ok: true,
@@ -325,16 +410,16 @@ try {
       incompleteActionBlocked: true,
       verifiedScriptReusedWithoutRepeatingContent: true,
     }),
-  )
+  );
 } finally {
-  host.kill()
-  await host.exited
-  const logs = (await stdout) + (await stderr)
+  host.kill();
+  await host.exited;
+  const logs = (await stdout) + (await stderr);
   // Keep the host output for debugging; the path goes to stderr so the
   // success JSON on stdout stays machine-readable.
-  const logPath = join(logDirectory, "host.log")
-  await writeFile(logPath, logs)
-  console.error("host regression logs:", logPath)
-  provider.stop(true)
-  await rm(root, { recursive: true, force: true })
+  const logPath = join(logDirectory, "host.log");
+  await writeFile(logPath, logs);
+  console.error("host regression logs:", logPath);
+  provider.stop(true);
+  await rm(root, { recursive: true, force: true });
 }

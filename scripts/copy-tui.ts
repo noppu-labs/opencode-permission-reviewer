@@ -11,11 +11,11 @@
  * Only the TUI graph is copied, including the shared config loader but not
  * the server engine.
  */
-import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs"
-import { dirname, join, resolve } from "node:path"
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 
-const root = join(import.meta.dir, "..")
-const out = join(root, "dist", "tui")
+const root = join(import.meta.dir, "..");
+const out = join(root, "dist", "tui");
 
 const files = [
   ["src/tui.tsx", "tui.tsx"],
@@ -29,30 +29,32 @@ const files = [
   ["src/ui-state.ts", "ui-state.ts"],
   ["src/types.ts", "types.ts"],
   ["src/opencode/event-normalizer.ts", "opencode/event-normalizer.ts"],
-] as const
+] as const;
 
-rmSync(out, { recursive: true, force: true })
+rmSync(out, { recursive: true, force: true });
 
 for (const [from, to] of files) {
-  const dest = join(out, to)
-  mkdirSync(dirname(dest), { recursive: true })
-  cpSync(join(root, from), dest)
+  const dest = join(out, to);
+  mkdirSync(dirname(dest), { recursive: true });
+  cpSync(join(root, from), dest);
 }
 
 // Fail the build when the curated graph omits a runtime dependency. The host
 // compiles these sources at runtime, so a missing file would otherwise escape
 // the build and surface only when OpenCode starts. Bun's scanner deliberately
 // excludes type-only imports, which do not need a shipped runtime module.
-const ts = new Bun.Transpiler({ loader: "ts" })
-const tsx = new Bun.Transpiler({ loader: "tsx" })
+const ts = new Bun.Transpiler({ loader: "ts" });
+const tsx = new Bun.Transpiler({ loader: "tsx" });
 for (const [, to] of files) {
-  const source = readFileSync(join(out, to), "utf8")
-  const imports = (to.endsWith(".tsx") ? tsx : ts).scan(source).imports
+  const source = readFileSync(join(out, to), "utf8");
+  const imports = (to.endsWith(".tsx") ? tsx : ts).scan(source).imports;
   for (const imported of imports) {
-    if (!imported.path.startsWith(".")) continue
-    const dependency = resolve(dirname(join(out, to)), imported.path)
+    if (!imported.path.startsWith(".")) continue;
+    const dependency = resolve(dirname(join(out, to)), imported.path);
     if (!existsSync(dependency)) {
-      throw new Error(`Missing TUI dependency ${imported.path} imported by ${to}`)
+      throw new Error(
+        `Missing TUI dependency ${imported.path} imported by ${to}`,
+      );
     }
   }
 }

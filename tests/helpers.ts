@@ -1,15 +1,15 @@
-import { DEFAULT_CONFIG } from "../src/config.ts"
-import type { OpenCodeClientLike, RuntimeContext } from "../src/runtime.ts"
-import { ApprovalReviewerRuntime } from "../src/runtime.ts"
-import { probeCapabilities } from "../src/opencode/capability-detection.ts"
+import { DEFAULT_CONFIG } from "../src/config.ts";
+import { probeCapabilities } from "../src/opencode/capability-detection.ts";
+import type { OpenCodeClientLike, RuntimeContext } from "../src/runtime.ts";
+import { ApprovalReviewerRuntime } from "../src/runtime.ts";
 import type {
   PermissionRequest,
   ReviewAuditRecord,
   ReviewDecision,
   ReviewerConfig,
   SystemOneScores,
-} from "../src/types.ts"
-import type { ReviewUiStatus } from "../src/ui-protocol.ts"
+} from "../src/types.ts";
+import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 
 export function decision(
   outcome: ReviewDecision["outcome"],
@@ -28,7 +28,7 @@ export function decision(
     scope_alignment: "aligned",
     evidence_completeness: "sufficient",
     ...overrides,
-  }
+  };
 }
 
 /** Synthetic Jev scores shaped like a parsed escalation handed to a reasoning reviewer. */
@@ -60,10 +60,12 @@ export function systemOneScores(): SystemOneScores {
     },
     contradictions: [],
     reasoningRecommended: true,
-  }
+  };
 }
 
-export function request(overrides: Partial<PermissionRequest> = {}): PermissionRequest {
+export function request(
+  overrides: Partial<PermissionRequest> = {},
+): PermissionRequest {
   return {
     id: "per_1",
     sessionID: "ses_main",
@@ -73,24 +75,28 @@ export function request(overrides: Partial<PermissionRequest> = {}): PermissionR
     always: ["printf *"],
     tool: { messageID: "msg_1", callID: "call_1" },
     ...overrides,
-  }
+  };
 }
 
 export class MockClient implements OpenCodeClientLike {
-  readonly creates: unknown[] = []
-  readonly messageQueries: unknown[] = []
-  readonly prompts: unknown[] = []
-  readonly deletes: unknown[] = []
-  readonly toolQueries: unknown[] = []
-  readonly replies: unknown[] = []
-  readonly uiStatuses: ReviewUiStatus[] = []
-  nextStructured: unknown = decision("allow")
+  readonly creates: unknown[] = [];
+  readonly messageQueries: unknown[] = [];
+  readonly prompts: unknown[] = [];
+  readonly deletes: unknown[] = [];
+  readonly toolQueries: unknown[] = [];
+  readonly replies: unknown[] = [];
+  readonly uiStatuses: ReviewUiStatus[] = [];
+  nextStructured: unknown = decision("allow");
   /** When set, `session.prompt` returns text parts instead of `info.structured`. */
-  nextText: string | undefined
+  nextText: string | undefined;
   /** Per-call text responses for `session.prompt`; shifted in order, overrides `nextText`. */
-  nextTexts: string[] = []
-  promptImpl?: (options: unknown) => Promise<{ data?: Record<string, unknown>; error?: unknown }>
-  messagesImpl?: (options: unknown) => Promise<{ data?: unknown; error?: unknown }>
+  nextTexts: string[] = [];
+  promptImpl?: (
+    options: unknown,
+  ) => Promise<{ data?: Record<string, unknown>; error?: unknown }>;
+  messagesImpl?: (
+    options: unknown,
+  ) => Promise<{ data?: unknown; error?: unknown }>;
   messageData: unknown = [
     {
       info: { id: "msg_user", role: "user" },
@@ -107,54 +113,55 @@ export class MockClient implements OpenCodeClientLike {
         },
       ],
     },
-  ]
-  createError?: unknown
-  messagesError?: unknown
-  promptError?: unknown
-  replyError?: unknown
-  publishStatusError?: unknown
-  toolIdsError?: unknown
+  ];
+  createError?: unknown;
+  messagesError?: unknown;
+  promptError?: unknown;
+  replyError?: unknown;
+  publishStatusError?: unknown;
+  toolIdsError?: unknown;
   /** Host MCP inventory the isolated-location guard reads. Empty means the
    *  location is MCP-free; tests set an entry to exercise the fail-closed path. */
-  mcpServers: Record<string, unknown> = {}
-  mcpError?: unknown
+  mcpServers: Record<string, unknown> = {};
+  mcpError?: unknown;
   mcpStatusImpl?: (options: unknown) => Promise<{
-    data?: Record<string, unknown>
-    error?: unknown
-  }>
-  readonly mcpStatuses: unknown[] = []
-  private sessionCounter = 0
+    data?: Record<string, unknown>;
+    error?: unknown;
+  }>;
+  readonly mcpStatuses: unknown[] = [];
+  private sessionCounter = 0;
 
-  session: OpenCodeClientLike["session"]
-  tool: OpenCodeClientLike["tool"]
-  mcp: NonNullable<OpenCodeClientLike["mcp"]>
+  session: OpenCodeClientLike["session"];
+  tool: OpenCodeClientLike["tool"];
+  mcp: NonNullable<OpenCodeClientLike["mcp"]>;
 
   constructor() {
     this.session = {
       create: async (options: unknown) => {
-        this.creates.push(options)
-        if (this.createError !== undefined) return { error: this.createError }
-        this.sessionCounter += 1
-        return { data: { id: `ses_review_${this.sessionCounter}` } }
+        this.creates.push(options);
+        if (this.createError !== undefined) return { error: this.createError };
+        this.sessionCounter += 1;
+        return { data: { id: `ses_review_${this.sessionCounter}` } };
       },
       messages: async (options: unknown) => {
-        this.messageQueries.push(options)
-        if (this.messagesImpl) return this.messagesImpl(options)
-        if (this.messagesError !== undefined) return { error: this.messagesError }
-        return { data: this.messageData }
+        this.messageQueries.push(options);
+        if (this.messagesImpl) return this.messagesImpl(options);
+        if (this.messagesError !== undefined)
+          return { error: this.messagesError };
+        return { data: this.messageData };
       },
       prompt: async (options: unknown) => {
-        this.prompts.push(options)
-        if (this.promptImpl) return this.promptImpl(options)
-        if (this.promptError !== undefined) return { error: this.promptError }
+        this.prompts.push(options);
+        if (this.promptImpl) return this.promptImpl(options);
+        if (this.promptError !== undefined) return { error: this.promptError };
         if (this.nextTexts.length > 0) {
-          const text = this.nextTexts.shift()!
+          const text = this.nextTexts.shift()!;
           return {
             data: {
               info: { id: "msg_review", role: "assistant" },
               parts: [{ type: "text", text }],
             },
-          }
+          };
         }
         if (this.nextText !== undefined) {
           return {
@@ -162,47 +169,51 @@ export class MockClient implements OpenCodeClientLike {
               info: { id: "msg_review", role: "assistant" },
               parts: [{ type: "text", text: this.nextText }],
             },
-          }
+          };
         }
-        return { data: { info: { structured: this.nextStructured } } }
+        return { data: { info: { structured: this.nextStructured } } };
       },
       delete: async (options: unknown) => {
-        this.deletes.push(options)
-        return { data: true }
+        this.deletes.push(options);
+        return { data: true };
       },
-    }
+    };
     this.tool = {
       ids: async (options?: unknown) => {
-        this.toolQueries.push(options)
-        if (this.toolIdsError !== undefined) return { error: this.toolIdsError }
-        return { data: ["bash", "read", "write", "webfetch", "task"] }
+        this.toolQueries.push(options);
+        if (this.toolIdsError !== undefined)
+          return { error: this.toolIdsError };
+        return { data: ["bash", "read", "write", "webfetch", "task"] };
       },
-    }
+    };
     this.mcp = {
       status: async (options?: unknown) => {
-        this.mcpStatuses.push(options)
-        if (this.mcpStatusImpl) return this.mcpStatusImpl(options)
-        if (this.mcpError !== undefined) return { error: this.mcpError }
-        return { data: this.mcpServers }
+        this.mcpStatuses.push(options);
+        if (this.mcpStatusImpl) return this.mcpStatusImpl(options);
+        if (this.mcpError !== undefined) return { error: this.mcpError };
+        return { data: this.mcpServers };
       },
-    }
+    };
   }
 
   permissionReply = async (options: unknown) => {
-    this.replies.push(options)
-    if (this.replyError !== undefined) return { error: this.replyError }
-    return { data: true }
-  }
+    this.replies.push(options);
+    if (this.replyError !== undefined) return { error: this.replyError };
+    return { data: true };
+  };
 
   publishUiStatus = async (status: ReviewUiStatus) => {
-    this.uiStatuses.push(status)
-    if (this.publishStatusError !== undefined) return { error: this.publishStatusError }
-    return { data: true }
-  }
+    this.uiStatuses.push(status);
+    if (this.publishStatusError !== undefined)
+      return { error: this.publishStatusError };
+    return { data: true };
+  };
 }
 
-export function config(overrides: Partial<ReviewerConfig> = {}): ReviewerConfig {
-  return { ...DEFAULT_CONFIG, ...overrides }
+export function config(
+  overrides: Partial<ReviewerConfig> = {},
+): ReviewerConfig {
+  return { ...DEFAULT_CONFIG, ...overrides };
 }
 
 export function runtime(
@@ -212,27 +223,35 @@ export function runtime(
   contextOverrides: Partial<
     Pick<RuntimeContext, "directory" | "worktree" | "reviewerDirectoryBase">
   > = {},
-): { runtime: ApprovalReviewerRuntime; client: MockClient; ctx: RuntimeContext } {
-  const auditRecords: ReviewAuditRecord[] = []
+): {
+  runtime: ApprovalReviewerRuntime;
+  client: MockClient;
+  ctx: RuntimeContext;
+} {
+  const auditRecords: ReviewAuditRecord[] = [];
   const ctx: RuntimeContext = {
     client,
     capabilities: probeCapabilities(client),
     permissionReply: client.permissionReply,
     publishUiStatus: client.publishUiStatus,
     writeAudit: async (record) => {
-      auditRecords.push(record)
+      auditRecords.push(record);
     },
     directory: contextOverrides.directory ?? "/workspace/project",
-    worktree: contextOverrides.worktree ?? contextOverrides.directory ?? "/workspace/project",
+    worktree:
+      contextOverrides.worktree ??
+      contextOverrides.directory ??
+      "/workspace/project",
     // Reviewer sessions must not be created in the developer's real HOME
     // during tests: point isolation at a scratch directory under the OS temp
     // root (created lazily by the coordinator).
     reviewerDirectoryBase:
-      contextOverrides.reviewerDirectoryBase ?? `${import.meta.dir}/.tmp-reviewer-isolated`,
-  }
+      contextOverrides.reviewerDirectoryBase ??
+      `${import.meta.dir}/.tmp-reviewer-isolated`,
+  };
   return {
     runtime: new ApprovalReviewerRuntime(ctx, config(configOverrides), logger),
     client,
     ctx: Object.assign(ctx, { auditRecords }),
-  }
+  };
 }

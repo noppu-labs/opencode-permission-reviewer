@@ -1,4 +1,4 @@
-import { ensureSolidTransformPlugin } from "@opentui/solid/bun-plugin"
+import { ensureSolidTransformPlugin } from "@opentui/solid/bun-plugin";
 
 /**
  * Single entry point for loading the TUI overlay in tests, mirroring how the
@@ -20,8 +20,10 @@ import { ensureSolidTransformPlugin } from "@opentui/solid/bun-plugin"
  * importing src/tui.tsx or @opentui/solid directly, so no static import graph
  * can cache the wrong builds before the plugin is up.
  */
-ensureSolidTransformPlugin()
+ensureSolidTransformPlugin();
 
-export const { tui } = await import("../src/tui.tsx")
-export const { resolveReviewTheme, setupTuiV2 } = await import("../src/ui/v2.tsx")
-export const { testRender } = await import("@opentui/solid")
+export const { tui } = await import("../src/tui.tsx");
+export const { resolveReviewTheme, setupTuiV2 } = await import(
+  "../src/ui/v2.tsx"
+);
+export const { testRender } = await import("@opentui/solid");

@@ -1,5 +1,5 @@
-import { basename } from "node:path"
-import { effectiveCommands } from "../shell-lexer.ts"
+import { basename } from "node:path";
+import { effectiveCommands } from "../shell-lexer.ts";
 
 /** Resolve an executable tail only when its local filesystem scope is preserved. */
 export function localExecutableCommand(
@@ -12,22 +12,25 @@ export function localExecutableCommand(
     raw: value,
     value,
     spans: [{ text: value, quoted: true }],
-  }))
-  const commands = effectiveCommands({ tokens: normalized })
-  if (commands.length !== 1) return
-  const command = commands[0]!.map((token) => token.value)
-  const offset = normalized.length - command.length
+  }));
+  const commands = effectiveCommands({ tokens: normalized });
+  if (commands.length !== 1) return;
+  const command = commands[0]!.map((token) => token.value);
+  const offset = normalized.length - command.length;
   // A command-string expansion does not establish the inner cwd. Requiring
   // the original tail also prevents command arguments from becoming executables.
-  if (offset < 0 || command.some((value, index) => normalized[offset + index]?.value !== value))
-    return
-  const prefix = normalized.slice(0, offset).map((token) => token.value)
-  if (prefix.some((token) => ["--help", "--version"].includes(token))) return
+  if (
+    offset < 0 ||
+    command.some((value, index) => normalized[offset + index]?.value !== value)
+  )
+    return;
+  const prefix = normalized.slice(0, offset).map((token) => token.value);
+  if (prefix.some((token) => ["--help", "--version"].includes(token))) return;
   if (
     prefix.some((token) => basename(token) === "command") &&
     prefix.some((token) => /^-[vV]+$/.test(token))
   )
-    return
+    return;
   if (
     prefix.some((token) =>
       [
@@ -52,7 +55,7 @@ export function localExecutableCommand(
       ].includes(basename(token)),
     )
   )
-    return
+    return;
   if (
     prefix.some(
       (token) =>
@@ -60,6 +63,6 @@ export function localExecutableCommand(
         /^--(?:chdir|chroot|working-directory)(?:=|$)/.test(token),
     )
   )
-    return
-  return { tokens: command, prefix }
+    return;
+  return { tokens: command, prefix };
 }

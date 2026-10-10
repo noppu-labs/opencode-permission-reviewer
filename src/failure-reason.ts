@@ -6,80 +6,81 @@
 // word, so every failure-safe catch formats the phase, the error name, the
 // optional reason code, and the cause chain into a single bounded string.
 
-const MAX_FAILURE_REASON_LENGTH = 500
-const MAX_CAUSE_DEPTH = 2
+const MAX_FAILURE_REASON_LENGTH = 500;
+const MAX_CAUSE_DEPTH = 2;
 
 function safeName(error: Error): string {
   try {
-    const name = error.name
-    if (typeof name === "string" && name.trim().length > 0) return name.trim()
+    const name = error.name;
+    if (typeof name === "string" && name.trim().length > 0) return name.trim();
   } catch {
     // Fall through to the default below.
   }
-  return "Error"
+  return "Error";
 }
 
 function safeMessage(error: Error): string {
   try {
-    const message = error.message
-    if (typeof message === "string" && message.length > 0) return message
+    const message = error.message;
+    if (typeof message === "string" && message.length > 0) return message;
   } catch {
     // Fall through to the fallback below.
   }
   try {
-    const text = String(error)
-    if (text.length > 0) return text
+    const text = String(error);
+    if (text.length > 0) return text;
   } catch {
     // Fall through to the default below.
   }
-  return "unknown error"
+  return "unknown error";
 }
 
 function safeReasonSuffix(error: Error): string {
   try {
-    const record = error as unknown as Record<string, unknown>
-    const reason = record.reason
+    const record = error as unknown as Record<string, unknown>;
+    const reason = record.reason;
     if (typeof reason === "string") {
-      const text = reason.trim()
-      if (text.length > 0) return `, reason=${text}`
-      return ""
+      const text = reason.trim();
+      if (text.length > 0) return `, reason=${text}`;
+      return "";
     }
     if (typeof reason === "number" || typeof reason === "boolean") {
-      return `, reason=${String(reason)}`
+      return `, reason=${String(reason)}`;
     }
   } catch {
     // A throwing accessor must not break reason formatting.
   }
-  return ""
+  return "";
 }
 
 function safeCauseMessage(cause: unknown): string | undefined {
   try {
     if (cause instanceof Error) {
-      const message = safeMessage(cause)
-      return message.length > 0 ? message : safeName(cause)
+      const message = safeMessage(cause);
+      return message.length > 0 ? message : safeName(cause);
     }
-    if (typeof cause === "string") return cause.length > 0 ? cause : undefined
-    if (cause === null || cause === undefined) return undefined
-    const text = String(cause)
-    return text.length > 0 ? text : undefined
+    if (typeof cause === "string") return cause.length > 0 ? cause : undefined;
+    if (cause === null || cause === undefined) return undefined;
+    const text = String(cause);
+    return text.length > 0 ? text : undefined;
   } catch {
-    return undefined
+    return undefined;
   }
 }
 
 function safePhase(phase: string): string {
   try {
-    if (typeof phase === "string" && phase.trim().length > 0) return phase.trim()
+    if (typeof phase === "string" && phase.trim().length > 0)
+      return phase.trim();
   } catch {
     // Fall through to the default below.
   }
-  return "review"
+  return "review";
 }
 
 function truncate(reason: string): string {
-  if (reason.length <= MAX_FAILURE_REASON_LENGTH) return reason
-  return `${reason.slice(0, MAX_FAILURE_REASON_LENGTH - 3)}...`
+  if (reason.length <= MAX_FAILURE_REASON_LENGTH) return reason;
+  return `${reason.slice(0, MAX_FAILURE_REASON_LENGTH - 3)}...`;
 }
 
 /**
@@ -88,43 +89,43 @@ function truncate(reason: string): string {
  */
 export function formatFailureReason(phase: string, error: unknown): string {
   try {
-    const label = safePhase(phase)
+    const label = safePhase(phase);
     if (!(error instanceof Error)) {
-      let text = "unknown error"
+      let text = "unknown error";
       try {
-        const raw = String(error)
-        if (raw.length > 0) text = raw
+        const raw = String(error);
+        if (raw.length > 0) text = raw;
       } catch {
         // Keep the default text.
       }
-      return truncate(`${label} failed (UnknownError): ${text}`)
+      return truncate(`${label} failed (UnknownError): ${text}`);
     }
-    const name = safeName(error)
-    const message = safeMessage(error)
-    const suffix = safeReasonSuffix(error)
-    const causes: string[] = []
+    const name = safeName(error);
+    const message = safeMessage(error);
+    const suffix = safeReasonSuffix(error);
+    const causes: string[] = [];
     try {
-      let current: unknown = error
+      let current: unknown = error;
       for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth++) {
-        if (typeof current !== "object" || current === null) break
-        let next: unknown
+        if (typeof current !== "object" || current === null) break;
+        let next: unknown;
         try {
-          next = (current as { cause?: unknown }).cause
+          next = (current as { cause?: unknown }).cause;
         } catch {
-          break
+          break;
         }
-        if (next === null || next === undefined) break
-        const text = safeCauseMessage(next)
-        if (text !== undefined && text.length > 0) causes.push(text)
-        current = next
+        if (next === null || next === undefined) break;
+        const text = safeCauseMessage(next);
+        if (text !== undefined && text.length > 0) causes.push(text);
+        current = next;
       }
     } catch {
       // Partial cause chains are still useful.
     }
-    const base = `${label} failed (${name}${suffix}): ${message}`
-    if (causes.length === 0) return truncate(base)
-    return truncate(`${base}; caused by: ${causes.join("; caused by: ")}`)
+    const base = `${label} failed (${name}${suffix}): ${message}`;
+    if (causes.length === 0) return truncate(base);
+    return truncate(`${base}; caused by: ${causes.join("; caused by: ")}`);
   } catch {
-    return "review failed: unknown error"
+    return "review failed: unknown error";
   }
 }

@@ -1,5 +1,9 @@
-import { enrichGitEvidence } from "../git-evidence.ts"
-import type { EvidenceFragment, EvidenceProvider, EvidenceProviderInput } from "./provider.ts"
+import { enrichGitEvidence } from "../git-evidence.ts";
+import type {
+  EvidenceFragment,
+  EvidenceProvider,
+  EvidenceProviderInput,
+} from "./provider.ts";
 
 /**
  * Wraps {@link enrichGitEvidence} behind the {@link EvidenceProvider} surface.
@@ -10,14 +14,14 @@ import type { EvidenceFragment, EvidenceProvider, EvidenceProviderInput } from "
  * inspecting an unrelated repository.
  */
 export class GitEvidenceProvider implements EvidenceProvider {
-  readonly id = "git"
+  readonly id = "git";
   async collect(input: EvidenceProviderInput): Promise<EvidenceFragment> {
     const result = await enrichGitEvidence(
       input.request,
       input.directory,
       input.maxChars,
       input.worktree,
-    )
-    return { kind: "git", text: result.text }
+    );
+    return { kind: "git", text: result.text };
   }
 }
