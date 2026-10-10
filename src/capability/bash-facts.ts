@@ -4,8 +4,6 @@ import type { Provenanced } from "../actor-context-types.ts";
 import { type ShellToken, shellBasename } from "../shell-lexer.ts";
 import { INTERPRETERS } from "./bash-command-tables.ts";
 
-// --- helpers ----------------------------------------------------------------
-
 /** Command substitution (`$(...)` or backticks) makes analysis opaque. */
 export function hasCommandSubstitution(command: string): boolean {
   return /\$\(|`/.test(command);
@@ -35,7 +33,6 @@ export function heuristicFact(
   };
 }
 
-/** Inspect a command for an inline-code flag (`-c`, `--command`, `-e`). */
 export function hasInlineCodeOption(tokens: ShellToken[]): {
   interpreter: string;
   inline: boolean;

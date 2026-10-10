@@ -1,7 +1,5 @@
 // Executable, subcommand and wrapper tables the bash capability analyzer classifies commands against.
 
-// --- executable families ----------------------------------------------------
-
 export const INTERPRETERS = new Set([
   "sh",
   "bash",
@@ -203,9 +201,10 @@ export const MUTATION_VALUE_OPTIONS: Record<string, Set<string>> = {
 };
 
 /** Executables with no observable side effects on the local filesystem when
- *  invoked with plain arguments. An executable NOT in this set (and in none of
- *  the effect families above) is classified "unknown", not read-only: the
- *  analyzer's inability to detect effects is not evidence that none exist. */
+ *  invoked with plain arguments. An executable NOT in this set (and in no
+ *  effect family the analyzer checks) is classified "unknown", not read-only:
+ *  the analyzer's inability to detect effects is not evidence that none
+ *  exist. */
 export const READ_ONLY_TOOLS = new Set([
   "cat",
   "less",
