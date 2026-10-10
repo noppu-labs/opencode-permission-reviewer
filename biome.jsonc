@@ -81,7 +81,7 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 7 files.
+    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 6 files.
     {
       "includes": [
         "src/evidence-file-reader.ts",
@@ -89,8 +89,7 @@
         "src/package-script-evidence.ts",
         "src/ssh-command-segments.ts",
         "src/ssh-evidence.ts",
-        "src/verified-ssh-script.ts",
-        "src/working-directory-segments.ts"
+        "src/verified-ssh-script.ts"
       ],
       "linter": {
         "rules": {
