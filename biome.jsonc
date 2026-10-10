@@ -81,7 +81,7 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 15 files.
+    // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 14 files.
     {
       "includes": [
         "src/capability/bash-analyzer.ts",
@@ -95,7 +95,6 @@
         "src/git-remote-targets.ts",
         "src/local-script-evidence.ts",
         "src/package-script-evidence.ts",
-        "src/shell-effective-commands.ts",
         "src/ssh-command-segments.ts",
         "src/ssh-evidence.ts",
         "src/verified-ssh-script.ts"

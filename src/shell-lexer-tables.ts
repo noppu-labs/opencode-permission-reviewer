@@ -165,8 +165,8 @@ export const VALUE_OPTIONS: Record<string, Set<string>> = {
     "--process-slot-var",
   ]),
   // timeout value options; the DURATION operand itself is skipped by dedicated
-  // handling in `walk()` (shell-effective-commands.ts), not by the generic
-  // loop.
+  // handling in `timeoutCommandIndex()` (shell-wrapper-options.ts), not by the
+  // generic loop.
   timeout: new Set(["-k", "-s", "--kill-after", "--signal"]),
   exec: new Set(["-a"]),
 };

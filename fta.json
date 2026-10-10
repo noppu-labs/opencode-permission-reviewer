@@ -17,7 +17,6 @@
     "git-remote-targets.ts",
     "local-script-evidence.ts",
     "package-script-evidence.ts",
-    "shell-effective-commands.ts",
     "ssh-command-segments.ts",
     "ssh-evidence.ts",
     "verified-ssh-script.ts",
