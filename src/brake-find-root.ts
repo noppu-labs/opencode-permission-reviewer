@@ -22,10 +22,8 @@ export function isRootFind(command: readonly ShellToken[]): boolean {
   );
 }
 
-/** The search root is the first non-flag operand; everything after it
- *  belongs to the expression. Flags that take a value (e.g. `-maxdepth`)
- *  are not modelled here, so `find -maxdepth 1 / …` is a false negative
- *  (rare and safe) — we never falsely trip. */
+/** The index of the search root: the first operand after the leading options
+ *  (`-D` takes a value). Everything after it is the expression. */
 function searchRootIndex(command: readonly ShellToken[]): number | undefined {
   for (let index = 1; index < command.length; index += 1) {
     const value = elementAt(command, index, "command").value;
@@ -44,8 +42,8 @@ function expressionDeletes(expression: readonly ShellToken[]): boolean {
   );
 }
 
-/** First non-placeholder word after -exec is the executable; if it is `rm`
- *  with recursive+force flags, find destroys its matches. */
+/** The first non-placeholder word after `-exec` is the executable; an `rm`
+ *  there is judged by the same flag rule as a top-level `rm`. */
 function execRunsDestructiveRm(words: readonly ShellToken[]): boolean {
   const start = words.findIndex(
     (word) => word.value !== "{" && word.value !== "}",

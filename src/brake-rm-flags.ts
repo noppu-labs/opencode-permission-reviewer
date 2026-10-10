@@ -17,8 +17,6 @@ export function hasRmFlags(command: readonly ShellToken[]): RmFlags {
   return flags;
 }
 
-/** Other long options (`--no-preserve-root`, `--one-file-system`, …) set
- *  nothing, though their spelling holds an `r` or an `f`. */
 function applyRmLongOption(flags: RmFlags, option: string): void {
   if (option === "--recursive") flags.recursive = true;
   else if (option === "--force") flags.force = true;

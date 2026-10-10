@@ -12,7 +12,6 @@ interface DeviceCommand {
   base: string;
   command: readonly ShellToken[];
   args: readonly ShellToken[];
-  /** Some argument is a real block device. */
   targetsBlock: boolean;
 }
 
@@ -22,7 +21,6 @@ const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/;
 
 const SGDISK_ZAP_OPTIONS = new Set(["--zap-all", "-Z", "--zap", "-z"]);
 
-/** One check per executable; base names never overlap. */
 const DEVICE_TOOL_CHECKS = new Map<string, DeviceCheck>([
   // tee copies its stdin into every file operand: a real block device
   // operand is a raw overwrite, as unmistakable as shred.
@@ -83,16 +81,15 @@ function copiesOntoBlockDevice(tool: DeviceCommand): boolean {
   return copyOverwritesBlockDevice(tool.command, tool.base);
 }
 
-/** mkfs / mkfs.* / mke2fs / mkswap: any real block target is destruction,
- *  unless a dry-run flag is present (`-n` for mke2fs/mkfs.ext4, `-V`/`-t`
- *  alone do not write but are rare; `-n` is the canonical dry-run). */
+/** mkfs / mkfs.* / mke2fs / mkswap with a real block-device target, unless a
+ *  dry-run flag is given. */
 function formatsBlockDevice(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
   return !tool.args.some((t) => t.value === "-n" || t.value === "--dry-run");
 }
 
-/** wipefs: only --all/-a (alone or clustered like `-af`)/-t wipes
- *  signatures; bare wipefs just lists signatures. */
+/** wipefs with a real block-device target and a signature-erasing option; a
+ *  bare wipefs only lists signatures. */
 function wipefsWipesSignatures(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
   return tool.args.some(
@@ -112,9 +109,8 @@ function ddWritesBlockDevice(tool: DeviceCommand): boolean {
   );
 }
 
-/** sgdisk: destructive ops are --zap-all/-Z (wipe everything), -z/--zap
- *  (destroy GPT data structures), and --delete[=N]/-d _N (delete a
- *  partition). -d requires a following partition-number argument. */
+/** sgdisk with a real block-device target and a zap or partition-delete
+ *  option. */
 function sgdiskDestroysPartitions(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
   const destructive = tool.args.some(
