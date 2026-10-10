@@ -1,7 +1,6 @@
 import { invariant } from "../invariant.ts";
 import { shellBasename } from "../shell-lexer.ts";
 import { SHELL_KEYWORDS } from "../shell-lexer-tables.ts";
-import type { CapabilityActionClass } from "../types.ts";
 import {
   CREDENTIAL_READERS,
   DELETION_TOOLS,
@@ -22,14 +21,8 @@ import {
   SSH_TOOLS,
   TEST_RUNNERS,
 } from "./bash-command-tables.ts";
+import { hasInlineCodeOption } from "./bash-facts.ts";
 import {
-  hasCommandSubstitution,
-  hasInlineCodeOption,
-  heuristicFact,
-  staticFact,
-} from "./bash-facts.ts";
-import {
-  classifyPath,
   destinationFromTokens,
   gitSubcommandMutates,
   gitSubcommandOf,
@@ -40,6 +33,13 @@ import {
   readOnlyToolMutation,
   redirectionWritesPath,
 } from "./bash-mutation.ts";
+import {
+  claimClass,
+  claimUnsetClass,
+  newCapabilityFacts,
+  recordWrite,
+} from "./capability-facts.ts";
+import { assessmentFrom } from "./capability-report.ts";
 import type {
   CapabilityAssessment,
   ParsedCommand,
@@ -68,31 +68,8 @@ export function analyzeCapability(
   directory: string,
   worktree: string,
 ): CapabilityAssessment {
-  const warnings: string[] = [];
-  let executesCode = false;
-  let executesRepositoryCode = false;
-  let createsAdHocCode = false;
-  let invokesTestRunner = false;
-  let invokesPackageLifecycle = false;
-  let temporaryWrite = false;
-  let workspaceWrite = false;
-  let externalWrite = false;
-  let deletion = false;
-  let networkObserved = false;
-  let networkPossible = false;
-  let childProcesses = false;
-  let persistence = false;
-  let privilegeEscalation = false;
-  let remoteEnabled = false;
-  let remoteMutation = false;
-  let gitObserved = false;
-  let gitMutation = false;
-  let credentialRead = false;
-  let sawReadOnlyExecutable = false;
-  let sawUnknownExecutable = false;
-  const destinations: string[] = [];
-  let dominantClass: CapabilityActionClass = "unknown";
-  let classConfidence: "high" | "medium" | "low" = "low";
+  const facts = newCapabilityFacts();
+  const roots = { directory, worktree };
 
   const heredocOutputs = new Set(
     parsed.heredocs.map((h) => h.outputTarget).filter(Boolean) as string[],
@@ -119,16 +96,16 @@ export function analyzeCapability(
     if (headToken !== undefined) {
       const head = shellBasename(headToken.value);
       if (PRIVILEGE_WRAPPERS.has(head)) {
-        privilegeEscalation = true;
-        childProcesses = true;
+        facts.privilegeEscalation = true;
+        facts.childProcesses = true;
       }
       if (PERSISTENCE_WRAPPERS.has(head)) {
-        persistence = true;
-        childProcesses = true;
+        facts.persistence = true;
+        facts.childProcesses = true;
       }
       if (SSH_TOOLS.has(head)) {
-        remoteEnabled = true;
-        childProcesses = true;
+        facts.remoteEnabled = true;
+        facts.childProcesses = true;
         // A remote command that mutates is a remote-mutation hint. The remote
         // command may be a single quoted token (`ssh host 'rm -rf /'`), so split
         // each tail token on whitespace before searching for mutation signals.
@@ -136,12 +113,9 @@ export function analyzeCapability(
           .slice(k + 1)
           .flatMap((t) => t.value.split(/\s+/));
         if (tail.some((v) => GIT_MUTATION_SUBCOMMANDS.has(v) || v === "rm")) {
-          remoteMutation = true;
+          facts.remoteMutation = true;
         }
-        if (dominantClass === "unknown") {
-          dominantClass = "remote-operation";
-          classConfidence = "high";
-        }
+        claimUnsetClass(facts, "remote-operation");
       }
     }
   }
@@ -155,16 +129,13 @@ export function analyzeCapability(
     // the read-only classification below.
     const roMutation = readOnlyToolMutation(cmd, base);
     if (roMutation !== undefined) {
-      if (roMutation.deletion === true) deletion = true;
+      if (roMutation.deletion === true) facts.deletion = true;
       if (roMutation.executesCode === true) {
-        executesCode = true;
-        childProcesses = true;
+        facts.executesCode = true;
+        facts.childProcesses = true;
       }
       for (const target of roMutation.writeTargets) {
-        const cls = classifyPath(target, directory, worktree);
-        if (cls.temporary) temporaryWrite = true;
-        if (cls.workspace) workspaceWrite = true;
-        if (cls.external) externalWrite = true;
+        recordWrite(facts, target, roots);
       }
     }
     // Track whether the executable itself is a known no-effect tool. Commands
@@ -184,7 +155,7 @@ export function analyzeCapability(
       !PERSISTENCE_TOOLS.has(base) &&
       !PRIVILEGE_WRAPPERS.has(base)
     ) {
-      sawReadOnlyExecutable = true;
+      facts.sawReadOnlyExecutable = true;
     } else if (
       base !== "git" &&
       !INTERPRETERS.has(base) &&
@@ -200,30 +171,30 @@ export function analyzeCapability(
       !PERSISTENCE_WRAPPERS.has(base) &&
       !PRIVILEGE_WRAPPERS.has(base)
     ) {
-      sawUnknownExecutable = true;
+      facts.sawUnknownExecutable = true;
     }
 
     // Executable detection.
     if (INTERPRETERS.has(base)) {
-      executesCode = true;
+      facts.executesCode = true;
       if (["bun", "node", "python", "python3", "deno", "tsx"].includes(base)) {
-        childProcesses = true;
+        facts.childProcesses = true;
       }
       const { inline } = hasInlineCodeOption(cmd);
-      if (inline) createsAdHocCode = true;
+      if (inline) facts.createsAdHocCode = true;
       // If the interpreter targets a generated/heredoc file, it's ad-hoc code.
       for (const token of cmd.slice(1)) {
         const arg = token.value;
-        if (heredocOutputs.has(arg)) createsAdHocCode = true;
+        if (heredocOutputs.has(arg)) facts.createsAdHocCode = true;
         if (arg.startsWith(directory) || arg.startsWith(worktree))
-          executesRepositoryCode = true;
+          facts.executesRepositoryCode = true;
       }
     }
     if (TEST_RUNNERS.has(base)) {
-      invokesTestRunner = true;
-      executesCode = true;
-      executesRepositoryCode = true;
-      childProcesses = true;
+      facts.invokesTestRunner = true;
+      facts.executesCode = true;
+      facts.executesRepositoryCode = true;
+      facts.childProcesses = true;
     }
     // `<runtime> test` / `<runtime> t` (bun, npm, pnpm, yarn, deno, …). Test
     // invocations always execute code: the runner and the suite itself are
@@ -237,47 +208,45 @@ export function analyzeCapability(
         sub === "check" ||
         sub === "verify"
       ) {
-        invokesTestRunner = true;
-        executesCode = true;
-        executesRepositoryCode = true;
-        childProcesses = true;
+        facts.invokesTestRunner = true;
+        facts.executesCode = true;
+        facts.executesRepositoryCode = true;
+        facts.childProcesses = true;
       }
     }
     if (PACKAGE_MANAGERS.has(base)) {
       const sub = cmd[1]?.value;
       const subs = PACKAGE_SUBCOMMANDS[base];
       if (subs === undefined || sub === undefined || subs.has(sub)) {
-        invokesPackageLifecycle = true;
-        childProcesses = true;
-        networkPossible = true;
+        facts.invokesPackageLifecycle = true;
+        facts.childProcesses = true;
+        facts.networkPossible = true;
         if (["run", "exec"].includes(sub ?? "")) {
-          executesCode = true;
-          if (sub === "run") executesRepositoryCode = true;
+          facts.executesCode = true;
+          if (sub === "run") facts.executesRepositoryCode = true;
         }
         // A local manifest script or installed executable can use the network,
         // but its invocation is not evidence of an actual network operation.
-        if (!["run", "exec"].includes(sub ?? "")) networkObserved = true;
+        if (!["run", "exec"].includes(sub ?? "")) facts.networkObserved = true;
       }
     }
     if (NETWORK_CLIENTS.has(base)) {
-      networkObserved = true;
-      destinations.push(...destinationFromTokens(cmd));
-      dominantClass = "network";
-      classConfidence = "high";
+      facts.networkObserved = true;
+      facts.destinations.push(...destinationFromTokens(cmd));
+      claimClass(facts, "network");
     }
     if (SSH_TOOLS.has(base)) {
-      remoteEnabled = true;
-      childProcesses = true;
+      facts.remoteEnabled = true;
+      facts.childProcesses = true;
       // ssh with a remote command that mutates → remote mutation hint.
       if (
         cmd.some(
           (t) => GIT_MUTATION_SUBCOMMANDS.has(t.value) || t.value === "rm",
         )
       ) {
-        remoteMutation = true;
+        facts.remoteMutation = true;
       }
-      dominantClass = "remote-operation";
-      classConfidence = "high";
+      claimClass(facts, "remote-operation");
     }
     if (FILE_WRITE_TOOLS.has(base)) {
       // dd names its output as `of=PATH`; treating the whole assignment as a
@@ -292,10 +261,7 @@ export function analyzeCapability(
               .map((value) => value.slice(3))
           : cmd.slice(1).map((token) => token.value);
       for (const output of outputOperands) {
-        const cls = classifyPath(output, directory, worktree);
-        if (cls.temporary) temporaryWrite = true;
-        if (cls.workspace) workspaceWrite = true;
-        if (cls.external) externalWrite = true;
+        recordWrite(facts, output, roots);
       }
     }
     if (FILE_MUTATION_TOOLS.has(base)) {
@@ -319,47 +285,40 @@ export function analyzeCapability(
         : destinations;
       for (const operand of writeOperands) {
         if (base === "rsync" && isRemoteMutationOperand(operand)) {
-          externalWrite = true;
+          facts.externalWrite = true;
           continue;
         }
-        const cls = classifyPath(operand, directory, worktree);
-        if (cls.temporary) temporaryWrite = true;
-        if (cls.workspace) workspaceWrite = true;
-        if (cls.external) externalWrite = true;
+        recordWrite(facts, operand, roots);
       }
-      if (!sawOperand) workspaceWrite = true;
+      if (!sawOperand) facts.workspaceWrite = true;
     }
     if (DELETION_TOOLS.has(base)) {
-      deletion = true;
+      facts.deletion = true;
       let anyTarget = false;
       for (const token of cmd.slice(1)) {
         const v = token.value;
         if (v.startsWith("-")) continue;
         anyTarget = true;
-        const cls = classifyPath(v, directory, worktree);
-        if (cls.temporary) temporaryWrite = true;
-        if (cls.workspace) workspaceWrite = true;
-        if (cls.external) externalWrite = true;
+        recordWrite(facts, v, roots);
       }
-      if (!anyTarget) workspaceWrite = true;
+      if (!anyTarget) facts.workspaceWrite = true;
     }
     if (base === "git") {
-      gitObserved = true;
+      facts.gitObserved = true;
       const { sub, index } = gitSubcommandOf(cmd);
       if (sub !== undefined && GIT_NETWORK_SUBCOMMANDS.has(sub)) {
-        networkObserved = true;
+        facts.networkObserved = true;
       }
       if (
         sub !== undefined &&
         index !== undefined &&
         gitSubcommandMutates(cmd, sub, index)
       ) {
-        gitMutation = true;
-        if (sub === "push") externalWrite = true;
-        else workspaceWrite = true;
+        facts.gitMutation = true;
+        if (sub === "push") facts.externalWrite = true;
+        else facts.workspaceWrite = true;
       } else if (sub !== undefined && GIT_NETWORK_SUBCOMMANDS.has(sub)) {
-        dominantClass = "network";
-        classConfidence = "high";
+        claimClass(facts, "network");
       }
     }
     if (PRIVILEGE_WRAPPERS.has(base)) {
@@ -367,17 +326,14 @@ export function analyzeCapability(
       // the lexer peels them so `effective` starts at the real executable.
     }
     if (SERVICE_MANAGERS.has(base)) {
-      persistence = true;
-      childProcesses = true;
-      privilegeEscalation = true;
-      if (dominantClass === "unknown") {
-        dominantClass = "service-management";
-        classConfidence = "high";
-      }
+      facts.persistence = true;
+      facts.childProcesses = true;
+      facts.privilegeEscalation = true;
+      claimUnsetClass(facts, "service-management");
     }
     if (PERSISTENCE_TOOLS.has(base)) {
-      persistence = true;
-      childProcesses = true;
+      facts.persistence = true;
+      facts.childProcesses = true;
     }
     // Background operator `&` is already a segment separator; `disown`/`nohup`
     // are handled above. A trailing `&` inside one logical command is rare with
@@ -397,7 +353,7 @@ export function analyzeCapability(
     for (const r of redirects) {
       if (r.operator !== "<") continue;
       if (!isLiteralPathValue(r.target)) continue;
-      if (isSensitivePathToken(r.target)) credentialRead = true;
+      if (isSensitivePathToken(r.target)) facts.credentialRead = true;
     }
     if (!CREDENTIAL_READERS.has(base)) continue;
     for (let i = 1; i < cmd.length; i += 1) {
@@ -417,7 +373,7 @@ export function analyzeCapability(
         continue;
       if (value.startsWith("<") || value.startsWith(">")) continue;
       if (!isLiteralPathValue(value)) continue;
-      if (isSensitivePathToken(value)) credentialRead = true;
+      if (isSensitivePathToken(value)) facts.credentialRead = true;
     }
   }
 
@@ -426,10 +382,7 @@ export function analyzeCapability(
     if (hasWriteRedirect(segRedirects)) {
       for (const r of segRedirects) {
         if (!redirectionWritesPath(r)) continue;
-        const cls = classifyPath(r.target, directory, worktree);
-        if (cls.temporary) temporaryWrite = true;
-        if (cls.workspace) workspaceWrite = true;
-        if (cls.external) externalWrite = true;
+        recordWrite(facts, r.target, roots);
       }
     }
   }
@@ -437,147 +390,55 @@ export function analyzeCapability(
   // Heredoc that writes to a file is a write effect.
   for (const h of parsed.heredocs) {
     if (h.outputTarget !== undefined) {
-      const cls = classifyPath(h.outputTarget, directory, worktree);
-      if (cls.temporary) temporaryWrite = true;
-      if (cls.workspace) workspaceWrite = true;
-      if (cls.external) externalWrite = true;
+      recordWrite(facts, h.outputTarget, roots);
     }
   }
 
   // Action class resolution: prefer the most specific observed surface.
-  if (dominantClass === "unknown") {
-    if (deletion) {
-      dominantClass = "destruction";
-      classConfidence = "high";
-    } else if (gitMutation) {
-      dominantClass = "git-mutation";
-      classConfidence = "high";
-    } else if (externalWrite) {
-      dominantClass = "external-write";
-      classConfidence = "high";
-    } else if (createsAdHocCode || executesCode) {
-      dominantClass = "code-execution";
-      classConfidence = createsAdHocCode ? "high" : "medium";
-    } else if (invokesPackageLifecycle) {
-      dominantClass = "package-management";
-      classConfidence = "high";
-    } else if (persistence) {
-      dominantClass = "persistence";
-      classConfidence = "high";
-    } else if (privilegeEscalation) {
-      dominantClass = "privilege-escalation";
-      classConfidence = "high";
-    } else if (workspaceWrite) {
-      dominantClass = "workspace-write";
-      classConfidence = "medium";
-    } else if (temporaryWrite) {
-      dominantClass = "temporary-write";
-      classConfidence = "high";
-    } else if (sawUnknownExecutable) {
+  if (facts.dominantClass === "unknown") {
+    if (facts.deletion) {
+      facts.dominantClass = "destruction";
+      facts.classConfidence = "high";
+    } else if (facts.gitMutation) {
+      facts.dominantClass = "git-mutation";
+      facts.classConfidence = "high";
+    } else if (facts.externalWrite) {
+      facts.dominantClass = "external-write";
+      facts.classConfidence = "high";
+    } else if (facts.createsAdHocCode || facts.executesCode) {
+      facts.dominantClass = "code-execution";
+      facts.classConfidence = facts.createsAdHocCode ? "high" : "medium";
+    } else if (facts.invokesPackageLifecycle) {
+      facts.dominantClass = "package-management";
+      facts.classConfidence = "high";
+    } else if (facts.persistence) {
+      facts.dominantClass = "persistence";
+      facts.classConfidence = "high";
+    } else if (facts.privilegeEscalation) {
+      facts.dominantClass = "privilege-escalation";
+      facts.classConfidence = "high";
+    } else if (facts.workspaceWrite) {
+      facts.dominantClass = "workspace-write";
+      facts.classConfidence = "medium";
+    } else if (facts.temporaryWrite) {
+      facts.dominantClass = "temporary-write";
+      facts.classConfidence = "high";
+    } else if (facts.sawUnknownExecutable) {
       // An unrecognized executable is present: report unknown rather than
       // read-only. Absence of detected effects is not evidence of absence.
-      dominantClass = "unknown";
-      classConfidence = "low";
-    } else if (sawReadOnlyExecutable || (gitObserved && !gitMutation)) {
-      dominantClass = "read-only";
-      classConfidence = "medium";
+      facts.dominantClass = "unknown";
+      facts.classConfidence = "low";
+    } else if (
+      facts.sawReadOnlyExecutable ||
+      (facts.gitObserved && !facts.gitMutation)
+    ) {
+      facts.dominantClass = "read-only";
+      facts.classConfidence = "medium";
     } else {
-      dominantClass = "unknown";
-      classConfidence = "low";
+      facts.dominantClass = "unknown";
+      facts.classConfidence = "low";
     }
   }
 
-  if (parsed.hasDynamicConstructs) {
-    warnings.push(
-      "command contains dynamic constructs (variables, substitution, or globs)",
-    );
-  }
-  if (parsed.heredocs.length > 0 && parsed.heredocs.some((h) => h.dynamic)) {
-    warnings.push("one or more heredoc bodies have unresolvable expansion");
-  }
-  // An unterminated or over-bound heredoc body means the scan never saw the
-  // terminator: what follows cannot be proven to be commands rather than body
-  // text, so the analysis cannot claim completeness.
-  const heredocTruncated = parsed.heredocs.some((h) => h.truncated);
-  if (parsed.heredocs.length > 0 && heredocTruncated) {
-    warnings.push(
-      "one or more heredoc bodies were truncated or never terminated",
-    );
-  }
-  if (parsed.analysisTruncated) {
-    warnings.push(
-      "command structure exceeded the static analysis depth or expansion budget",
-    );
-  }
-
-  const parserCompleteness = parsed.hasDynamicConstructs
-    ? hasCommandSubstitution(parsed.sanitizedCommand) ||
-      parsed.heredocs.some((h) => h.dynamic)
-      ? "opaque"
-      : "partial"
-    : parsed.analysisTruncated || heredocTruncated
-      ? "partial"
-      : "complete-for-supported-form";
-
-  const summaryParts: string[] = [dominantClass];
-  if (createsAdHocCode) summaryParts.push("ad-hoc code");
-  if (executesRepositoryCode) summaryParts.push("repository code");
-  if (invokesPackageLifecycle) summaryParts.push("package lifecycle scripts");
-  if (gitMutation) summaryParts.push("git mutation");
-  if (networkObserved) summaryParts.push("network");
-  if (persistence) summaryParts.push("persistence");
-  if (privilegeEscalation) summaryParts.push("privilege escalation");
-
-  return {
-    actionClass: {
-      value: dominantClass,
-      source: "static-analysis",
-      confidence: classConfidence,
-    },
-    summary: summaryParts.join(", "),
-    executesCode: staticFact(executesCode ? true : "unknown"),
-    executesRepositoryCode: staticFact(
-      executesRepositoryCode ? true : "unknown",
-    ),
-    createsAdHocCode: staticFact(createsAdHocCode ? true : "unknown"),
-    invokesExistingTestRunner: staticFact(invokesTestRunner ? true : "unknown"),
-    invokesPackageLifecycleScripts: staticFact(
-      invokesPackageLifecycle ? true : "unknown",
-    ),
-    credentialRead: staticFact(credentialRead ? true : "unknown"),
-    writeEffects: {
-      temporaryWrite: staticFact(temporaryWrite ? true : "unknown"),
-      workspaceWrite: staticFact(workspaceWrite ? true : "unknown"),
-      externalWrite: staticFact(externalWrite ? true : "unknown"),
-      deletion: staticFact(deletion ? true : "unknown"),
-    },
-    network: {
-      observed: staticFact(networkObserved ? true : "unknown"),
-      possible: heuristicFact(
-        networkObserved || networkPossible ? true : "unknown",
-      ),
-      destinations,
-      observedAccess: staticFact(networkObserved ? true : "unknown"),
-      possibleAccess: heuristicFact(
-        networkObserved || networkPossible ? true : "unknown",
-      ),
-    },
-    process: {
-      childProcesses: staticFact(childProcesses ? true : "unknown"),
-      persistence: staticFact(persistence ? true : "unknown"),
-      privilegeEscalation: staticFact(privilegeEscalation ? true : "unknown"),
-    },
-    remote: {
-      enabled: staticFact(remoteEnabled ? true : "unknown"),
-      mutationHint: staticFact(remoteMutation ? true : "unknown"),
-    },
-    git: {
-      observed: staticFact(gitObserved ? true : "unknown"),
-      possible: heuristicFact(gitMutation ? true : "unknown"),
-      observedAccess: staticFact(gitObserved ? true : "unknown"),
-      possibleAccess: heuristicFact("unknown"),
-    },
-    parserCompleteness,
-    analysisWarnings: warnings,
-  };
+  return assessmentFrom(parsed, facts);
 }
