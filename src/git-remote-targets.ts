@@ -47,37 +47,45 @@ interface RemoteTargetRecord {
 function repositoryIdentity(value: string): string | undefined {
   if (value.length >= 200 || /[%\\]|(?:^|\/)\.{1,2}(?:\/|$)/.test(value))
     return;
-  const scp = value.match(/^git@github\.com:([^\s?#]+)$/i);
-  let path = scp?.[1];
-  if (path === undefined) {
-    try {
-      const url = new URL(value);
-      if (url.hostname.toLowerCase() !== "github.com") return `exact:${value}`;
-      if (url.search || url.hash) return;
-      if (
-        !(
-          url.protocol === "https:" &&
-          (url.port === "" || url.port === "443")
-        ) &&
-        !(
-          url.protocol === "ssh:" &&
-          url.username === "git" &&
-          (url.port === "" || url.port === "22")
-        )
-      )
-        return;
-      path = url.pathname.replace(/^\//, "");
-    } catch {
-      return `exact:${value}`;
-    }
-  }
-  const normalized = path
+  const scpPath = value.match(/^git@github\.com:([^\s?#]+)$/i)?.[1];
+  const located =
+    scpPath === undefined ? urlRepositoryPath(value) : { path: scpPath };
+  if (!("path" in located)) return located.identity;
+  const normalized = located.path
     .replace(/\/$/, "")
     .replace(/\.git$/i, "")
     .toLowerCase();
   return /^[a-z0-9._-]+\/[a-z0-9._-]+$/.test(normalized)
     ? `github:${normalized}`
     : undefined;
+}
+
+/** The GitHub repository path of a URL on a documented GitHub transport, or
+ *  the identity of any other value: exact for a non-GitHub (or unparseable)
+ *  destination, none for an unsupported GitHub one. */
+function urlRepositoryPath(
+  value: string,
+): { path: string } | { identity: string | undefined } {
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return { identity: `exact:${value}` };
+  }
+  if (url.hostname.toLowerCase() !== "github.com")
+    return { identity: `exact:${value}` };
+  if (url.search || url.hash || !isGithubTransport(url))
+    return { identity: undefined };
+  return { path: url.pathname.replace(/^\//, "") };
+}
+
+function isGithubTransport(url: URL): boolean {
+  return (
+    (url.protocol === "https:" && (url.port === "" || url.port === "443")) ||
+    (url.protocol === "ssh:" &&
+      url.username === "git" &&
+      (url.port === "" || url.port === "22"))
+  );
 }
 
 export interface DefaultRemoteRecord {
@@ -124,31 +132,37 @@ async function resolveConfiguredRemote(
     ["remote", "get-url", name],
     neutralization,
   );
-  const pushUrls = push.ok
-    ? push.stdout
-        .split("\n")
-        .map((line) => line.trim())
-        .filter((line) => line.length > 0)
-        .slice(0, MAX_PUSH_URLS)
-        .map(sanitizeRemoteUrl)
-    : undefined;
+  const pushUrls = push.ok ? configuredPushUrls(push.stdout) : undefined;
   const fetchUrl =
     fetch.ok && fetch.stdout.trim()
       ? sanitizeRemoteUrl(fetch.stdout.trim())
       : undefined;
-  const note =
-    pushUrls === undefined && fetchUrl === undefined
-      ? "URL resolution failed for this remote"
-      : pushUrls === undefined
-        ? "push URL resolution failed"
-        : fetchUrl === undefined
-          ? "fetch URL resolution failed"
-          : undefined;
+  const note = resolutionNote(pushUrls, fetchUrl);
   return {
     ...(pushUrls !== undefined ? { pushUrls } : {}),
     ...(fetchUrl !== undefined ? { fetchUrl } : {}),
     ...(note !== undefined ? { note } : {}),
   };
+}
+
+function configuredPushUrls(stdout: string): string[] {
+  return stdout
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .slice(0, MAX_PUSH_URLS)
+    .map(sanitizeRemoteUrl);
+}
+
+function resolutionNote(
+  pushUrls: string[] | undefined,
+  fetchUrl: string | undefined,
+): string | undefined {
+  if (pushUrls === undefined && fetchUrl === undefined)
+    return "URL resolution failed for this remote";
+  if (pushUrls === undefined) return "push URL resolution failed";
+  if (fetchUrl === undefined) return "fetch URL resolution failed";
+  return undefined;
 }
 
 interface UrlRewrite {
@@ -211,6 +225,8 @@ function expandLiteralUrl(
   return rewrite ? rewrite.base + input.slice(rewrite.prefix.length) : input;
 }
 
+type ResolveRemote = (name: string) => Promise<ConfiguredRemoteUrls>;
+
 export async function resolveRemoteTargets(
   directory: string,
   planned: PlannedGitActions,
@@ -243,97 +259,166 @@ export async function resolveRemoteTargets(
     if (targets.length >= MAX_RESOLVED_REMOTES) break;
     if (seen.has(input)) continue;
     seen.add(input);
-    // Every recorded operand is bounded and redacted: names get the length
-    // cap, literals additionally lose credential userinfo.
-    const bounded = sanitizeRemoteUrl(input).slice(0, 200);
-    if (remoteOperandKind(input) === "literal") {
-      const identity = repositoryIdentity(input);
-      // Literal destinations have no configured pushurl. Apply the longest
-      // matching rewrite separately for fetch and push, without contacting it.
-      const pushUrl =
-        rewrites === undefined
-          ? undefined
-          : expandLiteralUrl(input, rewrites, true);
-      const fetchUrl =
-        rewrites === undefined
-          ? undefined
-          : expandLiteralUrl(input, rewrites, false);
-      const literal = {
-        ...(pushUrl === undefined
-          ? {}
-          : { pushUrls: [sanitizeRemoteUrl(pushUrl)] }),
-        ...(fetchUrl === undefined
-          ? {}
-          : { fetchUrl: sanitizeRemoteUrl(fetchUrl) }),
-        ...(pushUrl === undefined || fetchUrl === undefined
-          ? {
-              note: "literal URL rewrite configuration is unavailable or ambiguous",
-            }
-          : {}),
-      };
-      const onlyPushUrl =
-        literal.pushUrls?.length === 1 ? literal.pushUrls[0] : undefined;
-      const pushIdentity =
-        identity !== undefined && onlyPushUrl !== undefined
-          ? repositoryIdentity(onlyPushUrl)
-          : undefined;
-      const fetchIdentity =
-        identity !== undefined && literal.fetchUrl !== undefined
-          ? repositoryIdentity(literal.fetchUrl)
-          : undefined;
-      const remoteRoles =
-        pushIdentity === undefined && fetchIdentity === undefined
-          ? []
-          : // biome-ignore lint/performance/noAwaitInLoops: the outer candidate loop stays sequential: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
-            await Promise.all(
-              configuredNames
-                .slice(0, MAX_RESOLVED_REMOTES)
-                .map(async (name) => {
-                  const urls = await resolveRemote(name);
-                  return {
-                    name,
-                    push:
-                      pushIdentity !== undefined &&
-                      (urls.pushUrls?.some(
-                        (url) => repositoryIdentity(url) === pushIdentity,
-                      ) ??
-                        false),
-                    fetch:
-                      fetchIdentity !== undefined &&
-                      urls.fetchUrl !== undefined &&
-                      repositoryIdentity(urls.fetchUrl) === fetchIdentity,
-                  };
-                }),
-            );
-      const matches = remoteRoles.filter((match) => match.push || match.fetch);
-      targets.push({
-        input: bounded,
-        kind: "literal",
-        url: bounded,
-        ...literal,
-        ...(matches.length === 0
-          ? {}
-          : {
-              configuredMatches: matches,
-              note: `${literal.note ? `${literal.note}; ` : ""}repository identity matches configured URLs only for the marked push/fetch roles; this does not establish authorization or destination trust`,
-            }),
-      });
-      continue;
-    }
-    if (configuredNames.includes(input)) {
-      const urls = await resolveRemote(input);
-      targets.push({ input: bounded, kind: "configured-remote", ...urls });
-      continue;
-    }
-    targets.push({
-      input: bounded,
-      kind: "unmatched",
-      note: "matches no configured remote; git treats the operand as a direct repository URL or path (the command fails unless that target exists)",
-    });
+    targets.push(
+      // biome-ignore lint/performance/noAwaitInLoops: the outer candidate loop stays sequential: candidates resolve through the shared resolvedRemotes memo, which is filled only after each git lookup returns, and the loop stops once MAX_RESOLVED_REMOTES targets are recorded; overlapping candidates would spawn duplicate git lookups and overrun the cap
+      await remoteTarget(input, rewrites, configuredNames, resolveRemote),
+    );
   }
 
+  const defaults = await defaultRemoteRecords(
+    directory,
+    planned.needsDefaultRemote,
+    configuredNames,
+    neutralization,
+    resolveRemote,
+  );
+
+  return {
+    targets,
+    // Unique candidates beyond the resolution cap, including the one that
+    // tripped it.
+    omitted: Math.max(
+      0,
+      new Set(planned.remoteCandidates).size - targets.length,
+    ),
+    defaults,
+  };
+}
+
+async function remoteTarget(
+  input: string,
+  rewrites: UrlRewrite[] | undefined,
+  configuredNames: string[],
+  resolveRemote: ResolveRemote,
+): Promise<RemoteTargetRecord> {
+  // Every recorded operand is bounded and redacted: names get the length
+  // cap, literals additionally lose credential userinfo.
+  const bounded = sanitizeRemoteUrl(input).slice(0, 200);
+  if (remoteOperandKind(input) === "literal")
+    return literalTarget(
+      input,
+      bounded,
+      rewrites,
+      configuredNames,
+      resolveRemote,
+    );
+  if (configuredNames.includes(input)) {
+    const urls = await resolveRemote(input);
+    return { input: bounded, kind: "configured-remote", ...urls };
+  }
+  return {
+    input: bounded,
+    kind: "unmatched",
+    note: "matches no configured remote; git treats the operand as a direct repository URL or path (the command fails unless that target exists)",
+  };
+}
+
+async function literalTarget(
+  input: string,
+  bounded: string,
+  rewrites: UrlRewrite[] | undefined,
+  configuredNames: string[],
+  resolveRemote: ResolveRemote,
+): Promise<RemoteTargetRecord> {
+  const identity = repositoryIdentity(input);
+  const literal = literalUrls(input, rewrites);
+  const onlyPushUrl =
+    literal.pushUrls?.length === 1 ? literal.pushUrls[0] : undefined;
+  const pushIdentity =
+    identity !== undefined && onlyPushUrl !== undefined
+      ? repositoryIdentity(onlyPushUrl)
+      : undefined;
+  const fetchIdentity =
+    identity !== undefined && literal.fetchUrl !== undefined
+      ? repositoryIdentity(literal.fetchUrl)
+      : undefined;
+  const remoteRoles =
+    pushIdentity === undefined && fetchIdentity === undefined
+      ? []
+      : await Promise.all(
+          configuredNames
+            .slice(0, MAX_RESOLVED_REMOTES)
+            .map(async (name) =>
+              roleMatch(
+                name,
+                await resolveRemote(name),
+                pushIdentity,
+                fetchIdentity,
+              ),
+            ),
+        );
+  const matches = remoteRoles.filter((match) => match.push || match.fetch);
+  return {
+    input: bounded,
+    kind: "literal",
+    url: bounded,
+    ...literal,
+    ...(matches.length === 0
+      ? {}
+      : {
+          configuredMatches: matches,
+          note: `${literal.note ? `${literal.note}; ` : ""}repository identity matches configured URLs only for the marked push/fetch roles; this does not establish authorization or destination trust`,
+        }),
+  };
+}
+
+/** Literal destinations have no configured pushurl. Apply the longest
+ *  matching rewrite separately for fetch and push, without contacting it. */
+function literalUrls(
+  input: string,
+  rewrites: UrlRewrite[] | undefined,
+): ConfiguredRemoteUrls {
+  const pushUrl =
+    rewrites === undefined
+      ? undefined
+      : expandLiteralUrl(input, rewrites, true);
+  const fetchUrl =
+    rewrites === undefined
+      ? undefined
+      : expandLiteralUrl(input, rewrites, false);
+  return {
+    ...(pushUrl === undefined
+      ? {}
+      : { pushUrls: [sanitizeRemoteUrl(pushUrl)] }),
+    ...(fetchUrl === undefined
+      ? {}
+      : { fetchUrl: sanitizeRemoteUrl(fetchUrl) }),
+    ...(pushUrl === undefined || fetchUrl === undefined
+      ? {
+          note: "literal URL rewrite configuration is unavailable or ambiguous",
+        }
+      : {}),
+  };
+}
+
+function roleMatch(
+  name: string,
+  urls: ConfiguredRemoteUrls,
+  pushIdentity: string | undefined,
+  fetchIdentity: string | undefined,
+): { name: string; push: boolean; fetch: boolean } {
+  return {
+    name,
+    push:
+      pushIdentity !== undefined &&
+      (urls.pushUrls?.some((url) => repositoryIdentity(url) === pushIdentity) ??
+        false),
+    fetch:
+      fetchIdentity !== undefined &&
+      urls.fetchUrl !== undefined &&
+      repositoryIdentity(urls.fetchUrl) === fetchIdentity,
+  };
+}
+
+async function defaultRemoteRecords(
+  directory: string,
+  annotations: string[],
+  configuredNames: string[],
+  neutralization: string[],
+  resolveRemote: ResolveRemote,
+): Promise<DefaultRemoteRecord[]> {
   const defaults: DefaultRemoteRecord[] = [];
-  for (const annotation of planned.needsDefaultRemote) {
+  for (const annotation of annotations) {
     if (annotation.includes("--all")) {
       defaults.push({
         source: "all configured remotes",
@@ -352,17 +437,7 @@ export async function resolveRemoteTargets(
       ),
     );
   }
-
-  return {
-    targets,
-    // Unique candidates beyond the resolution cap, including the one that
-    // tripped it.
-    omitted: Math.max(
-      0,
-      new Set(planned.remoteCandidates).size - targets.length,
-    ),
-    defaults,
-  };
+  return defaults;
 }
 
 /** Resolve which remote a no-operand network subcommand contacts, following
@@ -376,7 +451,7 @@ async function resolveDefaultRemote(
   annotation: string,
   configuredNames: string[],
   neutralization: string[],
-  resolveRemote: (name: string) => Promise<ConfiguredRemoteUrls>,
+  resolveRemote: ResolveRemote,
 ): Promise<DefaultRemoteRecord> {
   const branch = await runGit(
     directory,
