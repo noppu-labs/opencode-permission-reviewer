@@ -30,10 +30,11 @@ function buildClient(opts: MockOptions = {}): OpenCodeClientLike {
       create: async () => ({ data: {} }),
       messages: async (options: unknown) => {
         const id = readPathId(options);
-        if (id === undefined || failing.has(id) || !sessions[id]) {
+        const session = id === undefined ? undefined : sessions[id];
+        if (id === undefined || failing.has(id) || !session) {
           return { error: { status: 404 } } as ClientResponse<unknown>;
         }
-        return { data: sessions[id]!.messages ?? [] };
+        return { data: session.messages ?? [] };
       },
       prompt: async () => ({ data: {} }),
     },
@@ -42,14 +43,11 @@ function buildClient(opts: MockOptions = {}): OpenCodeClientLike {
   if (!opts.getUnavailable) {
     client.session.get = async (options: unknown) => {
       const id = readPathId(options);
-      if (
-        id === undefined ||
-        !sessions[id] ||
-        sessions[id]!.meta === undefined
-      ) {
+      const meta = id === undefined ? undefined : sessions[id]?.meta;
+      if (meta === undefined) {
         return { error: { status: 404 } } as ClientResponse<unknown>;
       }
-      return { data: sessions[id]!.meta };
+      return { data: meta };
     };
   }
   return client;
@@ -100,6 +98,7 @@ function userMessage(id: string, text: string): MessageWithParts {
 }
 
 import { DEFAULT_CONFIG } from "../src/config.ts";
+import { defined } from "./helpers.ts";
 
 const cfg = {
   ...DEFAULT_CONFIG,
@@ -322,7 +321,7 @@ describe("actor resolver — intent separation", () => {
       cfg,
     );
     expect(res.intent.delegatedTask).toHaveLength(1);
-    expect(res.intent.delegatedTask[0]!.text).toBe(
+    expect(defined(res.intent.delegatedTask[0], "delegated task").text).toBe(
       "Refactor the parser module",
     );
   });

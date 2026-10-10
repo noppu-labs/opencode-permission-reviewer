@@ -54,7 +54,8 @@ function packOnce(): string {
   expect(pack.exitCode).toBe(0);
   const name = readdirSync(tmpDir).find((f) => f.endsWith(".tgz"));
   expect(name).toBeTruthy();
-  tgzPath = join(tmpDir, name!);
+  if (name === undefined) throw new Error("npm pack produced no .tgz file");
+  tgzPath = join(tmpDir, name);
   return tgzPath;
 }
 
@@ -379,6 +380,8 @@ describe("npm install dedupe shape", () => {
     };
     walk(join(installDir, "node_modules"));
     expect(solidDirs).toHaveLength(1);
+    const [solidDir] = solidDirs;
+    if (solidDir === undefined) throw new Error("no solid-js directory found");
 
     // The overlay entry and @opentui/solid must resolve solid-js to the same
     // physical copy, i.e. one shared runtime for signals and rendering.
@@ -390,8 +393,8 @@ describe("npm install dedupe shape", () => {
       "solid-js",
       join(installDir, "node_modules", "@opentui", "solid"),
     );
-    expect(fromEntry.startsWith(solidDirs[0]!)).toBe(true);
-    expect(fromOpentui.startsWith(solidDirs[0]!)).toBe(true);
+    expect(fromEntry.startsWith(solidDir)).toBe(true);
+    expect(fromOpentui.startsWith(solidDir)).toBe(true);
   }, 240_000);
 
   test("consumer tree dependency and native surveillance", async () => {

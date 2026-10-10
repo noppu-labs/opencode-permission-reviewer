@@ -26,9 +26,10 @@ await run(
 const tarballs = (await readdir(directory)).filter((name) =>
   name.endsWith(".tgz"),
 );
-if (tarballs.length !== 1)
+const [packedName] = tarballs;
+if (tarballs.length !== 1 || packedName === undefined)
   throw new Error(`Expected one packed tarball, found ${tarballs.length}`);
-const tarball = join(directory, tarballs[0]!);
+const tarball = join(directory, packedName);
 await writeFile(
   join(directory, "package.json"),
   JSON.stringify({

@@ -133,45 +133,6 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 27 files.
-    {
-      "includes": [
-        "tests/actor-resolver.test.ts",
-        "tests/ask-decisions.test.ts",
-        "tests/audit.test.ts",
-        "tests/capability.test.ts",
-        "tests/characterization.test.ts",
-        "tests/compatibility/install-package.ts",
-        "tests/config-loader.test.ts",
-        "tests/escalation.test.ts",
-        "tests/failure-reason.test.ts",
-        "tests/helpers.ts",
-        "tests/intent-recovery.test.ts",
-        "tests/live-harness.ts",
-        "tests/live-host-regressions.ts",
-        "tests/package-smoke.test.ts",
-        "tests/runtime.test.ts",
-        "tests/shell-lexer.test.ts",
-        "tests/ssh-evidence.test.ts",
-        "tests/stress.test.ts",
-        "tests/system-one.test.ts",
-        "tests/trust-hardening.test.ts",
-        "tests/tui-elapsed.test.ts",
-        "tests/tui-slot-contract.test.ts",
-        "tests/tui-v2.test.ts",
-        "tests/v1-backend.test.ts",
-        "tests/v2-connection.test.ts",
-        "tests/v2-server.test.ts",
-        "tests/workflow-pinning.test.ts"
-      ],
-      "linter": {
-        "rules": {
-          "style": {
-            "noNonNullAssertion": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/4-ts-rules): nursery/useExplicitType, 74 files.
     {
       "includes": [

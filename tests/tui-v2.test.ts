@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 import { createUiStatus } from "../src/ui-protocol.ts";
-import { request } from "./helpers.ts";
+import { defined, request } from "./helpers.ts";
 import { resolveReviewTheme, setupTuiV2, testRender } from "./tui-loader.ts";
 
 test("TUI resolves nested, flat, and unavailable host themes", () => {
@@ -208,8 +208,9 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
         }),
       ],
     };
-    channels[0]!.ended = true;
-    channels[0]!.wake?.();
+    const firstChannel = defined(channels[0], "first channel");
+    firstChannel.ended = true;
+    firstChannel.wake?.();
     await waitForFrame("Review status unavailable");
     expect(view.captureCharFrame()).not.toContain("Review approved");
     expect(modeDepth).toBe(0);
@@ -217,7 +218,7 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     await waitForFrame("Review blocked");
     expect(snapshots).toBe(2);
     expect(view.captureCharFrame()).toContain("Review blocked");
-    const channel = channels.at(-1)!;
+    const channel = defined(channels.at(-1), "latest channel");
     channel.queue.push(
       {
         location: { directory },

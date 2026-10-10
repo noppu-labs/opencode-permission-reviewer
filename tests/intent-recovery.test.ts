@@ -7,10 +7,21 @@ import {
   buildTranscript,
   selectIntentMessages,
 } from "../src/context.ts";
+import type { ContextReader } from "../src/core/ports.ts";
 import { createV1ContextReader } from "../src/opencode/v1/context-reader.ts";
 import { createV2ContextReader } from "../src/opencode/v2/context-reader.ts";
 import type { MessageWithParts } from "../src/types.ts";
-import { MockClient, request } from "./helpers.ts";
+import { defined, MockClient, request } from "./helpers.ts";
+
+function intentMessagesOf(
+  reader: ContextReader,
+  sessionID: string,
+  directory: string,
+  limit: number,
+): Promise<unknown> {
+  const read = defined(reader.intentMessages, "reader.intentMessages");
+  return read.call(reader, sessionID, directory, limit);
+}
 
 const user = (id: string, text: string, created = 1): MessageWithParts => ({
   info: { id, role: "user", time: { created } },
@@ -52,7 +63,7 @@ test("legacy reader recovers authorization beyond the transcript and shares conc
   const reader = createV1ContextReader(client);
   const [recent, intent] = await Promise.all([
     reader.messages("session", "/workspace", 200),
-    reader.intentMessages!("session", "/workspace", 8),
+    intentMessagesOf(reader, "session", "/workspace", 8),
   ]);
   expect(JSON.stringify(recent)).not.toContain("Fix the bug");
   expect(JSON.stringify(intent)).toContain("Fix the bug and run the tests.");
@@ -63,7 +74,7 @@ test("legacy reader recovers authorization beyond the transcript and shares conc
   ).toEqual([200, 400, 800]);
   messages.push(user("new", "Stop, do not run tests.", 3));
   expect(
-    JSON.stringify(await reader.intentMessages!("session", "/workspace", 8)),
+    JSON.stringify(await intentMessagesOf(reader, "session", "/workspace", 8)),
   ).toContain("Stop, do not run tests.");
 });
 
@@ -79,7 +90,8 @@ test("legacy recovery stops at its scan bound instead of reading an unbounded se
     ),
   });
   expect(
-    await createV1ContextReader(client).intentMessages!(
+    await intentMessagesOf(
+      createV1ContextReader(client),
       "session",
       "/workspace",
       8,
@@ -101,7 +113,8 @@ test("legacy fork history predating session creation cannot authorize a new acti
     user("inherited", "Push everything", 50),
     user("current", "Inspect only", 150),
   ];
-  const intent = (await createV1ContextReader(client).intentMessages!(
+  const intent = (await intentMessagesOf(
+    createV1ContextReader(client),
     "fork",
     "/workspace",
     8,
@@ -118,7 +131,12 @@ test("legacy message failures are observed while session metadata is still pendi
   };
   try {
     await expect(
-      createV1ContextReader(client).intentMessages!("session", "/workspace", 8),
+      intentMessagesOf(
+        createV1ContextReader(client),
+        "session",
+        "/workspace",
+        8,
+      ),
     ).rejects.toThrow("Literal history unavailable");
   } finally {
     release({ data: { id: "session" } });
@@ -168,7 +186,8 @@ test("native reader obtains literal history independently of compacted operation
   expect(
     JSON.stringify(await reader.messages("session", "/workspace", 10)),
   ).not.toContain("Fix the bug");
-  const intent = (await reader.intentMessages!(
+  const intent = (await intentMessagesOf(
+    reader,
     "session",
     "/workspace",
     8,
@@ -177,9 +196,9 @@ test("native reader obtains literal history independently of compacted operation
   expect(calls).toEqual([
     { sessionID: "session", type: "user", order: "desc", limit: 32 },
   ]);
-  await expect(reader.intentMessages!("session", "/other", 8)).rejects.toThrow(
-    "location mismatch",
-  );
+  await expect(
+    intentMessagesOf(reader, "session", "/other", 8),
+  ).rejects.toThrow("location mismatch");
 });
 
 test("native historical fork instructions cannot become new user authorization", async () => {
@@ -208,8 +227,12 @@ test("native historical fork instructions cannot become new user authorization",
     },
   } as unknown as Parameters<typeof createV2ContextReader>[0];
   expect(
-    await createV2ContextReader(ctx, new AbortController().signal)
-      .intentMessages!("fork", "/workspace", 8),
+    await intentMessagesOf(
+      createV2ContextReader(ctx, new AbortController().signal),
+      "fork",
+      "/workspace",
+      8,
+    ),
   ).toEqual([]);
 });
 

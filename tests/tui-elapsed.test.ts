@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TuiPluginApi, TuiPluginMeta } from "@opencode-ai/plugin/tui";
 import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
-import { request } from "./helpers.ts";
+import { defined, request } from "./helpers.ts";
 import { testRender, tui } from "./tui-loader.ts";
 
 const disposers: Array<() => void> = [];
@@ -95,10 +95,13 @@ describe("tui panel live elapsed counter", () => {
       handler({ type: "permission.asked", properties: request() } as never);
     }
 
-    const setup = await testRender(() => factory!() as Element, {
-      width: 80,
-      height: 24,
-    });
+    const setup = await testRender(
+      () => defined(factory, "app slot factory")() as Element,
+      {
+        width: 80,
+        height: 24,
+      },
+    );
     disposers.push(() => setup.renderer.destroy());
     await setup.flush();
     expect(setup.captureCharFrame()).toContain("No action needed");

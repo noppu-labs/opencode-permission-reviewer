@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { defined } from "./helpers.ts";
 
 /** Every workflow must pin its actions to a full 40-hex commit SHA (with the
  *  version kept as a trailing comment so Dependabot can still bump them).
@@ -17,7 +18,7 @@ describe("workflow action pinning", () => {
     for (const file of files) {
       const text = readFileSync(join(workflowsDir, file), "utf8");
       for (const match of text.matchAll(/uses:\s*([^\s#]+)/g)) {
-        const ref = match[1]!;
+        const ref = defined(match[1], "action reference");
         // Local composite actions ship with the repository itself.
         if (ref.startsWith("./")) continue;
         const at = ref.lastIndexOf("@");

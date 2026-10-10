@@ -196,6 +196,7 @@ try {
     body: { title: "Synthetic requester" },
   });
   assert(session.data?.id);
+  const requesterSessionID = session.data.id;
   const operationalMcp = (await fetch(
     `${baseUrl}/mcp?directory=${encodeURIComponent(project)}`,
     {
@@ -248,7 +249,7 @@ try {
       [],
     ).process(
       request({
-        sessionID: session.data!.id,
+        sessionID: requesterSessionID,
         metadata: { command },
         patterns: [command],
       }),
@@ -269,7 +270,7 @@ try {
   const scriptRuntime = new ApprovalReviewerRuntime(ctx, config, undefined, []);
   const scriptRequest = request({
     id: "per_verified_first",
-    sessionID: session.data!.id,
+    sessionID: requesterSessionID,
     patterns: [scriptCommand],
     metadata: { command: scriptCommand },
   });
@@ -379,7 +380,7 @@ try {
         get: async () =>
           origin === "unknown"
             ? { error: "metadata unavailable" }
-            : { data: { id: session.data!.id, parentID: "ses_missing" } },
+            : { data: { id: requesterSessionID, parentID: "ses_missing" } },
       },
     };
     await run({ maxParentSessions: 0 }, { ...ctx, client: child });

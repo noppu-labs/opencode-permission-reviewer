@@ -6,7 +6,7 @@ import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
 import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
 import type { ReviewExecutionResult } from "../src/types.ts";
-import { config, decision, systemOneScores } from "./helpers.ts";
+import { config, decision, defined, systemOneScores } from "./helpers.ts";
 
 type Input = Parameters<typeof normalizeV2Permission>[0] & { message?: string };
 
@@ -73,7 +73,7 @@ async function fixture(
         signal.addEventListener("abort", wake);
         try {
           while (!signal.aborted && !ended) {
-            if (events.length) yield events.shift()!;
+            if (events.length) yield defined(events.shift(), "queued event");
             else
               await new Promise<void>((resolve) => {
                 resume = resolve;

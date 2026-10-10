@@ -16,7 +16,7 @@ import {
   shellCommandSegmentsWithDirectory,
 } from "../src/ssh-evidence.ts";
 import { SK_EXAMPLE_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
-import { request } from "./helpers.ts";
+import { defined, request } from "./helpers.ts";
 
 const temporaryDirectories: string[] = [];
 
@@ -41,14 +41,16 @@ describe("command segments with directory tracking", () => {
         `cd elsewhere; cd sub ${operator} python p.py`,
         "/workspace",
       );
-      expect(segments.at(-1)!.directory).toBeUndefined();
-      expect(segments.at(-1)!.directoryReason).toMatch(/unresolved|ambiguous/);
+      const last = defined(segments.at(-1), "last segment");
+      expect(last.directory).toBeUndefined();
+      expect(last.directoryReason).toMatch(/unresolved|ambiguous/);
     }
     const recovered = shellCommandSegmentsWithDirectory(
       "cd elsewhere; cd /workspace/sub && python p.py",
       "/workspace",
     );
-    expect(recovered.at(-1)!.directory).toBe("/workspace/sub");
+    const last = defined(recovered.at(-1), "last recovered segment");
+    expect(last.directory).toBe("/workspace/sub");
   });
 
   test("a symlinked temp area never becomes an evidence root", async () => {
@@ -126,7 +128,8 @@ describe("command segments with directory tracking", () => {
       "cd sub && ( true ) && python p.py",
       "/workspace",
     );
-    expect(segments.at(-1)!.directory).toBe("/workspace/sub");
+    const last = defined(segments.at(-1), "last segment");
+    expect(last.directory).toBe("/workspace/sub");
   });
 
   test("a group after a failed cd runs in the unchanged directory", () => {
@@ -134,7 +137,10 @@ describe("command segments with directory tracking", () => {
       "cd sub || ( python p.py )",
       "/workspace",
     );
-    const group = segments.filter((s) => s.tokens.length > 0).at(-1)!;
+    const group = defined(
+      segments.filter((s) => s.tokens.length > 0).at(-1),
+      "last non-empty segment",
+    );
     expect(group.directory).toBe("/workspace");
   });
 
@@ -143,7 +149,10 @@ describe("command segments with directory tracking", () => {
       "cd sub; ( python p.py )",
       "/workspace",
     );
-    const group = segments.filter((s) => s.tokens.length > 0).at(-1)!;
+    const group = defined(
+      segments.filter((s) => s.tokens.length > 0).at(-1),
+      "last non-empty segment",
+    );
     expect(group.directory).toBeUndefined();
     expect(group.directoryReason).toContain("ambiguous");
   });
@@ -159,9 +168,11 @@ describe("command segments with directory tracking", () => {
       "python",
       "python",
     ]);
-    expect(commands[1]!.directory).toBeUndefined();
-    expect(commands[1]!.directoryReason).toContain("ambiguous");
-    expect(commands[2]!.directory).toBe("/workspace");
+    const second = defined(commands[1], "commands[1]");
+    expect(second.directory).toBeUndefined();
+    expect(second.directoryReason).toContain("ambiguous");
+    const third = defined(commands[2], "commands[2]");
+    expect(third.directory).toBe("/workspace");
   });
 });
 

@@ -10,7 +10,7 @@ import {
   resolveEscalationDisposition,
 } from "../src/escalation.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 function cfg(overrides: Partial<ReviewerConfig> = {}): ReviewerConfig {
   return {
@@ -397,10 +397,11 @@ describe("runtime escalationMode deny", () => {
       escalationDisposition: "deny",
       decisionSource: "failure-safe",
     });
-    expect(audits[0]!.reviewerOutcome).toBeUndefined();
-    expect(audits[0]!.riskLevel).toBeUndefined();
-    expect(audits[0]!.confidence).toBeUndefined();
-    expect(audits[0]!.userAuthorization).toBeUndefined();
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.reviewerOutcome).toBeUndefined();
+    expect(audit.riskLevel).toBeUndefined();
+    expect(audit.confidence).toBeUndefined();
+    expect(audit.userAuthorization).toBeUndefined();
   });
 
   test("audit records manual disposition without converting outcome", async () => {
@@ -432,7 +433,8 @@ describe("runtime escalationMode deny", () => {
       outcome: "allow",
       reviewerOutcome: "allow",
     });
-    expect(audits[0]!.escalationDisposition).toBeUndefined();
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.escalationDisposition).toBeUndefined();
   });
 
   test("manual supersede still wins under escalationMode deny", async () => {
@@ -476,8 +478,10 @@ describe("runtime escalationMode deny", () => {
   test("prompt includes ACTION_PURPOSE section", async () => {
     const client = new MockClient();
     client.promptImpl = async (options) => {
-      const text = (options as { body: { parts: Array<{ text: string }> } })
-        .body.parts[0]!.text;
+      const text = defined(
+        (options as { body: { parts: Array<{ text: string }> } }).body.parts[0],
+        "prompt part",
+      ).text;
       expect(text).toContain("ACTION_PURPOSE");
       expect(text).toMatch(
         /"source": "(agent-context|intent-derived|unavailable)"/,

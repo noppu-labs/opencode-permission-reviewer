@@ -19,7 +19,7 @@ import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import type { RuntimeContext } from "../src/opencode/types.ts";
 import { V1ReviewerBackend } from "../src/opencode/v1/reviewer-backend.ts";
 import type { ReviewEnvelope, ReviewerConfig } from "../src/types.ts";
-import { config, request } from "./helpers.ts";
+import { config, defined, request } from "./helpers.ts";
 
 /** A V1 fixture mirroring `v2-backend.test.ts`: the client exposes only the V1
  *  surface (session/tool/mcp.status) and the backend runs against a scratch
@@ -437,7 +437,8 @@ test("a symlinked isolation directory fails closed without writing outside it", 
 
 test("an MCP transport timeout fails closed before creating a session", async () => {
   const harness = fixture({ timeoutMs: 30 });
-  harness.client.mcp!.status = async () => new Promise(() => {});
+  defined(harness.client.mcp, "mcp client").status = async () =>
+    new Promise(() => {});
   try {
     expect((await harness.run()).kind).toBe("escalate");
     expect(harness.state().sessionIDs).toHaveLength(0);

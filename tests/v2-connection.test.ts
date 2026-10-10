@@ -9,6 +9,7 @@ import {
   validateHostEndpoint,
 } from "../src/opencode/v2/connection.ts";
 import { HTTP_URL_WITH_USERINFO } from "./fixtures/synthetic-secrets.ts";
+import { defined } from "./helpers.ts";
 
 const hostUrl = "OPENCODE_PERMISSION_REVIEWER_HOST_URL";
 const password = "OPENCODE_PASSWORD";
@@ -38,7 +39,10 @@ function fakeClient(actualIdentity: string): OpenCodeClient {
  *  cannot mock and whose setter ignores assignments; redefining the
  *  property works and the original descriptor restores cleanly. */
 function stubMake(impl: () => OpenCodeClient) {
-  const descriptor = Object.getOwnPropertyDescriptor(OpenCode, "make")!;
+  const descriptor = defined(
+    Object.getOwnPropertyDescriptor(OpenCode, "make"),
+    "OpenCode.make descriptor",
+  );
   const make = mock(impl);
   Object.defineProperty(OpenCode, "make", {
     value: make,
