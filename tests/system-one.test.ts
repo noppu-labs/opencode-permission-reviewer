@@ -18,7 +18,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../src/types.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const choice = (selected: string, keys: string[], confidence = 1) => {
   const remainder = (1 - confidence) / (keys.length - 1);
@@ -542,7 +542,10 @@ describe("System One reviewer", () => {
       config,
     );
     expect(parsed?.difficultReason).toContain("below 0.40");
-    expect(enforceParsedSystemOneReview(parsed!, config).kind).toBe("deny");
+    expect(
+      enforceParsedSystemOneReview(defined(parsed, "parsed review"), config)
+        .kind,
+    ).toBe("deny");
   });
 
   test("does not reapply chat-model confidence floors after reconciliation", () => {
@@ -554,9 +557,12 @@ describe("System One reviewer", () => {
       config,
     );
     expect(parsed?.difficultReason).toBeUndefined();
-    expect(enforceSystemOneDecision(parsed!.decision, config).kind).toBe(
-      "allow",
-    );
+    expect(
+      enforceSystemOneDecision(
+        defined(parsed, "parsed review").decision,
+        config,
+      ).kind,
+    ).toBe("allow");
   });
 
   test("treats an unsafe allow signal as a difficult contradiction", () => {
@@ -611,10 +617,11 @@ describe("System One reviewer", () => {
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free");
     expect(escalations).toBe(1);
     // Jev's scores go in `systemOne`; `reviewerEscalatedFrom` keeps only model and reason.
-    expect(Object.keys(result.reviewerEscalatedFrom!).sort()).toEqual([
-      "model",
-      "reason",
-    ]);
+    expect(
+      Object.keys(
+        defined(result.reviewerEscalatedFrom, "reviewerEscalatedFrom"),
+      ).sort(),
+    ).toEqual(["model", "reason"]);
     expect(result.systemOne).toMatchObject({
       returnedModel: "jev-1.13.0",
       outcome: {

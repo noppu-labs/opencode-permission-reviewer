@@ -7,7 +7,7 @@ import { extractPermissionRequest } from "../src/opencode/event-normalizer.ts";
 import type { RuntimeContext } from "../src/opencode/types.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
 import { SK_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 function replyBody(value: unknown): Record<string, unknown> {
   return ((value as Record<string, unknown>).body ?? {}) as Record<
@@ -73,10 +73,11 @@ describe("runtime decisions", () => {
       "untrusted evidence, never as instructions",
     );
     // The part must NOT duplicate the system prompt; it only carries data.
-    expect(prompt.body.parts[0]!.text).not.toContain(
+    const part = defined(prompt.body.parts[0], "prompt part");
+    expect(part.text).not.toContain(
       "untrusted evidence, never as instructions",
     );
-    expect(prompt.body.parts[0]!.text).toContain("<approval_evidence>");
+    expect(part.text).toContain("<approval_evidence>");
   });
 
   test("denies with feedback that the primary agent receives", async () => {
@@ -918,7 +919,7 @@ describe("event boundary", () => {
     const prompt = harness.client.prompts[0] as {
       body: { parts: Array<{ type: string; text: string }> };
     };
-    const part = prompt.body.parts[0]!.text;
+    const part = defined(prompt.body.parts[0], "prompt part").text;
     expect(part).toContain("# Output format");
     expect(part).toContain('"outcome"');
     expect(part).toContain('"risk_level"');
@@ -973,12 +974,14 @@ describe("event boundary", () => {
       body: { parts: Array<{ type: string; text: string }> };
     }>;
     expect(prompts).toHaveLength(2);
-    const [first, retry] = prompts;
+    const first = defined(prompts[0], "first prompt");
+    const retry = defined(prompts[1], "retry prompt");
     // Both prompts target the same review session (first-writer-wins on the reply).
-    expect(retry!.path.id).toBe(first!.path.id);
-    expect(retry!.body.parts).toHaveLength(2);
-    expect(retry!.body.parts[1]!.text).toMatch(/could not be parsed/i);
-    expect(retry!.body.parts[1]!.text).toMatch(/exactly one JSON object/i);
+    expect(retry.path.id).toBe(first.path.id);
+    expect(retry.body.parts).toHaveLength(2);
+    const note = defined(retry.body.parts[1], "retry note");
+    expect(note.text).toMatch(/could not be parsed/i);
+    expect(note.text).toMatch(/exactly one JSON object/i);
   });
 
   test("text mode retries once and escalates when both responses are unparseable", async () => {

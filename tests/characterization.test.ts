@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import type { ReviewAuditRecord } from "../src/types.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
@@ -276,18 +276,19 @@ describe("characterization gaps (baseline prereq)", () => {
       harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.schemaVersion).toBe(3);
-    expect(audits[0]!.hostGeneration).toBe("v1");
-    expect(audits[0]!.application).toBe("reply-accepted");
-    expect(audits[0]!.reviewID).not.toBe(audits[0]!.hostRequestID);
-    expect(audits[0]!.decisionSchemaVersion).toBe(2);
-    expect(audits[0]!.promptVersion).toBe("2.3.1");
-    expect(audits[0]!.decisionSource).toBe("llm-reviewer");
-    expect(audits[0]!.actionHash).toMatch(/^[0-9a-f]{64}$/);
-    expect(audits[0]!.scopeAlignment).toBe("aligned");
-    expect(audits[0]!.reviewerModel).toBe(DEFAULT_CONFIG.model);
-    expect(audits[0]!.timings).toBeDefined();
-    expect(audits[0]!.timings?.reviewerMs).toBeGreaterThanOrEqual(0);
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.schemaVersion).toBe(3);
+    expect(audit.hostGeneration).toBe("v1");
+    expect(audit.application).toBe("reply-accepted");
+    expect(audit.reviewID).not.toBe(audit.hostRequestID);
+    expect(audit.decisionSchemaVersion).toBe(2);
+    expect(audit.promptVersion).toBe("2.3.1");
+    expect(audit.decisionSource).toBe("llm-reviewer");
+    expect(audit.actionHash).toMatch(/^[0-9a-f]{64}$/);
+    expect(audit.scopeAlignment).toBe("aligned");
+    expect(audit.reviewerModel).toBe(DEFAULT_CONFIG.model);
+    expect(audit.timings).toBeDefined();
+    expect(audit.timings?.reviewerMs).toBeGreaterThanOrEqual(0);
   });
 });
 
@@ -315,12 +316,13 @@ describe("actor-aware context threading", () => {
       harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.actor).toMatchObject({
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.actor).toMatchObject({
       name: "build",
       mode: "build",
       identityCompleteness: "complete",
     });
-    expect(audits[0]!.rootSessionID).toBe("ses_main");
+    expect(audit.rootSessionID).toBe("ses_main");
   });
 
   test("reviewer prompt includes actor and lineage evidence sections", async () => {
@@ -355,11 +357,12 @@ describe("actor-aware context threading", () => {
       harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.actor).toMatchObject({
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.actor).toMatchObject({
       profile: "unknown",
       identityCompleteness: "unknown",
     });
-    expect(audits[0]!.actor).not.toHaveProperty("name");
+    expect(audit.actor).not.toHaveProperty("name");
   });
 
   test("capability assessment reaches the reviewer prompt for bash requests", async () => {
@@ -401,11 +404,14 @@ describe("actor-aware context threading", () => {
       harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.capability).toMatchObject({
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.capability).toMatchObject({
       actionClass: "destruction",
       parserCompleteness: "complete-for-supported-form",
     });
-    expect(audits[0]!.capability!.writeEffects).toMatchObject({
+    expect(
+      defined(audit.capability, "audit capability").writeEffects,
+    ).toMatchObject({
       deletion: true,
     });
   });
@@ -417,7 +423,8 @@ describe("actor-aware context threading", () => {
       harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.capability).toBeUndefined();
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.capability).toBeUndefined();
   });
 
   test("credential reads appear in the audit snapshot only when true", async () => {
@@ -429,8 +436,9 @@ describe("actor-aware context threading", () => {
       reading.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(readingAudits).toHaveLength(1);
-    expect(readingAudits[0]!.schemaVersion).toBe(3);
-    expect(readingAudits[0]!.capability).toMatchObject({
+    const readingAudit = defined(readingAudits[0], "readingAudits[0]");
+    expect(readingAudit.schemaVersion).toBe(3);
+    expect(readingAudit.capability).toMatchObject({
       credentialRead: true,
     });
 
@@ -442,8 +450,9 @@ describe("actor-aware context threading", () => {
       plain.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(plainAudits).toHaveLength(1);
-    expect(plainAudits[0]!.schemaVersion).toBe(3);
-    expect(plainAudits[0]!.capability).not.toHaveProperty("credentialRead");
+    const plainAudit = defined(plainAudits[0], "plainAudits[0]");
+    expect(plainAudit.schemaVersion).toBe(3);
+    expect(plainAudit.capability).not.toHaveProperty("credentialRead");
   });
 
   test("policy trace appears in audit records for bash requests", async () => {
@@ -455,11 +464,14 @@ describe("actor-aware context threading", () => {
       harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
     ).auditRecords;
     expect(audits).toHaveLength(1);
-    expect(audits[0]!.policyTrace).toMatchObject({
+    const audit = defined(audits[0], "audits[0]");
+    expect(audit.policyTrace).toMatchObject({
       finalRoute: "review",
       mode: "observe",
     });
-    expect(audits[0]!.policyTrace!.effectivePolicyHash).toHaveLength(16);
+    expect(
+      defined(audit.policyTrace, "audit policyTrace").effectivePolicyHash,
+    ).toHaveLength(16);
   });
 
   test("enforce mode with a deny rule skips the LLM and returns deny", async () => {

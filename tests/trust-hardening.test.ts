@@ -39,7 +39,7 @@ import { evaluatePolicy } from "../src/policy/policy-engine.ts";
 import { enrichSshEvidence, includeEvidenceFile } from "../src/ssh-evidence.ts";
 import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
-import { decision, MockClient, request, runtime } from "./helpers.ts";
+import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
 
@@ -753,7 +753,9 @@ describe("trust hardening — audit output boundary", () => {
       const summary = readAuditSummary(file);
       expect(summary.validRecords).toBe(1);
       expect(summary.invalidLines).toBe(0);
-      expect(summary.unknownActorNames[0]!.name).toBe("(unnamed)");
+      expect(
+        defined(summary.unknownActorNames[0], "unknown actor name").name,
+      ).toBe("(unnamed)");
     } finally {
       rmSync(join(file, ".."), { recursive: true });
     }
@@ -765,9 +767,8 @@ describe("trust hardening — audit output boundary", () => {
     try {
       const secret = GITHUB_PAT_ALPHANUMERIC;
       const config = resolveConfig({ audit: true, auditPath: file });
-      const write = createAuditWriter(config);
-      expect(write).toBeDefined();
-      await write!({
+      const write = defined(createAuditWriter(config), "audit writer");
+      await write({
         schemaVersion: 2,
         decisionSchemaVersion: 2,
         promptVersion: "test",
@@ -1198,7 +1199,7 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       ],
     });
     expect(omitted.policyRules).toHaveLength(1);
-    expect(omitted.policyRules[0]!.when).toBeUndefined();
+    expect(defined(omitted.policyRules[0], "policy rule").when).toBeUndefined();
     const trace = evaluatePolicy(
       undefined,
       undefined,
@@ -1250,7 +1251,9 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       setGlobalConfigPathForTests(globalPath);
       const config = loadResolvedConfig({ confidenceThreshold: 0.9 });
       expect(config.configDegraded).toBeDefined();
-      expect(config.configDegraded!.join(" ")).toContain("malformed");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("malformed");
 
       // An LLM allow under a degraded config must not auto-approve.
       const client = new MockClient();
@@ -1289,9 +1292,9 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       setGlobalConfigPathForTests(globalPath);
       const config = loadResolvedConfig({});
       expect(config.configDegraded).toBeDefined();
-      expect(config.configDegraded!.join(" ")).toContain(
-        "dropped by validation",
-      );
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("dropped by validation");
       // The dropped deny rule did not survive as a rule…
       expect(config.policyRules).toHaveLength(0);
       // …and the degradation enters the effective-policy identity.
@@ -1315,7 +1318,9 @@ describe("trust hardening — universal rules and fail-closed trusted config", (
       setGlobalConfigPathForTests(dir);
       const config = loadResolvedConfig({});
       expect(config.configDegraded).toBeDefined();
-      expect(config.configDegraded!.join(" ")).toContain("could not be read");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("could not be read");
     } finally {
       setGlobalConfigPathForTests(undefined);
       rmSync(dir, { recursive: true });
@@ -1688,7 +1693,7 @@ describe("review regression boundaries", () => {
       const prompt = client.prompts[0] as {
         body: { parts: Array<{ text: string }> };
       };
-      const text = prompt.body.parts[0]!.text;
+      const text = defined(prompt.body.parts[0], "prompt part").text;
       expect(text).not.toContain('"actor": "user"');
       expect(text).not.toContain("USER_INTENT_HISTORY\nuser:");
       const res = await resolveActorContext(
@@ -1725,8 +1730,9 @@ describe("review regression boundaries", () => {
     const prompt = client.prompts[0] as {
       body: { parts: Array<{ text: string }> };
     };
-    expect(prompt.body.parts[0]!.text).toContain("PENDING_PERMISSION");
-    expect(prompt.body.parts[0]!.text).toContain('"command": "printf safe"');
+    const part = defined(prompt.body.parts[0], "prompt part");
+    expect(part.text).toContain("PENDING_PERMISSION");
+    expect(part.text).toContain('"command": "printf safe"');
   });
 
   test("text mode keeps every tool disabled", async () => {
@@ -1861,7 +1867,9 @@ describe("trust hardening - condition enum typos fail closed", () => {
       writeFileSync(path, JSON.stringify({ enforcementMode: "enfroce" }));
       setGlobalConfigPathForTests(path);
       const config = loadResolvedConfig({});
-      expect(config.configDegraded!.join(" ")).toContain("enforcementMode");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("enforcementMode");
       expect(config.enforcementMode).toBe("observe");
       const client = new MockClient();
       expect(
@@ -1879,7 +1887,9 @@ describe("trust hardening - condition enum typos fail closed", () => {
     try {
       setGlobalConfigPathForTests(join(dir, "missing-global.jsonc"));
       const config = loadResolvedConfig({ enforcementMode: "enfroce" });
-      expect(config.configDegraded!.join(" ")).toContain("enforcementMode");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("enforcementMode");
       expect(config.enforcementMode).toBe("observe");
     } finally {
       setGlobalConfigPathForTests(undefined);
@@ -1894,7 +1904,9 @@ describe("trust hardening - condition enum typos fail closed", () => {
       writeFileSync(path, JSON.stringify({ escalationMode: "dnye" }));
       setGlobalConfigPathForTests(path);
       const config = loadResolvedConfig({});
-      expect(config.configDegraded!.join(" ")).toContain("escalationMode");
+      expect(
+        defined(config.configDegraded, "configDegraded").join(" "),
+      ).toContain("escalationMode");
       expect(config.escalationMode).toBe("manual");
     } finally {
       setGlobalConfigPathForTests(undefined);

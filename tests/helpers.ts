@@ -14,6 +14,12 @@ import type {
 } from "../src/types.ts";
 import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 
+/** Narrows a value a test expects to be present; a throw fails the test with a clear message. */
+export function defined<T>(value: T | null | undefined, label = "value"): T {
+  if (value == null) throw new Error(`expected ${label} to be defined`);
+  return value;
+}
+
 export function decision(
   outcome: ReviewDecision["outcome"],
   overrides: Partial<ReviewDecision> = {},
@@ -158,7 +164,7 @@ export class MockClient implements OpenCodeClientLike {
         if (this.promptImpl) return this.promptImpl(options);
         if (this.promptError !== undefined) return { error: this.promptError };
         if (this.nextTexts.length > 0) {
-          const text = this.nextTexts.shift()!;
+          const text = defined(this.nextTexts.shift(), "queued review text");
           return {
             data: {
               info: { id: "msg_review", role: "assistant" },
