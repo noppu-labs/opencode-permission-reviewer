@@ -242,6 +242,22 @@ describe("AskDecisionRegistry", () => {
     ).toBe(DISMISSED_ANSWER);
   });
 
+  test("a rejection without a string request ID leaves the ask pending", () => {
+    const registry = new AskDecisionRegistry();
+    registry.observe(asked("que_1", "ses_main", ["Deploy?"]));
+    registry.observe({ type: "question.rejected", properties: null });
+    registry.observe({
+      type: "question.rejected",
+      properties: { requestID: 1 },
+    });
+    expect(registry.pendingCount()).toBe(1);
+    expect(registry.resolvedCount()).toBe(0);
+    registry.observe(rejected("que_1"));
+    expect(registry.recentFor(["ses_main"])).toEqual([
+      expect.objectContaining({ answer: DISMISSED_ANSWER }),
+    ]);
+  });
+
   test("recentFor tolerates empty scopes and zero limits", () => {
     const registry = new AskDecisionRegistry();
     registry.observe(asked("que_1", "ses_main", ["Deploy?"]));
