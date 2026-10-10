@@ -5,9 +5,9 @@ import type { JSX } from "solid-js";
 import { createSignal, Show } from "solid-js";
 import { loadResolvedConfig } from "./config/loader.ts";
 import { reviewBudgetMs } from "./config.ts";
-// Import the normalizer directly. Importing the review coordinator would
-// evaluate the whole server engine (git/ssh evidence, node:child_process) inside
-// the TUI process for a single function.
+// Import the normalizer directly: `./index.ts` re-exports it, but importing that
+// would evaluate the whole server engine (git/ssh evidence, `node:child_process`)
+// inside the TUI process.
 import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
 import { ReviewOverlay, ReviewResult, SPINNER } from "./ui/components.tsx";
 import { setupTuiV2 } from "./ui/v2.tsx";

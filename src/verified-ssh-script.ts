@@ -50,8 +50,7 @@ export function parseVerifiedSshScriptCommand(
       command,
     );
   if (!match) return;
-  // Groups 1, 3 and 4 are mandatory, so they are defined once the regex
-  // matches; only the port group is optional.
+  // Groups 1, 3 and 4 always match; only the port group is optional.
   const [, path, portText, destination, remote] = match;
   if (
     path === undefined ||

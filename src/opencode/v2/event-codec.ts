@@ -24,7 +24,6 @@ export class V2AskDecisions implements AskDecisionSource {
         return;
       if (JSON.stringify(form).length > 64_000) return;
       if (this.pending.size >= 128) {
-        // A non-empty map always yields its oldest key.
         const oldest = this.pending.keys().next();
         if (!oldest.done) this.pending.delete(oldest.value);
       }

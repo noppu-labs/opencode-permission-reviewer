@@ -743,8 +743,6 @@ async function literalUrlRewrites(
   for (const entry of config.stdout.split("\0")) {
     const separator = entry.indexOf("\n");
     const key = entry.slice(0, separator);
-    // Both capture groups are mandatory, so they are defined exactly when
-    // the key matches.
     const match = key.match(/^url\.(.+)\.(pushinsteadof|insteadof)$/i);
     const base = match?.[1];
     const kind = match?.[2];
@@ -805,7 +803,6 @@ async function resolveRemoteTargets(
   )
     ? await literalUrlRewrites(directory, neutralization)
     : undefined;
-  // Stored values are objects, so a missing entry is the only `undefined`.
   const resolveRemote = async (name: string): Promise<ConfiguredRemoteUrls> => {
     let resolved = resolvedRemotes.get(name);
     if (resolved === undefined) {

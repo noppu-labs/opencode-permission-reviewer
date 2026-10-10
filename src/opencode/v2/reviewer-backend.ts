@@ -478,7 +478,6 @@ export class V2ReviewerBackend {
             }
           }
           if (!cleanupConfirmed)
-            // Cleanup uncertainty must override a provisional allow; the controller fails closed.
             // biome-ignore lint/correctness/noUnsafeFinally: deliberately overrides the provisional decision so an unconfirmed cleanup fails closed
             throw new Error(
               "Reviewer cleanup could not be confirmed; isolation guards remain active",

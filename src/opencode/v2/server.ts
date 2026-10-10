@@ -160,7 +160,6 @@ export async function setupWithServices(
   registrations.push(
     await ctx.tool.hook("execute.before", (event) => {
       if (tools.size >= 512) {
-        // A non-empty map always yields its oldest key.
         const oldest = tools.keys().next();
         if (!oldest.done) tools.delete(oldest.value);
       }
