@@ -10,6 +10,7 @@
  * stack nor expand the result without bound.
  */
 
+import { elementAt } from "./element-at.ts";
 import { invariant } from "./invariant.ts";
 import {
   type AnalysisBudget,
@@ -359,83 +360,100 @@ function findCommandString(
   start: number,
   shellFlags = false,
 ): string | null {
-  let i = start;
-  let endOfFlags = false;
-  let shellCommandPending = false;
-  while (i < tokens.length) {
-    const token = tokens[i];
-    invariant(token, "tokens[i] is in bounds");
-    const t = token.value;
-    if (!endOfFlags && t === "--") {
-      if (shellFlags && shellCommandPending) {
-        return tokens[i + 1]?.value ?? null;
-      }
-      endOfFlags = true;
-      i += 1;
-      continue;
-    }
-    if (!endOfFlags && t === "-c") {
-      if (shellFlags) {
-        shellCommandPending = true;
-        i += 1;
-        continue;
-      }
-      return tokens[i + 1]?.value ?? null;
-    }
-    // Long form: `--command` (next token) or `--command=VALUE`.
-    if (!endOfFlags && t === "--command") {
-      return tokens[i + 1]?.value ?? null;
-    }
-    if (!endOfFlags && t.startsWith("--command=")) {
-      return t.slice("--command=".length);
-    }
-    if (shellFlags && shellCommandPending) {
-      if (!endOfFlags && (t === "-o" || t === "-O")) {
-        i += 2;
-        continue;
-      }
-      if (
-        !endOfFlags &&
-        (t.startsWith("-") || t.startsWith("+")) &&
-        t.length > 1
-      ) {
-        i += 1;
-        continue;
-      }
-      return t;
-    }
-    // Short-flag cluster containing `c` (e.g. `bash -ic '...'`). getopt
-    // semantics: when `c` ends the cluster its value is the next token;
-    // when other letters follow (`script -c"rm -rf /"`, `-Sval`), the rest
-    // of the cluster IS the value.
-    if (
-      !endOfFlags &&
-      t.startsWith("-") &&
-      !t.startsWith("--") &&
-      t.length > 1
-    ) {
-      const cPosition = t.indexOf("c");
-      if (cPosition === -1) {
-        i += 1;
-        continue;
-      }
-      // Shells treat every letter in -ce/-xec as a flag: the script is
-      // the first non-option that follows. More shell options may still sit
-      // between that cluster and the script (`sh -c -x -- '...'`). su and
-      // script use getopt value semantics instead.
-      if (shellFlags) {
-        shellCommandPending = true;
-        i += 1;
-        continue;
-      }
-      if (cPosition === t.length - 1) {
-        return tokens[i + 1]?.value ?? null;
-      }
-      return t.slice(cPosition + 1);
-    }
-    i += 1;
+  return shellFlags
+    ? shellCommandString(tokens, start)
+    : getoptCommandString(tokens, start);
+}
+
+/** su and script use getopt value semantics. A `--` before any `-c` ends the
+ *  options, so nothing after it is a command string. */
+function getoptCommandString(
+  tokens: ShellToken[],
+  start: number,
+): string | null {
+  for (let i = start; i < tokens.length; i += 1) {
+    const t = elementAt(tokens, i, "tokens").value;
+    if (t === "--") return null;
+    const value = getoptCommandValue(t, tokens[i + 1]?.value ?? null);
+    if (value !== undefined) return value;
   }
   return null;
+}
+
+/** The command string `t` carries, `next` when its value is the following
+ *  token, or `undefined` when `t` is not a command option. In a short-flag
+ *  cluster containing `c` (e.g. `su -lc '...'`), getopt semantics apply: when
+ *  `c` ends the cluster its value is the next token; when other letters
+ *  follow (`script -c"rm -rf /"`), the rest of the cluster IS the value. */
+function getoptCommandValue(
+  t: string,
+  next: string | null,
+): string | null | undefined {
+  const long = longCommandValue(t, next);
+  if (long !== undefined) return long;
+  if (!isShortCluster(t)) return undefined;
+  const cPosition = t.indexOf("c");
+  if (cPosition === -1) return undefined;
+  return cPosition === t.length - 1 ? next : t.slice(cPosition + 1);
+}
+
+/** Long form: `--command` (next token) or `--command=VALUE`; `undefined` for
+ *  any other token. */
+function longCommandValue(
+  t: string,
+  next: string | null,
+): string | null | undefined {
+  if (t === "--command") return next;
+  if (t.startsWith("--command=")) return t.slice("--command=".length);
+  return undefined;
+}
+
+function isShortCluster(t: string): boolean {
+  return t.startsWith("-") && !t.startsWith("--") && t.length > 1;
+}
+
+/** Shells treat every letter in -ce/-xec as a flag: the script is the first
+ *  non-option after the cluster holding `c`. A `--` before that cluster ends
+ *  the options, so nothing after it is a command string. */
+function shellCommandString(
+  tokens: ShellToken[],
+  start: number,
+): string | null {
+  for (let i = start; i < tokens.length; i += 1) {
+    const t = elementAt(tokens, i, "tokens").value;
+    if (t === "--") return null;
+    const long = longCommandValue(t, tokens[i + 1]?.value ?? null);
+    if (long !== undefined) return long;
+    if (isShortCluster(t) && t.includes("c"))
+      return shellScriptOperand(tokens, i + 1);
+  }
+  return null;
+}
+
+/** The script once the `-c` cluster is seen. More shell options may still sit
+ *  between that cluster and the script (`sh -c -x -- '...'`). */
+function shellScriptOperand(
+  tokens: ShellToken[],
+  start: number,
+): string | null {
+  let i = start;
+  while (i < tokens.length) {
+    const t = elementAt(tokens, i, "tokens").value;
+    if (t === "--") return tokens[i + 1]?.value ?? null;
+    const long = longCommandValue(t, tokens[i + 1]?.value ?? null);
+    if (long !== undefined) return long;
+    const width = shellOptionWidth(t);
+    if (width === 0) return t;
+    i += width;
+  }
+  return null;
+}
+
+/** Tokens a shell option spans (`-o NAME` and `-O NAME` take a value), or 0
+ *  for an operand. */
+function shellOptionWidth(t: string): number {
+  if (t === "-o" || t === "-O") return 2;
+  return (t.startsWith("-") || t.startsWith("+")) && t.length > 1 ? 1 : 0;
 }
 
 /** Locate the command string carried by a (possibly clustered) `env -S`
