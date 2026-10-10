@@ -39,27 +39,33 @@ export function collectConversionKeys(stdout: string): {
 } {
   const filterNames = new Set<string>();
   const diffDrivers = new Set<string>();
-  const filterProps = [".clean", ".smudge", ".process", ".required"];
   // `git config -z --get-regexp` emits one `key\nvalue\0` record per match;
   // the key is everything before the first newline, whatever it contains.
   for (const record of stdout.split("\0")) {
-    if (record.length === 0) continue;
     const newline = record.indexOf("\n");
     const key = newline < 0 ? record : record.slice(0, newline);
-    if (key.length === 0) continue;
-    if (key.startsWith("filter.")) {
-      const prop = filterProps.find((suffix) => key.endsWith(suffix));
-      if (prop === undefined) continue;
-      const name = key.slice("filter.".length, key.length - prop.length);
-      if (name.length > 0) filterNames.add(name);
-      continue;
-    }
-    if (key.startsWith("diff.") && key.endsWith(".textconv")) {
-      const driver = key.slice("diff.".length, key.length - ".textconv".length);
-      if (driver.length > 0) diffDrivers.add(driver);
-    }
+    if (key.startsWith("filter.")) addNonEmpty(filterNames, filterName(key));
+    else if (key.startsWith("diff.") && key.endsWith(".textconv"))
+      addNonEmpty(
+        diffDrivers,
+        key.slice("diff.".length, key.length - ".textconv".length),
+      );
   }
   return { filterNames, diffDrivers };
+}
+
+const FILTER_PROPS = [".clean", ".smudge", ".process", ".required"];
+
+/** The filter name in a `filter.<name>.<prop>` key, when `<prop>` is one
+ *  that can run or require a filter. */
+function filterName(key: string): string | undefined {
+  const prop = FILTER_PROPS.find((suffix) => key.endsWith(suffix));
+  if (prop === undefined) return undefined;
+  return key.slice("filter.".length, key.length - prop.length);
+}
+
+function addNonEmpty(names: Set<string>, name: string | undefined): void {
+  if (name !== undefined && name.length > 0) names.add(name);
 }
 
 /** Build the `-c` overrides that neutralize every collected filter and diff
@@ -119,32 +125,41 @@ export function filterNeutralizationArgs(directory: string): Promise<string[]> {
           env: gitInspectionEnv(),
         },
       );
-      const { filterNames, diffDrivers } = collectConversionKeys(result.stdout);
-      if (filterNames.size > MAX_NEUTRALIZED_FILTERS) {
-        // A resource limit must never degrade into "inspect while leaving the
-        // remainder active": refuse the inspection instead.
-        throw new Error(
-          `repository configures ${filterNames.size} conversion filters (limit ${MAX_NEUTRALIZED_FILTERS}); refusing to inspect`,
-        );
-      }
-      if (diffDrivers.size > MAX_NEUTRALIZED_DIFF_DRIVERS) {
-        throw new Error(
-          `repository configures ${diffDrivers.size} diff textconv drivers (limit ${MAX_NEUTRALIZED_DIFF_DRIVERS}); refusing to inspect`,
-        );
-      }
-      const args = conversionNeutralizationArgs(filterNames, diffDrivers);
-      return args;
+      return boundedNeutralizationArgs(result.stdout);
     } catch (error) {
-      const record = error as { code?: unknown };
-      // git config exits 1 when nothing matches: the common, benign case.
-      if (record.code === 1) return [];
-      // Surface scan failures so the caller fails closed instead of
-      // inspecting unverified.
-      throw error instanceof Error ? error : new Error(String(error));
+      return emptyScanArgs(error);
     } finally {
       inFlightFilterScans.delete(directory);
     }
   })();
   inFlightFilterScans.set(directory, scan);
   return scan;
+}
+
+function boundedNeutralizationArgs(stdout: string): string[] {
+  const { filterNames, diffDrivers } = collectConversionKeys(stdout);
+  if (filterNames.size > MAX_NEUTRALIZED_FILTERS) {
+    // A resource limit must never degrade into "inspect while leaving the
+    // remainder active": refuse the inspection instead.
+    throw new Error(
+      `repository configures ${filterNames.size} conversion filters (limit ${MAX_NEUTRALIZED_FILTERS}); refusing to inspect`,
+    );
+  }
+  if (diffDrivers.size > MAX_NEUTRALIZED_DIFF_DRIVERS) {
+    throw new Error(
+      `repository configures ${diffDrivers.size} diff textconv drivers (limit ${MAX_NEUTRALIZED_DIFF_DRIVERS}); refusing to inspect`,
+    );
+  }
+  return conversionNeutralizationArgs(filterNames, diffDrivers);
+}
+
+/** The args for a scan that failed with `error`: none when nothing matched,
+ *  otherwise the failure is rethrown. */
+function emptyScanArgs(error: unknown): string[] {
+  const record = error as { code?: unknown };
+  // git config exits 1 when nothing matches: the common, benign case.
+  if (record.code === 1) return [];
+  // Surface scan failures so the caller fails closed instead of
+  // inspecting unverified.
+  throw error instanceof Error ? error : new Error(String(error));
 }
