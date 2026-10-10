@@ -47,7 +47,7 @@ export function isWithinRoot(path: string, root: string): boolean {
 export async function approvedEvidenceRoots(
   rootDirectory: string,
   worktree?: string,
-  temporaryPath: string = "/tmp/opencode",
+  temporaryPath: string = "/tmp/opencode", // NOSONAR(S5443) only a path string for the approved-root check: it is lstat-ed and must be an owned, non-writable directory; nothing is created or written there
 ): Promise<string[]> {
   const [directoryRoot, worktreeRoot, temporaryRoot] = await Promise.all([
     realpath(rootDirectory).catch(() => resolve(rootDirectory)),

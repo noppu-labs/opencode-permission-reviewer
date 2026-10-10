@@ -267,11 +267,11 @@ export function classifyPath(
   const workspace = within(directory) || within(worktree);
   temp =
     absolute === "/tmp" ||
-    absolute.startsWith("/tmp/") ||
+    absolute.startsWith("/tmp/") || // NOSONAR(S5443) classifies the target path of a command as temporary; no file is created or used here
     absolute === "/var/tmp" ||
-    absolute.startsWith("/var/tmp/") ||
+    absolute.startsWith("/var/tmp/") || // NOSONAR(S5443) classifies the target path of a command as temporary; no file is created or used here
     absolute === "/dev/shm" ||
-    absolute.startsWith("/dev/shm/") ||
+    absolute.startsWith("/dev/shm/") || // NOSONAR(S5443) classifies the target path of a command as temporary; no file is created or used here
     absolute === "/dev/null";
   external = !workspace && !temp;
   return { temporary: temp, workspace, external };

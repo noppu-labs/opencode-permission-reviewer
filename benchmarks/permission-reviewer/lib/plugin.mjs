@@ -30,7 +30,8 @@ const PINNED_BLOBS = {
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "74472f20c44bcb39f6fb9ae0711a46c67aa15d50",
   "src/capability/bash-facts.ts": "2a7723e74e65354af9c3bf6d35e7b85c88372d56",
-  "src/capability/bash-mutation.ts": "f9863305fd9883a0c7f9d9962fef53bdacd25f27",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/capability/bash-mutation.ts": "7427c0a9f03862417ce390b635eb0196a704ac6b",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-effective-commands.ts": "433ba999655cff8e3025b42cd1a0e3f337ff3d88",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

@@ -262,8 +262,9 @@ export async function resolveIntent(
   );
   const latestExplicitAuthorization =
     timestamped.length > 0
-      ? timestamped.reduce((best, block) =>
-          (block.createdAt ?? 0) > (best.createdAt ?? 0) ? block : best,
+      ? /* NOSONAR(S6959) guarded by `timestamped.length > 0`, so the array is never empty */ timestamped.reduce(
+          (best, block) =>
+            (block.createdAt ?? 0) > (best.createdAt ?? 0) ? block : best,
         )
       : directUserIntent[directUserIntent.length - 1];
 

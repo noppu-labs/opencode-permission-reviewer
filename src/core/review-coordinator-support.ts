@@ -22,7 +22,7 @@ export type Logger = (message: string, details?: unknown) => void;
 function actionHash(request: PermissionRequest): string {
   const canonical = JSON.stringify({
     permission: request.permission,
-    patterns: [...request.patterns].sort(),
+    patterns: [...request.patterns].sort(), // NOSONAR(S2871) code-unit order is the canonical form of the audit action hash; a locale-aware compare would change hashes across locales and versions
     metadata: request.metadata,
   });
   return createHash("sha256").update(canonical).digest("hex");
