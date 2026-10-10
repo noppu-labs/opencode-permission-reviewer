@@ -415,7 +415,7 @@
         }
       }
     },
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 32 files.
+    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 33 files.
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
@@ -431,6 +431,7 @@
         "benchmarks/permission-reviewer/tests/opencode-v1.test.mjs",
         "scripts/check-coverage.ts",
         "src/cli/explain.ts",
+        "src/cli/init-config-files.ts",
         "src/cli/init.ts",
         "src/opencode/event-normalizer.ts",
         "src/opencode/v1/context-reader.ts",

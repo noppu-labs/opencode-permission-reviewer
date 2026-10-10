@@ -10,13 +10,13 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { PackageInfo, PluginEntry } from "../src/cli/init.ts";
+import type { PackageInfo, PluginEntry } from "../src/cli/init-config-files.ts";
 import {
   applyPlannedWrites,
   planFileChange,
   writeBackup,
   writeEntry,
-} from "../src/cli/init.ts";
+} from "../src/cli/init-config-files.ts";
 
 async function run(
   args: string[],
