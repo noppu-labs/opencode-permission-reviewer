@@ -61,6 +61,7 @@
     "providers.test.mjs",
     "runner.test.mjs",
     "explain.ts",
+    "doctor-command.ts",
     "index.ts",
     "init.ts",
     "init-config-files.ts",
