@@ -103,7 +103,7 @@ const PINNED_BLOBS = {
   "src/capability/heredoc-extractor.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
-  "src/system-one/review.ts": "3db8886b4c4cfee3ba1119bba01889085af21b9f",
+  "src/system-one/review.ts": "3c794bf741679c17a3c6e42dfba6f1b3e41efb7a",
   "src/system-one/system-one-questions.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "5008341e04e7fc87061e82001cfc43b91fd06846",
@@ -116,9 +116,7 @@ const PINNED_BLOBS = {
   "src/system-one/system-one-consistency.ts":
     "9658f16a6a3ab91e63506906ab41113d5fa77615",
   "src/system-one/system-one-verdict.ts":
-    "a7825a6bbae396e8b79b194219c9b7f1f16b7c7c",
-  "src/system-one/system-one-types.ts":
-    "9b8fd50c81c2a4d95771737c2ad7aeaea80e0ee9",
+    "0b67da13822fccdccb4073c14e131cd88b5b7e74",
   "src/capability/capability-facts.ts":
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":

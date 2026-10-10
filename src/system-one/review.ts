@@ -8,11 +8,11 @@ import type {
 import { type ParsedAnswers, parseAnswers } from "./system-one-answers.ts";
 import { exactKeys, isPlainObject } from "./system-one-choices.ts";
 import { SYSTEM_ONE_QUESTIONS } from "./system-one-questions.ts";
-import type {
-  ParsedSystemOneReview,
-  SystemOnePrimaryBasis,
-} from "./system-one-types.ts";
-import { systemOneVerdict } from "./system-one-verdict.ts";
+import type { SystemOnePrimaryBasis } from "./system-one-types.ts";
+import {
+  type ParsedSystemOneReview,
+  systemOneVerdict,
+} from "./system-one-verdict.ts";
 
 export interface SystemOneState extends Record<string, JsonValue> {
   trustedPolicy: { reviewer: string; tenant: string };

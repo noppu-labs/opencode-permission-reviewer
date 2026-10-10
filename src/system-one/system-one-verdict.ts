@@ -5,9 +5,18 @@ import type { ReviewDecision, ReviewerConfig } from "../types.ts";
 import type { ParsedAnswers } from "./system-one-answers.ts";
 import { systemOneContradictions } from "./system-one-consistency.ts";
 import type {
-  ParsedSystemOneReview,
+  SystemOnePrimaryBasis,
   SystemOneScores,
 } from "./system-one-types.ts";
+
+export interface ParsedSystemOneReview {
+  decision: ReviewDecision;
+  primaryBasis: SystemOnePrimaryBasis;
+  difficultReason?: string;
+  reasoningRecommended: boolean;
+  returnedModel: string;
+  scores: SystemOneScores;
+}
 
 function difficultReasonFor(
   decision: ReviewDecision,
