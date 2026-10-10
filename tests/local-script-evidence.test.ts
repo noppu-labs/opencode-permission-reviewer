@@ -202,22 +202,21 @@ describe("local script evidence enrichment", () => {
       'print("exfiltrated local script")\n',
     );
     try {
-      await Promise.all(
-        [
-          `cd ${outside} && python3 payload.py`,
-          `cd ${outside} && python3 ${join(outside, "payload.py")}`,
-        ].map(async (command) => {
-          const result = await enrichLocalScriptEvidence(
-            request({ patterns: [command], metadata: { command } }),
-            directory,
-            directory,
-            12_000,
-          );
-          expect(result.text).toContain('"status": "blocked"');
-          expect(result.text).toContain("outside approved enrichment roots");
-          expect(result.text).not.toContain("exfiltrated local script");
-        }),
-      );
+      for (const command of [
+        `cd ${outside} && python3 payload.py`,
+        `cd ${outside} && python3 ${join(outside, "payload.py")}`,
+      ]) {
+        // biome-ignore lint/performance/noAwaitInLoops: the finally below deletes the outside fixture, so each case must finish reading it before cleanup can run
+        const result = await enrichLocalScriptEvidence(
+          request({ patterns: [command], metadata: { command } }),
+          directory,
+          directory,
+          12_000,
+        );
+        expect(result.text).toContain('"status": "blocked"');
+        expect(result.text).toContain("outside approved enrichment roots");
+        expect(result.text).not.toContain("exfiltrated local script");
+      }
     } finally {
       await rm(outside, { recursive: true });
     }
