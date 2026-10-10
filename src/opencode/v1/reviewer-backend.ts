@@ -1,6 +1,5 @@
 import { randomUUID } from "node:crypto";
 import { join } from "node:path";
-import { splitModel } from "../../config.ts";
 import { buildEvidenceResult } from "../../context.ts";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { parseDecision, parseDecisionFromText } from "../../decision.ts";
@@ -14,6 +13,7 @@ import {
   REVIEWER_SYSTEM_PROMPT,
 } from "../../policy.ts";
 import { redactSecrets } from "../../redact.ts";
+import { splitModel } from "../../reviewer-model.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,

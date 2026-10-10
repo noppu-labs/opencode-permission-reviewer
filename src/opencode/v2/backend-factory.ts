@@ -1,7 +1,7 @@
 import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
-import { isSystemOneReviewerModel } from "../../config.ts";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
+import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
 import { SystemOneReviewerBackend } from "../../system-one/backend.ts";
 import type {
   ReviewEnvelope,

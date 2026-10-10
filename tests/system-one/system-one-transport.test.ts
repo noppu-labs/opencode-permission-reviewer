@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { isSystemOneReviewerModel, resolveConfig } from "../../src/config.ts";
+import { resolveConfig } from "../../src/config.ts";
+import { isSystemOneReviewerModel } from "../../src/reviewer-model.ts";
 import {
   createSystemOneInvoker,
   SystemOneReviewerBackend,

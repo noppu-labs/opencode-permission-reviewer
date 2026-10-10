@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { countInvalidPolicyRules, resolveConfig } from "../src/config.ts";
+import { resolveConfig } from "../src/config.ts";
+import { countInvalidPolicyRules } from "../src/config-policy-rules.ts";
 
 const RULE = { id: "r1", source: "global", effect: "deny", reason: "why" };
 

@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG, resolveConfig, splitModel } from "../src/config.ts";
+import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
 import { parseDecision } from "../src/decision.ts";
 import { enforceDecision } from "../src/decision-gates.ts";
 import { DECISION_SCHEMA } from "../src/decision-schema.ts";
+import { splitModel } from "../src/reviewer-model.ts";
 import { decision } from "./helpers.ts";
 
 describe("decision parsing and invariants", () => {

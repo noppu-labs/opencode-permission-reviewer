@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG, DEFAULT_RISK_POLICY } from "../src/config.ts";
+import { DEFAULT_CONFIG } from "../src/config.ts";
+import { DEFAULT_RISK_POLICY } from "../src/config-risk-policy.ts";
 import { parseDecision } from "../src/decision.ts";
 import { enforceDecision } from "../src/decision-gates.ts";
 import type {

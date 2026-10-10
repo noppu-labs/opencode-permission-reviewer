@@ -5,7 +5,7 @@ import { satisfies } from "semver";
 import packageInfo from "../../../package.json";
 import { createAuditWriter } from "../../audit.ts";
 import { loadResolvedConfig } from "../../config/loader.ts";
-import { isSystemOneReviewerModel, reviewBudgetMs } from "../../config.ts";
+import { reviewBudgetMs } from "../../config.ts";
 import {
   assembleEvidence,
   defaultEvidenceProviders,
@@ -15,6 +15,7 @@ import { evaluateReview } from "../../core/review-engine.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import { formatFailureReason } from "../../failure-reason.ts";
 import { REVIEWER_PROMPT_VERSION } from "../../policy.ts";
+import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
 import type { ReviewEnvelope, ReviewExecutionResult } from "../../types.ts";
 import { ReviewerRpc } from "../../ui/rpc.ts";
 import { createUiStatus, type ReviewUiStatus } from "../../ui-protocol.ts";

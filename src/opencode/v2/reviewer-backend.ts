@@ -5,7 +5,6 @@ import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import type { ToolContext } from "@opencode/plugin/promise/tool";
 import { z } from "zod";
-import { splitModel } from "../../config.ts";
 import { buildEvidenceResult } from "../../context.ts";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { parseDecision, parseDecisionFromText } from "../../decision.ts";
@@ -17,6 +16,7 @@ import {
   DEFAULT_TENANT_POLICY,
   REVIEWER_SYSTEM_PROMPT,
 } from "../../policy.ts";
+import { splitModel } from "../../reviewer-model.ts";
 import type {
   ReviewDecision,
   ReviewEnvelope,

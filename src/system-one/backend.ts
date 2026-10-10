@@ -1,11 +1,11 @@
 import { TypeSafeClient } from "@typesafe-ai/sdk";
-import { splitModel } from "../config.ts";
 import { buildEvidenceResult } from "../context.ts";
 import type { ReviewAttempt } from "../core/review-attempt.ts";
 import { applyEscalationDisposition } from "../escalation.ts";
 import { formatFailureReason } from "../failure-reason.ts";
 import { DEFAULT_TENANT_POLICY, REVIEWER_SYSTEM_PROMPT } from "../policy.ts";
 import { redactSecrets } from "../redact.ts";
+import { splitModel } from "../reviewer-model.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,

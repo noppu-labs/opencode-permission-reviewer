@@ -7,13 +7,10 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import {
-  countInvalidPolicyRules,
-  DEFAULT_CONFIG,
-  DEFAULT_RISK_POLICY,
-  isValidEscalationReviewer,
-  resolveConfig,
-} from "../config.ts";
+import { DEFAULT_CONFIG, resolveConfig } from "../config.ts";
+import { countInvalidPolicyRules } from "../config-policy-rules.ts";
+import { DEFAULT_RISK_POLICY } from "../config-risk-policy.ts";
+import { isValidEscalationReviewer } from "../reviewer-model.ts";
 import type { PolicyRule, ReviewerConfig } from "../types.ts";
 import { parseJsoncStrict } from "./jsonc.ts";
 import type { InlineOptionsTrust } from "./sources.ts";

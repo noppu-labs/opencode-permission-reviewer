@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "audit.ts",
-    "config.ts",
     "loader.ts",
     "context.ts",
     "evidence-sections.ts",

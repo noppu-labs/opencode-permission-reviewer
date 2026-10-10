@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { isSystemOneReviewerModel, reviewBudgetMs } from "../config.ts";
+import { reviewBudgetMs } from "../config.ts";
 import type { AskDecisionSource } from "../context/ask-decisions.ts";
 import {
   assembleEvidence,
@@ -16,6 +16,7 @@ import {
   type V1ReviewBackend,
 } from "../opencode/v1/backend-factory.ts";
 import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
+import { isSystemOneReviewerModel } from "../reviewer-model.ts";
 import type {
   PermissionRequest,
   ReviewDecision,
