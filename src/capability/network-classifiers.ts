@@ -8,12 +8,12 @@ import {
   NETWORK_CLIENTS,
   SSH_TOOLS,
 } from "./bash-command-tables.ts";
+import { destinationFromTokens } from "./bash-mutation.ts";
+import type { CapabilityFacts } from "./capability-facts.ts";
 import {
-  destinationFromTokens,
   gitSubcommandMutates,
   gitSubcommandOf,
-} from "./bash-mutation.ts";
-import type { CapabilityFacts } from "./capability-facts.ts";
+} from "./git-subcommand-forms.ts";
 
 export function classifyNetworkClient(
   cmd: ShellToken[],

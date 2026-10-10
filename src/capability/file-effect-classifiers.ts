@@ -6,12 +6,15 @@ import {
   FILE_MUTATION_TOOLS,
   FILE_WRITE_TOOLS,
 } from "./bash-command-tables.ts";
-import { isRemoteMutationOperand, mutationOperands } from "./bash-mutation.ts";
 import {
   type AnalysisRoots,
   type CapabilityFacts,
   recordWrite,
 } from "./capability-facts.ts";
+import {
+  isRemoteMutationOperand,
+  mutationOperands,
+} from "./mutation-operands.ts";
 
 export function classifyFileWrite(
   cmd: ShellToken[],

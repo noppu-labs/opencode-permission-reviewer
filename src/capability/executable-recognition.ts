@@ -17,12 +17,12 @@ import {
   SSH_TOOLS,
   TEST_RUNNERS,
 } from "./bash-command-tables.ts";
-import { readOnlyToolMutation } from "./bash-mutation.ts";
 import {
   type AnalysisRoots,
   type CapabilityFacts,
   recordWrite,
 } from "./capability-facts.ts";
+import { readOnlyToolMutation } from "./read-only-tool-mutations.ts";
 
 /** Effect families that keep a read-only or no-effect executable from
  *  counting as read-only. */

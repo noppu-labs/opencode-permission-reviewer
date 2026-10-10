@@ -1,13 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import {
-  classifyPath,
-  gitSubcommandMutates,
-  mutationOperands,
-  readOnlyToolMutation,
-} from "../src/capability/bash-mutation.ts";
+import { classifyPath } from "../src/capability/bash-mutation.ts";
+import { gitSubcommandMutates } from "../src/capability/git-subcommand-forms.ts";
+import { mutationOperands } from "../src/capability/mutation-operands.ts";
+import { readOnlyToolMutation } from "../src/capability/read-only-tool-mutations.ts";
 import type { ShellToken } from "../src/shell-token.ts";
 
-// Characterisation of the bash-mutation helper branches no other test
+// Characterisation of the capability mutation-helper branches no other test
 // reaches. Each row pins the current output, odd ones included.
 
 function words(command: string): ShellToken[] {

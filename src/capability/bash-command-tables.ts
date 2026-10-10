@@ -362,6 +362,58 @@ export const GIT_MUTATION_SUBCOMMANDS = new Set([
   "worktree",
 ]);
 
+/** `git branch` options that make it list branches instead of changing one. */
+export const BRANCH_LIST_OPTIONS = [
+  "-a",
+  "--all",
+  "-r",
+  "--remotes",
+  "-l",
+  "--list",
+  "-v",
+  "-vv",
+  "--show-current",
+  "--contains",
+  "--no-contains",
+  "--merged",
+  "--no-merged",
+  "--points-at",
+  "--format",
+  "--sort",
+  "--column",
+];
+
+/** `git tag` options that make it list tags instead of changing one. */
+export const TAG_LIST_OPTIONS = [
+  "-l",
+  "--list",
+  "--contains",
+  "--no-contains",
+  "--merged",
+  "--no-merged",
+  "--points-at",
+  "--format",
+  "--sort",
+  "--column",
+];
+
+/** `git config` options and subcommands that only read configuration. */
+export const CONFIG_READ_OPTIONS = [
+  "--list",
+  "-l",
+  "--get",
+  "--get-all",
+  "--get-regexp",
+  "--get-urlmatch",
+  "--show-origin",
+  "--show-scope",
+  "get",
+  "get-all",
+  "get-regexp",
+  "get-urlmatch",
+  "list",
+];
+
 export const GIT_NETWORK_SUBCOMMANDS = new Set([
   "clone",
   "fetch",
