@@ -1,7 +1,5 @@
-// Deliberately secret-shaped synthetic values shared by the tests (CONTRIBUTING requires synthetic
-// fixtures). Every value is fake: none is a credential. Fixtures with a recognised scanner prefix are
-// built by concatenation so no continuous literal in source matches a static secret scanner; the
-// recognised prefix is split from the body, which does not weaken the assertions.
+// Synthetic, secret-shaped test values; none is a credential. See CONTRIBUTING.md, "Before opening
+// a pull request".
 
 export const GITHUB_PAT =
   // biome-ignore lint/security/noSecrets: synthetic fixture (CONTRIBUTING), not a credential

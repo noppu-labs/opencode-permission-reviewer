@@ -29,11 +29,9 @@ import {
 } from "./fixtures/synthetic-secrets.ts";
 import { request } from "./helpers.ts";
 
-// Live-secret-shaped fixtures are built by string concatenation so that no
-// continuous literal in source matches a static secret scanner (see AGENTS.md).
-// Scanners key on the full token shape; splitting the recognized prefix from
-// the body defeats that without weakening the assertion. The ones Biome's
-// noSecrets flags live in fixtures/synthetic-secrets.ts.
+// Scanner-prefixed fixtures are concatenated (see CONTRIBUTING.md, "Before
+// opening a pull request"); the ones Biome's noSecrets flags live in
+// fixtures/synthetic-secrets.ts.
 const AWS_EX = "AKIA" + "IOSFODNN7EXAMPLE";
 const AWS_ASIA = "ASIA" + "IOSFODNN7EXAMPLE";
 const OAI_FRAG = "sk-" + "synthetic";
