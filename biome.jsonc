@@ -85,22 +85,6 @@
   "overrides": [
     // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. Under 600 needs a split into smaller files.
     {
-      "includes": ["tests/runtime.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 946
-              }
-            }
-          }
-        }
-      }
-    },
-    // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. Under 600 needs a split into smaller files.
-    {
       "includes": ["tests/system-one.test.ts"],
       "linter": {
         "rules": {

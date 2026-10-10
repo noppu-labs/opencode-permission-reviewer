@@ -8,7 +8,7 @@
     "node_modules"
   ],
   "exclude_filenames": [
-    "runtime.test.ts",
+    "runtime-manual-replies.test.ts",
     "system-one.test.ts",
     "trust-hardening.test.ts",
     "bash-analyzer.ts",
