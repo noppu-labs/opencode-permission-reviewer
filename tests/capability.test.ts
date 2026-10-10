@@ -530,6 +530,7 @@ describe("capability analyzer - credential reads", () => {
 
   test.each([
     "cat $HOME/.ssh/id_rsa",
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
     "cat ${SECRETS_DIR}/token",
     'echo "cat .env"',
     "cat .env.example",

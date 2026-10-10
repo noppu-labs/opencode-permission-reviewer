@@ -350,10 +350,9 @@ export class ReviewCoordinator {
    * the plugin no longer registers a host hook that calls this. Rationale
    * remains in audit, TUI, and debug.
    */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   annotateToolResult(
-    callID: string,
-    output: { output?: unknown; metadata?: unknown },
+    _callID: string,
+    _output: { output?: unknown; metadata?: unknown },
   ): void {
     // Intentionally empty — asymmetric feedback: allow is silent to the agent.
   }

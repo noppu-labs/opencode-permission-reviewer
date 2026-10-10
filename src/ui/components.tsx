@@ -89,6 +89,7 @@ export function ReviewOverlay(props: {
   };
 
   return (
+    // biome-ignore lint/a11y/noStaticElementInteractions: <box> is an OpenTUI terminal renderable, not a DOM element, so the ARIA role rule does not apply
     <box
       position="absolute"
       left={0}

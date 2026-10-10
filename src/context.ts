@@ -105,7 +105,7 @@ function messageSummary(
   const id = typeof message.info.id === "string" ? message.info.id : "unknown";
   const parts = message.parts
     .map((part) => {
-      if (role === "user" && isSyntheticPart(part)) return;
+      if (role === "user" && isSyntheticPart(part)) return undefined;
       return partSummary(part, maxPartChars);
     })
     .filter((part): part is string => Boolean(part));

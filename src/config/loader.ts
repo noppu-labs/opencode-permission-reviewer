@@ -391,7 +391,7 @@ export function loadResolvedConfig(
 /** Whether the key is present in the layer (a `null`/wrong-type value must be
  *  handled as a present-but-invalid override, never silently forwarded). */
 function hasKey(object: Record<string, unknown>, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(object, key);
+  return Object.hasOwn(object, key);
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {

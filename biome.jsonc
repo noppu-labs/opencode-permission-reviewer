@@ -162,17 +162,6 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): suspicious/noImplicitAnyLet, 1 file.
-    {
-      "includes": ["src/context/evidence-assembler.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noImplicitAnyLet": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/4-ts-rules): style/noNonNullAssertion, 52 files.
     {
       "includes": [
@@ -237,17 +226,6 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): suspicious/noPrototypeBuiltins, 1 file.
-    {
-      "includes": ["src/config/loader.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noPrototypeBuiltins": "off"
-          }
-        }
-      }
-    },
     // Pending (quality/4-ts-rules): security/noSecrets, 9 files.
     {
       "includes": [
@@ -265,50 +243,6 @@
         "rules": {
           "security": {
             "noSecrets": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): a11y/noStaticElementInteractions, 1 file.
-    {
-      "includes": ["src/ui/components.tsx"],
-      "linter": {
-        "rules": {
-          "a11y": {
-            "noStaticElementInteractions": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): suspicious/noTemplateCurlyInString, 1 file.
-    {
-      "includes": ["tests/capability.test.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "noTemplateCurlyInString": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): correctness/noUnsafeFinally, 1 file.
-    {
-      "includes": ["src/opencode/v2/reviewer-backend.ts"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnsafeFinally": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): correctness/noUnusedFunctionParameters, 1 file.
-    {
-      "includes": ["src/core/review-coordinator.ts"],
-      "linter": {
-        "rules": {
-          "correctness": {
-            "noUnusedFunctionParameters": "off"
           }
         }
       }
@@ -395,17 +329,6 @@
         "rules": {
           "nursery": {
             "useExplicitType": "off"
-          }
-        }
-      }
-    },
-    // Pending (quality/4-ts-rules): suspicious/useIterableCallbackReturn, 1 file.
-    {
-      "includes": ["src/context.ts"],
-      "linter": {
-        "rules": {
-          "suspicious": {
-            "useIterableCallbackReturn": "off"
           }
         }
       }
@@ -595,7 +518,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 603
+                "maxLines": 604
               }
             }
           }
