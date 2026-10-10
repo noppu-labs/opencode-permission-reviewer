@@ -5,8 +5,8 @@ import {
   type FileEvidence,
   includeEvidenceFile,
 } from "./evidence-file-reader.ts";
+import { analyzeScriptContent } from "./evidence-signals.ts";
 import { invariant } from "./invariant.ts";
-import { analyzeScriptContent } from "./ssh-evidence.ts";
 import type { PermissionRequest } from "./types.ts";
 import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
 
