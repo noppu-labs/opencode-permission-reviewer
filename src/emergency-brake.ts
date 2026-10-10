@@ -1,10 +1,11 @@
 import { commandName, splitArguments } from "./brake-arguments.ts";
+import { redirectTargetsBlockDevice } from "./brake-block-device.ts";
+import { commandDestroysDevice } from "./brake-device-tools.ts";
 import { isRootFind } from "./brake-find-root.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
-import { invariant } from "./invariant.ts";
 import { analyzeEffectiveCommands } from "./shell-effective-commands.ts";
 import {
   lexSegmentsBounded,
@@ -12,11 +13,7 @@ import {
   newAnalysisBudget,
   shellBasename,
 } from "./shell-lexer.ts";
-import {
-  type ShellSegment,
-  type ShellToken,
-  tokenCharIsQuoted,
-} from "./shell-token.ts";
+import type { ShellSegment, ShellToken } from "./shell-token.ts";
 import type { PermissionRequest } from "./types.ts";
 
 /** One segment with its resolved effective commands, computed once per
@@ -98,269 +95,14 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
   return analyzed.some(({ effective }) => effective.some(isRootFind));
 }
 
-/**
- * Block-device destruction that is unmistakable regardless of arguments:
- * formatting (`mkfs*`, `mke2fs`, `mkswap`), signature wipe (`wipefs -a`),
- * raw overwrite (`dd of=/dev/…`, `shred /dev/…`), partition-table destruction
- * (`sgdisk --zap-all`/`-z`/`--delete=N`, `sfdisk --delete`/`--wipe`,
- * `parted mklabel`/`rm`). Detected via the lexer so privilege wrappers and
- * `echo "mkfs …"` (where the destructive tool is an argument, not the
- * executable) are handled correctly.
- */
-const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/;
-/**
- * Whitelist of real block-device path prefixes so that pseudo-devices
- * (`/dev/null`, `/dev/zero`, `/dev/shm/…`, `/dev/fd/…`, etc.) — which sit under
- * `/dev/` but are not disks — do not trip the brake on legitimate patterns
- * like `dd … of=/dev/null` or `shred /dev/shm/scratch`.
- */
-const BLOCK_DEVICE_RE =
-  /^\/dev\/(?:sd|hd|vd|xvd|nvme|mmcblk|loop|md|dm-|zram|drbd|bcache|mapper\/|disk\/by-)/;
-
-function isBlockDeviceTarget(value: string): boolean {
-  return BLOCK_DEVICE_RE.test(value);
-}
-
-/** Shell redirection onto a real block device: `> /dev/sda` (or `>>`, `>|`,
- *  an fd-prefixed `2>/dev/sda`, a word-glued `x>/dev/sdc`, or the operator
- *  ending its own token as in `echo x> /dev/sda`) overwrites a disk regardless
- *  of which executable produced the bytes. Only the `>` operator itself must
- *  sit in an unquoted span: quoting part of the TARGET changes nothing about
- *  which file it names (`>"/dev/sda"` and `>/dev/"sda"` redirect to the disk),
- *  while a quoted operator (`echo 'x > /dev/sda'`) is data. */
-function redirectTargetsBlockDevice(tokens: ShellToken[]): boolean {
-  for (const [i, token] of tokens.entries()) {
-    for (const operator of unquotedRedirectOperators(token)) {
-      const rest = token.value.slice(operator.start + operator.length);
-      if (rest.length > 0) {
-        if (isBlockDeviceTarget(rest)) return true;
-        continue;
-      }
-      const target = tokens[i + 1];
-      if (target !== undefined && isBlockDeviceTarget(target.value))
-        return true;
-    }
-  }
-  return false;
-}
-
-/** Positions and lengths of `>` / `>>` redirect operators whose `>` characters
- *  are all unquoted. The normalized redirection pass handles compound forms
- *  such as `>|` and `&>` separately. */
-function unquotedRedirectOperators(
-  token: ShellToken,
-): Array<{ start: number; length: number }> {
-  const out: Array<{ start: number; length: number }> = [];
-  const value = token.value;
-  for (let index = 0; index < value.length; index += 1) {
-    if (value[index] !== ">") continue;
-    if (tokenCharIsQuoted(token, index)) continue;
-    const doubled =
-      value[index + 1] === ">" && !tokenCharIsQuoted(token, index + 1);
-    out.push({ start: index, length: doubled ? 2 : 1 });
-    index += doubled ? 1 : 0;
-  }
-  return out;
-}
-
-/** Whether a short-flag cluster (e.g. `-af`) contains a given flag letter. */
-function shortFlagClusterIncludes(value: string, letter: string): boolean {
-  return (
-    value.startsWith("-") &&
-    !value.startsWith("--") &&
-    value.length > 1 &&
-    value.includes(letter)
-  );
-}
-
-/** `cp SOURCE DEVICE` and `install SOURCE DEVICE` open the final operand for
- *  writing just like an output redirection. Parse their value-taking options
- *  so an option argument that merely resembles a device is never mistaken for
- *  the destination. Target-directory forms point at a directory and cannot
- *  directly overwrite a block device. */
-function copyOverwritesBlockDevice(
-  tokens: ShellToken[],
-  base: string,
-): boolean {
-  const valueOptions =
-    base === "cp"
-      ? new Set(["-S", "-t", "--suffix", "--target-directory", "--context"])
-      : new Set([
-          "-g",
-          "-m",
-          "-o",
-          "-S",
-          "-t",
-          "--group",
-          "--mode",
-          "--owner",
-          "--suffix",
-          "--target-directory",
-          "--context",
-          "--strip-program",
-        ]);
-  const operands: string[] = [];
-  let endOfOptions = false;
-  let targetDirectory = false;
-  for (let index = 1; index < tokens.length; index += 1) {
-    const token = tokens[index];
-    invariant(token, "tokens[index] is in bounds");
-    const value = token.value;
-    if (!endOfOptions && value === "--") {
-      endOfOptions = true;
-      continue;
-    }
-    if (!endOfOptions && value.startsWith("--")) {
-      const [option] = value.split("=", 1);
-      invariant(
-        option !== undefined,
-        "String.split returns at least one element",
-      );
-      if (option === "--target-directory") targetDirectory = true;
-      if (valueOptions.has(option) && !value.includes("=")) index += 1;
-      continue;
-    }
-    if (!endOfOptions && value.startsWith("-") && value.length > 1) {
-      for (let position = 1; position < value.length; position += 1) {
-        const option = `-${value.charAt(position)}`;
-        if (!valueOptions.has(option)) continue;
-        if (option === "-t") targetDirectory = true;
-        if (position === value.length - 1) index += 1;
-        break;
-      }
-      continue;
-    }
-    operands.push(value);
-  }
-  const destination = operands.at(-1);
-  return (
-    !targetDirectory &&
-    operands.length >= 2 &&
-    destination !== undefined &&
-    isBlockDeviceTarget(destination)
-  );
-}
-
 function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
-  for (const { segment, effective, redirections } of analyzed) {
-    if (redirectTargetsBlockDevice(segment.tokens)) return true;
-    for (const [commandIndex, tokens] of effective.entries()) {
-      const first = tokens[0];
-      if (first === undefined) continue;
-      // Command-string destructuring (`sh -c '… > /dev/sda'`, `script -c …`,
-      // ssh remote commands) only surfaces inside the resolved effective
-      // commands, so the redirect scan runs on them too.
-      if (redirectTargetsBlockDevice(tokens)) return true;
-      if (
-        (redirections[commandIndex] ?? []).some((redirection) => {
-          const operator = redirection.operator.replace(/^\d+/, "");
-          const writes =
-            [">", ">>", ">|", "&>", "&>>", "<>"].includes(operator) ||
-            (operator === ">&" &&
-              !/^\d/.test(redirection.operator) &&
-              redirection.target !== "-" &&
-              !/^\d+$/.test(redirection.target));
-          return writes && isBlockDeviceTarget(redirection.target);
-        })
-      )
-        return true;
-      const base = shellBasename(first.value);
-      const args = tokens.slice(1);
-      const targetsBlock = args.some((t) => isBlockDeviceTarget(t.value));
-
-      // tee copies its stdin into every file operand: a real block device
-      // operand is a raw overwrite, as unmistakable as shred.
-      if (base === "tee" && targetsBlock) return true;
-      if (
-        (base === "cp" || base === "install") &&
-        copyOverwritesBlockDevice(tokens, base)
-      )
-        return true;
-
-      // mkfs / mkfs.* / mke2fs / mkswap: any real block target is destruction,
-      // unless a dry-run flag is present (`-n` for mke2fs/mkfs.ext4, `-V`/`-t`
-      // alone do not write but are rare; `-n` is the canonical dry-run).
-      if (MKFS_FAMILY.test(base) || base === "mke2fs" || base === "mkswap") {
-        if (!targetsBlock) continue;
-        const dryRun = args.some(
-          (t) => t.value === "-n" || t.value === "--dry-run",
-        );
-        if (!dryRun) return true;
-      }
-      // shred: any real block target is destruction.
-      if (base === "shred" && targetsBlock) return true;
-
-      // wipefs: only --all/-a (alone or clustered like `-af`)/-t wipes
-      // signatures; bare wipefs just lists signatures.
-      if (base === "wipefs" && targetsBlock) {
-        const wipes = args.some((t) => {
-          const v = t.value;
-          return (
-            v === "--all" ||
-            v === "-a" ||
-            shortFlagClusterIncludes(v, "a") ||
-            v.startsWith("-t") ||
-            v === "--types"
-          );
-        });
-        if (wipes) return true;
-      }
-
-      // dd: detect `of=<real block device>` (the lexer already stripped quotes).
-      if (base === "dd") {
-        const hitsBlock = args.some((t) => {
-          if (!t.value.startsWith("of=")) return false;
-          return isBlockDeviceTarget(t.value.slice(3));
-        });
-        if (hitsBlock) return true;
-      }
-
-      // sgdisk: destructive ops are --zap-all/-Z (wipe everything), -z/--zap
-      // (destroy GPT data structures), and --delete[=N]/-d _N (delete a
-      // partition). -d requires a following partition-number argument.
-      if (base === "sgdisk" && targetsBlock) {
-        const destructive = args.some((t) => {
-          const v = t.value;
-          return (
-            v === "--zap-all" ||
-            v === "-Z" ||
-            v === "--zap" ||
-            v === "-z" ||
-            v.startsWith("--delete")
-          );
-        });
-        const deleteShort = args.some(
-          (t) => t.value === "-d" || t.value === "--delete",
-        );
-        if (
-          destructive ||
-          (deleteShort && args.some((t) => /^[0-9]+$/.test(t.value)))
-        )
-          return true;
-      }
-
-      // sfdisk: --delete (with partition list) and --wipe* destroy data.
-      // NOTE: sfdisk's `-d` is `--dump` (read-only backup), NOT delete — do not
-      // share the sgdisk short-flag set.
-      if (base === "sfdisk" && targetsBlock) {
-        const destructive = args.some((t) => {
-          const v = t.value;
-          return v === "--delete" || v.startsWith("--wipe");
-        });
-        if (destructive) return true;
-      }
-
-      // parted: `mklabel` rewrites the partition table; `rm N` deletes a
-      // partition.
-      if (base === "parted" && targetsBlock) {
-        const destructive = args.some(
-          (t) => t.value === "mklabel" || t.value === "rm",
-        );
-        if (destructive) return true;
-      }
-    }
-  }
-  return false;
+  return analyzed.some(
+    ({ segment, effective, redirections }) =>
+      redirectTargetsBlockDevice(segment.tokens) ||
+      effective.some((command, commandIndex) =>
+        commandDestroysDevice(command, redirections[commandIndex] ?? []),
+      ),
+  );
 }
 
 /**
