@@ -10,7 +10,7 @@
  * is only a last line of defense for *unmistakable* literal destruction.
  */
 
-import { invariant } from "./invariant.ts";
+import { elementAt } from "./element-at.ts";
 
 export interface ShellToken {
   /** Original text including any surrounding quotes. */
@@ -388,23 +388,38 @@ function sliceToken(
   return { raw: value, value, spans };
 }
 
+/** Multi-character operators in match order: the three-character forms
+ *  first, so `&>>` is never read as `&>`. */
+const REDIRECTION_OPERATORS = [
+  "&>>",
+  "<<<",
+  "<<-",
+  "&>",
+  ">>",
+  ">|",
+  ">&",
+  "<<",
+  "<&",
+  "<>",
+] as const;
+
+/** The character at `offset` when it can act as an operator, else "". */
+function liveChar(token: ShellToken, offset: number): string {
+  return offset < token.value.length && !tokenCharIsQuoted(token, offset)
+    ? token.value.charAt(offset)
+    : "";
+}
+
 function redirectionOperatorAt(
   token: ShellToken,
   index: number,
 ): string | undefined {
-  const value = token.value;
-  const live = (offset: number): string | undefined =>
-    offset < value.length && !tokenCharIsQuoted(token, offset)
-      ? value[offset]
-      : undefined;
-  const first = live(index);
-  const tail = `${first ?? ""}${live(index + 1) ?? ""}${live(index + 2) ?? ""}`;
-  if (tail.startsWith("&>>")) return "&>>";
-  if (tail.startsWith("<<<")) return "<<<";
-  if (tail.startsWith("<<-")) return "<<-";
-  for (const operator of ["&>", ">>", ">|", ">&", "<<", "<&", "<>"] as const) {
-    if (tail.startsWith(operator)) return operator;
-  }
+  const first = liveChar(token, index);
+  const tail = `${first}${liveChar(token, index + 1)}${liveChar(token, index + 2)}`;
+  const operator = REDIRECTION_OPERATORS.find((candidate) =>
+    tail.startsWith(candidate),
+  );
+  if (operator !== undefined) return operator;
   if (first === ">" || first === "<") return first;
   return undefined;
 }
@@ -420,6 +435,92 @@ function nextRedirection(
   return undefined;
 }
 
+/** The heredoc extractor inserts this inert marker after removing the body.
+ *  It is evidence metadata, not another input redirection. */
+const HEREDOC_MARKER = /^<HEREDOC:sha256:[a-f0-9]+>$/;
+
+interface RedirectionSplit {
+  words: ShellToken[];
+  redirections: ShellRedirection[];
+}
+
+function hasQuotedChar(token: ShellToken): boolean {
+  for (let index = 0; index < token.value.length; index += 1) {
+    if (tokenCharIsQuoted(token, index)) return true;
+  }
+  return false;
+}
+
+function pushRedirection(
+  split: RedirectionSplit,
+  operator: string,
+  target: ShellToken,
+): void {
+  split.redirections.push({
+    operator,
+    target: target.value,
+    quoted: hasQuotedChar(target),
+  });
+}
+
+/** Push the word text between `cursor` and the operator at `found`, and
+ *  return the operator. An all-digit prefix immediately before the operator
+ *  is an IO number, not a command word (`2>`, `10>>`), and joins the
+ *  operator instead. */
+function splitLeadingWord(
+  token: ShellToken,
+  cursor: number,
+  found: { index: number; operator: string },
+  words: ShellToken[],
+): string {
+  const prefix = token.value.slice(cursor, found.index);
+  if (cursor === 0 && /^[0-9]+$/.test(prefix))
+    return `${prefix}${found.operator}`;
+  if (found.index > cursor) words.push(sliceToken(token, cursor, found.index));
+  return found.operator;
+}
+
+/** Split one word into its words and redirections, starting at the first
+ *  operator `found`. Returns the last operator when the word ends right after
+ *  it, so the caller can take the next word as its target. */
+function splitWordRedirections(
+  token: ShellToken,
+  first: { index: number; operator: string },
+  split: RedirectionSplit,
+): string | undefined {
+  let found: { index: number; operator: string } | undefined = first;
+  let cursor = 0;
+  let dangling: string | undefined;
+  while (found !== undefined) {
+    const operator = splitLeadingWord(token, cursor, found, split.words);
+    const targetStart = found.index + found.operator.length;
+    const following = nextRedirection(token, targetStart);
+    const end = following?.index ?? token.value.length;
+    if (targetStart < end)
+      pushRedirection(split, operator, sliceToken(token, targetStart, end));
+    else if (following === undefined) dangling = operator;
+    cursor = end;
+    found = following;
+  }
+  return dangling;
+}
+
+/** Push a word with no redirection as is; otherwise split it and return the
+ *  operator left without a target at its end, if any. */
+function splitWord(
+  token: ShellToken,
+  split: RedirectionSplit,
+): string | undefined {
+  const found = HEREDOC_MARKER.test(token.value)
+    ? undefined
+    : nextRedirection(token, 0);
+  if (found === undefined) {
+    split.words.push(token);
+    return undefined;
+  }
+  return splitWordRedirections(token, found, split);
+}
+
 /**
  * Split shell redirections away from command words. Shell accepts them before,
  * after, or glued to the executable and its arguments (`2>log cmd`,
@@ -430,67 +531,17 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
   tokens: ShellToken[];
   redirections: ShellRedirection[];
 } {
-  const words: ShellToken[] = [];
-  const redirections: ShellRedirection[] = [];
+  const split: RedirectionSplit = { words: [], redirections: [] };
   for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-    const token = tokens[tokenIndex];
-    invariant(token, "tokens[tokenIndex] is in bounds");
-    // The heredoc extractor inserts this inert marker after removing the body.
-    // It is evidence metadata, not another input redirection.
-    if (/^<HEREDOC:sha256:[a-f0-9]+>$/.test(token.value)) {
-      words.push(token);
+    const dangling = splitWord(elementAt(tokens, tokenIndex, "tokens"), split);
+    if (dangling === undefined) continue;
+    const candidate = tokens[tokenIndex + 1];
+    if (candidate === undefined || nextRedirection(candidate, 0)?.index === 0)
       continue;
-    }
-    let cursor = 0;
-    let found = nextRedirection(token, cursor);
-    if (found === undefined) {
-      words.push(token);
-      continue;
-    }
-    while (found !== undefined) {
-      let wordEnd = found.index;
-      let operator = found.operator;
-      const prefix = token.value.slice(cursor, found.index);
-      // An all-digit prefix immediately before the operator is an IO number,
-      // not a command word (`2>`, `10>>`).
-      if (cursor === 0 && /^[0-9]+$/.test(prefix)) {
-        operator = `${prefix}${operator}`;
-        wordEnd = cursor;
-      }
-      if (wordEnd > cursor) words.push(sliceToken(token, cursor, wordEnd));
-
-      const targetStart = found.index + found.operator.length;
-      const following = nextRedirection(token, targetStart);
-      let targetToken: ShellToken | undefined;
-      if (targetStart < (following?.index ?? token.value.length)) {
-        targetToken = sliceToken(token, targetStart, following?.index);
-      } else if (following === undefined) {
-        const candidate = tokens[tokenIndex + 1];
-        if (
-          candidate !== undefined &&
-          nextRedirection(candidate, 0)?.index !== 0
-        ) {
-          tokenIndex += 1;
-          targetToken = candidate;
-        }
-      }
-      if (targetToken !== undefined) {
-        redirections.push({
-          operator,
-          target: targetToken.value,
-          quoted:
-            targetToken.value.length > 0 &&
-            Array.from(
-              { length: targetToken.value.length },
-              (_, index) => index,
-            ).some((index) => tokenCharIsQuoted(targetToken, index)),
-        });
-      }
-      cursor = following?.index ?? token.value.length;
-      found = following;
-    }
+    pushRedirection(split, dangling, candidate);
+    tokenIndex += 1;
   }
-  return { tokens: words, redirections };
+  return { tokens: split.words, redirections: split.redirections };
 }
 
 export { basename as shellBasename };
