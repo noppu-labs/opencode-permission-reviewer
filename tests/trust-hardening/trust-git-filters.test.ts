@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import type { PromiseWithChild } from "node:child_process";
 import { appendFileSync, existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
@@ -7,12 +8,20 @@ import {
   collectConversionKeys,
   conversionNeutralizationArgs,
 } from "../../src/git-filter-neutralization.ts";
-import {
-  bashRequest,
-  execFileAsync,
-  initGitRepo,
-  tempDir,
-} from "./trust-fixtures.ts";
+import { bashRequest, execFileAsync, tempDir } from "./trust-fixtures.ts";
+
+type GitRun = PromiseWithChild<{ stdout: string; stderr: string }>;
+
+async function initGitRepo(
+  directory: string,
+): Promise<(args: string[]) => GitRun> {
+  const run = (args: string[]): GitRun =>
+    execFileAsync("git", args, { cwd: directory });
+  await run(["init", "-b", "staging"]);
+  await run(["config", "user.email", "reviewer@example.invalid"]);
+  await run(["config", "user.name", "Reviewer Test"]);
+  return run;
+}
 
 afterEach(() => {
   setGlobalConfigPathForTests(undefined);

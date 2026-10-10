@@ -1,12 +1,9 @@
 import { expect } from "bun:test";
-import { execFile, type PromiseWithChild } from "node:child_process";
+import { execFile } from "node:child_process";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { analyzeCapability } from "../../src/capability/bash-analyzer.ts";
-import type { CapabilityAssessment } from "../../src/capability/capability-types.ts";
-import { parseCommand } from "../../src/capability/command-parser.ts";
 import {
   loadResolvedConfig,
   projectConfigPath,
@@ -16,14 +13,9 @@ import type { PermissionRequest, ReviewerConfig } from "../../src/types.ts";
 import { MockClient, request, runtime } from "../helpers.ts";
 
 export const execFileAsync = promisify(execFile);
-type GitRun = PromiseWithChild<{ stdout: string; stderr: string }>;
 
 export const DIR = "/home/user/project";
 export const WT = "/home/user/project";
-
-export function assess(command: string): CapabilityAssessment {
-  return analyzeCapability(parseCommand(command), DIR, WT);
-}
 
 export function bashRequest(command: string): PermissionRequest {
   return request({
@@ -88,15 +80,4 @@ export async function expectModelAllowBlocked(
     "escalate",
   );
   expect(client.replies).toHaveLength(0);
-}
-
-export async function initGitRepo(
-  directory: string,
-): Promise<(args: string[]) => GitRun> {
-  const run = (args: string[]): GitRun =>
-    execFileAsync("git", args, { cwd: directory });
-  await run(["init", "-b", "staging"]);
-  await run(["config", "user.email", "reviewer@example.invalid"]);
-  await run(["config", "user.name", "Reviewer Test"]);
-  return run;
 }
