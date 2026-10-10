@@ -1,14 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { resolveConfig } from "../../src/config.ts";
 import { isSystemOneReviewerModel } from "../../src/reviewer-model.ts";
-import {
-  createSystemOneInvoker,
-  SystemOneReviewerBackend,
-} from "../../src/system-one/backend.ts";
-import {
-  parseSystemOneReview,
-  SYSTEM_ONE_QUESTIONS,
-} from "../../src/system-one/review.ts";
+import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
+import { parseSystemOneReview } from "../../src/system-one/review.ts";
+import { createSystemOneInvoker } from "../../src/system-one/system-one-invoker.ts";
+import { SYSTEM_ONE_QUESTIONS } from "../../src/system-one/system-one-questions.ts";
 import { response, reviewOnce } from "./system-one-fixtures.ts";
 
 async function withSyntheticCommandCodeKey<T>(

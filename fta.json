@@ -9,8 +9,6 @@
   ],
   "exclude_filenames": [
     "audit.ts",
-    "backend.ts",
-    "review.ts",
     "cli.mjs",
     "command-code-cli.mjs",
     "dataset.mjs",

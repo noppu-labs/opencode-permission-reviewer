@@ -4,8 +4,8 @@ import {
   enforceParsedSystemOneReview,
   enforceSystemOneDecision,
   parseSystemOneReview,
-  SYSTEM_ONE_QUESTIONS,
 } from "../../src/system-one/review.ts";
+import { SYSTEM_ONE_QUESTIONS } from "../../src/system-one/system-one-questions.ts";
 import { defined } from "../helpers.ts";
 import { choice, PRIMARY_BASES, response } from "./system-one-fixtures.ts";
 

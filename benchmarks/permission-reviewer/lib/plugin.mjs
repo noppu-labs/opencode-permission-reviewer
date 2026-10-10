@@ -103,8 +103,22 @@ const PINNED_BLOBS = {
   "src/capability/heredoc-extractor.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/system-one/review.ts": "643331f47dc86cf4d105814c493f4aa3eb1912e0",
+  "src/system-one/review.ts": "3db8886b4c4cfee3ba1119bba01889085af21b9f",
+  "src/system-one/system-one-questions.ts":
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "5008341e04e7fc87061e82001cfc43b91fd06846",
+  "src/system-one/system-one-answers.ts":
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "25bf718c2a774da4c4fd5e2780e0d392d770594a",
+  "src/system-one/system-one-choices.ts":
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "12239331d84093c74cc68b603556e46084990b8b",
+  "src/system-one/system-one-consistency.ts":
+    "9658f16a6a3ab91e63506906ab41113d5fa77615",
+  "src/system-one/system-one-verdict.ts":
+    "a7825a6bbae396e8b79b194219c9b7f1f16b7c7c",
+  "src/system-one/system-one-types.ts":
+    "9b8fd50c81c2a4d95771737c2ad7aeaea80e0ee9",
   "src/capability/capability-facts.ts":
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
@@ -271,6 +285,7 @@ export async function openPlugin(
     parser,
     analyzer,
     systemOne,
+    systemOneQuestions,
   ] = await Promise.all([
     load("src/policy.ts"),
     load("src/context.ts"),
@@ -283,6 +298,7 @@ export async function openPlugin(
     load("src/capability/command-parser.ts"),
     load("src/capability/bash-analyzer.ts"),
     load("src/system-one/review.ts"),
+    load("src/system-one/system-one-questions.ts"),
   ]);
   assert(
     typeof context.buildEvidenceResult === "function" &&
@@ -465,15 +481,18 @@ export async function openPlugin(
         user,
         evidence: evidence.text,
         schema: decisionSchema.DECISION_SCHEMA,
-        systemOne: { state, questions: systemOne.SYSTEM_ONE_QUESTIONS },
+        systemOne: {
+          state,
+          questions: systemOneQuestions.SYSTEM_ONE_QUESTIONS,
+        },
         reachable: reached,
         bypass: reached ? null : preflight,
         promptHash:
           model?.format === "system_one"
             ? sha256({
                 state,
-                questions: systemOne.SYSTEM_ONE_QUESTIONS,
-                specVersion: systemOne.SYSTEM_ONE_SPEC_VERSION,
+                questions: systemOneQuestions.SYSTEM_ONE_QUESTIONS,
+                specVersion: systemOneQuestions.SYSTEM_ONE_SPEC_VERSION,
               })
             : sha256({
                 system,

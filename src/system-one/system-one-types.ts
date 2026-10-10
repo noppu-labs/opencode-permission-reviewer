@@ -1,7 +1,8 @@
-// System One primary bases, choice scores, safety signals and the score record.
+// System One primary bases, choice scores, safety signals, the score record and the parsed review.
 
 import type {
   EvidenceSufficiency,
+  ReviewDecision,
   ReviewOutcome,
   RiskLevel,
   ScopeAlignment,
@@ -63,4 +64,13 @@ export interface SystemOneScores {
   /** Consistency checks that failed; any one marks an allow or deny difficult. */
   contradictions: string[];
   reasoningRecommended: boolean;
+}
+
+export interface ParsedSystemOneReview {
+  decision: ReviewDecision;
+  primaryBasis: SystemOnePrimaryBasis;
+  difficultReason?: string;
+  reasoningRecommended: boolean;
+  returnedModel: string;
+  scores: SystemOneScores;
 }
