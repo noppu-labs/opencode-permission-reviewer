@@ -79,90 +79,127 @@ interface DelimiterWord {
  *  The word is `resolved: false` only when its quoting never terminates or
  *  the word is empty: then no line can be proven to be the terminator. */
 function parseDelimiterWord(command: string, start: number): DelimiterWord {
-  let index = start;
-  let delimiter = "";
-  let quoted = false;
-  let resolved = true;
-  let sawAny = false;
-
-  while (index < command.length) {
-    const c = command.charAt(index);
-    if (c === "'") {
-      const end = command.indexOf("'", index + 1);
-      if (end === -1) {
-        resolved = false;
-        break;
-      }
-      delimiter += command.slice(index + 1, end);
-      quoted = true;
-      sawAny = true;
-      index = end + 1;
-      continue;
-    }
-    // ANSI-C ($'...') and locale ($"...") quoting both start with `$`
-    // followed by a quote; the body-expansion flag is set either way.
-    if (
-      c === "$" &&
-      (command[index + 1] === "'" || command[index + 1] === '"')
-    ) {
-      quoted = true;
-      sawAny = true;
-      if (command[index + 1] === "'") {
-        const parsed = unescapeAnsiC(command, index + 2);
-        if (!parsed.closed) {
-          resolved = false;
-          break;
-        }
-        delimiter += parsed.text;
-        index = parsed.end;
-      } else {
-        index += 1;
-      }
-      continue;
-    }
-    if (c === '"') {
-      index += 1;
-      let closed = false;
-      while (index < command.length) {
-        const d = command.charAt(index);
-        if (d === '"') {
-          closed = true;
-          index += 1;
-          break;
-        }
-        if (d === "\\" && index + 1 < command.length) {
-          const escaped = command.charAt(index + 1);
-          if ('$`"\\'.includes(escaped)) delimiter += escaped;
-          else delimiter += `\\${escaped}`;
-          index += 2;
-          continue;
-        }
-        delimiter += d;
-        index += 1;
-      }
-      if (!closed) {
-        resolved = false;
-        break;
-      }
-      quoted = true;
-      sawAny = true;
-      continue;
-    }
-    if (c === "\\" && index + 1 < command.length) {
-      delimiter += command.charAt(index + 1);
-      quoted = true;
-      sawAny = true;
-      index += 2;
-      continue;
-    }
-    if (BARE_WORD_STOP.has(c)) break;
-    delimiter += c;
-    sawAny = true;
-    index += 1;
+  const scan: WordScan = {
+    index: start,
+    delimiter: "",
+    quoted: false,
+    resolved: true,
+    sawAny: false,
+  };
+  while (scan.index < command.length) {
+    if (!scanDelimiterPart(command, scan)) break;
   }
-  if (!sawAny)
+  if (!scan.sawAny)
     return { wordEnd: start, delimiter: "", quoted: false, resolved: false };
-  return { wordEnd: index, delimiter, quoted, resolved };
+  return {
+    wordEnd: scan.index,
+    delimiter: scan.delimiter,
+    quoted: scan.quoted,
+    resolved: scan.resolved,
+  };
+}
+
+/** The delimiter word parsed so far; `sawAny` records whether any part of
+ *  it has been consumed. */
+interface WordScan {
+  index: number;
+  delimiter: string;
+  quoted: boolean;
+  resolved: boolean;
+  sawAny: boolean;
+}
+
+/** Consume the word part at `scan.index`. Returns false when the word ends
+ *  there: at a stop character, or at quoting that never terminates. */
+function scanDelimiterPart(command: string, scan: WordScan): boolean {
+  const c = command.charAt(scan.index);
+  if (c === "'") return scanSingleQuoted(command, scan);
+  // ANSI-C ($'...') and locale ($"...") quoting both start with `$`
+  // followed by a quote; the body-expansion flag is set either way.
+  if (
+    c === "$" &&
+    (command[scan.index + 1] === "'" || command[scan.index + 1] === '"')
+  )
+    return scanDollarQuoted(command, scan);
+  if (c === '"') return scanDoubleQuoted(command, scan);
+  if (c === "\\" && scan.index + 1 < command.length) {
+    scan.delimiter += command.charAt(scan.index + 1);
+    scan.quoted = true;
+    scan.sawAny = true;
+    scan.index += 2;
+    return true;
+  }
+  if (BARE_WORD_STOP.has(c)) return false;
+  scan.delimiter += c;
+  scan.sawAny = true;
+  scan.index += 1;
+  return true;
+}
+
+function scanSingleQuoted(command: string, scan: WordScan): boolean {
+  const end = command.indexOf("'", scan.index + 1);
+  if (end === -1) {
+    scan.resolved = false;
+    return false;
+  }
+  scan.delimiter += command.slice(scan.index + 1, end);
+  scan.quoted = true;
+  scan.sawAny = true;
+  scan.index = end + 1;
+  return true;
+}
+
+/** `$'...'` is unescaped here; for `$"..."` only the `$` is consumed, and
+ *  the double-quoted part follows. */
+function scanDollarQuoted(command: string, scan: WordScan): boolean {
+  scan.quoted = true;
+  scan.sawAny = true;
+  if (command[scan.index + 1] !== "'") {
+    scan.index += 1;
+    return true;
+  }
+  const parsed = unescapeAnsiC(command, scan.index + 2);
+  if (!parsed.closed) {
+    scan.resolved = false;
+    return false;
+  }
+  scan.delimiter += parsed.text;
+  scan.index = parsed.end;
+  return true;
+}
+
+/** An unterminated double quote leaves `scan.index` at the end of the
+ *  command. */
+function scanDoubleQuoted(command: string, scan: WordScan): boolean {
+  scan.index += 1;
+  let closed = false;
+  while (scan.index < command.length) {
+    const d = command.charAt(scan.index);
+    if (d === '"') {
+      closed = true;
+      scan.index += 1;
+      break;
+    }
+    if (d === "\\" && scan.index + 1 < command.length) {
+      scan.delimiter += doubleQuotedEscape(command.charAt(scan.index + 1));
+      scan.index += 2;
+      continue;
+    }
+    scan.delimiter += d;
+    scan.index += 1;
+  }
+  if (!closed) {
+    scan.resolved = false;
+    return false;
+  }
+  scan.quoted = true;
+  scan.sawAny = true;
+  return true;
+}
+
+/** Inside double quotes only `\$ \` \" \\` drop the backslash. */
+function doubleQuotedEscape(escaped: string): string {
+  return '$`"\\'.includes(escaped) ? escaped : `\\${escaped}`;
 }
 
 /** Unescape an ANSI-C quoted region (`$'...'`), the subset bash defines for
@@ -186,42 +223,52 @@ function unescapeAnsiC(
     }
     const escaped = command[index + 1];
     if (escaped === undefined) break;
-    if (escaped === "x") {
-      const hex = /^[0-9a-fA-F]{1,2}/.exec(command.slice(index + 2));
-      if (hex === null) {
-        text += "x";
-        index += 2;
-        continue;
-      }
-      text += String.fromCharCode(Number.parseInt(hex[0], 16));
-      index += 2 + hex[0].length;
-      continue;
-    }
-    if (/^[0-7]/.test(escaped)) {
-      const octal = /^[0-7]{1,3}/.exec(command.slice(index + 1));
-      invariant(octal, "escaped is an octal digit");
-      text += String.fromCharCode(Number.parseInt(octal[0], 8));
-      index += 1 + octal[0].length;
-      continue;
-    }
-    const simple: Record<string, string> = {
-      a: "\x07",
-      b: "\b",
-      e: "\x1b",
-      E: "\x1b",
-      f: "\f",
-      n: "\n",
-      r: "\r",
-      t: "\t",
-      v: "\v",
-      "\\": "\\",
-      "'": "'",
-      '"': '"',
-    };
-    text += simple[escaped] ?? escaped;
-    index += 2;
+    const unescaped = ansiCEscape(command, index, escaped);
+    text += unescaped.text;
+    index = unescaped.end;
   }
   return { text, end: index, closed: false };
+}
+
+const ANSI_C_SIMPLE_ESCAPES: Record<string, string> = {
+  a: "\x07",
+  b: "\b",
+  e: "\x1b",
+  E: "\x1b",
+  f: "\f",
+  n: "\n",
+  r: "\r",
+  t: "\t",
+  v: "\v",
+  "\\": "\\",
+  "'": "'",
+  '"': '"',
+};
+
+/** The text of the escape whose backslash is at `index`, and the index just
+ *  past it. */
+function ansiCEscape(
+  command: string,
+  index: number,
+  escaped: string,
+): { text: string; end: number } {
+  if (escaped === "x") {
+    const hex = /^[0-9a-fA-F]{1,2}/.exec(command.slice(index + 2));
+    if (hex === null) return { text: "x", end: index + 2 };
+    return {
+      text: String.fromCharCode(Number.parseInt(hex[0], 16)),
+      end: index + 2 + hex[0].length,
+    };
+  }
+  if (/^[0-7]/.test(escaped)) {
+    const octal = /^[0-7]{1,3}/.exec(command.slice(index + 1));
+    invariant(octal, "escaped is an octal digit");
+    return {
+      text: String.fromCharCode(Number.parseInt(octal[0], 8)),
+      end: index + 1 + octal[0].length,
+    };
+  }
+  return { text: ANSI_C_SIMPLE_ESCAPES[escaped] ?? escaped, end: index + 2 };
 }
 
 /** Result of extracting heredocs from a raw command. */
