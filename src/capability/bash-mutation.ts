@@ -2,6 +2,7 @@
 
 import { homedir } from "node:os";
 import { normalize, resolve, sep } from "node:path";
+import { elementAt } from "../element-at.ts";
 import { invariant } from "../invariant.ts";
 import type { ShellToken } from "../shell-token.ts";
 import {
@@ -29,42 +30,7 @@ export function mutationOperands(
   cmd: ReadonlyArray<{ value: string }>,
 ): { sources: string[]; destinations: string[]; sawOperand: boolean } {
   const valueOpts = MUTATION_VALUE_OPTIONS[base] ?? new Set<string>();
-  const operands: string[] = [];
-  let targetDirectory: string | undefined;
-  let endOfOptions = false;
-  for (let i = 1; i < cmd.length; i += 1) {
-    const token = cmd[i];
-    invariant(token, "cmd[i] is in bounds");
-    const v = token.value;
-    if (!endOfOptions && v === "--") {
-      endOfOptions = true;
-      continue;
-    }
-    if (!endOfOptions && v.startsWith("--")) {
-      if (valueOpts.has(v)) {
-        if (v === "--target-directory") targetDirectory = cmd[i + 1]?.value;
-        i += 1;
-      } else if (
-        valueOpts.has("--target-directory") &&
-        v.startsWith("--target-directory=")
-      ) {
-        targetDirectory = v.slice("--target-directory=".length);
-      }
-      continue;
-    }
-    if (!endOfOptions && v.startsWith("-") && v.length > 1) {
-      for (let position = 1; position < v.length; position += 1) {
-        const option = `-${v.charAt(position)}`;
-        if (!valueOpts.has(option)) continue;
-        const attached = v.slice(position + 1);
-        const value = attached || cmd[++i]?.value;
-        if (option === "-t") targetDirectory = value;
-        break;
-      }
-      continue;
-    }
-    operands.push(v);
-  }
+  const { operands, targetDirectory } = scanMutationArguments(cmd, valueOpts);
   if (targetDirectory !== undefined) {
     // `-t DIR` redirects every SOURCE argument into DIR: with it, no operand
     // is itself a destination.
@@ -91,6 +57,83 @@ export function mutationOperands(
   if (lastOperand !== undefined) destinations.push(lastOperand);
   const sources = operands.length > 1 ? operands.slice(0, -1) : [];
   return { sources, destinations, sawOperand: operands.length > 0 };
+}
+
+/** The positional operands of a mutation command and the last
+ *  `--target-directory`/`-t` value seen. */
+interface MutationArguments {
+  operands: string[];
+  targetDirectory: string | undefined;
+}
+
+function scanMutationArguments(
+  cmd: ReadonlyArray<{ value: string }>,
+  valueOpts: ReadonlySet<string>,
+): MutationArguments {
+  const scan: MutationArguments = { operands: [], targetDirectory: undefined };
+  for (let i = 1; i < cmd.length; i += 1)
+    i = scanArgument(cmd, i, valueOpts, scan);
+  return scan;
+}
+
+/** Apply the word at `i`; returns the index of the last word it consumed. */
+function scanArgument(
+  cmd: ReadonlyArray<{ value: string }>,
+  i: number,
+  valueOpts: ReadonlySet<string>,
+  scan: MutationArguments,
+): number {
+  const v = elementAt(cmd, i, "cmd").value;
+  if (v === "--") {
+    // Every word after the first `--` is an operand, `--` included.
+    for (const token of cmd.slice(i + 1)) scan.operands.push(token.value);
+    return cmd.length;
+  }
+  if (v.startsWith("--")) return scanLongOption(cmd, i, v, valueOpts, scan);
+  if (v.startsWith("-") && v.length > 1)
+    return scanShortOptions(cmd, i, v, valueOpts, scan);
+  scan.operands.push(v);
+  return i;
+}
+
+function scanLongOption(
+  cmd: ReadonlyArray<{ value: string }>,
+  i: number,
+  v: string,
+  valueOpts: ReadonlySet<string>,
+  scan: MutationArguments,
+): number {
+  if (valueOpts.has(v)) {
+    if (v === "--target-directory") scan.targetDirectory = cmd[i + 1]?.value;
+    return i + 1;
+  }
+  if (
+    valueOpts.has("--target-directory") &&
+    v.startsWith("--target-directory=")
+  ) {
+    scan.targetDirectory = v.slice("--target-directory=".length);
+  }
+  return i;
+}
+
+/** The first value-taking option in a short cluster ends it and takes the
+ *  attached rest or, when nothing is attached, the next word. */
+function scanShortOptions(
+  cmd: ReadonlyArray<{ value: string }>,
+  i: number,
+  v: string,
+  valueOpts: ReadonlySet<string>,
+  scan: MutationArguments,
+): number {
+  for (let position = 1; position < v.length; position += 1) {
+    const option = `-${v.charAt(position)}`;
+    if (!valueOpts.has(option)) continue;
+    const attached = v.slice(position + 1);
+    const last = attached ? i : i + 1;
+    if (option === "-t") scan.targetDirectory = attached || cmd[last]?.value;
+    return last;
+  }
+  return i;
 }
 
 /** Mutating forms of executables that are otherwise treated as read-only.
