@@ -68,27 +68,33 @@ describe("trust hardening — git conversion-filter neutralization edge cases", 
     key: string,
     value: string,
     marker: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const run = await initGitRepo(directory);
     await run(["config", key, value]);
-    writeFileSync(join(directory, ".gitattributes"), "* filter=pwn\n");
+    // `filter.<name>.clean` is armed by `* filter=<name>`; the name may contain dots.
+    const name = key.slice("filter.".length, key.lastIndexOf("."));
+    writeFileSync(join(directory, ".gitattributes"), `* filter=${name}\n`);
     writeFileSync(join(directory, "data.txt"), "AAAA\n");
     await run(["add", "data.txt"]);
     await run(["commit", "-m", "fixture"]);
     writeFileSync(join(directory, "data.txt"), "BBBB\n");
+    const ranDuringFixture = existsSync(marker);
     rmSync(marker, { force: true });
+    return ranDuringFixture;
   }
 
   test("a filter name containing dots is neutralized too", async () => {
     const directory = tempDir("reviewer-gitfilter-dotted-");
     try {
       const marker = join(directory, "filter-ran-marker");
-      await initRepoWithFilter(
+      const armed = await initRepoWithFilter(
         directory,
         "filter.audit.demo.clean",
         `touch ${marker}; cat`,
         marker,
       );
+      // The fixture's own `git add` ran the dotted filter, so it is really armed.
+      expect(armed).toBe(true);
       const result = await enrichGitEvidence(
         bashRequest("git add data.txt && git commit -m bounded"),
         directory,
