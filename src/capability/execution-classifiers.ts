@@ -90,11 +90,12 @@ export function classifyPackageManager(
   facts.childProcesses = true;
   facts.networkPossible = true;
   if (["run", "exec"].includes(sub ?? "")) {
+    // A local manifest script or installed executable can use the network,
+    // but its invocation is not evidence of an actual network operation, so
+    // `run` and `exec` leave networkObserved unset.
     facts.executesCode = true;
     if (sub === "run") facts.executesRepositoryCode = true;
   } else {
-    // A local manifest script or installed executable can use the network,
-    // but its invocation is not evidence of an actual network operation.
     facts.networkObserved = true;
   }
 }

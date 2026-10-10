@@ -7,7 +7,8 @@
  *
  * Command-string recursion depth and the total number of resolved effective
  * commands are hard-capped, so adversarial nesting can neither exhaust the
- * stack nor expand the result without bound.
+ * stack nor expand the result without bound. The walk and its depth cap live
+ * in effective-command-walk.ts; this module is its public entry point.
  */
 
 import { type WalkSink, walk } from "./effective-command-walk.ts";

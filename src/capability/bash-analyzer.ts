@@ -32,8 +32,10 @@ import { classifyCredentialReads } from "./sensitive-path-reads.ts";
  * `sh -c` bodies are handled consistently with the emergency brake.
  *
  * The passes run in a fixed order and accumulate into one `CapabilityFacts`
- * record. Booleans only ever turn true; the action class is claimed by
- * whichever classifier sets it last, so the order below is load-bearing.
+ * record. Booleans only ever turn true. The action class depends on the order
+ * below: `claimClass` replaces any earlier class, `claimUnsetClass` keeps the
+ * first claim, and `resolveActionClass` fills the class only when no
+ * classifier claimed one.
  */
 
 /** Analyze a parsed bash command and produce capability facts. */

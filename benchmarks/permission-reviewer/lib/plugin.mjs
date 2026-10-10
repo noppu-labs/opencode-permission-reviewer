@@ -27,14 +27,16 @@ const PINNED_BLOBS = {
   "src/capability/command-parser.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "51b07f1137833796f26e45dc2156adaff4433609",
-  "src/capability/bash-analyzer.ts": "8083891f202decb61ca85c01baf3bc3c9b08f964",
+  "src/capability/bash-analyzer.ts":
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "5bad6b5919f2ce80707084b046cf22c00fefac15",
   "src/capability/bash-command-tables.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "faa0c8d39af857f106d66fed2d54f03ca08acd5a",
-  "src/shell-effective-commands.ts": "0902fe9d9787fa482b426f2a181e7824de8a933e",
+  "src/shell-effective-commands.ts": "66e9183f50e24ff07424ffa211ded46dca6ba4ce",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/effective-command-walk.ts": "a9618c8de7a3d6528c55132de68be7d4f0c27842",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -83,7 +85,8 @@ const PINNED_BLOBS = {
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "b1eafef1054206665fed857e749c3337b488f7cb",
   "src/capability/execution-classifiers.ts":
-    "65aff31da47a3a64eb7382883a2e4112318f5e29",
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "b60be6d30f542b0002a666a2c319fc98bec98b14",
   "src/capability/file-effect-classifiers.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "b03fa54cda5b0c69752aad779d8e6123bbd3f320",

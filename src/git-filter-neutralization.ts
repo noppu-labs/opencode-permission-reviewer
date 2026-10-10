@@ -127,7 +127,7 @@ export function filterNeutralizationArgs(directory: string): Promise<string[]> {
       );
       return boundedNeutralizationArgs(result.stdout);
     } catch (error) {
-      return emptyScanArgs(error);
+      return noMatchArgsOrRethrow(error);
     } finally {
       inFlightFilterScans.delete(directory);
     }
@@ -155,7 +155,7 @@ function boundedNeutralizationArgs(stdout: string): string[] {
 
 /** The args for a scan that failed with `error`: none when nothing matched,
  *  otherwise the failure is rethrown. */
-function emptyScanArgs(error: unknown): string[] {
+function noMatchArgsOrRethrow(error: unknown): string[] {
   const record = error as { code?: unknown };
   // git config exits 1 when nothing matches: the common, benign case.
   if (record.code === 1) return [];
