@@ -5,42 +5,19 @@ import type { ContextReader } from "../core/ports.ts";
 import { invariant } from "../invariant.ts";
 import { withTimeout } from "../opencode/transport.ts";
 import type { ReviewerConfig } from "../types.ts";
+import {
+  bareSession,
+  lineageOrigin,
+  readSession,
+  type SessionMetadata,
+  toNode,
+} from "./session-metadata.ts";
 
 /** Bound for the resolver's metadata SDK calls: a hung session.get/messages
  *  must degrade to "unknown" instead of leaving the review pending forever. */
 export const METADATA_TIMEOUT_MS = 10_000;
 
 // --- session.get wrapper (resilient) ----------------------------------------
-
-interface SessionMetadata {
-  id: string;
-  parentID: string | undefined;
-  title: string | undefined;
-  version: string | undefined;
-  agent: string | undefined;
-  mode: string | undefined;
-  createdAt: number | undefined;
-}
-
-function readSession(id: string, raw: unknown): SessionMetadata {
-  const r = (raw ?? {}) as Record<string, unknown>;
-  const parentID = typeof r.parentID === "string" ? r.parentID : undefined;
-  return {
-    id,
-    parentID,
-    title: typeof r.title === "string" ? r.title : undefined,
-    version: typeof r.version === "string" ? r.version : undefined,
-    agent: typeof r.agent === "string" ? r.agent : undefined,
-    mode: typeof r.mode === "string" ? r.mode : undefined,
-    createdAt:
-      typeof r.time === "object" &&
-      r.time !== null &&
-      "created" in r.time &&
-      typeof (r.time as Record<string, unknown>).created === "number"
-        ? ((r.time as Record<string, unknown>).created as number)
-        : undefined,
-  };
-}
 
 async function fetchSession(
   client: ContextReader,
@@ -84,31 +61,15 @@ export async function walkLineage(
   let cycleDetected = false;
 
   const current = await fetchSession(client, sessionID, directory);
-  const fallback: SessionMetadata = {
-    id: sessionID,
-    parentID: undefined,
-    title: undefined,
-    version: undefined,
-    agent: undefined,
-    mode: undefined,
-    createdAt: undefined,
-  };
-  const origin =
-    current === undefined
-      ? "unknown"
-      : current.parentID !== undefined
-        ? "delegated"
-        : "human-root";
+  const fallback = bareSession(sessionID);
+  const origin = lineageOrigin(current);
   nodes.push(toNode(current ?? fallback));
   visited.add(sessionID);
 
   let cursor = current;
   let depth = 0;
   while (cursor?.parentID) {
-    if (
-      depth >= config.maxSessionDepth ||
-      nodes.length - 1 >= config.maxParentSessions
-    ) {
+    if (atConfiguredBound(depth, nodes.length - 1, config)) {
       // Hit a configured bound; remaining ancestry is truncated, not missing.
       return {
         ...finalize(
@@ -144,15 +105,15 @@ export async function walkLineage(
   };
 }
 
-function toNode(s: SessionMetadata): SessionNode {
-  const node: SessionNode = { sessionID: s.id };
-  if (s.parentID !== undefined) node.parentID = s.parentID;
-  if (s.title !== undefined) node.title = s.title;
-  if (s.version !== undefined) node.version = s.version;
-  if (s.agent !== undefined) node.actorName = s.agent;
-  if (s.mode !== undefined) node.mode = s.mode;
-  if (s.createdAt !== undefined) node.createdAt = s.createdAt;
-  return node;
+function atConfiguredBound(
+  depth: number,
+  parentSessions: number,
+  config: ReviewerConfig,
+): boolean {
+  return (
+    depth >= config.maxSessionDepth ||
+    parentSessions >= config.maxParentSessions
+  );
 }
 
 function finalize(
