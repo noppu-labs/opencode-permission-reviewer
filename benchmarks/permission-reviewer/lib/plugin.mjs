@@ -22,13 +22,12 @@ const PINNED_BLOBS = {
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/redact.ts": "f125ef1347e05eb69d9d8a476a7246a5bd81eac2",
   "src/capability/command-parser.ts":
-    "2a3bae3a5f7ed387db52cef25d652c83b4c58a2f",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/capability/bash-analyzer.ts": "238283897ef64b1f853f4a0e8098bafc728554e1",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-lexer.ts": "0cb5112864efeb2b9b7cacf579b57c33b1d764d2",
+    "3b4edc07299fed0618191a3fcd271ca2c7ca91c0",
+  "src/capability/bash-analyzer.ts": "a10b3ddccc3c0891940db3343177981e7bf1b09b",
+  "src/shell-lexer.ts": "cbc1f624b7ca10bae75791ca068666270e387b51",
   "src/capability/heredoc-extractor.ts":
-    "84ee7ef2db5f1ac940fa6ad330a54df4b3ecef37",
+    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+    "ebc081d463689e21c7d31183333a0d2580842061",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/system-one/review.ts": "e832f6682eacb4a98eac604114223d87972ea136",
 };

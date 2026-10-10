@@ -133,13 +133,10 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 52 files.
+    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 48 files.
     {
       "includes": [
         "src/audit.ts",
-        "src/capability/bash-analyzer.ts",
-        "src/capability/command-parser.ts",
-        "src/capability/heredoc-extractor.ts",
         "src/cli/explain.ts",
         "src/cli/init.ts",
         "src/config/jsonc.ts",
@@ -158,7 +155,6 @@
         "src/opencode/v2/server.ts",
         "src/package-script-evidence.ts",
         "src/policy/policy-engine.ts",
-        "src/shell-lexer.ts",
         "src/ssh-evidence.ts",
         "src/verified-ssh-script.ts",
         "tests/actor-resolver.test.ts",
@@ -292,7 +288,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1391
+                "maxLines": 1415
               }
             }
           }
@@ -404,7 +400,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1058
+                "maxLines": 1087
               }
             }
           }

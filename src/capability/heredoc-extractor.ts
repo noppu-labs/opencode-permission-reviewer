@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { invariant } from "../invariant.ts";
 import type { HeredocRecord } from "../types.ts";
 
 /*
@@ -85,7 +86,7 @@ function parseDelimiterWord(command: string, start: number): DelimiterWord {
   let sawAny = false;
 
   while (index < command.length) {
-    const c = command[index]!;
+    const c = command.charAt(index);
     if (c === "'") {
       const end = command.indexOf("'", index + 1);
       if (end === -1) {
@@ -123,14 +124,14 @@ function parseDelimiterWord(command: string, start: number): DelimiterWord {
       index += 1;
       let closed = false;
       while (index < command.length) {
-        const d = command[index]!;
+        const d = command.charAt(index);
         if (d === '"') {
           closed = true;
           index += 1;
           break;
         }
         if (d === "\\" && index + 1 < command.length) {
-          const escaped = command[index + 1]!;
+          const escaped = command.charAt(index + 1);
           if ('$`"\\'.includes(escaped)) delimiter += escaped;
           else delimiter += `\\${escaped}`;
           index += 2;
@@ -148,7 +149,7 @@ function parseDelimiterWord(command: string, start: number): DelimiterWord {
       continue;
     }
     if (c === "\\" && index + 1 < command.length) {
-      delimiter += command[index + 1]!;
+      delimiter += command.charAt(index + 1);
       quoted = true;
       sawAny = true;
       index += 2;
@@ -176,7 +177,7 @@ function unescapeAnsiC(
   let text = "";
   let index = start;
   while (index < command.length) {
-    const c = command[index]!;
+    const c = command.charAt(index);
     if (c === "'") return { text, end: index + 1, closed: true };
     if (c !== "\\") {
       text += c;
@@ -197,7 +198,8 @@ function unescapeAnsiC(
       continue;
     }
     if (/^[0-7]/.test(escaped)) {
-      const octal = /^[0-7]{1,3}/.exec(command.slice(index + 1))!;
+      const octal = /^[0-7]{1,3}/.exec(command.slice(index + 1));
+      invariant(octal, "escaped is an octal digit");
       text += String.fromCharCode(Number.parseInt(octal[0], 8));
       index += 1 + octal[0].length;
       continue;
@@ -336,8 +338,9 @@ export function extractHeredocs(command: string): HeredocExtraction {
         assembled += piece.text;
         continue;
       }
-      const start = pending[piece.pendingIndex]!;
-      const record = records[piece.pendingIndex]!;
+      const start = pending[piece.pendingIndex];
+      const record = records[piece.pendingIndex];
+      invariant(start && record, "pendingIndex is in bounds");
       const shown = start.resolved ? start.delimiter : "<unresolved>";
       const safe = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(shown)
         ? shown
@@ -345,9 +348,9 @@ export function extractHeredocs(command: string): HeredocExtraction {
       assembled += `${start.operator}${safe} <HEREDOC:sha256:${record.sha256.slice(0, 12)}>`;
     }
     out += assembled;
-    for (let index = 0; index < pending.length; index += 1) {
-      const start = pending[index]!;
-      const record = records[index]!;
+    for (const [index, start] of pending.entries()) {
+      const record = records[index];
+      invariant(record, "records parallels pending");
       heredocs.push({
         delimiter: start.resolved ? start.delimiter : start.rawWord,
         operator: start.operator,
@@ -367,7 +370,7 @@ export function extractHeredocs(command: string): HeredocExtraction {
   };
 
   while (i < command.length) {
-    const c = command[i]!;
+    const c = command.charAt(i);
     if (inSingle) {
       if (c === "'") inSingle = false;
       i += 1;
@@ -395,7 +398,7 @@ export function extractHeredocs(command: string): HeredocExtraction {
     }
     // A comment hides the rest of its line from the shell, so it can hide no
     // heredoc either.
-    if (c === "#" && (i === 0 || /[\s;&|()]/.test(command[i - 1]!))) {
+    if (c === "#" && (i === 0 || /[\s;&|()]/.test(command.charAt(i - 1)))) {
       while (i < command.length && command[i] !== "\n") i += 1;
       continue;
     }
@@ -409,7 +412,7 @@ export function extractHeredocs(command: string): HeredocExtraction {
       (c === "$" && command[i + 1] === "(" && command[i + 2] === "(") ||
       (c === "(" &&
         command[i + 1] === "(" &&
-        (i === 0 || /[\s;&|()]/.test(command[i - 1]!)))
+        (i === 0 || /[\s;&|()]/.test(command.charAt(i - 1))))
     ) {
       arithmeticDepth = 2;
       i += c === "$" ? 3 : 2;
@@ -472,7 +475,9 @@ function findOutputTarget(beforeOperator: string): string | undefined {
   // Match the last `>` / `>>` redirection target on the start line.
   const trimmed = beforeOperator.replace(/\s+$/, "");
   const match = />>?\s*([^\s|;&<>]+)\s*$/.exec(trimmed);
-  return match === null ? undefined : stripQuotes(match[1]!);
+  // The one capturing group is mandatory, so it is defined on every match.
+  const target = match?.[1];
+  return target === undefined ? undefined : stripQuotes(target);
 }
 
 function stripQuotes(token: string): string {
@@ -526,7 +531,7 @@ function boundBody(
   let cut = 0;
   let len = 0;
   while (cut < fullBody.length && len < MAX_BODY_BYTES) {
-    len += Buffer.byteLength(fullBody[cut]!, "utf8");
+    len += Buffer.byteLength(fullBody.charAt(cut), "utf8");
     cut += 1;
   }
   return {

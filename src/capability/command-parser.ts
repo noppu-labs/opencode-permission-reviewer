@@ -1,3 +1,4 @@
+import { invariant } from "../invariant.ts";
 import {
   analyzeEffectiveCommands,
   lexSegmentsBounded,
@@ -50,8 +51,7 @@ export function parseCommand(rawCommand: string): ParsedCommand {
   for (const segment of segments) {
     const analysis = analyzeEffectiveCommands(segment, budget);
     analysisTruncated = analysisTruncated || analysis.truncated;
-    for (let index = 0; index < analysis.commands.length; index += 1) {
-      const cmd = analysis.commands[index]!;
+    for (const [index, cmd] of analysis.commands.entries()) {
       effective.push(cmd);
       redirections.push(
         analysis.redirections[index] ?? extractRedirections(cmd),
@@ -79,20 +79,24 @@ export function parseCommand(rawCommand: string): ParsedCommand {
 function extractRedirections(tokens: ShellToken[]): Redirection[] {
   const out: Redirection[] = [];
   for (let i = 0; i < tokens.length; i += 1) {
-    const tok = tokens[i]!;
+    const tok = tokens[i];
+    invariant(tok, "tokens[i] is in bounds");
     const value = tok.value;
-    // Combined forms like `2>file` or `1>>file`.
+    // Combined forms like `2>file` or `1>>file`. Both groups are mandatory, so
+    // they are defined exactly when the pattern matches.
     const combined = /^([0-9]?>>?)\s*(.+)$/.exec(value);
-    if (combined) {
+    const combinedOperator = combined?.[1];
+    const combinedTarget = combined?.[2];
+    if (combinedOperator !== undefined && combinedTarget !== undefined) {
       out.push({
-        operator: combined[1]!,
-        target: combined[2]!,
-        quoted: isQuoted(combined[2]!, tok.raw),
+        operator: combinedOperator,
+        target: combinedTarget,
+        quoted: isQuoted(combinedTarget, tok.raw),
       });
       continue;
     }
-    if (REDIRECTION_OPS.has(value) && i + 1 < tokens.length) {
-      const next = tokens[i + 1]!;
+    const next = tokens[i + 1];
+    if (REDIRECTION_OPS.has(value) && next !== undefined) {
       out.push({
         operator: value,
         target: next.value,
@@ -103,7 +107,7 @@ function extractRedirections(tokens: ShellToken[]): Redirection[] {
     }
     if (value.startsWith(">") || value.startsWith("<")) {
       // `>file`, `>>file`, `<file` glued to the target.
-      const op = value.startsWith(">>") ? ">>" : value[0]!;
+      const op = value.startsWith(">>") ? ">>" : value.charAt(0);
       out.push({
         operator: op,
         target: value.slice(op === ">>" ? 2 : 1),
