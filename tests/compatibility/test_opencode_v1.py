@@ -11,12 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
-
-V1_VERSIONS = (
-    [os.environ["V1_HOST_VERSION"]]
-    if os.environ.get("V1_HOST_VERSION")
-    else ["1.18.29", "1.18.30", "1.18.31", "1.18.32", "1.18.35"]
-)
+from hosts import V1_VERSIONS
 
 # A stdio MCP server that records each process start, so tests can count spawns.
 V1_MCP_FIXTURE_SOURCE = """import json

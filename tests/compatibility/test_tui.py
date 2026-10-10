@@ -17,7 +17,7 @@ from pathlib import Path
 from threading import Event, Thread
 
 import pytest
-from hosts import V2_VERSIONS
+from hosts import V1_VERSIONS, V2_VERSIONS, stop_process
 
 # Capability queries the TUI sends at start-up and the replies a real terminal would give.
 TERMINAL_QUERIES = [
@@ -47,15 +47,6 @@ def read_terminal(master, output, stop):
             answer_queries(master, chunk)
         except OSError:
             return
-
-
-def stop_process(proc):
-    proc.terminate()
-    try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
-        proc.wait(timeout=5)
 
 
 @contextmanager
@@ -181,11 +172,7 @@ def assert_review_rendered(host, index, output):
 @pytest.mark.parametrize(
     ("generation", "version"),
     [
-        ("v1", "1.18.29"),
-        ("v1", "1.18.30"),
-        ("v1", "1.18.31"),
-        ("v1", "1.18.32"),
-        ("v1", "1.18.35"),
+        *(("v1", version) for version in V1_VERSIONS),
         *(("v2", version) for version in V2_VERSIONS),
     ],
 )

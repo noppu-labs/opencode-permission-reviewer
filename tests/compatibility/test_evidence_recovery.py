@@ -10,6 +10,7 @@ import uuid
 from pathlib import Path
 
 import pytest
+from hosts import SYNTHETIC_PASSWORD
 
 CASES = [
     (generation, version)
@@ -158,7 +159,7 @@ def capture_evidence(source, generation, host, session_id):
             "bun run check",
         ],
         cwd=source,
-        env={**os.environ, "OPENCODE_PASSWORD": "synthetic-local-host-password"} if generation == "v2" else os.environ,  # nosec B105 # synthetic test password
+        env={**os.environ, "OPENCODE_PASSWORD": SYNTHETIC_PASSWORD} if generation == "v2" else os.environ,
         capture_output=True,
         text=True,
         timeout=60,

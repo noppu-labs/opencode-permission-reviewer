@@ -18,8 +18,7 @@ from threading import Thread
 from typing import IO, Any
 
 import pytest
-
-SYNTHETIC_PASSWORD = "synthetic-local-host-password"  # nosec B105 # synthetic test password
+from hosts import SYNTHETIC_PASSWORD, stop_process
 
 
 @pytest.fixture
@@ -65,7 +64,7 @@ def launch_host(tmp_path):
     processes: list[tuple[subprocess.Popen[bytes], IO[str]]] = []
     yield functools.partial(_launch, tmp_path, processes)
     for process, log in reversed(processes):
-        _stop(process)
+        stop_process(process)
         log.close()
 
 
@@ -113,7 +112,7 @@ def _launch(
         "project": project,
         "env": env,
         "headers": connection.headers,
-        "stop": functools.partial(_stop, process),
+        "stop": functools.partial(stop_process, process),
     }
 
 
@@ -196,16 +195,6 @@ def _start_server(
         stdout=log,
         stderr=subprocess.STDOUT,
     )
-
-
-def _stop(process: subprocess.Popen[bytes]) -> None:
-    if process.poll() is None:
-        process.terminate()
-        try:
-            process.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            process.kill()
-            process.wait(timeout=5)
 
 
 def _wait_until_ready(
