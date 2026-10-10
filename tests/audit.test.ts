@@ -28,7 +28,7 @@ import {
 import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
-import { defined, systemOneScores } from "./helpers.ts";
+import { defined, systemOneScores, toJsonl } from "./helpers.ts";
 
 const execFileAsync = (cmd: string, args: string[]): Promise<void> =>
   new Promise<void>((resolve, reject) => {
@@ -447,27 +447,29 @@ describe("audit summary hardening", () => {
   test("coerces a non-string actor name instead of throwing in the sort", () => {
     const file = join(directory, "audit.jsonl");
     const token = GITHUB_PAT_ALPHANUMERIC;
-    const lines = [
-      JSON.stringify({
-        timestamp: "2026-01-01T00:00:00.000Z",
-        requestID: "r1",
-        sessionID: "s1",
-        permission: "bash",
-        outcome: "allow",
-        reason: "ok",
-        actor: { name: 42, profile: "unknown" },
-      }),
-      JSON.stringify({
-        timestamp: "2026-01-01T00:01:00.000Z",
-        requestID: "r2",
-        sessionID: "s2",
-        permission: "bash",
-        outcome: "deny",
-        reason: `credential ${token}`,
-        actor: { name: 42, profile: "unknown" },
-      }),
-    ];
-    writeFileSync(file, `${lines.join("\n")}\n`);
+    writeFileSync(
+      file,
+      toJsonl([
+        {
+          timestamp: "2026-01-01T00:00:00.000Z",
+          requestID: "r1",
+          sessionID: "s1",
+          permission: "bash",
+          outcome: "allow",
+          reason: "ok",
+          actor: { name: 42, profile: "unknown" },
+        },
+        {
+          timestamp: "2026-01-01T00:01:00.000Z",
+          requestID: "r2",
+          sessionID: "s2",
+          permission: "bash",
+          outcome: "deny",
+          reason: `credential ${token}`,
+          actor: { name: 42, profile: "unknown" },
+        },
+      ]),
+    );
     const summary = readAuditSummary(file);
     expect(summary.validRecords).toBe(2);
     const unknownActor = defined(
