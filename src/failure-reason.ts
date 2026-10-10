@@ -83,6 +83,48 @@ function truncate(reason: string): string {
   return `${reason.slice(0, MAX_FAILURE_REASON_LENGTH - 3)}...`;
 }
 
+function nonErrorReason(label: string, error: unknown): string {
+  let text = "unknown error";
+  try {
+    const raw = String(error);
+    if (raw.length > 0) text = raw;
+  } catch {
+    // Keep the default text.
+  }
+  return truncate(`${label} failed (UnknownError): ${text}`);
+}
+
+/**
+ * The cause to follow next; `undefined` when the current link is not an
+ * object or its `cause` accessor throws, which ends the chain.
+ */
+function nextCause(current: unknown): unknown {
+  if (typeof current !== "object" || current === null) return undefined;
+  try {
+    return (current as { cause?: unknown }).cause;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Up to MAX_CAUSE_DEPTH cause messages. */
+function causeMessages(error: Error): string[] {
+  const causes: string[] = [];
+  try {
+    let current: unknown = error;
+    for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth++) {
+      const next = nextCause(current);
+      if (next === null || next === undefined) break;
+      const text = safeCauseMessage(next);
+      if (text !== undefined && text.length > 0) causes.push(text);
+      current = next;
+    }
+  } catch {
+    // Partial cause chains are still useful.
+  }
+  return causes;
+}
+
 /**
  * Format an unknown thrown value as a bounded failure-safe reason that names
  * where the failure happened and preserves the chained cause. Never throws.
@@ -90,38 +132,11 @@ function truncate(reason: string): string {
 export function formatFailureReason(phase: string, error: unknown): string {
   try {
     const label = safePhase(phase);
-    if (!(error instanceof Error)) {
-      let text = "unknown error";
-      try {
-        const raw = String(error);
-        if (raw.length > 0) text = raw;
-      } catch {
-        // Keep the default text.
-      }
-      return truncate(`${label} failed (UnknownError): ${text}`);
-    }
+    if (!(error instanceof Error)) return nonErrorReason(label, error);
     const name = safeName(error);
     const message = safeMessage(error);
     const suffix = safeReasonSuffix(error);
-    const causes: string[] = [];
-    try {
-      let current: unknown = error;
-      for (let depth = 0; depth < MAX_CAUSE_DEPTH; depth++) {
-        if (typeof current !== "object" || current === null) break;
-        let next: unknown;
-        try {
-          next = (current as { cause?: unknown }).cause;
-        } catch {
-          break;
-        }
-        if (next === null || next === undefined) break;
-        const text = safeCauseMessage(next);
-        if (text !== undefined && text.length > 0) causes.push(text);
-        current = next;
-      }
-    } catch {
-      // Partial cause chains are still useful.
-    }
+    const causes = causeMessages(error);
     const base = `${label} failed (${name}${suffix}): ${message}`;
     if (causes.length === 0) return truncate(base);
     return truncate(`${base}; caused by: ${causes.join("; caused by: ")}`);
