@@ -392,7 +392,7 @@ export function lexSegments(
   let lastSeparator: string | undefined;
   let outOfTokens = false;
 
-  const appendValue = (text: string, quoted: boolean) => {
+  const appendValue = (text: string, quoted: boolean): void => {
     if (text.length === 0) return;
     const last = spans.at(-1);
     if (last !== undefined && last.quoted === quoted) last.text += text;
@@ -400,7 +400,7 @@ export function lexSegments(
     value += text;
   };
 
-  const flushToken = () => {
+  const flushToken = (): void => {
     if (hasToken) {
       tokens.push({ raw, value, spans });
       value = "";
@@ -413,7 +413,7 @@ export function lexSegments(
       }
     }
   };
-  const flushSegment = (endedBy?: string) => {
+  const flushSegment = (endedBy?: string): void => {
     flushToken();
     // Paren separators survive as empty marker segments even without tokens:
     // the directory tracker needs every open/close event, and dropping the
@@ -885,7 +885,7 @@ function redirectionOperatorAt(
   index: number,
 ): string | undefined {
   const value = token.value;
-  const live = (offset: number) =>
+  const live = (offset: number): string | undefined =>
     offset < value.length && !tokenCharIsQuoted(token, offset)
       ? value[offset]
       : undefined;

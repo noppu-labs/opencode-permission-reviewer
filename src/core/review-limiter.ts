@@ -12,12 +12,12 @@ export class ReviewLimiter {
     if (this.active >= this.concurrency && this.queue.length >= this.capacity)
       return Promise.reject(new Error("Reviewer queue is full"));
     return new Promise((resolve, reject) => {
-      const abort = () => {
+      const abort = (): void => {
         const index = this.queue.indexOf(start);
         if (index >= 0) this.queue.splice(index, 1);
         reject(signal.reason);
       };
-      const start = () => {
+      const start = (): void => {
         signal.removeEventListener("abort", abort);
         if (signal.aborted) {
           reject(signal.reason);

@@ -7,11 +7,11 @@ import { invariant } from "./invariant.ts";
 import { commandSegments, sshValueOption } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
 
-const O_RDONLY =
+const O_RDONLY: number =
   typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0;
-const O_NOFOLLOW =
+const O_NOFOLLOW: number =
   typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0;
-const O_NONBLOCK =
+const O_NONBLOCK: number =
   typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0;
 
 export interface FileEvidence {
@@ -118,7 +118,7 @@ export function shellCommandSegmentsWithDirectory(
   // unresolved reason); `||` means the next segment only runs after a
   // FAILURE, so the directory is still the pre-cd one; any other separator
   // (`;`, `|`, `&`, plain adjacency) leaves both outcomes live.
-  const applyPendingCd = (operator: string | undefined) => {
+  const applyPendingCd = (operator: string | undefined): void => {
     if (pendingCd === undefined) return;
     if (operator === "&&") {
       if (pendingCd.target !== undefined) {
@@ -143,7 +143,7 @@ export function shellCommandSegmentsWithDirectory(
   // A `(` opens a subshell that inherits the parent state at that moment.
   // The pushed restore point is that same post-cd parent state, so
   // `cd sub && ( … ) && cmd` resumes in sub, not in the pre-cd directory.
-  const openSubshell = () => {
+  const openSubshell = (): void => {
     if (pendingCd !== undefined) {
       // The cd sits immediately before the `(` with no operator between:
       // the group may start in either directory.
@@ -158,7 +158,7 @@ export function shellCommandSegmentsWithDirectory(
     });
   };
 
-  const closeSubshell = () => {
+  const closeSubshell = (): void => {
     const restore = subshellStates.pop();
     if (restore !== undefined) {
       directory = restore.directory;

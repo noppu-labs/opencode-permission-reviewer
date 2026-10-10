@@ -270,7 +270,7 @@ export function extractHeredocs(command: string): HeredocExtraction {
   const pending: PendingStart[] = [];
   let pieces: Array<{ text: string } | { pendingIndex: number }> = [];
 
-  const appendText = (text: string) => {
+  const appendText = (text: string): void => {
     if (text.length === 0) return;
     const last = pieces.at(-1);
     if (last !== undefined && "text" in last) last.text += text;

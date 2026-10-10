@@ -82,43 +82,10 @@
   // entries cap each file at its current length instead), ordered by the stacked PR that fixes
   // those files and deletes the entry.
   "overrides": [
-    // Pending (quality/4-ts-rules): nursery/useExplicitType, 74 files.
+    // Pending (quality/4-ts-rules): nursery/useExplicitType, 42 files.
     {
       "includes": [
         "scripts/release-metadata.ts",
-        "src/audit.ts",
-        "src/capability/bash-analyzer.ts",
-        "src/capability/heredoc-extractor.ts",
-        "src/cli/init.ts",
-        "src/config.ts",
-        "src/config/jsonc.ts",
-        "src/config/loader.ts",
-        "src/context/ask-decisions.ts",
-        "src/core/review-attempt.ts",
-        "src/core/review-coordinator.ts",
-        "src/core/review-limiter.ts",
-        "src/git-evidence.ts",
-        "src/index.ts",
-        "src/opencode/reply-transport.ts",
-        "src/opencode/v1-adapter.ts",
-        "src/opencode/v1/backend-factory.ts",
-        "src/opencode/v1/context-reader.ts",
-        "src/opencode/v1/reviewer-backend.ts",
-        "src/opencode/v2/backend-factory.ts",
-        "src/opencode/v2/context-reader.ts",
-        "src/opencode/v2/event-codec.ts",
-        "src/opencode/v2/isolated-location.ts",
-        "src/opencode/v2/reviewer-backend.ts",
-        "src/opencode/v2/server.ts",
-        "src/package-script-evidence.ts",
-        "src/redact.ts",
-        "src/shell-lexer.ts",
-        "src/ssh-evidence.ts",
-        "src/system-one/backend.ts",
-        "src/system-one/review.ts",
-        "src/tui.tsx",
-        "src/ui/components.tsx",
-        "src/ui/v2.tsx",
         "tests/action-purpose.test.ts",
         "tests/actor-resolver.test.ts",
         "tests/audit.test.ts",
@@ -273,7 +240,7 @@
             "noExcessiveLinesPerFile": {
               "level": "error",
               "options": {
-                "maxLines": 1370
+                "maxLines": 1390
               }
             }
           }

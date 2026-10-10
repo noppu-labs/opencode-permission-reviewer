@@ -40,7 +40,7 @@ export function stripCommentsAndTrailingCommas(input: string): string {
   // trailing commas: when we encounter `}` or `]`, we check if the last real
   // character was `,` and remove it.
   let lastReal = "";
-  const append = (ch: string) => {
+  const append = (ch: string): void => {
     out += ch;
     if (ch !== " " && ch !== "\t" && ch !== "\n" && ch !== "\r") lastReal = ch;
   };

@@ -46,7 +46,7 @@ function invocation(tokens: string[]): ScriptInvocation | undefined {
   if (!MANAGERS.has(manager)) return;
   let cursor = 1;
   let ambiguous = false;
-  const skipOptions = () => {
+  const skipOptions = (): void => {
     while (tokens[cursor]?.startsWith("-")) {
       const option = tokens[cursor++];
       invariant(
@@ -110,7 +110,7 @@ export async function enrichPackageScriptEvidence(
   if (request.permission !== "bash") return { text: "" };
   const records: ScriptRecord[] = [];
   const active = new Set<string>();
-  const calls = (tokens: string[]) => {
+  const calls = (tokens: string[]): ScriptInvocation[] => {
     const managerIndex = tokens.findIndex((token) =>
       MANAGERS.has(basename(token)),
     );
@@ -227,7 +227,7 @@ export async function enrichPackageScriptEvidence(
     cwd: string | undefined,
     depth: number,
     phase = "requested",
-  ) => {
+  ): Promise<void> => {
     if (records.length >= MAX_SCRIPT_RECORDS) return;
     const base = {
       manager: call.manager,
@@ -328,7 +328,7 @@ export async function enrichPackageScriptEvidence(
   // records[0] from here on.
   const [first] = records;
   if (first === undefined) return { text: "" };
-  const serialize = () =>
+  const serialize = (): string =>
     JSON.stringify(
       {
         coverage:

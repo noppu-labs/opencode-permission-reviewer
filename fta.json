@@ -59,6 +59,7 @@
     "ui-protocol.ts",
     "components.tsx",
     "v2.tsx",
+    "index.ts",
     "actor-resolver.test.ts",
     "ask-decisions.test.ts",
     "audit.test.ts",

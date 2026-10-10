@@ -93,7 +93,7 @@ export class ReviewCoordinator {
     providers?: EvidenceProvider[],
     askDecisions?: AskDecisionSource,
   ) {
-    this.log = logger ?? (() => {});
+    this.log = logger ?? ((): void => {});
     this.backend = createV1ReviewerBackend(
       ctx,
       config,
@@ -304,11 +304,11 @@ export class ReviewCoordinator {
     invariant(attempt, ATTEMPT_REGISTERED);
     await this.emit(request, "reviewing");
     const result = await evaluateReview(request, this.config, {
-      collect: (pending) => this.collectEnvelope(pending),
-      review: (envelope) => this.runReviewer(envelope),
+      collect: (pending: PermissionRequest) => this.collectEnvelope(pending),
+      review: (envelope: ReviewEnvelope) => this.runReviewer(envelope),
       active: () => attempt.active() && !this.isSuperseded(request),
-      auxiliarySession: (sessionID) => this.backend.owns(sessionID),
-      observe: (envelope) => {
+      auxiliarySession: (sessionID: string) => this.backend.owns(sessionID),
+      observe: (envelope: ReviewEnvelope) => {
         if (envelope.policyTrace !== undefined) {
           this.remember(request.id, { policyTrace: envelope.policyTrace });
         }

@@ -672,6 +672,12 @@ interface DefaultRemoteRecord {
 const MAX_RESOLVED_REMOTES = 5;
 const MAX_PUSH_URLS = 5;
 
+interface ConfiguredRemoteUrls {
+  pushUrls?: string[];
+  fetchUrl?: string | undefined;
+  note?: string;
+}
+
 /** Push affects every configured pushurl (or every url when no pushurl
  *  exists), so resolution uses `get-url --push --all`: reporting only the
  *  first URL would hide a real destination. Fetch contacts only the first
@@ -680,11 +686,7 @@ async function resolveConfiguredRemote(
   directory: string,
   name: string,
   neutralization: string[],
-): Promise<{
-  pushUrls?: string[];
-  fetchUrl?: string | undefined;
-  note?: string;
-}> {
+): Promise<ConfiguredRemoteUrls> {
   const push = await runGit(
     directory,
     ["remote", "get-url", "--push", "--all", name],
@@ -722,14 +724,23 @@ async function resolveConfiguredRemote(
   };
 }
 
-async function literalUrlRewrites(directory: string, neutralization: string[]) {
+interface UrlRewrite {
+  base: string;
+  prefix: string;
+  push: boolean;
+}
+
+async function literalUrlRewrites(
+  directory: string,
+  neutralization: string[],
+): Promise<UrlRewrite[] | undefined> {
   const config = await runGit(
     directory,
     ["config", "--null", "--list"],
     neutralization,
   );
   if (!config.ok) return undefined;
-  const rewrites: Array<{ base: string; prefix: string; push: boolean }> = [];
+  const rewrites: UrlRewrite[] = [];
   for (const entry of config.stdout.split("\0")) {
     const separator = entry.indexOf("\n");
     const key = entry.slice(0, separator);
@@ -750,10 +761,10 @@ async function literalUrlRewrites(directory: string, neutralization: string[]) {
 
 function expandLiteralUrl(
   input: string,
-  rewrites: NonNullable<Awaited<ReturnType<typeof literalUrlRewrites>>>,
+  rewrites: UrlRewrite[],
   push: boolean,
-) {
-  const match = (pushOnly: boolean) => {
+): string | undefined {
+  const match = (pushOnly: boolean): UrlRewrite | "ambiguous" | undefined => {
     const matches = rewrites
       .filter(
         (rewrite) =>
@@ -789,17 +800,14 @@ async function resolveRemoteTargets(
   const seen = new Set<string>();
   // Resolution is memoized per remote: repeated operands and default-remote
   // fallbacks reuse one lookup instead of re-running git.
-  const resolvedRemotes = new Map<
-    string,
-    Awaited<ReturnType<typeof resolveConfiguredRemote>>
-  >();
+  const resolvedRemotes = new Map<string, ConfiguredRemoteUrls>();
   const rewrites = planned.remoteCandidates.some(
     (input) => remoteOperandKind(input) === "literal",
   )
     ? await literalUrlRewrites(directory, neutralization)
     : undefined;
   // Stored values are objects, so a missing entry is the only `undefined`.
-  const resolveRemote = async (name: string) => {
+  const resolveRemote = async (name: string): Promise<ConfiguredRemoteUrls> => {
     let resolved = resolvedRemotes.get(name);
     if (resolved === undefined) {
       resolved = await resolveConfiguredRemote(directory, name, neutralization);
@@ -944,9 +952,7 @@ async function resolveDefaultRemote(
   annotation: string,
   configuredNames: string[],
   neutralization: string[],
-  resolveRemote: (
-    name: string,
-  ) => Promise<Awaited<ReturnType<typeof resolveConfiguredRemote>>>,
+  resolveRemote: (name: string) => Promise<ConfiguredRemoteUrls>,
 ): Promise<DefaultRemoteRecord> {
   const branch = await runGit(
     directory,
@@ -1088,11 +1094,25 @@ function parseStatus(stdout: string): {
   return { branch, staged, unstaged, untracked, unmerged };
 }
 
+type RewriteEvidence =
+  | { status: string; reason: string }
+  | {
+      status: string;
+      base: string;
+      head: string;
+      commitsInRange: number;
+      commitsAbsentFromRemoteTrackingRefs: number;
+      commitsPresentInRemoteTrackingRefs: number;
+      remoteTrackingRefs: { values: string[]; omitted: number };
+      upstream?: string;
+      note: string;
+    };
+
 async function rewriteEvidence(
   directory: string,
   planned: PlannedGitActions,
   neutralization: string[],
-) {
+): Promise<RewriteEvidence | undefined> {
   if (!planned.commands.includes("rebase")) return undefined;
   const base = planned.rewriteBases[0];
   if (base === undefined || planned.rewriteBases.length !== 1)

@@ -743,7 +743,7 @@ function classifyPath(
   }
   const absolutePath =
     absolute.startsWith("/") || /^[A-Za-z]:[\\/]/.test(absolute);
-  const within = (root: string) => {
+  const within = (root: string): boolean => {
     const normalizedRoot = normalize(root);
     return (
       absolute === normalizedRoot ||

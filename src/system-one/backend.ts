@@ -87,7 +87,7 @@ export function createSystemOneInvoker(
     retry: SYSTEM_ONE_RETRY,
     ...(fetchImpl ? { fetch: fetchImpl } : {}),
   });
-  return async (state, signal) => {
+  return async (state: SystemOneState, signal: AbortSignal) => {
     const deadline = AbortSignal.timeout(config.timeoutMs);
     const boundedSignal = AbortSignal.any([signal, deadline]);
     const { data } = await client
