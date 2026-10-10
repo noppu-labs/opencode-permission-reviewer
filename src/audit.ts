@@ -51,7 +51,7 @@ const REQUIRED_AUDIT_FIELDS = [
   "reason",
 ] as const;
 
-export interface AuditMissingFields {
+interface AuditMissingFields {
   lineNo: number;
   missing: string[];
 }

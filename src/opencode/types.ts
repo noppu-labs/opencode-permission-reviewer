@@ -47,6 +47,3 @@ export interface RuntimeContext {
    *  the developer's HOME. */
   reviewerDirectoryBase?: string;
 }
-
-// Re-export for convenience.
-export type { ReviewUiStatus } from "../ui-protocol.ts";

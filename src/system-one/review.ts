@@ -15,6 +15,8 @@ import {
   type SystemOneSignals,
 } from "../types.ts";
 
+/** @public Read by the benchmark harness, which loads this file by path
+ *  (benchmarks/permission-reviewer/lib/plugin.mjs), so knip sees no import. */
 export const SYSTEM_ONE_SPEC_VERSION = "system-one-1";
 
 const OUTCOMES = ["allow", "deny", "escalate"] as const;

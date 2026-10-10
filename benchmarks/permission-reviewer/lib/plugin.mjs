@@ -6,9 +6,9 @@ import { pathToFileURL } from "node:url";
 import { assert, sha256 } from "./util.mjs";
 
 // Git blob hashes of the security-critical files actually inspected for this kit.
-export const PINNED_BLOBS = {
+const PINNED_BLOBS = {
   "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
-  "src/context.ts": "c6a5640827aa3354543060d26b5b1a8d6a0eb7a5",
+  "src/context.ts": "035e181a1862b16f37943769f3cc8b9d42d7c1b4",
   "src/config.ts": "370df2d5303de9c5f7fb8ef5efd5f89bbc7ba4a3",
   "src/decision.ts": "66a2091cd7d0e93e4dfc9e34d3567dddb55d316b",
   "src/policy/policy-engine.ts": "474e28ab9bb7a0d12196c1d045507af83b4d269b",
@@ -19,17 +19,17 @@ export const PINNED_BLOBS = {
   "src/capability/command-parser.ts":
     "2a3bae3a5f7ed387db52cef25d652c83b4c58a2f",
   "src/capability/bash-analyzer.ts": "238283897ef64b1f853f4a0e8098bafc728554e1",
-  "src/shell-lexer.ts": "8df45208e880bfe141f69a59d1a730b9107e931d",
+  "src/shell-lexer.ts": "0cb5112864efeb2b9b7cacf579b57c33b1d764d2",
   "src/capability/heredoc-extractor.ts":
     "84ee7ef2db5f1ac940fa6ad330a54df4b3ecef37",
-  "src/system-one/review.ts": "bd8a97c69724428be1aefff5f339b8acbe2de515",
+  "src/system-one/review.ts": "e832f6682eacb4a98eac604114223d87972ea136",
 };
 const gitBlob = (bytes) =>
   createHash("sha1") // NOSONAR(S4790) SHA-1 is git's blob-object hash, compared against git blob IDs, not used for security
     .update(`blob ${bytes.length}\0`)
     .update(bytes)
     .digest("hex");
-export async function sourceSnapshot(repo) {
+async function sourceSnapshot(repo) {
   const files = {};
   async function walk(dir, rel = "") {
     for (const d of (await readdir(dir, { withFileTypes: true })).sort((a, b) =>

@@ -1,4 +1,4 @@
-import type { PermissionRequest, ReviewExecutionResult } from "../types.ts";
+import type { PermissionRequest } from "../types.ts";
 
 export interface NormalizedReviewRequest {
   reviewID: string;
@@ -11,8 +11,6 @@ export interface NormalizedReviewRequest {
   actionEvidenceComplete: boolean;
   request: PermissionRequest;
 }
-
-export type ReviewResult = ReviewExecutionResult;
 
 /** Receiving an approval does not prove that a tool executed. */
 export type ApplicationResult =

@@ -51,7 +51,7 @@ export interface ShellSegment {
   precededBy?: string;
 }
 
-export interface ShellRedirection {
+interface ShellRedirection {
   operator: string;
   target: string;
   quoted: boolean;
@@ -895,7 +895,7 @@ function nextRedirection(
  * `cmd>log`, `echo x>out`). Leaving those forms inside word tokens can hide the
  * real executable or make a redirection target look like an ordinary operand.
  */
-export function normalizeShellRedirections(tokens: ShellToken[]): {
+function normalizeShellRedirections(tokens: ShellToken[]): {
   tokens: ShellToken[];
   redirections: ShellRedirection[];
 } {

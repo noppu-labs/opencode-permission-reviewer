@@ -596,7 +596,7 @@ function renderCapability(
 
 /** Render the actor-context prompt sections, or a single placeholder when
  *  resolution produced nothing (keeps the prompt compact for unknown actors). */
-export function actorEvidenceSections(
+function actorEvidenceSections(
   envelope: ReviewEnvelope,
   config: ReviewerConfig,
 ): string[] {

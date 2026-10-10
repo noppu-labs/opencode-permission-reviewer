@@ -23,7 +23,8 @@ import {
   sha256,
   shuffle,
 } from "./util.mjs";
-export const HARNESS_VERSION = "0.1.0";
+
+const HARNESS_VERSION = "0.1.0";
 export function rowBase(c, model, repeat, fingerprint) {
   return {
     schemaVersion: 1,

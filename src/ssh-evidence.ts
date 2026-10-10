@@ -48,7 +48,7 @@ function sha256(value: string | Uint8Array): string {
   return createHash("sha256").update(value).digest("hex");
 }
 
-export function shellCommandSegments(
+function shellCommandSegments(
   command: string,
 ): Array<{ tokens: string[]; preceding?: string; endedBy?: string }> {
   return commandSegments(command).map((segment) => ({

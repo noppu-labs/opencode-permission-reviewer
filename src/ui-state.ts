@@ -12,7 +12,7 @@ export interface UiStateOptions {
   timeoutMs: number;
 }
 
-export const RESULT_DISPLAY_MS = {
+const RESULT_DISPLAY_MS = {
   approved: 5_000,
   denied: 5_000,
 } as const;
