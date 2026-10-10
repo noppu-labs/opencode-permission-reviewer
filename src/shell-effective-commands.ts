@@ -1,12 +1,9 @@
 /*
- * Effective-command walk used by the deterministic emergency brake, run over
- * the segments that shell-lexer.ts produces:
- *   - a recursive "effective command" resolver that peels privilege wrappers
- *     (`sudo`, `doas`, `env`, `command`, `nice`, `nohup`, `time`, `stdbuf`,
- *     `ionice`, `pkexec`, `fakeroot`, `setsid`, `setpriv`, `unshare`, `run0`,
- *     `watch`, `xargs`) and destructures command-string forms (`sh -c`,
- *     `su -c`, `env -S`, `ssh host cmd`, `busybox applet`, `chroot root cmd`,
- *     `timeout duration cmd`).
+ * Effective-command walk over the segments shell-lexer.ts produces: peels
+ * wrappers and destructures command-string forms (`sh -c`, `su -c`,
+ * `env -S`, `ssh host cmd`, `busybox applet`, `chroot root cmd`,
+ * `timeout duration cmd`). The emergency brake, the capability parser and the
+ * script evidence enrichers all consume it.
  *
  * Command-string recursion depth and the total number of resolved effective
  * commands are hard-capped, so adversarial nesting can neither exhaust the
@@ -37,7 +34,7 @@ import {
 
 /** Ceiling on command-string re-entry (`sh -c`, `env -S`, ssh, busybox,
  *  chroot). Deeper nesting than this is not a legitimate review shape; the
- *  lexer stops descending and the unanalyzed remainder stays the model
+ *  walk stops descending and the unanalyzed remainder stays the model
  *  reviewer's job, keeping unbounded input from exhausting the stack. */
 const MAX_WALK_DEPTH = 32;
 

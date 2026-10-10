@@ -1,4 +1,4 @@
-// Wrapper, option and keyword tables the effective-command walk peels commands with.
+// Wrapper, option and keyword tables the effective-command walk peels commands with; ssh-command-segments.ts reuses the ssh value-option lookup.
 
 export const TRANSPARENT_WRAPPERS = new Set([
   "sudo",
@@ -165,7 +165,8 @@ export const VALUE_OPTIONS: Record<string, Set<string>> = {
     "--process-slot-var",
   ]),
   // timeout value options; the DURATION operand itself is skipped by dedicated
-  // handling in walk(), not by the generic loop.
+  // handling in `walk()` (shell-effective-commands.ts), not by the generic
+  // loop.
   timeout: new Set(["-k", "-s", "--kill-after", "--signal"]),
   exec: new Set(["-a"]),
 };

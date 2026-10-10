@@ -1,8 +1,5 @@
 /*
- * Minimal shell-aware tokenizer used by the deterministic emergency brake.
- *
- * This is NOT a full shell interpreter. It performs just enough static
- * analysis to evaluate the *real* executable of a command:
+ * Minimal shell-aware tokenizer, NOT a full shell interpreter:
  *   - grouping of single/double quotes (so separators inside quotes do not
  *     split a token, and `printf "a; sudo rm -rf /"` stays one argument),
  *   - splitting on logical command separators (`;`, `|`, `&`, newlines),
