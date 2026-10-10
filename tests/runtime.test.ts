@@ -19,6 +19,67 @@ function replyBody(value: unknown): Record<string, unknown> {
 
 const execFileAsync = promisify(execFile);
 
+type PromptResolver = (value: { data: Record<string, unknown> }) => void;
+type MessagesResolver = (value: { data?: unknown; error?: unknown }) => void;
+
+/** Holds every reviewer prompt open until the test resolves it. */
+function holdPrompts(client: MockClient): PromptResolver[] {
+  const resolvers: PromptResolver[] = [];
+  client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
+    new Promise((resolve) => {
+      resolvers.push(resolve);
+    });
+  return resolvers;
+}
+
+/** Holds every transcript fetch open until the test resolves it. */
+function holdMessages(client: MockClient): MessagesResolver[] {
+  const resolvers: MessagesResolver[] = [];
+  client.messagesImpl = (): Promise<ClientResponse<unknown>> =>
+    new Promise((resolve) => {
+      resolvers.push(resolve);
+    });
+  return resolvers;
+}
+
+function manualReply(
+  harness: ReturnType<typeof runtime>,
+  requestID: string,
+  reply: "once" | "reject",
+): void {
+  harness.runtime.handlePermissionReply({
+    type: "permission.replied",
+    properties: { sessionID: "ses_main", requestID, reply },
+  });
+}
+
+function phases(client: MockClient): ReviewUiStatus["phase"][] {
+  return client.uiStatuses.map((status) => status.phase);
+}
+
+function commandRequest(command: string): ReturnType<typeof request> {
+  return request({ patterns: [command], metadata: { command } });
+}
+
+function inDirectory(
+  client: MockClient,
+  directory: string,
+): ReturnType<typeof runtime> {
+  return runtime(client, {}, undefined, { directory, worktree: directory });
+}
+
+async function withTempDir(
+  prefix: string,
+  body: (directory: string) => Promise<void>,
+): Promise<void> {
+  const directory = await mkdtemp(`/tmp/opencode/approval-reviewer-${prefix}`);
+  try {
+    await body(directory);
+  } finally {
+    await rm(directory, { recursive: true });
+  }
+}
+
 // /tmp/opencode is one of the plugin's approved enrichment roots. It exists on
 // machines that run OpenCode, but not on a fresh CI runner or a clean clone.
 beforeAll(async () => {
@@ -31,10 +92,7 @@ describe("runtime decisions", () => {
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("allow");
     expect(replyBody(harness.client.replies[0]).reply).toBe("once");
-    expect(harness.client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "approved",
-    ]);
+    expect(phases(harness.client)).toEqual(["reviewing", "approved"]);
 
     const prompt = harness.client.prompts[0] as {
       body: { model: unknown; variant: string; tools: Record<string, boolean> };
@@ -94,26 +152,28 @@ describe("runtime decisions", () => {
       message:
         "[Automatic permission review] This would upload private credentials.",
     });
-    expect(client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "denied",
-    ]);
+    expect(phases(client)).toEqual(["reviewing", "denied"]);
   });
 
-  test("published reviewing status carries the derived review budget as its timeout", async () => {
-    const harness = runtime(new MockClient(), { timeoutMs: 30_000 });
-    await harness.runtime.process(request());
-    expect(harness.client.uiStatuses[0]?.timeoutMs).toBe(120_000);
-  });
-
-  test("published reviewing status carries an explicit reviewBudgetMs as its timeout", async () => {
-    const harness = runtime(new MockClient(), {
-      timeoutMs: 30_000,
-      reviewBudgetMs: 90_000,
-    });
-    await harness.runtime.process(request());
-    expect(harness.client.uiStatuses[0]?.timeoutMs).toBe(90_000);
-  });
+  test.each([
+    {
+      budget: "the derived review budget",
+      overrides: { timeoutMs: 30_000 },
+      expected: 120_000,
+    },
+    {
+      budget: "an explicit reviewBudgetMs",
+      overrides: { timeoutMs: 30_000, reviewBudgetMs: 90_000 },
+      expected: 90_000,
+    },
+  ])(
+    "published reviewing status carries $budget as its timeout",
+    async ({ overrides, expected }) => {
+      const harness = runtime(new MockClient(), overrides);
+      await harness.runtime.process(request());
+      expect(harness.client.uiStatuses[0]?.timeoutMs).toBe(expected);
+    },
+  );
 
   test("persists a sanitized decision audit with SSH summaries", async () => {
     const harness = runtime();
@@ -197,206 +257,132 @@ describe("runtime decisions", () => {
     const missing = `/tmp/opencode/approval-reviewer-missing-${crypto.randomUUID()}.py`;
     const command = `cat ${missing} | ssh ubuntu@203.0.113.8 'docker exec -i app python -'`;
     const harness = runtime(client);
-    const result = await harness.runtime.process(
-      request({ patterns: [command], metadata: { command } }),
-    );
+    const result = await harness.runtime.process(commandRequest(command));
     expect(result.kind).toBe("deny");
     expect(result.reason).toContain("does not exist after a second check");
     expect(client.creates).toHaveLength(0);
     expect(client.prompts).toHaveLength(0);
     expect(replyBody(client.replies[0]).reply).toBe("reject");
-    expect(client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "denied",
-    ]);
+    expect(phases(client)).toEqual(["reviewing", "denied"]);
   });
 
   test("leaves sensitive but existing remote stdin decisions to Luna", async () => {
-    const directory = await mkdtemp(
-      "/tmp/opencode/approval-reviewer-sensitive-",
-    );
-    const script = `${directory}/script.py`;
-    await writeFile(script, `api_key = "${SK_CREDENTIAL}"\n`);
-    try {
+    await withTempDir("sensitive-", async (directory) => {
+      const script = `${directory}/script.py`;
+      await writeFile(script, `api_key = "${SK_CREDENTIAL}"\n`);
       const client = new MockClient();
       client.nextStructured = decision("deny", {
         rationale: "Luna rejected the credential-bearing script.",
       });
       const command = `cat ${script} | ssh ubuntu@203.0.113.8 'python -'`;
       const result = await runtime(client).runtime.process(
-        request({ patterns: [command], metadata: { command } }),
+        commandRequest(command),
       );
       expect(result.kind).toBe("deny");
       expect(client.creates).toHaveLength(1);
       expect(client.prompts).toHaveLength(1);
       expect(result.reason).toContain("Luna rejected");
-    } finally {
-      await rm(directory, { recursive: true });
-    }
+    });
   });
 
   test("includes bounded local script semantics in Luna's prompt without deciding locally", async () => {
-    const directory = await mkdtemp(
-      "/tmp/opencode/approval-reviewer-runtime-script-",
-    );
-    const script = join(directory, "consolidate.py");
-    await writeFile(
-      script,
-      'from pathlib import Path\nPath("guide.md").write_text("updated")\n',
-    );
-    try {
+    await withTempDir("runtime-script-", async (directory) => {
+      const script = join(directory, "consolidate.py");
+      await writeFile(
+        script,
+        'from pathlib import Path\nPath("guide.md").write_text("updated")\n',
+      );
       const client = new MockClient();
       client.nextStructured = decision("allow", {
         rationale: "The requested local edit is bounded.",
       });
       const command = `source /opt/conda.sh && conda activate app && python3 ${script}`;
-      const harness = runtime(client, {}, undefined, {
-        directory,
-        worktree: directory,
-      });
-      expect(
-        (
-          await harness.runtime.process(
-            request({ patterns: [command], metadata: { command } }),
-          )
-        ).kind,
-      ).toBe("allow");
+      const harness = inDirectory(client, directory);
+      const result = await harness.runtime.process(commandRequest(command));
+      expect(result.kind).toBe("allow");
       const prompt = JSON.stringify(client.prompts[0]);
       expect(prompt).toContain("LOCAL_SCRIPT_ANALYSIS");
       expect(prompt).toContain("guide.md");
       expect(prompt).toContain("fileMutationHint");
       expect(client.creates).toHaveLength(1);
-    } finally {
-      await rm(directory, { recursive: true });
-    }
+    });
   });
 
-  test("includes bun run target semantics in Luna's prompt", async () => {
-    const directory = await mkdtemp(
-      "/tmp/opencode/approval-reviewer-runtime-bun-run-",
-    );
-    const script = join(directory, "runner.ts");
-    await writeFile(script, 'const key = await Bun.file(".env").text()\n');
-    try {
-      const client = new MockClient();
-      client.nextStructured = decision("allow", {
-        rationale: "The run target reads one bounded file.",
+  test.each([
+    {
+      runner: "bun",
+      source: 'const key = await Bun.file(".env").text()\n',
+      command: (_directory: string, script: string): string =>
+        `bun run ${script} --dry-run`,
+      expected: [
+        "LOCAL_SCRIPT_ANALYSIS",
+        "local_script",
+        "runner.ts",
+        ".env",
+        "environmentEnumerationHint",
+      ],
+    },
+    {
+      runner: "deno",
+      source: 'const key = await Deno.readTextFile(".env")\n',
+      command: (directory: string, script: string): string =>
+        `deno run --allow-read=${directory} ${script}`,
+      expected: ["LOCAL_SCRIPT_ANALYSIS", "local_script", "runner.ts", ".env"],
+    },
+  ])(
+    "includes $runner run target semantics in Luna's prompt",
+    async ({ runner, source, command, expected }) => {
+      await withTempDir(`runtime-${runner}-run-`, async (directory) => {
+        const script = join(directory, "runner.ts");
+        await writeFile(script, source);
+        const client = new MockClient();
+        client.nextStructured = decision("allow", {
+          rationale: "The run target reads one bounded file.",
+        });
+        const harness = inDirectory(client, directory);
+        const result = await harness.runtime.process(
+          commandRequest(command(directory, script)),
+        );
+        expect(result.kind).toBe("allow");
+        const evidence = JSON.stringify(
+          (client.prompts[0] as { body?: { parts?: Array<{ text?: string }> } })
+            .body?.parts?.[0]?.text ?? "",
+        );
+        for (const text of expected) expect(evidence).toContain(text);
       });
-      const command = `bun run ${script} --dry-run`;
-      const harness = runtime(client, {}, undefined, {
-        directory,
-        worktree: directory,
-      });
-      expect(
-        (
-          await harness.runtime.process(
-            request({ patterns: [command], metadata: { command } }),
-          )
-        ).kind,
-      ).toBe("allow");
-      const evidence = JSON.stringify(
-        (client.prompts[0] as { body?: { parts?: Array<{ text?: string }> } })
-          .body?.parts?.[0]?.text ?? "",
-      );
-      expect(evidence).toContain("LOCAL_SCRIPT_ANALYSIS");
-      expect(evidence).toContain("local_script");
-      expect(evidence).toContain("runner.ts");
-      expect(evidence).toContain(".env");
-      expect(evidence).toContain("environmentEnumerationHint");
-    } finally {
-      await rm(directory, { recursive: true });
-    }
-  });
-
-  test("includes deno run target semantics in Luna's prompt", async () => {
-    const directory = await mkdtemp(
-      "/tmp/opencode/approval-reviewer-runtime-deno-run-",
-    );
-    const script = join(directory, "runner.ts");
-    await writeFile(script, 'const key = await Deno.readTextFile(".env")\n');
-    try {
-      const client = new MockClient();
-      client.nextStructured = decision("allow", {
-        rationale: "The run target reads one bounded file.",
-      });
-      const command = `deno run --allow-read=${directory} ${script}`;
-      const harness = runtime(client, {}, undefined, {
-        directory,
-        worktree: directory,
-      });
-      expect(
-        (
-          await harness.runtime.process(
-            request({ patterns: [command], metadata: { command } }),
-          )
-        ).kind,
-      ).toBe("allow");
-      const evidence = JSON.stringify(
-        (client.prompts[0] as { body?: { parts?: Array<{ text?: string }> } })
-          .body?.parts?.[0]?.text ?? "",
-      );
-      expect(evidence).toContain("LOCAL_SCRIPT_ANALYSIS");
-      expect(evidence).toContain("local_script");
-      expect(evidence).toContain("runner.ts");
-      expect(evidence).toContain(".env");
-    } finally {
-      await rm(directory, { recursive: true });
-    }
-  });
+    },
+  );
 
   test("includes branch and preexisting staging in Luna's prompt for compound Git commits", async () => {
-    const directory = await mkdtemp(
-      "/tmp/opencode/approval-reviewer-runtime-git-",
-    );
-    try {
-      await execFileAsync("git", ["init", "-b", "staging"], { cwd: directory });
-      await execFileAsync(
-        "git",
-        ["config", "user.email", "reviewer@example.invalid"],
-        {
-          cwd: directory,
-        },
-      );
-      await execFileAsync("git", ["config", "user.name", "Reviewer Test"], {
-        cwd: directory,
-      });
+    await withTempDir("runtime-git-", async (directory) => {
+      const git = (...args: string[]): Promise<unknown> =>
+        execFileAsync("git", args, { cwd: directory });
+      await git("init", "-b", "staging");
+      await git("config", "user.email", "reviewer@example.invalid");
+      await git("config", "user.name", "Reviewer Test");
       await writeFile(join(directory, "target.py"), "before = 1\n");
       await writeFile(join(directory, "unrelated.py"), "before = 1\n");
-      await execFileAsync("git", ["add", "target.py", "unrelated.py"], {
-        cwd: directory,
-      });
-      await execFileAsync("git", ["commit", "-m", "fixture"], {
-        cwd: directory,
-      });
+      await git("add", "target.py", "unrelated.py");
+      await git("commit", "-m", "fixture");
       await writeFile(join(directory, "target.py"), "before = 2\n");
       await writeFile(join(directory, "unrelated.py"), "before = 3\n");
-      await execFileAsync("git", ["add", "unrelated.py"], { cwd: directory });
+      await git("add", "unrelated.py");
 
       const client = new MockClient();
       client.nextStructured = decision("deny", {
         rationale: "An unrelated file is already staged.",
       });
       const command = 'git add target.py && git commit -m "target only"';
-      const harness = runtime(client, {}, undefined, {
-        directory,
-        worktree: directory,
-      });
-      expect(
-        (
-          await harness.runtime.process(
-            request({ patterns: [command], metadata: { command } }),
-          )
-        ).kind,
-      ).toBe("deny");
+      const harness = inDirectory(client, directory);
+      const result = await harness.runtime.process(commandRequest(command));
+      expect(result.kind).toBe("deny");
       const prompt = JSON.stringify(client.prompts[0]);
       expect(prompt).toContain("GIT_STATE_ANALYSIS");
       expect(prompt).toContain('\\"branch\\": \\"staging\\"');
       expect(prompt).toContain("target.py");
       expect(prompt).toContain("unrelated.py");
       expect(client.creates).toHaveLength(1);
-    } finally {
-      await rm(directory, { recursive: true });
-    }
+    });
   });
 
   test.each([
@@ -411,10 +397,7 @@ describe("runtime decisions", () => {
       const result = await runtime(client).runtime.process(request());
       expect(result.kind).toBe("escalate");
       expect(client.replies).toHaveLength(0);
-      expect(client.uiStatuses.map((status) => status.phase)).toEqual([
-        "reviewing",
-        "manual",
-      ]);
+      expect(phases(client)).toEqual(["reviewing", "manual"]);
     },
   );
 
@@ -429,10 +412,7 @@ describe("runtime decisions", () => {
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     expect(errors.length).toBeGreaterThanOrEqual(1);
-    expect(client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "manual",
-    ]);
+    expect(phases(client)).toEqual(["reviewing", "manual"]);
   });
 
   test("times out without approving or rejecting", async () => {
@@ -445,10 +425,7 @@ describe("runtime decisions", () => {
     expect(result.kind).toBe("escalate");
     expect(result.reason).toContain("timed out");
     expect(client.replies).toHaveLength(0);
-    expect(client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "manual",
-    ]);
+    expect(phases(client)).toEqual(["reviewing", "manual"]);
   });
 
   test("rejects reviewer recursion before another model call", async () => {
@@ -489,10 +466,7 @@ describe("runtime decisions", () => {
     expect(result.kind).toBe("deny");
     expect(harness.client.creates).toHaveLength(0);
     expect(replyBody(harness.client.replies[0]).reply).toBe("reject");
-    expect(harness.client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "denied",
-    ]);
+    expect(phases(harness.client)).toEqual(["reviewing", "denied"]);
   });
 
   test("deduplicates repeated permission events", async () => {
@@ -533,14 +507,7 @@ describe("runtime decisions", () => {
   test("annotateToolResult remains a no-op after a session reject event", async () => {
     const harness = runtime();
     await harness.runtime.process(request());
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "another",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "another", "reject");
     const output = {
       output: "tool should not normally complete",
       metadata: {},
@@ -558,10 +525,7 @@ describe("runtime decisions", () => {
     // The terminal "approved" phase is published only after OpenCode accepts
     // the reply, so a rejected reply goes straight from "reviewing" to the
     // Unknown transport state must not claim approval or a pending human request.
-    expect(client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "unknown",
-    ]);
+    expect(phases(client)).toEqual(["reviewing", "unknown"]);
   });
 
   test("a broken TUI status channel never changes the safety decision", async () => {
@@ -577,29 +541,17 @@ describe("runtime decisions", () => {
 
   test("a manual reject during the model call supersedes the review (no double reply)", async () => {
     const client = new MockClient();
-    const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
-      [];
-    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+    const resolvers = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
     // Let the reviewer reach the model call, then have the human reject.
     await new Promise((r) => setTimeout(r, 5));
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "per_1",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "per_1", "reject");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("allow") } } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
-    expect(client.uiStatuses.map((s) => s.phase)).toEqual(["reviewing"]);
+    expect(phases(client)).toEqual(["reviewing"]);
     const output = { output: "should not be annotated", metadata: {} };
     harness.runtime.annotateToolResult("call_1", output);
     expect(output.output).toBe("should not be annotated");
@@ -607,34 +559,21 @@ describe("runtime decisions", () => {
 
   test("a manual allow during the model call supersedes the review (no duplicate once)", async () => {
     const client = new MockClient();
-    const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
-      [];
-    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+    const resolvers = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
     await new Promise((r) => setTimeout(r, 5));
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: { sessionID: "ses_main", requestID: "per_1", reply: "once" },
-    });
+    manualReply(harness, "per_1", "once");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("deny") } } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
-    expect(client.uiStatuses.map((s) => s.phase)).toEqual(["reviewing"]);
+    expect(phases(client)).toEqual(["reviewing"]);
   });
 
   test("a manual reply for one request does not cancel a sibling review in the same session", async () => {
     const client = new MockClient();
-    const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
-      [];
-    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+    const resolvers = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(
       request({ id: "per_1", tool: { messageID: "m1", callID: "c1" } }),
@@ -643,14 +582,7 @@ describe("runtime decisions", () => {
       request({ id: "per_2", tool: { messageID: "m2", callID: "c2" } }),
     );
     await new Promise((r) => setTimeout(r, 10));
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "per_2",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "per_2", "reject");
     for (const resolve of resolvers)
       resolve({ data: { info: { structured: decision("allow") } } });
     await harness.runtime.waitForIdle();
@@ -666,14 +598,7 @@ describe("runtime decisions", () => {
 
   test("a reply to an unknown request leaves in-flight reviews untouched (and does not leak)", async () => {
     const harness = runtime();
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "never_seen",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "never_seen", "reject");
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("allow");
     expect(replyBody(harness.client.replies[0]).reply).toBe("once");
@@ -681,23 +606,11 @@ describe("runtime decisions", () => {
 
   test("a manual reject during the model call also supersedes an escalate outcome (no manual resurrection)", async () => {
     const client = new MockClient();
-    const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
-      [];
-    client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+    const resolvers = holdPrompts(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
     await new Promise((r) => setTimeout(r, 5));
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "per_1",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "per_1", "reject");
     // Low-confidence allow becomes an escalate; the manual reply must still win.
     for (const resolve of resolvers)
       resolve({
@@ -705,7 +618,7 @@ describe("runtime decisions", () => {
       });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
-    expect(client.uiStatuses.map((s) => s.phase)).toEqual(["reviewing"]);
+    expect(phases(client)).toEqual(["reviewing"]);
   });
 
   test("a 404 on the reply (window residual) is benign: no manual resurrection", async () => {
@@ -714,7 +627,7 @@ describe("runtime decisions", () => {
     const harness = runtime(client);
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
-    expect(client.uiStatuses.map((s) => s.phase)).not.toContain("manual");
+    expect(phases(client)).not.toContain("manual");
     const output = { output: "x", metadata: {} };
     harness.runtime.annotateToolResult("call_1", output);
     expect(output.output).toBe("x");
@@ -728,65 +641,39 @@ describe("runtime decisions", () => {
     const harness = runtime(client);
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
-    expect(client.uiStatuses.map((s) => s.phase)).not.toContain("manual");
+    expect(phases(client)).not.toContain("manual");
   });
 
   test("a manual reply during transcript collection skips the model call entirely", async () => {
     const client = new MockClient();
-    const msgResolvers: Array<
-      (value: { data?: unknown; error?: unknown }) => void
-    > = [];
-    client.messagesImpl = (): Promise<ClientResponse<unknown>> =>
-      new Promise((resolve) => {
-        msgResolvers.push(resolve);
-      });
+    const msgResolvers = holdMessages(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
     await new Promise((r) => setTimeout(r, 5));
     // The human answers while the transcript fetch is still pending.
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "per_1",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "per_1", "reject");
     for (const resolve of msgResolvers) resolve({ data: client.messageData });
     await harness.runtime.waitForIdle();
     // No reviewer session, no model call, no reply; the request stays as reviewing.
     expect(client.creates).toHaveLength(0);
     expect(client.prompts).toHaveLength(0);
     expect(client.replies).toHaveLength(0);
-    expect(client.uiStatuses.map((s) => s.phase)).toEqual(["reviewing"]);
+    expect(phases(client)).toEqual(["reviewing"]);
   });
 
   test("a transcript failure after a manual reply does not resurrect the manual phase", async () => {
     const client = new MockClient();
-    const msgResolvers: Array<
-      (value: { data?: unknown; error?: unknown }) => void
-    > = [];
-    client.messagesImpl = (): Promise<ClientResponse<unknown>> =>
-      new Promise((resolve) => {
-        msgResolvers.push(resolve);
-      });
+    const msgResolvers = holdMessages(client);
     const harness = runtime(client);
     harness.runtime.handle(request());
     await new Promise((r) => setTimeout(r, 5));
-    harness.runtime.handlePermissionReply({
-      type: "permission.replied",
-      properties: {
-        sessionID: "ses_main",
-        requestID: "per_1",
-        reply: "reject",
-      },
-    });
+    manualReply(harness, "per_1", "reject");
     // Now the transcript fetch fails; the error path must NOT re-emit "manual".
     for (const resolve of msgResolvers)
       resolve({ error: { message: "database unavailable" } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
-    expect(client.uiStatuses.map((s) => s.phase)).toEqual(["reviewing"]);
+    expect(phases(client)).toEqual(["reviewing"]);
   });
 });
 
@@ -883,7 +770,7 @@ describe("event boundary", () => {
       model: "opencode-go/deepseek-v4-flash",
       variant: "high",
     });
-    (harness.client as MockClient).nextText = JSON.stringify(decision("allow"));
+    harness.client.nextText = JSON.stringify(decision("allow"));
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("allow");
     expect(replyBody(harness.client.replies[0]).reply).toBe("once");
@@ -901,7 +788,7 @@ describe("event boundary", () => {
 
   test("text mode with a fence plus prose escalates (ambiguous response)", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextText =
+    harness.client.nextText =
       "Here is the review:\n```json\n" +
       JSON.stringify(decision("allow"), null, 2) +
       "\n```\nDone.";
@@ -913,7 +800,7 @@ describe("event boundary", () => {
 
   test("text mode with two conflicting decisions escalates (never picks one)", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextText =
+    harness.client.nextText =
       JSON.stringify(decision("allow")) +
       "\nFinal decision:\n" +
       JSON.stringify(decision("deny"));
@@ -924,7 +811,7 @@ describe("event boundary", () => {
 
   test("text mode embeds the decision schema in the prompt part", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextText = JSON.stringify(decision("allow"));
+    harness.client.nextText = JSON.stringify(decision("allow"));
     await harness.runtime.process(request());
     const prompt = harness.client.prompts[0] as {
       body: { parts: Array<{ type: string; text: string }> };
@@ -939,21 +826,17 @@ describe("event boundary", () => {
 
   test("text mode with unparseable output escalates with no reply", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextText =
-      "I cannot provide a structured decision.";
+    harness.client.nextText = "I cannot provide a structured decision.";
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
     expect(result.reason).toMatch(/unparseable text output/i);
     expect(harness.client.replies).toHaveLength(0);
-    expect(harness.client.uiStatuses.map((status) => status.phase)).toEqual([
-      "reviewing",
-      "manual",
-    ]);
+    expect(phases(harness.client)).toEqual(["reviewing", "manual"]);
   });
 
   test("text mode with no text parts escalates", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextText = ""; // becomes parts with empty text
+    harness.client.nextText = ""; // becomes parts with empty text
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
     expect(harness.client.replies).toHaveLength(0);
@@ -961,7 +844,7 @@ describe("event boundary", () => {
 
   test("text mode retries once when the first response is unparseable, then parses the retry", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextTexts = [
+    harness.client.nextTexts = [
       "Here is some prose that cannot be parsed.",
       JSON.stringify(decision("allow")),
     ];
@@ -974,7 +857,7 @@ describe("event boundary", () => {
 
   test("text mode retry appends a corrective note in the same review session", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextTexts = [
+    harness.client.nextTexts = [
       "bad output",
       JSON.stringify(decision("allow")),
     ];
@@ -996,7 +879,7 @@ describe("event boundary", () => {
 
   test("text mode retries once and escalates when both responses are unparseable", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextTexts = ["first bad", "second bad"];
+    harness.client.nextTexts = ["first bad", "second bad"];
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
     expect(result.reason).toMatch(/unparseable text output/i);
@@ -1006,9 +889,7 @@ describe("event boundary", () => {
 
   test("text mode does not retry a valid decision", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextTexts = [
-      JSON.stringify(decision("allow")),
-    ];
+    harness.client.nextTexts = [JSON.stringify(decision("allow"))];
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("allow");
     expect(harness.client.prompts).toHaveLength(1);
@@ -1016,7 +897,7 @@ describe("event boundary", () => {
 
   test("structured mode is not retried by the plugin (OpenCode retries it)", async () => {
     const harness = runtime();
-    (harness.client as MockClient).nextStructured = "not an object";
+    harness.client.nextStructured = "not an object";
     const result = await harness.runtime.process(request());
     expect(result.kind).toBe("escalate");
     expect(harness.client.prompts).toHaveLength(1);
@@ -1024,7 +905,7 @@ describe("event boundary", () => {
 
   test("text mode retry output still passes enforceDecision gates (critical risk escalates)", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).nextTexts = [
+    harness.client.nextTexts = [
       "garbage first response",
       JSON.stringify(decision("allow", { risk_level: "critical" })),
     ];
@@ -1037,7 +918,7 @@ describe("event boundary", () => {
 
   test("a reviewer transport failure does not trigger the retry", async () => {
     const harness = runtime(new MockClient(), { outputFormat: "text" });
-    (harness.client as MockClient).promptImpl = async (): Promise<
+    harness.client.promptImpl = async (): Promise<
       ClientResponse<Record<string, unknown>>
     > => ({
       error: "transport is down",
