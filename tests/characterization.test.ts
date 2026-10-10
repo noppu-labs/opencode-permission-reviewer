@@ -104,7 +104,7 @@ describe("characterization gaps (baseline prereq)", () => {
 
   test("publishUiStatus returning {error} does not change the safety decision", async () => {
     const client = new MockClient();
-    // Return an error response (not a throw) — emit() must ignore it and still allow.
+    // Return an error response (not a throw) — publishReviewStatus must ignore it and still allow.
     client.publishStatusError = { message: "publish failed" };
     const result = await runtime(client).runtime.process(request());
     expect(result.kind).toBe("allow");
