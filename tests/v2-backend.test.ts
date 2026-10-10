@@ -13,6 +13,8 @@ import type {
 } from "../src/types.ts";
 import { config, decision, request } from "./helpers.ts";
 
+const OPERATIONAL = "/workspace/operational";
+
 type Context = Parameters<Plugin.Plugin["setup"]>[0];
 type McpEditor = Parameters<Parameters<Context["mcp"]["transform"]>[0]>[0];
 type McpConfig = Parameters<McpEditor["set"]>[1];
@@ -50,29 +52,65 @@ interface V2Fixture {
   cleanup: () => Promise<void>;
 }
 
-function fixture(
-  options: {
-    format?: ReviewerConfig["outputFormat"];
-    invalid?: boolean;
-    ambiguous?: boolean;
-    foreignResponse?: boolean;
-    missingModel?: boolean;
-    noTools?: boolean;
-    variant?: string;
-    retain?: boolean;
-    wrongLocation?: boolean;
-    activationFailed?: boolean;
-    failFirstActivation?: boolean;
-    activationDelayed?: boolean;
-    activationRepresentation?:
-      | "directory-slash"
-      | "file-url"
-      | "id-only"
-      | "id-new-path";
-    mcpServers?: boolean | "after-first";
-    pluginMcp?: boolean;
-  } = {},
-): V2Fixture {
+type ActivationRepresentation =
+  | "directory-slash"
+  | "file-url"
+  | "id-only"
+  | "id-new-path";
+
+function activationFailure(directory: string): { data: object[] } {
+  return {
+    data: [
+      {
+        source: { type: "local", path: `${directory}/index.js` },
+        state: { status: "failed", error: "Fixture activation failure" },
+      },
+    ],
+  };
+}
+
+function activeEntry(
+  directory: string,
+  pluginID: string,
+  representation?: ActivationRepresentation,
+): object {
+  const paths: Record<ActivationRepresentation, string | undefined> = {
+    "directory-slash": `${directory}/`,
+    "file-url": pathToFileURL(`${directory}/index.js`).href,
+    "id-new-path": `plugin://${pluginID}`,
+    "id-only": undefined,
+  };
+  const path = representation ? paths[representation] : `${directory}/index.js`;
+  return {
+    id: pluginID,
+    source: path === undefined ? { type: "local" } : { type: "local", path },
+    state: { status: "active" },
+  };
+}
+
+function remote(url: string): McpServer {
+  return { type: "remote", url } as McpServer;
+}
+
+type FixtureOptions = {
+  format?: ReviewerConfig["outputFormat"];
+  invalid?: boolean;
+  ambiguous?: boolean;
+  foreignResponse?: boolean;
+  missingModel?: boolean;
+  noTools?: boolean;
+  variant?: string;
+  retain?: boolean;
+  wrongLocation?: boolean;
+  activationFailed?: boolean;
+  failFirstActivation?: boolean;
+  activationDelayed?: boolean;
+  activationRepresentation?: ActivationRepresentation;
+  mcpServers?: boolean | "after-first";
+  pluginMcp?: boolean;
+};
+
+function fixture(options: FixtureOptions = {}): V2Fixture {
   let tool!: Tool;
   let contextHook!: (event: ContextEvent) => void;
   let toolHook!: (event: { sessionID: string; tool: string }) => void;
@@ -108,7 +146,7 @@ function fixture(
     return handle;
   };
   const ctx = {
-    location: { directory: "/workspace/operational" },
+    location: { directory: OPERATIONAL },
     tool: {
       transform: async (
         callback: (editor: { add(definition: Tool): void }) => void,
@@ -140,21 +178,19 @@ function fixture(
       },
     },
   } as unknown as Context;
+  const setUp = async (location: string): Promise<() => Promise<void>> => {
+    const plugin = await import(pathToFileURL(`${location}/index.js`).href);
+    pluginID = plugin.default.id;
+    return plugin.default.setup({ ...ctx, location: { directory: location } });
+  };
   const client = {
     plugin: {
       list: async (input: { location: { directory: string } }) => {
         directory = input.location.directory;
         checks++;
         if (!activated.has(directory)) {
-          const plugin = await import(
-            pathToFileURL(`${directory}/index.js`).href
-          );
-          pluginID = plugin.default.id;
           scope.length = 0;
-          hostCleanup = await plugin.default.setup({
-            ...ctx,
-            location: { directory },
-          });
+          hostCleanup = await setUp(directory);
           activated.add(directory);
           directories.push(directory);
           setups++;
@@ -163,36 +199,11 @@ function fixture(
           options.activationFailed ||
           (options.failFirstActivation && setups === 1)
         )
-          return {
-            data: [
-              {
-                source: { type: "local", path: `${directory}/index.js` },
-                state: {
-                  status: "failed",
-                  error: "Fixture activation failure",
-                },
-              },
-            ],
-          };
+          return activationFailure(directory);
         if (options.activationDelayed && checks < 3) return { data: [] };
-        const sourcePath =
-          options.activationRepresentation === "directory-slash"
-            ? `${directory}/`
-            : options.activationRepresentation === "file-url"
-              ? pathToFileURL(`${directory}/index.js`).href
-              : options.activationRepresentation === "id-new-path"
-                ? `plugin://${pluginID}`
-                : `${directory}/index.js`;
         return {
           data: [
-            {
-              id: pluginID,
-              source:
-                options.activationRepresentation === "id-only"
-                  ? { type: "local" }
-                  : { type: "local", path: sourcePath },
-              state: { status: "active" },
-            },
+            activeEntry(directory, pluginID, options.activationRepresentation),
           ],
         };
       },
@@ -227,20 +238,14 @@ function fixture(
         };
         // A global plugin set up earlier adds a server, as @upstash/context7-opencode does.
         if (options.pluginMcp)
-          editor.set("context7", {
-            type: "remote",
-            url: "https://mcp.invalid/mcp",
-          });
+          editor.set("context7", remote("https://mcp.invalid/mcp"));
         for (const transform of mcpTransforms) transform(editor);
         // Added after every transform, so the fail-closed inventory tests still see a server.
         if (
           options.mcpServers === true ||
           (options.mcpServers === "after-first" && mcpLists > 1)
         )
-          servers.set("fixture", {
-            type: "remote",
-            url: "https://fixture.invalid/mcp",
-          });
+          servers.set("fixture", remote("https://fixture.invalid/mcp"));
         return {
           location: input.location,
           data: [...servers.keys()].map((name) => ({ name })),
@@ -263,9 +268,7 @@ function fixture(
         return {
           id: sessionID,
           location: {
-            directory: options.wrongLocation
-              ? "/workspace/operational"
-              : directory,
+            directory: options.wrongLocation ? OPERATIONAL : directory,
           },
         };
       },
@@ -349,8 +352,8 @@ function fixture(
   );
   const envelope: ReviewEnvelope = {
     request: request(),
-    directory: "/workspace/operational",
-    worktree: "/workspace/operational",
+    directory: OPERATIONAL,
+    worktree: OPERATIONAL,
     transcript: "Run printf safe",
     intentHistory: "Run printf safe",
     enrichment: "",
@@ -385,11 +388,7 @@ function fixture(
     reload: async (): Promise<void> => {
       await hostCleanup?.();
       await Promise.all(scope.splice(0).map((handle) => handle.dispose()));
-      const plugin = await import(pathToFileURL(`${directory}/index.js`).href);
-      hostCleanup = await plugin.default.setup({
-        ...ctx,
-        location: { directory },
-      });
+      hostCleanup = await setUp(directory);
       setups++;
     },
     unrelated: (): Promise<unknown> => {
@@ -409,80 +408,78 @@ function fixture(
       for (const attempt of attempts) attempt.close("cancelled");
       await backend.dispose();
       await Promise.all(
-        directories.map(async (path) => {
-          if (existsSync(path)) await rm(path, { recursive: true });
-        }),
+        directories.map((path) => rm(path, { recursive: true, force: true })),
       );
     },
   };
 }
 
-test("isolated structured and text backends preserve scope, variant, and retention", async () => {
-  for (const format of ["json_schema", "text"] as const) {
-    const harness = fixture({
-      format,
-      variant: "max",
-      retain: format === "text",
-    });
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
-      expect((await harness.run()).kind).toBe("allow");
-      const state = harness.state();
-      expect(state.prompts).toBe(1);
-      expect(state.removed).toBe(format !== "text");
-      expect(state.disposed).toBe(0);
-      expect(harness.backend.owns(state.sessionID)).toBe(false);
-      expect(existsSync(`${state.directory}/index.js`)).toBe(true);
-      await expect(harness.unrelated()).rejects.toThrow("Not an active");
-    } finally {
-      await harness.cleanup();
-    }
+async function withFixture(
+  options: FixtureOptions,
+  body: (harness: V2Fixture) => Promise<void>,
+): Promise<void> {
+  const harness = fixture(options);
+  try {
+    await body(harness);
+  } finally {
+    await harness.cleanup();
   }
-});
+}
 
-test("invalid, ambiguous, and foreign execution outputs never become approvals", async () => {
-  for (const options of [
-    { invalid: true },
-    { format: "text" as const, invalid: true },
-    { ambiguous: true },
-    { foreignResponse: true },
-    { format: "text" as const, foreignResponse: true },
-  ]) {
-    const harness = fixture(options);
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
-      expect((await harness.run()).kind).toBe("escalate");
-      expect(harness.state().prompts).toBeLessThanOrEqual(3);
-      expect(harness.state().removed).toBe(true);
-    } finally {
-      await harness.cleanup();
-    }
-  }
-});
+test.each(["json_schema", "text"] as const)(
+  "isolated %s backend preserves scope, variant, and retention",
+  (format) =>
+    withFixture(
+      { format, variant: "max", retain: format === "text" },
+      async (harness) => {
+        expect((await harness.run()).kind).toBe("allow");
+        const state = harness.state();
+        expect(state.prompts).toBe(1);
+        expect(state.removed).toBe(format !== "text");
+        expect(state.disposed).toBe(0);
+        expect(harness.backend.owns(state.sessionID)).toBe(false);
+        expect(existsSync(`${state.directory}/index.js`)).toBe(true);
+        await expect(harness.unrelated()).rejects.toThrow("Not an active");
+      },
+    ),
+);
+
+test.each([
+  { name: "invalid structured output", options: { invalid: true } },
+  {
+    name: "invalid text output",
+    options: { format: "text" as const, invalid: true },
+  },
+  { name: "ambiguous structured output", options: { ambiguous: true } },
+  { name: "foreign structured response", options: { foreignResponse: true } },
+  {
+    name: "foreign text response",
+    options: { format: "text" as const, foreignResponse: true },
+  },
+])("$name never becomes an approval", ({ options }) =>
+  withFixture(options, async (harness) => {
+    expect((await harness.run()).kind).toBe("escalate");
+    expect(harness.state().prompts).toBeLessThanOrEqual(3);
+    expect(harness.state().removed).toBe(true);
+  }),
+);
 
 test("isolation activation waits for the host report and fails loudly", async () => {
-  const delayed = fixture({ activationDelayed: true });
-  try {
+  await withFixture({ activationDelayed: true }, async (delayed) => {
     expect((await delayed.run()).kind).toBe("allow");
     expect(delayed.state().prompts).toBe(1);
     expect(delayed.state().setups).toBe(1);
-  } finally {
-    await delayed.cleanup();
-  }
-  const failed = fixture({ activationFailed: true });
-  try {
+  });
+  await withFixture({ activationFailed: true }, async (failed) => {
     const result = await failed.run();
     expect(result.kind).toBe("escalate");
     expect(result.reason).toContain("failed to activate");
     expect(failed.state().prompts).toBe(0);
-  } finally {
-    await failed.cleanup();
-  }
+  });
 });
 
-test("a failed isolation bootstrap is retried in a new location", async () => {
-  const harness = fixture({ failFirstActivation: true });
-  try {
+test("a failed isolation bootstrap is retried in a new location", () =>
+  withFixture({ failFirstActivation: true }, async (harness) => {
     const first = await harness.run();
     expect(first.kind).toBe("escalate");
     expect(first.reason).toContain("failed to activate");
@@ -497,14 +494,10 @@ test("a failed isolation bootstrap is retried in a new location", async () => {
     expect(recovered.directories).toHaveLength(2);
     expect(recovered.directory).not.toBe(failedDirectory);
     expect(existsSync(`${failedDirectory}/opencode.json`)).toBe(true);
-  } finally {
-    await harness.cleanup();
-  }
-});
+  }));
 
-test("backend disposal releases hooks registered by a later location activation", async () => {
-  const harness = fixture();
-  try {
+test("backend disposal releases hooks registered by a later location activation", () =>
+  withFixture({}, async (harness) => {
     expect((await harness.run()).kind).toBe("allow");
     await harness.reload();
     expect(harness.state().disposed).toBe(3);
@@ -512,53 +505,32 @@ test("backend disposal releases hooks registered by a later location activation"
     await harness.backend.dispose();
     expect(harness.state().disposed).toBe(6);
     expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(true);
-  } finally {
-    await harness.cleanup();
-  }
-});
+  }));
 
-test("isolation activation accepts normalized local plugin representations", async () => {
-  for (const activationRepresentation of [
-    "directory-slash",
-    "file-url",
-    "id-only",
-    "id-new-path",
-  ] as const) {
-    const harness = fixture({ activationRepresentation });
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
+test.each(["directory-slash", "file-url", "id-only", "id-new-path"] as const)(
+  "isolation activation accepts the normalized %s local plugin representation",
+  (activationRepresentation) =>
+    withFixture({ activationRepresentation }, async (harness) => {
       expect((await harness.run()).kind).toBe("allow");
       expect(harness.state().prompts).toBe(1);
-    } finally {
-      await harness.cleanup();
-    }
-  }
-});
+    }),
+);
 
-test("unavailable model, unsupported format or variant, and wrong isolation fail before prompting", async () => {
-  for (const options of [
-    { missingModel: true },
-    { noTools: true },
-    { variant: "unsupported" },
-    { wrongLocation: true },
-  ]) {
-    const harness = fixture(options);
-    try {
-      // biome-ignore lint/performance/noAwaitInLoops: each case provisions a real on-disk reviewer directory and imports its generated plugin, then cleans it up before the next case starts
-      expect((await harness.run()).kind).toBe("escalate");
-      expect(harness.state().prompts).toBe(0);
-      expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(
-        true,
-      );
-    } finally {
-      await harness.cleanup();
-    }
-  }
-});
+test.each([
+  { name: "a missing model", options: { missingModel: true } },
+  { name: "a model without tools", options: { noTools: true } },
+  { name: "an unsupported variant", options: { variant: "unsupported" } },
+  { name: "a wrong isolation location", options: { wrongLocation: true } },
+])("$name fails before prompting", ({ options }) =>
+  withFixture(options, async (harness) => {
+    expect((await harness.run()).kind).toBe("escalate");
+    expect(harness.state().prompts).toBe(0);
+    expect(existsSync(`${harness.state().directory}/opencode.json`)).toBe(true);
+  }),
+);
 
-test("review sessions share one MCP-free location without mixing concurrent evidence", async () => {
-  const harness = fixture();
-  try {
+test("review sessions share one MCP-free location without mixing concurrent evidence", () =>
+  withFixture({}, async (harness) => {
     const commands = Array.from(
       { length: 16 },
       (_, index) => `Review unique marker[${index}]`,
@@ -586,68 +558,43 @@ test("review sessions share one MCP-free location without mixing concurrent evid
       "-opencode.config.mcp",
       state.directory,
     ]);
-    expect((await harness.run("Review one more unique marker")).kind).toBe(
-      "allow",
-    );
+    const extra = await harness.run("Review one more unique marker");
+    expect(extra.kind).toBe("allow");
     expect(harness.state().directory).toBe(state.directory);
     expect(harness.state().setups).toBe(1);
     await harness.backend.dispose();
     expect(harness.state().disposed).toBe(3);
     expect(existsSync(`${state.directory}/opencode.json`)).toBe(true);
     expect(() => harness.run()).toThrow("shutting down");
-  } finally {
-    await harness.cleanup();
-  }
-});
+  }));
 
-test("reviewer fails closed when its isolated location contains MCP servers", async () => {
-  const harness = fixture({ mcpServers: true });
-  try {
+test("reviewer fails closed when its isolated location contains MCP servers", () =>
+  withFixture({ mcpServers: true }, async (harness) => {
     const result = await harness.run();
     expect(result.kind).toBe("escalate");
     expect(result.reason).toContain("contains MCP servers");
     expect(harness.state().sessionIDs).toHaveLength(0);
-  } finally {
-    await harness.cleanup();
-  }
-});
+  }));
 
-test("a later MCP addition prevents another review in the shared location", async () => {
-  const harness = fixture({ mcpServers: "after-first" });
-  try {
+test("a later MCP addition prevents another review in the shared location", () =>
+  withFixture({ mcpServers: "after-first" }, async (harness) => {
     expect((await harness.run()).kind).toBe("allow");
     const result = await harness.run();
     expect(result.kind).toBe("escalate");
     expect(result.reason).toContain("contains MCP servers");
     expect(harness.state().sessionIDs).toHaveLength(1);
     expect(harness.state().mcpLists).toBe(2);
-  } finally {
-    await harness.cleanup();
-  }
-});
+  }));
 
-test("plugin-added MCP servers are stripped from the isolated location", async () => {
-  const harness = fixture({ pluginMcp: true });
-  try {
+test("plugin-added MCP servers are stripped from the isolated location, including after an inert bootstrap reload", () =>
+  withFixture({ pluginMcp: true }, async (harness) => {
     const result = await harness.run();
     expect(result.kind).toBe("allow");
     expect(result.decisionSource).toBe("llm-reviewer");
     expect(harness.state().mcpTransforms).toBe(1);
     expect(harness.state().sessionIDs).toHaveLength(1);
-  } finally {
-    await harness.cleanup();
-  }
-});
-
-test("an inert bootstrap reload keeps stripping MCP after the backend releases it", async () => {
-  const harness = fixture({ pluginMcp: true });
-  try {
-    expect((await harness.run()).kind).toBe("allow");
     await harness.backend.dispose();
     await harness.reload();
     expect(harness.state().mcpTransforms).toBe(1);
     expect(await harness.mcp()).toEqual([]);
-  } finally {
-    await harness.cleanup();
-  }
-});
+  }));
