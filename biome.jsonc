@@ -133,28 +133,23 @@
         }
       }
     },
-    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 48 files.
+    // Pending (quality/4-ts-rules): style/noNonNullAssertion, 43 files.
     {
       "includes": [
         "src/audit.ts",
         "src/cli/explain.ts",
         "src/cli/init.ts",
         "src/config/jsonc.ts",
-        "src/context.ts",
         "src/context/action-purpose.ts",
         "src/context/actor-resolver.ts",
         "src/core/review-coordinator.ts",
-        "src/decision.ts",
-        "src/emergency-brake.ts",
         "src/evidence/local-command.ts",
         "src/git-evidence.ts",
         "src/local-script-evidence.ts",
-        "src/opencode/reply-transport.ts",
         "src/opencode/v2/context-reader.ts",
         "src/opencode/v2/event-codec.ts",
         "src/opencode/v2/server.ts",
         "src/package-script-evidence.ts",
-        "src/policy/policy-engine.ts",
         "src/ssh-evidence.ts",
         "src/verified-ssh-script.ts",
         "tests/actor-resolver.test.ts",

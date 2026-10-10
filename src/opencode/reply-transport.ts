@@ -30,8 +30,9 @@ export interface ReplyTransportDeps {
  * public path slot in unchanged when a host exposes one.
  */
 export function createReplyTransport(deps: ReplyTransportDeps): ReplyTransport {
+  const raw = deps.raw;
   const useRaw =
-    deps.capabilities.rawAuthenticatedTransport && deps.raw !== undefined;
+    deps.capabilities.rawAuthenticatedTransport && raw !== undefined;
   if (!useRaw) {
     throw new Error(
       "OpenCode's authenticated SDK transport is unavailable; refusing unsafe partial startup.",
@@ -42,7 +43,7 @@ export function createReplyTransport(deps: ReplyTransportDeps): ReplyTransport {
   );
   return {
     async reply(input: PermissionReplyInput) {
-      return deps.raw!.post({
+      return raw.post({
         url: "/permission/{requestID}/reply",
         path: { requestID: input.requestID },
         body: {

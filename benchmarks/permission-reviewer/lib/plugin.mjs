@@ -9,16 +9,15 @@ import { assert, sha256 } from "./util.mjs";
 const PINNED_BLOBS = {
   "src/policy.ts": "e07f0e939ba5446db2d41adca55e976dcabb4575",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/context.ts": "035e181a1862b16f37943769f3cc8b9d42d7c1b4",
+  "src/context.ts": "4fc171f3bd2a62a77ee84d4e82a1401390d39a20",
   "src/config.ts": "370df2d5303de9c5f7fb8ef5efd5f89bbc7ba4a3",
-  "src/decision.ts": "66a2091cd7d0e93e4dfc9e34d3567dddb55d316b",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/policy/policy-engine.ts": "474e28ab9bb7a0d12196c1d045507af83b4d269b",
+  "src/decision.ts": "5542b54475a5b9dbd1ba8fba9a7d9f776c73f1f9",
+  "src/policy/policy-engine.ts": "b79f910288d2219109f86a42cf7226867610b01a",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "da3c9c5e4b2504810062b81cebf6bdddb9034d96",
+  "src/emergency-brake.ts": "5e0cdfb6d51c4edcd68faa31df0c4f084da4de0b",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/redact.ts": "f125ef1347e05eb69d9d8a476a7246a5bd81eac2",
   "src/capability/command-parser.ts":

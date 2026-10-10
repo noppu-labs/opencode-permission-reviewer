@@ -1,4 +1,5 @@
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
+import { invariant } from "./invariant.ts";
 import {
   analyzeEffectiveCommands,
   lexSegmentsBounded,
@@ -81,8 +82,7 @@ function hasRmFlags(tokens: ShellToken[]): {
   let recursive = false;
   let force = false;
   let endOfFlags = false;
-  for (let i = 1; i < tokens.length; i += 1) {
-    const value = tokens[i]!.value;
+  for (const { value } of tokens.slice(1)) {
     if (!endOfFlags && value === "--") {
       endOfFlags = true;
       continue;
@@ -135,7 +135,8 @@ function resolvesToRoot(rawTarget: string): boolean {
 function isLiveRootGlob(token: ShellToken): boolean {
   if (!token.value.startsWith("/")) return false;
   const components = token.value.split("/");
-  const last = components[components.length - 1]!;
+  const last = components.at(-1);
+  invariant(last !== undefined, "String.split returns at least one element");
   if (!/^\*+$/.test(last)) return false;
   const starStart = token.value.length - last.length;
   if (tokenCharIsQuoted(token, starStart)) return false;
@@ -154,19 +155,20 @@ function isLiveRootGlob(token: ShellToken): boolean {
 function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
   for (const { effective } of analyzed) {
     for (const tokens of effective) {
-      if (tokens.length === 0) continue;
-      if (shellBasename(tokens[0]!.value) !== "rm") continue;
+      const first = tokens[0];
+      if (first === undefined) continue;
+      if (shellBasename(first.value) !== "rm") continue;
       const { recursive, force } = hasRmFlags(tokens);
       if (!recursive || !force) continue;
       let endOfFlags = false;
-      for (let i = 1; i < tokens.length; i += 1) {
-        const value = tokens[i]!.value;
+      for (const token of tokens.slice(1)) {
+        const value = token.value;
         if (!endOfFlags && value === "--") {
           endOfFlags = true;
           continue;
         }
         if (!endOfFlags && value.startsWith("-") && value.length > 1) continue;
-        if (resolvesToRoot(value) || isLiveRootGlob(tokens[i]!)) return true;
+        if (resolvesToRoot(value) || isLiveRootGlob(token)) return true;
       }
     }
   }
@@ -182,13 +184,16 @@ function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
 function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
   for (const { effective } of analyzed) {
     for (const tokens of effective) {
-      if (tokens.length === 0) continue;
-      if (shellBasename(tokens[0]!.value) !== "find") continue;
+      const first = tokens[0];
+      if (first === undefined) continue;
+      if (shellBasename(first.value) !== "find") continue;
       let root: ShellToken | null = null;
       let hasDelete = false;
       let hasExecRm = false;
       for (let i = 1; i < tokens.length; i += 1) {
-        const value = tokens[i]!.value;
+        const token = tokens[i];
+        invariant(token, "tokens[i] is in bounds");
+        const value = token.value;
         // The search root is the first non-flag operand; everything after it
         // belongs to the expression. Flags that take a value (e.g. `-maxdepth`)
         // are not modelled here, so `find -maxdepth 1 / …` is a false negative
@@ -200,7 +205,7 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
           }
           if (value.startsWith("-") && value.length > 1) continue;
           if (value === "--") continue;
-          root = tokens[i]!;
+          root = token;
           continue;
         }
         if (value === "-delete") hasDelete = true;
@@ -213,12 +218,18 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
           // First non-placeholder token after -exec is the executable; if it is
           // `rm` with recursive+force flags, find destroys its matches.
           let j = i + 1;
+          let executable = tokens[j];
           while (
-            j < tokens.length &&
-            (tokens[j]!.value === "{" || tokens[j]!.value === "}")
-          )
+            executable !== undefined &&
+            (executable.value === "{" || executable.value === "}")
+          ) {
             j += 1;
-          if (j < tokens.length && shellBasename(tokens[j]!.value) === "rm") {
+            executable = tokens[j];
+          }
+          if (
+            executable !== undefined &&
+            shellBasename(executable.value) === "rm"
+          ) {
             const { recursive, force } = hasRmFlags(tokens.slice(j));
             if (recursive && force) hasExecRm = true;
           }
@@ -266,8 +277,7 @@ function isBlockDeviceTarget(value: string): boolean {
  *  which file it names (`>"/dev/sda"` and `>/dev/"sda"` redirect to the disk),
  *  while a quoted operator (`echo 'x > /dev/sda'`) is data. */
 function redirectTargetsBlockDevice(tokens: ShellToken[]): boolean {
-  for (let i = 0; i < tokens.length; i += 1) {
-    const token = tokens[i]!;
+  for (const [i, token] of tokens.entries()) {
     for (const operator of unquotedRedirectOperators(token)) {
       const rest = token.value.slice(operator.start + operator.length);
       if (rest.length > 0) {
@@ -341,20 +351,26 @@ function copyOverwritesBlockDevice(
   let endOfOptions = false;
   let targetDirectory = false;
   for (let index = 1; index < tokens.length; index += 1) {
-    const value = tokens[index]!.value;
+    const token = tokens[index];
+    invariant(token, "tokens[index] is in bounds");
+    const value = token.value;
     if (!endOfOptions && value === "--") {
       endOfOptions = true;
       continue;
     }
     if (!endOfOptions && value.startsWith("--")) {
-      const option = value.split("=", 1)[0]!;
+      const [option] = value.split("=", 1);
+      invariant(
+        option !== undefined,
+        "String.split returns at least one element",
+      );
       if (option === "--target-directory") targetDirectory = true;
       if (valueOptions.has(option) && !value.includes("=")) index += 1;
       continue;
     }
     if (!endOfOptions && value.startsWith("-") && value.length > 1) {
       for (let position = 1; position < value.length; position += 1) {
-        const option = `-${value[position]!}`;
+        const option = `-${value.charAt(position)}`;
         if (!valueOptions.has(option)) continue;
         if (option === "-t") targetDirectory = true;
         if (position === value.length - 1) index += 1;
@@ -364,23 +380,21 @@ function copyOverwritesBlockDevice(
     }
     operands.push(value);
   }
+  const destination = operands.at(-1);
   return (
     !targetDirectory &&
     operands.length >= 2 &&
-    isBlockDeviceTarget(operands.at(-1)!)
+    destination !== undefined &&
+    isBlockDeviceTarget(destination)
   );
 }
 
 function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
   for (const { segment, effective, redirections } of analyzed) {
     if (redirectTargetsBlockDevice(segment.tokens)) return true;
-    for (
-      let commandIndex = 0;
-      commandIndex < effective.length;
-      commandIndex += 1
-    ) {
-      const tokens = effective[commandIndex]!;
-      if (tokens.length === 0) continue;
+    for (const [commandIndex, tokens] of effective.entries()) {
+      const first = tokens[0];
+      if (first === undefined) continue;
       // Command-string destructuring (`sh -c '… > /dev/sda'`, `script -c …`,
       // ssh remote commands) only surfaces inside the resolved effective
       // commands, so the redirect scan runs on them too.
@@ -398,7 +412,7 @@ function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
         })
       )
         return true;
-      const base = shellBasename(tokens[0]!.value);
+      const base = shellBasename(first.value);
       const args = tokens.slice(1);
       const targetsBlock = args.some((t) => isBlockDeviceTarget(t.value));
 
@@ -506,15 +520,10 @@ function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
  */
 function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
   for (const { effective, redirections } of analyzed) {
-    for (
-      let commandIndex = 0;
-      commandIndex < effective.length;
-      commandIndex += 1
-    ) {
-      const tokens = effective[commandIndex]!;
-      if (tokens.length === 0) continue;
-      if (!SECRET_EXPORT_UTILITIES.has(shellBasename(tokens[0]!.value)))
-        continue;
+    for (const [commandIndex, tokens] of effective.entries()) {
+      const first = tokens[0];
+      if (first === undefined) continue;
+      if (!SECRET_EXPORT_UTILITIES.has(shellBasename(first.value))) continue;
       const args = [
         ...tokens.slice(1).map((token) => token.value),
         ...(redirections[commandIndex] ?? [])
