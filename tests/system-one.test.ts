@@ -20,6 +20,20 @@ import type {
 } from "../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
+const PRIMARY_BASES = [
+  "authorized_routine",
+  "authorized_reversible_change",
+  "insufficient_authorization",
+  "scope_mismatch",
+  "insufficient_evidence",
+  "destructive_effect",
+  "credential_or_private_data",
+  "security_or_privilege_change",
+  "external_or_remote_effect",
+  "trusted_policy_restriction",
+  "conflicting_evidence",
+];
+
 const choice = (
   selected: string,
   keys: string[],
@@ -62,19 +76,7 @@ function response(overrides: Record<string, unknown> = {}): {
       "insufficient",
       "unknown",
     ]),
-    primary_basis: choice("authorized_routine", [
-      "authorized_routine",
-      "authorized_reversible_change",
-      "insufficient_authorization",
-      "scope_mismatch",
-      "insufficient_evidence",
-      "destructive_effect",
-      "credential_or_private_data",
-      "security_or_privilege_change",
-      "external_or_remote_effect",
-      "trusted_policy_restriction",
-      "conflicting_evidence",
-    ]),
+    primary_basis: choice("authorized_routine", PRIMARY_BASES),
     material_authorization: { type: "noul", noul: 1 },
     within_intent_scope: { type: "noul", noul: 1 },
     unauthorized_data_loss: { type: "noul", noul: 0 },
@@ -110,6 +112,12 @@ function envelope(): ReviewEnvelope {
     enrichment: "",
     sshAudit: [],
   };
+}
+
+function reviewOnce(
+  backend: SystemOneReviewerBackend,
+): Promise<ReviewExecutionResult> {
+  return backend.review(envelope(), new ReviewAttempt("generation", 10_000));
 }
 
 function reasoningAllow(
@@ -328,10 +336,7 @@ describe("System One reviewer", () => {
         undefined,
         failed,
       );
-      const result = await backend.review(
-        envelope(),
-        new ReviewAttempt("generation", 10_000),
-      );
+      const result = await reviewOnce(backend);
       expect(calls).toBe(3);
       expect(result.kind).toBe("deny");
       expect(result.decisionSource).toBe("failure-safe");
@@ -451,19 +456,7 @@ describe("System One reviewer", () => {
       response({
         outcome: choice("deny", ["allow", "deny", "escalate"], 0.35),
         risk_level: choice("high", ["low", "medium", "high", "critical"]),
-        primary_basis: choice("destructive_effect", [
-          "authorized_routine",
-          "authorized_reversible_change",
-          "insufficient_authorization",
-          "scope_mismatch",
-          "insufficient_evidence",
-          "destructive_effect",
-          "credential_or_private_data",
-          "security_or_privilege_change",
-          "external_or_remote_effect",
-          "trusted_policy_restriction",
-          "conflicting_evidence",
-        ]),
+        primary_basis: choice("destructive_effect", PRIMARY_BASES),
         unauthorized_data_loss: { type: "noul", noul: 1 },
       }),
       config,
@@ -539,19 +532,7 @@ describe("System One reviewer", () => {
       response({
         outcome: choice("deny", ["allow", "deny", "escalate"], 0.35),
         risk_level: choice("high", ["low", "medium", "high", "critical"]),
-        primary_basis: choice("destructive_effect", [
-          "authorized_routine",
-          "authorized_reversible_change",
-          "insufficient_authorization",
-          "scope_mismatch",
-          "insufficient_evidence",
-          "destructive_effect",
-          "credential_or_private_data",
-          "security_or_privilege_change",
-          "external_or_remote_effect",
-          "trusted_policy_restriction",
-          "conflicting_evidence",
-        ]),
+        primary_basis: choice("destructive_effect", PRIMARY_BASES),
       }),
       config,
     );
@@ -622,10 +603,7 @@ describe("System One reviewer", () => {
           outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6),
         }),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("deny");
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna");
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free");
@@ -656,10 +634,7 @@ describe("System One reviewer", () => {
       undefined,
       async () => response(),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("allow");
     expect(result.decisionSource).toBe("system-one-reviewer");
     expect(result.systemOne).toMatchObject({
@@ -689,10 +664,7 @@ describe("System One reviewer", () => {
           outcome: choice("escalate", ["allow", "deny", "escalate"]),
         }),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("deny");
     expect(result.escalationDisposition).toBe("deny");
     expect(result.systemOne?.outcome).toMatchObject({
@@ -712,10 +684,7 @@ describe("System One reviewer", () => {
         model: "not-jev",
       }),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("escalate");
     expect(result.decisionSource).toBe("failure-safe");
     expect(result.systemOne).toBeUndefined();
@@ -734,10 +703,7 @@ describe("System One reviewer", () => {
           outcome: choice("escalate", ["allow", "deny", "escalate"], 0.6),
         }),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("escalate");
     expect(result.decisionSource).toBe("failure-safe");
     expect(result.systemOne?.outcome.choice).toBe("escalate");
@@ -801,10 +767,7 @@ describe("System One reviewer", () => {
           outcome: choice("escalate", ["allow", "deny", "escalate"]),
         }),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("escalate");
     expect(result.decisionSource).toBe("system-one-reviewer");
     expect(escalations).toBe(0);
@@ -828,25 +791,10 @@ describe("System One reviewer", () => {
       async () =>
         response({
           outcome: choice("deny", ["allow", "deny", "escalate"], 0.35),
-          primary_basis: choice("destructive_effect", [
-            "authorized_routine",
-            "authorized_reversible_change",
-            "insufficient_authorization",
-            "scope_mismatch",
-            "insufficient_evidence",
-            "destructive_effect",
-            "credential_or_private_data",
-            "security_or_privilege_change",
-            "external_or_remote_effect",
-            "trusted_policy_restriction",
-            "conflicting_evidence",
-          ]),
+          primary_basis: choice("destructive_effect", PRIMARY_BASES),
         }),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("deny");
     expect(escalations).toBe(0);
     expect(result.systemOne?.outcome).toMatchObject({
@@ -867,10 +815,7 @@ describe("System One reviewer", () => {
       config,
       reasoningAllow("partial", "The action appears safe."),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("escalate");
     expect(result.reviewerOutcome).toBe("allow");
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna");
@@ -887,10 +832,7 @@ describe("System One reviewer", () => {
         "The action is supported by complete evidence.",
       ),
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("allow");
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna");
   });
@@ -909,10 +851,7 @@ describe("System One reviewer", () => {
         throw new Error("synthetic transport failure");
       },
     );
-    const result = await backend.review(
-      envelope(),
-      new ReviewAttempt("generation", 10_000),
-    );
+    const result = await reviewOnce(backend);
     expect(result.kind).toBe("escalate");
     expect(result.decisionSource).toBe("failure-safe");
     expect(escalations).toBe(0);
