@@ -2,11 +2,18 @@ import type { OpenCodeClient, SessionInfo } from "@opencode/client";
 import { selectIntentMessages } from "../../context.ts";
 import type { ContextReader } from "../../core/ports.ts";
 import type { MessageWithParts } from "../../types.ts";
+import { contextMessages, userMessage } from "./context-messages.ts";
 
 type Context = {
   session: Pick<OpenCodeClient["session"], "get" | "context">;
   message?: Pick<OpenCodeClient["message"], "list">;
 };
+
+function locatedSession(session: SessionInfo, directory: string): SessionInfo {
+  if (session.location.directory !== directory)
+    throw new Error("Session location mismatch");
+  return session;
+}
 
 /** Preserve provenance: synthetic messages and compactions are not user orders. */
 export function createV2ContextReader(
@@ -15,90 +22,32 @@ export function createV2ContextReader(
 ): ContextReader {
   return {
     async session(sessionID: string, directory: string): Promise<SessionInfo> {
-      const session = await ctx.session.get({ sessionID }, { signal });
-      if (session.location.directory !== directory)
-        throw new Error("Session location mismatch");
-      return session;
+      return locatedSession(
+        await ctx.session.get({ sessionID }, { signal }),
+        directory,
+      );
     },
     async messages(
       sessionID: string,
       directory: string,
       limit: number,
     ): Promise<MessageWithParts[]> {
-      const session = await ctx.session.get({ sessionID }, { signal });
-      if (session.location.directory !== directory)
-        throw new Error("Session location mismatch");
+      const session = locatedSession(
+        await ctx.session.get({ sessionID }, { signal }),
+        directory,
+      );
       const messages = await ctx.session.context({ sessionID }, { signal });
-      const result: MessageWithParts[] = [];
-      if (
-        messages.length > limit ||
-        messages.some((message) => message.type === "compaction")
-      ) {
-        result.push({
-          info: { role: "system" },
-          parts: [
-            {
-              type: "text",
-              synthetic: true,
-              text: "Earlier session context was compacted or omitted. Summaries are not literal user authorization.",
-            },
-          ],
-        });
-      }
-      for (const message of messages.slice(-limit)) {
-        if (message.type === "user") {
-          const fork = session.fork;
-          const inherited =
-            fork !== undefined && message.time.created < session.time.created;
-          result.push({
-            info: {
-              id: message.id,
-              role: inherited ? "assistant" : "user",
-              time: message.time,
-              ...(inherited
-                ? { originSessionID: fork.sessionID, synthetic: true }
-                : {}),
-            },
-            parts: [
-              {
-                type: "text",
-                text: message.text,
-                ...(inherited ? { synthetic: true } : {}),
-              },
-            ],
-          });
-        } else if (message.type === "assistant") {
-          result.push({
-            info: {
-              id: message.id,
-              role: "assistant",
-              agent: message.agent,
-              time: message.time,
-            },
-            parts: message.content.map((part) => {
-              if (part.type === "tool") {
-                return {
-                  type: "tool",
-                  callID: part.id,
-                  tool: part.name,
-                  state: part.state,
-                };
-              }
-              return { ...part };
-            }),
-          });
-        }
-      }
-      return result;
+      return contextMessages(session, messages, limit);
     },
     async intentMessages(
       sessionID: string,
       directory: string,
       limit: number,
     ): Promise<MessageWithParts[]> {
-      const session = await ctx.session.get({ sessionID }, { signal });
-      if (session.location.directory !== directory)
-        throw new Error("Session location mismatch");
+      const session = locatedSession(
+        await ctx.session.get({ sessionID }, { signal }),
+        directory,
+      );
       const messages = ctx.message
         ? (
             await ctx.message.list(
@@ -116,31 +65,9 @@ export function createV2ContextReader(
         : (await ctx.session.context({ sessionID }, { signal }))
             .filter((message) => message.type === "user")
             .slice(-limit);
-      const normalized = messages.flatMap((message) => {
-        if (message.type !== "user") return [];
-        const fork = session.fork;
-        const inherited =
-          fork !== undefined && message.time.created < session.time.created;
-        return [
-          {
-            info: {
-              id: message.id,
-              role: inherited ? "assistant" : "user",
-              time: message.time,
-              ...(inherited
-                ? { originSessionID: fork.sessionID, synthetic: true }
-                : {}),
-            },
-            parts: [
-              {
-                type: "text",
-                text: message.text,
-                ...(inherited ? { synthetic: true } : {}),
-              },
-            ],
-          },
-        ];
-      });
+      const normalized = messages.flatMap((message) =>
+        message.type === "user" ? [userMessage(session, message)] : [],
+      );
       return selectIntentMessages(normalized, limit);
     },
   };
