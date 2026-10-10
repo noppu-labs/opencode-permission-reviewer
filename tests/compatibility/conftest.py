@@ -281,7 +281,7 @@ def model_server():
     }
 
     class Handler(BaseHTTPRequestHandler):
-        def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 # overrides the stdlib signature
+        def log_message(self, format: str, *args: Any) -> None:  # noqa: A002, V107 # overrides the stdlib signature
             pass
 
         def do_POST(self):

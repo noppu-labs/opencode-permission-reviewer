@@ -49,9 +49,8 @@ max-module-lines = 600
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
 # pytest finds fixtures by name; nothing calls them.
 ignore_decorators = ["@pytest.fixture"]
-# BaseHTTPRequestHandler calls these by name, and `format` is the parameter name its `log_message`
-# signature fixes (tests/compatibility/conftest.py).
-ignore_names = ["do_POST", "log_message", "format"]
+# BaseHTTPRequestHandler calls these by name (tests/compatibility/conftest.py).
+ignore_names = ["do_POST", "log_message"]
 
 [tool.codespell]
 # benchmarks/permission-reviewer/data holds verbatim dataset cases that contain misspellings and
@@ -119,6 +118,8 @@ select = [
 ignore = [
     "TRY003",  # long messages in raise: an opinion, and the messages are the useful part
 ]
+# V107: vulture's unused-variable code, used in line-level noqa comments.
+external = ["V107"]
 # PLR6301 is a preview rule. explicit-preview-rules keeps every *other* preview rule off, but
 # preview also switches stable rules to their preview behaviour. The formatter has its own flag.
 preview = true
