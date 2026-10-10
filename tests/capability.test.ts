@@ -554,6 +554,9 @@ describe("capability analyzer - credential reads", () => {
     "rm ~/.ssh/id_rsa",
     "cp .env /tmp/backup",
     "cat notes.txt",
+    "cat > .env", // an output redirect to a credential path is a write
+    "cat < $HOME/.env", // a dynamic input-redirect target stays unknown
+    "cat my.env", // basename anchoring: my.env is not .env
   ])("does not claim a credential read: %s", (command) => {
     const a = assess(command);
     expect(a.credentialRead.value).toBe("unknown");
@@ -566,36 +569,15 @@ describe("capability analyzer - credential reads", () => {
     }
   });
 
-  test("an output redirect to a credential path is a write, not a read", () => {
-    expect(assess("cat > .env").credentialRead.value).toBe("unknown");
-  });
-
-  test("reads credential material: cat .env.local", () => {
-    expect(assess("cat .env.local").credentialRead.value).toBe(true);
-  });
-
-  test("reads credential material: cat ~/.config/gh/hosts.yml", () => {
-    expect(assess("cat ~/.config/gh/hosts.yml").credentialRead.value).toBe(
-      true,
-    );
-  });
-
-  test("dynamic path in input redirect target is unknown: cat < $HOME/.env", () => {
-    expect(assess("cat < $HOME/.env").credentialRead.value).toBe("unknown");
-  });
-
-  test("basename anchoring: cat my.env is not a credential read", () => {
-    expect(assess("cat my.env").credentialRead.value).toBe("unknown");
-  });
-
-  test("genuine read survives an output redirect: cat .env > /tmp/out", () => {
-    expect(assess("cat .env > /tmp/out").credentialRead.value).toBe(true);
-  });
-
-  test("bare basename is an accepted hint, not a secret-boundary claim: cat data/credentials", () => {
+  test.each([
+    "cat .env.local",
+    "cat ~/.config/gh/hosts.yml",
+    "cat .env > /tmp/out", // a genuine read survives an output redirect
     // Accepted hint semantics: a bare sensitive basename matches anywhere,
     // even without proof that this specific file holds secrets.
-    expect(assess("cat data/credentials").credentialRead.value).toBe(true);
+    "cat data/credentials",
+  ])("reads credential material: %s", (command) => {
+    expect(assess(command).credentialRead.value).toBe(true);
   });
 
   test("credential read and network in one compound command compose for policy rules", () => {

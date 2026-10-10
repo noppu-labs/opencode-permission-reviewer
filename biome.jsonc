@@ -78,122 +78,9 @@
       }
     }
   },
-  // The ratchet. Each entry turns off one rule for exactly the files that fail it today (file-length
-  // entries cap each file at its current length instead), ordered by the stacked PR that fixes
-  // those files and deletes the entry.
+  // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
+  // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/audit.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 661
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/capability.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 618
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/git-evidence.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 624
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/runtime.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1062
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/system-one.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1001
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/trust-hardening.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 1961
-              }
-            }
-          }
-        }
-      }
-    },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
-    {
-      "includes": ["tests/v2-backend.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 653
-              }
-            }
-          }
-        }
-      }
-    },
     // Pending (quality/7-complexity-analyzers): complexity/noExcessiveCognitiveComplexity, 16 files.
     {
       "includes": [
@@ -256,7 +143,7 @@
         }
       }
     },
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 34 files.
+    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 33 files.
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
@@ -291,7 +178,6 @@
         "tests/stress.test.ts",
         "tests/ui-protocol.test.ts",
         "tests/v1-backend.test.ts",
-        "tests/v2-backend.test.ts",
         "tests/v2-server.test.ts"
       ],
       "linter": {

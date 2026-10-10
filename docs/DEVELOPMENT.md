@@ -121,9 +121,8 @@ The tooling landed with its full end-state configuration, plus temporary exempti
 code does not pass yet. Each exemption is narrow (it matches only what fails today) and names the
 stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
 
-- `biome.jsonc`: `overrides` turns off one rule per entry for an exact list of files, except the
-  file-length entries, which cap each listed file at its current length. Entries are ordered by
-  the pull request that removes them.
+- `biome.jsonc`: `overrides` turns off one rule per entry for an exact list of files. Entries are
+  ordered by the pull request that removes them.
 - `fta.json`: `exclude_filenames` lists every file above the cap. JSON has no comments, so the
   pull request that removes each one is listed in the description of the pull request that added
   it.

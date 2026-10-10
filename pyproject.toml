@@ -61,7 +61,8 @@ skip = "bun.lock,*.lock,./node_modules,./dist,./coverage,benchmarks/permission-r
 #   tests and quoted in docs and the CHANGELOG.
 # truncat: a regex stem in the pinned src/core/review-engine.ts (PINNED_BLOBS in
 #   benchmarks/permission-reviewer/lib/plugin.mjs hashes that file).
-# opeator: a deliberate invalid enum value under test in tests/trust-hardening.test.ts.
+# opeator: a deliberate invalid enum value under test in
+#   tests/trust-hardening/trust-rule-conditions.test.ts.
 ignore-words-list = "afterall,unparseable,truncat,opeator"
 
 # Security lint (bandit, run by pre-commit with `-c pyproject.toml`). Each accepted finding is a

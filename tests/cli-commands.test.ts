@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { toJsonl } from "./helpers.ts";
 
 const CWD = `${import.meta.dir}/..`;
 
@@ -95,15 +96,16 @@ describe("audit report", () => {
     const dir = mkdtempSync(join(tmpdir(), "reviewer-aud-"));
     try {
       const file = join(dir, "audit.jsonl");
-      const v2 = (overrides: Record<string, unknown>): string =>
-        JSON.stringify({
-          schemaVersion: 2,
-          timestamp: "2026-01-01T00:00:00.000Z",
-          ...overrides,
-        });
+      const v2 = (
+        overrides: Record<string, unknown>,
+      ): Record<string, unknown> => ({
+        schemaVersion: 2,
+        timestamp: "2026-01-01T00:00:00.000Z",
+        ...overrides,
+      });
       writeFileSync(
         file,
-        `${[
+        `${toJsonl([
           v2({
             requestID: "r1",
             sessionID: "s1",
@@ -122,8 +124,7 @@ describe("audit report", () => {
             decisionSource: "emergency-brake",
             riskLevel: "critical",
           }),
-          "{not valid json}",
-        ].join("\n")}\n`,
+        ])}{not valid json}\n`,
       );
       const { exitCode, stdout } = await run([
         "audit",
