@@ -83,22 +83,6 @@
   // those files and deletes the entry. Entries marked "Deferred to the user" stay until the user
   // decides whether to split the file.
   "overrides": [
-    // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. Under 600 needs a split into smaller files.
-    {
-      "includes": ["tests/system-one.test.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noExcessiveLinesPerFile": {
-              "level": "error",
-              "options": {
-                "maxLines": 937
-              }
-            }
-          }
-        }
-      }
-    },
     // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. Under 600 needs a split by describe block.
     {
       "includes": ["tests/trust-hardening.test.ts"],

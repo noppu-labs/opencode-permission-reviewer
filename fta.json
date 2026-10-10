@@ -9,7 +9,8 @@
   ],
   "exclude_filenames": [
     "runtime-manual-replies.test.ts",
-    "system-one.test.ts",
+    "system-one-fixtures.ts",
+    "system-one-transport.test.ts",
     "trust-hardening.test.ts",
     "bash-analyzer.ts",
     "bash-mutation.ts",
