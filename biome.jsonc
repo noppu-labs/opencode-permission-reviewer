@@ -80,9 +80,11 @@
   },
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today (file-length
   // entries cap each file at its current length instead), ordered by the stacked PR that fixes
-  // those files and deletes the entry.
+  // those files and deletes the entry. Entries marked "Deferred to the user" stay until the user
+  // decides whether to split the file.
   "overrides": [
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. The cheap cleanups are applied;
+    // getting under 600 needs a split by describe block. Capped at its current length so it cannot grow.
     {
       "includes": ["tests/runtime.test.ts"],
       "linter": {
@@ -98,7 +100,8 @@
         }
       }
     },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. The cheap cleanups are applied;
+    // getting under 600 needs a split by describe block. Capped at its current length so it cannot grow.
     {
       "includes": ["tests/system-one.test.ts"],
       "linter": {
@@ -114,7 +117,8 @@
         }
       }
     },
-    // Pending (quality/6-split-tests): style/noExcessiveLinesPerFile, capped at its current length.
+    // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. The cheap cleanups are applied;
+    // getting under 600 needs a split by describe block. Capped at its current length so it cannot grow.
     {
       "includes": ["tests/trust-hardening.test.ts"],
       "linter": {
