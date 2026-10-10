@@ -81,12 +81,10 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 5 files.
+    // Pending (quality/8-complexity-core): complexity/noExcessiveCognitiveComplexity, 3 files.
     {
       "includes": [
         "src/audit.ts",
-        "src/core/review-coordinator-support.ts",
-        "src/core/review-coordinator.ts",
         "src/system-one/backend.ts",
         "src/system-one/review.ts"
       ],

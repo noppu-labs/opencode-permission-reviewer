@@ -9,8 +9,6 @@
   ],
   "exclude_filenames": [
     "audit.ts",
-    "review-coordinator.ts",
-    "review-coordinator-support.ts",
     "backend.ts",
     "review.ts",
     "cli.mjs",

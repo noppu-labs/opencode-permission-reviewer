@@ -7,7 +7,7 @@ import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import { writeReviewAudit } from "../src/core/review-coordinator-support.ts";
 import { probeCapabilities } from "../src/opencode/capability-detection.ts";
 import type { RuntimeContext } from "../src/opencode/types.ts";
-import type { PermissionRequest, ReviewExecutionResult } from "../src/types.ts";
+import type { ReviewExecutionResult } from "../src/types.ts";
 import { decision, MockClient, request } from "./helpers.ts";
 import { actor, capability } from "./policy-fixtures.ts";
 
@@ -15,10 +15,25 @@ export interface AuditCall {
   ctx: RuntimeContext;
   /** The attempts registered for the request (none or one). */
   attempts: ReviewAttempt[];
+  /** Stands for a stopped coordinator, which supersedes every request. */
   superseded: boolean;
   result: ReviewExecutionResult;
   logs: unknown[][];
-  supersededChecks: PermissionRequest[];
+  /** Request IDs looked up in the manual-reply set, in order. */
+  supersededChecks: string[];
+}
+
+/** A manual-reply set that records each lookup, so a test sees whether and
+ *  when the writer read the supersede state. */
+class RecordingSet extends Set<string> {
+  constructor(private readonly lookups: string[]) {
+    super();
+  }
+
+  override has(value: string): boolean {
+    this.lookups.push(value);
+    return super.has(value);
+  }
 }
 
 /** One place that knows the writer's call shape. */
@@ -32,10 +47,8 @@ export function writeAudit(
       config: DEFAULT_CONFIG,
       generation: "gen_1",
       attempts: new Map(call.attempts.map((attempt) => [pending.id, attempt])),
-      isSuperseded: (checked: PermissionRequest): boolean => {
-        call.supersededChecks.push(checked);
-        return call.superseded;
-      },
+      stopped: call.superseded,
+      resolvedManually: new RecordingSet(call.supersededChecks),
       log: (...entry: unknown[]): void => {
         call.logs.push(entry);
       },

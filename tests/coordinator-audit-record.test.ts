@@ -40,7 +40,7 @@ describe("writeReviewAudit", () => {
       FULL_RESULT,
     );
     await writeAudit(call, pending);
-    expect(call.supersededChecks).toEqual([pending]);
+    expect(call.supersededChecks).toEqual([pending.id]);
     expect(records).toHaveLength(1);
     const { timestamp, durationMs, ...stable } = defined(
       records[0],
