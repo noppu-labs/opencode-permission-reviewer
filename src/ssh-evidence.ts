@@ -8,7 +8,10 @@ import {
 } from "./evidence-file-reader.ts";
 import { catSource, findSshIndex, parseSsh } from "./ssh-command-segments.ts";
 import type { PermissionRequest } from "./types.ts";
-import { shellCommandSegmentsWithDirectory } from "./working-directory-segments.ts";
+import {
+  type ShellCommandSegmentWithDirectory,
+  shellCommandSegmentsWithDirectory,
+} from "./working-directory-segments.ts";
 
 export interface SshAuditSummary {
   destination: string;
@@ -101,6 +104,14 @@ function stdinSignals(
   return analyzeScriptContent(stdin.content);
 }
 
+type SshInvocation = NonNullable<ReturnType<typeof parseSsh>>;
+
+interface StdinReadScope {
+  directory: string;
+  worktree: string;
+  maxChars: number;
+}
+
 export async function enrichSshEvidence(
   request: PermissionRequest,
   directory: string,
@@ -115,109 +126,162 @@ export async function enrichSshEvidence(
   // so a stdin source resolves where the producing command runs, not against
   // the ssh segment's directory.
   const segments = shellCommandSegmentsWithDirectory(command, directory);
+  const scope: StdinReadScope = { directory, worktree, maxChars };
   const records: Array<Record<string, unknown>> = [];
   const audit: SshAuditSummary[] = [];
   const preflightDenials: string[] = [];
 
   for (const [segmentIndex, segment] of segments.entries()) {
-    const sshIndex = findSshIndex(segment.tokens);
-    if (sshIndex < 0) continue;
-    const parsed = parseSsh(segment.tokens, sshIndex);
+    const parsed = sshInvocation(segment.tokens);
     if (!parsed) continue;
 
-    // The pipeline producer runs where IT runs, not where ssh runs: a group
-    // like `(cd sub && cat p.py) | ssh …` reads the stdin file from sub even
-    // though ssh itself executes in the outer directory. Walk back over
-    // paren markers to the producing command.
-    // A negative index reads `undefined`, which ends the walk at the start.
-    let producerIndex = segmentIndex - 1;
-    let producer = segments[producerIndex];
-    while (producer !== undefined && producer.tokens.length === 0) {
-      producerIndex -= 1;
-      producer = segments[producerIndex];
-    }
-    const stdinPath =
-      segment.preceding === "|" && producer
-        ? catSource(producer.tokens)
-        : undefined;
-    const stdin =
-      stdinPath === undefined
-        ? undefined
-        : producer !== undefined &&
-            producer.directory === undefined &&
-            !isAbsolute(stdinPath)
-          ? {
-              source: "file" as const,
-              path: stdinPath,
-              status: "unavailable" as const,
-              reason:
-                producer.directoryReason ??
-                "working directory of the pipeline producer is unresolved",
-            }
-          : // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one stdin evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records, audit entries and preflight denials are appended in command order
-            await includeEvidenceFile(
-              stdinPath,
-              producer?.directory ?? segment.directory ?? directory,
-              directory,
-              worktree,
-              maxChars,
-            );
-    const remoteCommandSha256 = parsed.remoteCommand
-      ? sha256(parsed.remoteCommand)
-      : undefined;
-    const analyzedStdin = stdinSignals(stdin);
+    const producer = pipelineProducer(segments, segmentIndex);
+    // biome-ignore lint/performance/noAwaitInLoops: kept sequential on the evidence trust path: the segment count comes from the reviewed command, so one stdin evidence file is open at a time (includeEvidenceFile closes its handle and retries a missing file once after 100 ms); records, audit entries and preflight denials are appended in command order
+    const stdin = await stdinEvidence(segment, producer, scope);
+    const remoteCommandSha256 = remoteCommandDigest(parsed);
     const denial = deterministicDenial(stdin);
     if (denial) preflightDenials.push(denial);
-    const record = {
-      kind: "ssh",
-      destination: parsed.destination,
-      host: parsed.host,
-      ...(parsed.user === undefined ? {} : { user: parsed.user }),
-      ...(parsed.port === undefined ? {} : { port: parsed.port }),
-      ...(parsed.identityFile === undefined
-        ? {}
-        : { identityFile: parsed.identityFile }),
-      ...(parsed.strictHostKeyChecking === undefined
-        ? {}
-        : { strictHostKeyChecking: parsed.strictHostKeyChecking }),
-      remoteCommand: parsed.remoteCommand || "<interactive or unspecified>",
-      ...(remoteCommandSha256 === undefined ? {} : { remoteCommandSha256 }),
-      signals: commandSignals(parsed.remoteCommand, stdin !== undefined),
-      ...(analyzedStdin === undefined ? {} : { stdinSignals: analyzedStdin }),
-      ...(stdin === undefined
-        ? segment.preceding === "|"
-          ? {
-              stdin: {
-                status: "unresolved",
-                reason: "pipeline producer is not one regular cat file",
-              },
-            }
-          : {}
-        : { stdin }),
-    };
-    records.push(record);
-    audit.push({
-      destination: parsed.destination,
-      ...(parsed.port === undefined ? {} : { port: parsed.port }),
-      ...(remoteCommandSha256 === undefined ? {} : { remoteCommandSha256 }),
-      ...(stdin === undefined
-        ? {}
-        : { stdinSource: stdin.path, stdinStatus: stdin.status }),
-      ...(stdin?.reason === undefined ? {} : { stdinReason: stdin.reason }),
-    });
+    records.push(
+      sshRecord(parsed, segment.preceding, stdin, remoteCommandSha256),
+    );
+    audit.push(auditEntry(parsed, stdin, remoteCommandSha256));
   }
 
   if (records.length === 0) return { text: "", audit: [] };
-  const serialized = JSON.stringify(records, null, 2);
-  const bounded =
-    serialized.length <= maxChars
-      ? serialized
-      : `${serialized.slice(0, maxChars)}\n<ssh_enrichment_truncated characters="${serialized.length - maxChars}" />`;
   return {
-    text: `SSH_ANALYSIS\n${bounded}`,
+    text: `SSH_ANALYSIS\n${boundedRecords(records, maxChars)}`,
     audit,
     ...(preflightDenials.length === 0
       ? {}
       : { preflightDenial: preflightDenials.join(" ") }),
   };
+}
+
+function sshInvocation(tokens: string[]): SshInvocation | undefined {
+  const sshIndex = findSshIndex(tokens);
+  if (sshIndex < 0) return;
+  return parseSsh(tokens, sshIndex);
+}
+
+function remoteCommandDigest(parsed: SshInvocation): string | undefined {
+  return parsed.remoteCommand ? sha256(parsed.remoteCommand) : undefined;
+}
+
+// The pipeline producer runs where IT runs, not where ssh runs: a group
+// like `(cd sub && cat p.py) | ssh …` reads the stdin file from sub even
+// though ssh itself executes in the outer directory. Walk back over
+// paren markers to the producing command.
+// A negative index reads `undefined`, which ends the walk at the start.
+function pipelineProducer(
+  segments: ShellCommandSegmentWithDirectory[],
+  segmentIndex: number,
+): ShellCommandSegmentWithDirectory | undefined {
+  let producerIndex = segmentIndex - 1;
+  let producer = segments[producerIndex];
+  while (producer !== undefined && producer.tokens.length === 0) {
+    producerIndex -= 1;
+    producer = segments[producerIndex];
+  }
+  return producer;
+}
+
+async function stdinEvidence(
+  segment: ShellCommandSegmentWithDirectory,
+  producer: ShellCommandSegmentWithDirectory | undefined,
+  scope: StdinReadScope,
+): Promise<FileEvidence | undefined> {
+  const stdinPath =
+    segment.preceding === "|" && producer
+      ? catSource(producer.tokens)
+      : undefined;
+  if (stdinPath === undefined) return undefined;
+  if (
+    producer !== undefined &&
+    producer.directory === undefined &&
+    !isAbsolute(stdinPath)
+  ) {
+    return {
+      source: "file",
+      path: stdinPath,
+      status: "unavailable",
+      reason:
+        producer.directoryReason ??
+        "working directory of the pipeline producer is unresolved",
+    };
+  }
+  return includeEvidenceFile(
+    stdinPath,
+    producer?.directory ?? segment.directory ?? scope.directory,
+    scope.directory,
+    scope.worktree,
+    scope.maxChars,
+  );
+}
+
+function sshRecord(
+  parsed: SshInvocation,
+  preceding: string | undefined,
+  stdin: FileEvidence | undefined,
+  remoteCommandSha256: string | undefined,
+): Record<string, unknown> {
+  const analyzedStdin = stdinSignals(stdin);
+  return {
+    kind: "ssh",
+    destination: parsed.destination,
+    host: parsed.host,
+    ...(parsed.user === undefined ? {} : { user: parsed.user }),
+    ...(parsed.port === undefined ? {} : { port: parsed.port }),
+    ...(parsed.identityFile === undefined
+      ? {}
+      : { identityFile: parsed.identityFile }),
+    ...(parsed.strictHostKeyChecking === undefined
+      ? {}
+      : { strictHostKeyChecking: parsed.strictHostKeyChecking }),
+    remoteCommand: parsed.remoteCommand || "<interactive or unspecified>",
+    ...(remoteCommandSha256 === undefined ? {} : { remoteCommandSha256 }),
+    signals: commandSignals(parsed.remoteCommand, stdin !== undefined),
+    ...(analyzedStdin === undefined ? {} : { stdinSignals: analyzedStdin }),
+    ...stdinField(stdin, preceding),
+  };
+}
+
+function stdinField(
+  stdin: FileEvidence | undefined,
+  preceding: string | undefined,
+): Record<string, unknown> {
+  if (stdin !== undefined) return { stdin };
+  return preceding === "|"
+    ? {
+        stdin: {
+          status: "unresolved",
+          reason: "pipeline producer is not one regular cat file",
+        },
+      }
+    : {};
+}
+
+function auditEntry(
+  parsed: SshInvocation,
+  stdin: FileEvidence | undefined,
+  remoteCommandSha256: string | undefined,
+): SshAuditSummary {
+  return {
+    destination: parsed.destination,
+    ...(parsed.port === undefined ? {} : { port: parsed.port }),
+    ...(remoteCommandSha256 === undefined ? {} : { remoteCommandSha256 }),
+    ...(stdin === undefined
+      ? {}
+      : { stdinSource: stdin.path, stdinStatus: stdin.status }),
+    ...(stdin?.reason === undefined ? {} : { stdinReason: stdin.reason }),
+  };
+}
+
+function boundedRecords(
+  records: Array<Record<string, unknown>>,
+  maxChars: number,
+): string {
+  const serialized = JSON.stringify(records, null, 2);
+  return serialized.length <= maxChars
+    ? serialized
+    : `${serialized.slice(0, maxChars)}\n<ssh_enrichment_truncated characters="${serialized.length - maxChars}" />`;
 }
