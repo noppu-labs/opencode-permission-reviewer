@@ -101,7 +101,7 @@
       }
     },
     // Deferred to the user (test-length policy): style/noExcessiveLinesPerFile. The cheap cleanups are applied;
-    // getting under 600 needs a split by describe block. Capped at its current length so it cannot grow.
+    // getting under 600 needs a split into smaller files. Capped at its current length so it cannot grow.
     {
       "includes": ["tests/system-one.test.ts"],
       "linter": {
