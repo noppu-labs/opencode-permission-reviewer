@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import { invariant } from "../invariant.ts";
+import { elementAt } from "../element-at.ts";
 import type { HeredocRecord } from "./capability-types.ts";
 import { parseDelimiterWord } from "./heredoc-delimiter.ts";
 
@@ -52,231 +52,323 @@ export interface HeredocExtraction {
  * open on one line; their bodies follow in operator order, as in bash.
  */
 export function extractHeredocs(command: string): HeredocExtraction {
-  const heredocs: HeredocRecord[] = [];
-  let hasDynamicConstructs = false;
-  let out = "";
-  let cursor = 0;
-  let i = 0;
-  let lineStart = 0;
-  let inSingle = false;
-  let inDouble = false;
-  // Depth of open arithmetic context: `$(( ... ))` anywhere, and `(( ... ))`
-  // at a command position. While open, `<<` is a shift operator, not a
-  // heredoc: treating `1 << 2` as a heredoc would swallow the rest of the
-  // command behind an unterminated "delimiter".
-  let arithmeticDepth = 0;
-
-  interface PendingStart {
-    operator: string;
-    delimiter: string;
-    rawWord: string;
-    quoted: boolean;
-    resolved: boolean;
-    opStart: number;
-    wordEnd: number;
-    lineStart: number;
-  }
-  const pending: PendingStart[] = [];
-  let pieces: Array<{ text: string } | { pendingIndex: number }> = [];
-
-  const appendText = (text: string): void => {
-    if (text.length === 0) return;
-    const last = pieces.at(-1);
-    if (last !== undefined && "text" in last) last.text += text;
-    else pieces.push({ text });
+  const scan: HeredocScan = {
+    command,
+    heredocs: [],
+    hasDynamicConstructs: false,
+    out: "",
+    cursor: 0,
+    i: 0,
+    lineStart: 0,
+    inSingle: false,
+    inDouble: false,
+    arithmeticDepth: 0,
+    pending: [],
+    pieces: [],
   };
-
-  /** Consume the body of every pending heredoc in operator order, emit the
-   *  sanitized start line, and return the index the scan continues from.
-   *  `lineEnd` is the newline (or end of command) that closed the start
-   *  line, so redirections after the operator stay visible. */
-  const consumeBodies = (bodyStart: number, lineEnd: number): number => {
-    let position = bodyStart;
-    const records: Array<{
-      bounded: string;
-      sha256: string;
-      truncated: boolean;
-      dynamic: boolean;
-      outputTarget?: string;
-    }> = [];
-    for (const start of pending) {
-      let body: string;
-      let truncated: boolean;
-      if (start.resolved) {
-        const collected = collectBody(
-          command,
-          position,
-          start.delimiter,
-          start.operator === "<<-",
-        );
-        body = collected.body;
-        truncated = collected.truncated;
-        position = collected.endIndex + 1;
-      } else {
-        // The terminator line cannot be known statically, so no line of the
-        // remainder can be proven to be a command: it all becomes the body
-        // instead of leaking into the analyzer as tokens.
-        body = command.slice(position);
-        truncated = true;
-        position = command.length;
-      }
-      const sha256hex = createHash("sha256").update(body).digest("hex");
-      const dynamic = start.resolved
-        ? containsDynamic(body, start.quoted)
-        : true;
-      const { bounded, wasTruncated } = boundBody(body, truncated);
-      if (dynamic) hasDynamicConstructs = true;
-      // The output target may sit before the operator (`cat > /tmp/x <<EOF`)
-      // or after the delimiter word (`cat <<EOF > /tmp/x`); both positions
-      // redirect the same command's output.
-      const outputTarget =
-        findOutputTarget(command.slice(start.lineStart, start.opStart)) ??
-        findOutputTarget(command.slice(start.wordEnd, lineEnd));
-      records.push({
-        bounded,
-        sha256: sha256hex,
-        truncated: wasTruncated,
-        dynamic,
-        ...(outputTarget === undefined ? {} : { outputTarget }),
-      });
-    }
-
-    let assembled = "";
-    for (const piece of pieces) {
-      if ("text" in piece) {
-        assembled += piece.text;
-        continue;
-      }
-      const start = pending[piece.pendingIndex];
-      const record = records[piece.pendingIndex];
-      invariant(start && record, "pendingIndex is in bounds");
-      const shown = start.resolved ? start.delimiter : "<unresolved>";
-      const safe = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(shown)
-        ? shown
-        : `'${shown.replace(/'/g, "'\\''")}'`;
-      assembled += `${start.operator}${safe} <HEREDOC:sha256:${record.sha256.slice(0, 12)}>`;
-    }
-    out += assembled;
-    for (const [index, start] of pending.entries()) {
-      const record = records[index];
-      invariant(record, "records parallels pending");
-      heredocs.push({
-        delimiter: start.resolved ? start.delimiter : start.rawWord,
-        operator: start.operator,
-        expansionDisabled: start.quoted,
-        bodyBounded: record.bounded,
-        bodySha256: record.sha256,
-        truncated: record.truncated,
-        ...(record.outputTarget === undefined
-          ? {}
-          : { outputTarget: record.outputTarget }),
-        dynamic: record.dynamic,
-      });
-    }
-    pending.length = 0;
-    pieces = [];
-    return position;
+  while (scan.i < command.length) scanCharacter(scan);
+  if (scan.pending.length > 0) {
+    appendText(scan, command.slice(scan.cursor, command.length));
+    consumeBodies(scan, command.length, command.length);
+    scan.cursor = command.length;
+  }
+  scan.out += command.slice(scan.cursor);
+  return {
+    sanitizedCommand: scan.out,
+    heredocs: scan.heredocs,
+    hasDynamicConstructs: scan.hasDynamicConstructs,
   };
+}
 
-  while (i < command.length) {
-    const c = command.charAt(i);
-    if (inSingle) {
-      if (c === "'") inSingle = false;
-      i += 1;
-      continue;
-    }
-    if (inDouble) {
-      if (c === "\\") i += 1;
-      else if (c === '"') inDouble = false;
-      i += 1;
-      continue;
-    }
-    if (c === "'") {
-      inSingle = true;
-      i += 1;
-      continue;
-    }
-    if (c === '"') {
-      inDouble = true;
-      i += 1;
-      continue;
-    }
-    if (c === "\\" && i + 1 < command.length) {
-      i += 2;
-      continue;
-    }
-    // A comment hides the rest of its line from the shell, so it can hide no
-    // heredoc either.
-    if (c === "#" && (i === 0 || /[\s;&|()]/.test(command.charAt(i - 1)))) {
-      while (i < command.length && command[i] !== "\n") i += 1;
-      continue;
-    }
-    if (arithmeticDepth > 0) {
-      if (c === "(") arithmeticDepth += 1;
-      else if (c === ")") arithmeticDepth -= 1;
-      i += 1;
-      continue;
-    }
-    if (
-      (c === "$" && command[i + 1] === "(" && command[i + 2] === "(") ||
-      (c === "(" &&
-        command[i + 1] === "(" &&
-        (i === 0 || /[\s;&|()]/.test(command.charAt(i - 1))))
-    ) {
-      arithmeticDepth = 2;
-      i += c === "$" ? 3 : 2;
-      continue;
-    }
-    if (c === "\n") {
-      if (pending.length > 0) {
-        appendText(command.slice(cursor, i));
-        const resume = consumeBodies(i + 1, i);
-        out += "\n";
-        cursor = i = resume;
-        lineStart = resume;
-        continue;
-      }
-      lineStart = i + 1;
-      i += 1;
-      continue;
-    }
-    if (c === "<" && command[i + 1] === "<") {
-      let j = i + 2;
-      const operator = command[j] === "-" ? "<<-" : "<<";
-      if (operator === "<<-") j += 1;
-      if (command[j] === "<") {
-        // Here-string: the word is an inline argument, not a body.
-        i = j + 1;
-        continue;
-      }
-      while (j < command.length && (command[j] === " " || command[j] === "\t"))
-        j += 1;
-      const word = parseDelimiterWord(command, j);
-      appendText(command.slice(cursor, i));
-      pending.push({
-        operator,
-        delimiter: word.delimiter,
-        rawWord: command.slice(j, word.wordEnd),
-        quoted: word.quoted,
-        resolved: word.resolved,
-        opStart: i,
-        wordEnd: word.wordEnd,
-        lineStart,
-      });
-      pieces.push({ pendingIndex: pending.length - 1 });
-      cursor = i = word.wordEnd;
-      continue;
-    }
-    i += 1;
-  }
+/** A heredoc operator whose body has not been read yet. */
+interface PendingStart {
+  operator: string;
+  delimiter: string;
+  rawWord: string;
+  quoted: boolean;
+  resolved: boolean;
+  opStart: number;
+  wordEnd: number;
+  lineStart: number;
+}
 
-  if (pending.length > 0) {
-    appendText(command.slice(cursor, command.length));
-    consumeBodies(command.length, command.length);
-    cursor = command.length;
+/** The scanner's state. Text from `cursor` on has not been copied to `out`
+ *  yet; `pieces` holds the current start line, with each pending operator in
+ *  its place, until the line's bodies are read. */
+interface HeredocScan {
+  command: string;
+  heredocs: HeredocRecord[];
+  hasDynamicConstructs: boolean;
+  out: string;
+  cursor: number;
+  i: number;
+  lineStart: number;
+  inSingle: boolean;
+  inDouble: boolean;
+  /** Depth of open arithmetic context: `$(( ... ))` anywhere, and
+   *  `(( ... ))` at a command position. While open, `<<` is a shift
+   *  operator, not a heredoc: treating `1 << 2` as a heredoc would swallow
+   *  the rest of the command behind an unterminated "delimiter". */
+  arithmeticDepth: number;
+  pending: PendingStart[];
+  pieces: Array<{ text: string } | { pendingIndex: number }>;
+}
+
+/** Advance the scan past the character at `scan.i` (or the construct that
+ *  starts there). */
+function scanCharacter(scan: HeredocScan): void {
+  const { command } = scan;
+  const c = command.charAt(scan.i);
+  if (scanInsideQuotes(scan, c)) return;
+  if (scanQuoteOrEscape(scan, c)) return;
+  if (skipComment(scan, c)) return;
+  if (scanArithmetic(scan, c)) return;
+  if (c === "\n") {
+    scanNewline(scan);
+    return;
   }
-  out += command.slice(cursor);
-  return { sanitizedCommand: out, heredocs, hasDynamicConstructs };
+  if (c === "<" && command[scan.i + 1] === "<") {
+    scanHeredocOperator(scan);
+    return;
+  }
+  scan.i += 1;
+}
+
+function scanInsideQuotes(scan: HeredocScan, c: string): boolean {
+  if (scan.inSingle) {
+    if (c === "'") scan.inSingle = false;
+    scan.i += 1;
+    return true;
+  }
+  if (scan.inDouble) {
+    if (c === "\\") scan.i += 1;
+    else if (c === '"') scan.inDouble = false;
+    scan.i += 1;
+    return true;
+  }
+  return false;
+}
+
+function scanQuoteOrEscape(scan: HeredocScan, c: string): boolean {
+  if (c === "'") scan.inSingle = true;
+  else if (c === '"') scan.inDouble = true;
+  else if (c === "\\" && scan.i + 1 < scan.command.length) scan.i += 1;
+  else return false;
+  scan.i += 1;
+  return true;
+}
+
+/** A comment hides the rest of its line from the shell, so it can hide no
+ *  heredoc either. Stops at the newline. */
+function skipComment(scan: HeredocScan, c: string): boolean {
+  const { command } = scan;
+  if (c !== "#" || !atCommandBoundary(command, scan.i)) return false;
+  while (scan.i < command.length && command[scan.i] !== "\n") scan.i += 1;
+  return true;
+}
+
+/** Whether the character at `i` starts a word at a command position. */
+function atCommandBoundary(command: string, i: number): boolean {
+  return i === 0 || /[\s;&|()]/.test(command.charAt(i - 1));
+}
+
+function scanArithmetic(scan: HeredocScan, c: string): boolean {
+  if (scan.arithmeticDepth > 0) {
+    if (c === "(") scan.arithmeticDepth += 1;
+    else if (c === ")") scan.arithmeticDepth -= 1;
+    scan.i += 1;
+    return true;
+  }
+  if (!opensArithmetic(scan.command, scan.i, c)) return false;
+  scan.arithmeticDepth = 2;
+  scan.i += c === "$" ? 3 : 2;
+  return true;
+}
+
+/** `$((` anywhere, or `((` at a command position. */
+function opensArithmetic(command: string, i: number, c: string): boolean {
+  return (
+    (c === "$" && command[i + 1] === "(" && command[i + 2] === "(") ||
+    (c === "(" && command[i + 1] === "(" && atCommandBoundary(command, i))
+  );
+}
+
+function scanNewline(scan: HeredocScan): void {
+  if (scan.pending.length === 0) {
+    scan.lineStart = scan.i + 1;
+    scan.i += 1;
+    return;
+  }
+  appendText(scan, scan.command.slice(scan.cursor, scan.i));
+  const resume = consumeBodies(scan, scan.i + 1, scan.i);
+  scan.out += "\n";
+  scan.cursor = resume;
+  scan.i = resume;
+  scan.lineStart = resume;
+}
+
+function scanHeredocOperator(scan: HeredocScan): void {
+  const { command, i } = scan;
+  let j = i + 2;
+  const operator = command[j] === "-" ? "<<-" : "<<";
+  if (operator === "<<-") j += 1;
+  if (command[j] === "<") {
+    // Here-string: the word is an inline argument, not a body.
+    scan.i = j + 1;
+    return;
+  }
+  while (j < command.length && (command[j] === " " || command[j] === "\t"))
+    j += 1;
+  const word = parseDelimiterWord(command, j);
+  appendText(scan, command.slice(scan.cursor, i));
+  scan.pending.push({
+    operator,
+    delimiter: word.delimiter,
+    rawWord: command.slice(j, word.wordEnd),
+    quoted: word.quoted,
+    resolved: word.resolved,
+    opStart: i,
+    wordEnd: word.wordEnd,
+    lineStart: scan.lineStart,
+  });
+  scan.pieces.push({ pendingIndex: scan.pending.length - 1 });
+  scan.cursor = word.wordEnd;
+  scan.i = word.wordEnd;
+}
+
+function appendText(scan: HeredocScan, text: string): void {
+  if (text.length === 0) return;
+  const last = scan.pieces.at(-1);
+  if (last !== undefined && "text" in last) last.text += text;
+  else scan.pieces.push({ text });
+}
+
+/** One read body, bounded for the record. */
+interface BodyRecord {
+  bounded: string;
+  sha256: string;
+  truncated: boolean;
+  dynamic: boolean;
+  outputTarget?: string;
+}
+
+/** Consume the body of every pending heredoc in operator order, emit the
+ *  sanitized start line, and return the index the scan continues from.
+ *  `lineEnd` is the newline (or end of command) that closed the start
+ *  line, so redirections after the operator stay visible. */
+function consumeBodies(
+  scan: HeredocScan,
+  bodyStart: number,
+  lineEnd: number,
+): number {
+  let position = bodyStart;
+  const records: BodyRecord[] = [];
+  for (const start of scan.pending) {
+    const read = readBody(scan.command, position, start);
+    position = read.position;
+    const record = bodyRecord(scan.command, start, read, lineEnd);
+    if (record.dynamic) scan.hasDynamicConstructs = true;
+    records.push(record);
+  }
+  scan.out += sanitizedStartLine(scan, records);
+  for (const [index, start] of scan.pending.entries())
+    scan.heredocs.push(
+      heredocRecord(start, elementAt(records, index, "records")),
+    );
+  scan.pending.length = 0;
+  scan.pieces = [];
+  return position;
+}
+
+/** Read one pending heredoc's body from `position`; returns it with the
+ *  index just past its terminator line. */
+function readBody(
+  command: string,
+  position: number,
+  start: PendingStart,
+): { body: string; truncated: boolean; position: number } {
+  if (start.resolved) {
+    const collected = collectBody(
+      command,
+      position,
+      start.delimiter,
+      start.operator === "<<-",
+    );
+    return {
+      body: collected.body,
+      truncated: collected.truncated,
+      position: collected.endIndex + 1,
+    };
+  }
+  // The terminator line cannot be known statically, so no line of the
+  // remainder can be proven to be a command: it all becomes the body
+  // instead of leaking into the analyzer as tokens.
+  return {
+    body: command.slice(position),
+    truncated: true,
+    position: command.length,
+  };
+}
+
+function bodyRecord(
+  command: string,
+  start: PendingStart,
+  read: { body: string; truncated: boolean },
+  lineEnd: number,
+): BodyRecord {
+  const sha256hex = createHash("sha256").update(read.body).digest("hex");
+  const dynamic = start.resolved
+    ? containsDynamic(read.body, start.quoted)
+    : true;
+  const { bounded, wasTruncated } = boundBody(read.body, read.truncated);
+  // The output target may sit before the operator (`cat > /tmp/x <<EOF`)
+  // or after the delimiter word (`cat <<EOF > /tmp/x`); both positions
+  // redirect the same command's output.
+  const outputTarget =
+    findOutputTarget(command.slice(start.lineStart, start.opStart)) ??
+    findOutputTarget(command.slice(start.wordEnd, lineEnd));
+  return {
+    bounded,
+    sha256: sha256hex,
+    truncated: wasTruncated,
+    dynamic,
+    ...(outputTarget === undefined ? {} : { outputTarget }),
+  };
+}
+
+/** The current start line with each operator and its word replaced by the
+ *  placeholder for its body. */
+function sanitizedStartLine(scan: HeredocScan, records: BodyRecord[]): string {
+  let assembled = "";
+  for (const piece of scan.pieces) {
+    if ("text" in piece) {
+      assembled += piece.text;
+      continue;
+    }
+    const start = elementAt(scan.pending, piece.pendingIndex, "pending");
+    const record = elementAt(records, piece.pendingIndex, "records");
+    const shown = start.resolved ? start.delimiter : "<unresolved>";
+    const safe = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(shown)
+      ? shown
+      : `'${shown.replace(/'/g, "'\\''")}'`;
+    assembled += `${start.operator}${safe} <HEREDOC:sha256:${record.sha256.slice(0, 12)}>`;
+  }
+  return assembled;
+}
+
+function heredocRecord(start: PendingStart, record: BodyRecord): HeredocRecord {
+  return {
+    delimiter: start.resolved ? start.delimiter : start.rawWord,
+    operator: start.operator,
+    expansionDisabled: start.quoted,
+    bodyBounded: record.bounded,
+    bodySha256: record.sha256,
+    truncated: record.truncated,
+    ...(record.outputTarget === undefined
+      ? {}
+      : { outputTarget: record.outputTarget }),
+    dynamic: record.dynamic,
+  };
 }
 
 /** Scan the text before a heredoc operator for a trailing `> path` target. */

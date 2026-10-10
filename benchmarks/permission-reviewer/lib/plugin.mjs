@@ -61,7 +61,7 @@ const PINNED_BLOBS = {
   "src/shell-scanner.ts": "41d5f6c340f3c1bbac2201177d3db600d71e2a35",
   "src/ssh-value-options.ts": "79b1030f4e03d09415238c06cdb0acffdbda2bee",
   "src/capability/heredoc-extractor.ts":
-    "db6f18442593f51d55f7d7e4d9b9e6c169517b91",
+    "5d399e0366dad3c0b7c5213d8bd0c8778c2c3c8d",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/system-one/review.ts": "0d92a58e6befb0bffa66849a8b326c5e9474e437",
   "src/capability/capability-facts.ts":
