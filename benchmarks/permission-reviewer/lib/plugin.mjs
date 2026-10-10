@@ -22,7 +22,7 @@ const PINNED_BLOBS = {
   "src/escalation.ts": "bd9a2d78b0516c1278b9fe30fb6b2bea9d262764",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-engine.ts": "4f8f16766f29d4105a5b1da878645963d511ebe2",
-  "src/emergency-brake.ts": "45c6cf0dedfd82d28259a52225a6f6669cd3852f",
+  "src/emergency-brake.ts": "419ccaf0f89cf3aee80d69bdf9e24c094e8634d6",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
     "4188940db8e267afd802da2d65abb5e42a294822",

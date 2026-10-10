@@ -31,7 +31,7 @@ interface AnalyzedSegment {
  * ambiguous is left to the reviewer.
  *
  * Root destruction is detected with a quote-aware, wrapper-aware shell lexer
- * (see shell-lexer.ts) so that privilege prefixes (`sudo`, `doas`, `env`,
+ * (see shell-scanner.ts) so that privilege prefixes (`sudo`, `doas`, `env`,
  * `command`, …), absolute binary paths (`/bin/rm`, `/usr/bin/rm`), combined or
  * separated flags (`-rf`, `-r -f`, `--recursive --force`), end-of-options
  * (`--`), and command-string forms (`sh -c '…'`, `su -c …`, `ssh host …`,
