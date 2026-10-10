@@ -583,11 +583,8 @@ test("separate processes replace shared isolation files without partial reads", 
       "reviewer-isolation.js",
     ]);
   } finally {
-    for (const child of children) {
-      child.kill();
-      // biome-ignore lint/performance/noAwaitInLoops: kills and reaps each spawned writer process in turn during teardown
-      await child.exited;
-    }
+    for (const child of children) child.kill();
+    await Promise.all(children.map((child) => child.exited));
     await first.cleanup();
   }
 }, 30_000);
