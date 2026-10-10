@@ -82,6 +82,17 @@ export function applyEscalationDisposition(
     };
   }
 
+  return deniedResult(result, reviewerOutcome);
+}
+
+/**
+ * The escalate converted to a deny: the reason, plus each of the listed fields
+ * that is set on the original result.
+ */
+function deniedResult(
+  result: ReviewExecutionResult,
+  reviewerOutcome: ReviewOutcome | undefined,
+): ReviewExecutionResult {
   return {
     kind: "deny",
     reason: result.reason,
