@@ -3,7 +3,6 @@
 import { homedir } from "node:os";
 import { normalize, resolve, sep } from "node:path";
 import { elementAt } from "../element-at.ts";
-import { invariant } from "../invariant.ts";
 import type { ShellToken } from "../shell-token.ts";
 import {
   GIT_MUTATION_SUBCOMMANDS,
@@ -301,40 +300,45 @@ export function classifyPath(
 ): { temporary: boolean; workspace: boolean; external: boolean } {
   if (!target || target.startsWith("&"))
     return { temporary: false, workspace: false, external: false };
-  let temp = false;
-  let external = false;
-  let absolute: string;
-  if (target === "~" || target.startsWith("~/")) {
-    absolute = resolve(homedir(), target.slice(target === "~" ? 1 : 2));
-  } else if (!target.startsWith("/") && !/^[A-Za-z]:[\\/]/.test(target)) {
-    absolute = resolve(directory, target);
-  } else {
-    absolute = normalize(target);
-  }
-  const absolutePath =
-    absolute.startsWith("/") || /^[A-Za-z]:[\\/]/.test(absolute);
-  const within = (root: string): boolean => {
-    const normalizedRoot = normalize(root);
-    return (
-      absolute === normalizedRoot ||
-      absolute.startsWith(`${normalizedRoot}${sep}`)
-    );
-  };
-  if (!absolutePath) {
+  const absolute = absoluteTarget(target, directory);
+  if (!absolute.startsWith("/") && !WINDOWS_ABSOLUTE.test(absolute)) {
     // A path that still has no absolute form cannot be classified.
-    return { temporary: temp, workspace: false, external };
+    return { temporary: false, workspace: false, external: false };
   }
-  const workspace = within(directory) || within(worktree);
-  temp =
+  const workspace =
+    isWithin(absolute, directory) || isWithin(absolute, worktree);
+  const temp = isTemporaryPath(absolute);
+  return { temporary: temp, workspace, external: !workspace && !temp };
+}
+
+const WINDOWS_ABSOLUTE = /^[A-Za-z]:[\\/]/;
+
+function absoluteTarget(target: string, directory: string): string {
+  if (target === "~" || target.startsWith("~/"))
+    return resolve(homedir(), target.slice(target === "~" ? 1 : 2));
+  if (!target.startsWith("/") && !WINDOWS_ABSOLUTE.test(target))
+    return resolve(directory, target);
+  return normalize(target);
+}
+
+function isWithin(absolute: string, root: string): boolean {
+  const normalizedRoot = normalize(root);
+  return (
+    absolute === normalizedRoot ||
+    absolute.startsWith(`${normalizedRoot}${sep}`)
+  );
+}
+
+function isTemporaryPath(absolute: string): boolean {
+  return (
     absolute === "/tmp" ||
     absolute.startsWith("/tmp/") || // NOSONAR(S5443) classifies the target path of a command as temporary; no file is created or used here
     absolute === "/var/tmp" ||
     absolute.startsWith("/var/tmp/") || // NOSONAR(S5443) classifies the target path of a command as temporary; no file is created or used here
     absolute === "/dev/shm" ||
     absolute.startsWith("/dev/shm/") || // NOSONAR(S5443) classifies the target path of a command as temporary; no file is created or used here
-    absolute === "/dev/null";
-  external = !workspace && !temp;
-  return { temporary: temp, workspace, external };
+    absolute === "/dev/null"
+  );
 }
 
 export function destinationFromTokens(tokens: ShellToken[]): string[] {
@@ -358,9 +362,7 @@ export function gitSubcommandOf(cmd: ShellToken[]): {
 } {
   let index = 1;
   while (index < cmd.length) {
-    const token = cmd[index];
-    invariant(token, "cmd[index] is in bounds");
-    const value = token.value;
+    const value = elementAt(cmd, index, "cmd").value;
     if (
       value === "-C" ||
       value === "-c" ||
@@ -394,108 +396,119 @@ export function gitSubcommandMutates(
   const positional = args.filter(
     (value) => value !== "--" && !value.startsWith("-"),
   );
-  const firstPositional = positional[0];
-  if (sub === "branch") {
-    if (args.length === 0) return false;
-    if (
-      args.some((value) =>
-        [
-          "-a",
-          "--all",
-          "-r",
-          "--remotes",
-          "-l",
-          "--list",
-          "-v",
-          "-vv",
-          "--show-current",
-          "--contains",
-          "--no-contains",
-          "--merged",
-          "--no-merged",
-          "--points-at",
-          "--format",
-          "--sort",
-          "--column",
-        ].includes(value),
-      )
-    )
-      return false;
-  }
-  if (sub === "tag") {
-    if (args.length === 0) return false;
-    if (
-      args.some((value) =>
-        [
-          "-l",
-          "--list",
-          "--contains",
-          "--no-contains",
-          "--merged",
-          "--no-merged",
-          "--points-at",
-          "--format",
-          "--sort",
-          "--column",
-        ].includes(value),
-      )
-    )
-      return false;
-  }
-  if (sub === "remote") {
-    return (
-      firstPositional !== undefined &&
-      !["show", "get-url"].includes(firstPositional)
-    );
-  }
-  if (sub === "config") {
-    if (
-      args.some((value) =>
-        [
-          "--list",
-          "-l",
-          "--get",
-          "--get-all",
-          "--get-regexp",
-          "--get-urlmatch",
-          "--show-origin",
-          "--show-scope",
-          "get",
-          "get-all",
-          "get-regexp",
-          "get-urlmatch",
-          "list",
-        ].includes(value),
-      )
-    )
-      return false;
-    return (
-      positional.length >= 2 ||
-      args.some((value) => /(?:add|set|unset|remove|rename)/.test(value))
-    );
-  }
-  if (
-    sub === "worktree" &&
-    (positional.length === 0 || positional[0] === "list")
-  )
-    return false;
-  if (
-    sub === "notes" &&
-    (firstPositional === undefined ||
-      ["list", "show"].includes(firstPositional))
-  )
-    return false;
-  if (
-    sub === "submodule" &&
-    (firstPositional === undefined ||
-      ["status", "summary"].includes(firstPositional))
-  )
-    return false;
-  if (sub === "symbolic-ref") {
-    return args.includes("--delete") || positional.length >= 2;
-  }
-  return true;
+  const mutates = GIT_SUBCOMMAND_FORMS.get(sub);
+  return mutates === undefined ? true : mutates(args, positional);
 }
+
+const BRANCH_LIST_OPTIONS = [
+  "-a",
+  "--all",
+  "-r",
+  "--remotes",
+  "-l",
+  "--list",
+  "-v",
+  "-vv",
+  "--show-current",
+  "--contains",
+  "--no-contains",
+  "--merged",
+  "--no-merged",
+  "--points-at",
+  "--format",
+  "--sort",
+  "--column",
+];
+
+const TAG_LIST_OPTIONS = [
+  "-l",
+  "--list",
+  "--contains",
+  "--no-contains",
+  "--merged",
+  "--no-merged",
+  "--points-at",
+  "--format",
+  "--sort",
+  "--column",
+];
+
+const CONFIG_READ_OPTIONS = [
+  "--list",
+  "-l",
+  "--get",
+  "--get-all",
+  "--get-regexp",
+  "--get-urlmatch",
+  "--show-origin",
+  "--show-scope",
+  "get",
+  "get-all",
+  "get-regexp",
+  "get-urlmatch",
+  "list",
+];
+
+function branchMutates(args: string[]): boolean {
+  return (
+    args.length > 0 &&
+    !args.some((value) => BRANCH_LIST_OPTIONS.includes(value))
+  );
+}
+
+function tagMutates(args: string[]): boolean {
+  return (
+    args.length > 0 && !args.some((value) => TAG_LIST_OPTIONS.includes(value))
+  );
+}
+
+function remoteMutates(_args: string[], positional: string[]): boolean {
+  const first = positional[0];
+  return first !== undefined && !["show", "get-url"].includes(first);
+}
+
+function configMutates(args: string[], positional: string[]): boolean {
+  if (args.some((value) => CONFIG_READ_OPTIONS.includes(value))) return false;
+  return (
+    positional.length >= 2 ||
+    args.some((value) => /(?:add|set|unset|remove|rename)/.test(value))
+  );
+}
+
+function worktreeMutates(_args: string[], positional: string[]): boolean {
+  return !(positional.length === 0 || positional[0] === "list");
+}
+
+function notesMutates(_args: string[], positional: string[]): boolean {
+  const first = positional[0];
+  return !(first === undefined || ["list", "show"].includes(first));
+}
+
+function submoduleMutates(_args: string[], positional: string[]): boolean {
+  const first = positional[0];
+  return !(first === undefined || ["status", "summary"].includes(first));
+}
+
+function symbolicRefMutates(args: string[], positional: string[]): boolean {
+  return args.includes("--delete") || positional.length >= 2;
+}
+
+/** Whether a subcommand with read-only forms mutates, given its arguments
+ *  and their positional subset. Each subcommand has one entry, so no two
+ *  entries can disagree about an invocation. */
+const GIT_SUBCOMMAND_FORMS = new Map<
+  string,
+  (args: string[], positional: string[]) => boolean
+>([
+  ["branch", branchMutates],
+  ["tag", tagMutates],
+  ["remote", remoteMutates],
+  ["config", configMutates],
+  ["worktree", worktreeMutates],
+  ["notes", notesMutates],
+  ["submodule", submoduleMutates],
+  ["symbolic-ref", symbolicRefMutates],
+]);
 
 /** Whether a token value is a static literal path candidate. Dynamic values
  *  (variables, command substitution, globs) never count as credential reads:
