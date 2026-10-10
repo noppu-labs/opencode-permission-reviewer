@@ -2,6 +2,7 @@ import { commandName, splitArguments } from "./brake-arguments.ts";
 import { redirectTargetsBlockDevice } from "./brake-block-device.ts";
 import { commandDestroysDevice } from "./brake-device-tools.ts";
 import { isRootFind } from "./brake-find-root.ts";
+import { commandExportsSecret } from "./brake-network-export.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import type { Redirection } from "./capability/capability-types.ts";
@@ -11,7 +12,6 @@ import {
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
-  shellBasename,
 } from "./shell-lexer.ts";
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
 import type { PermissionRequest } from "./types.ts";
@@ -58,20 +58,6 @@ const ROOT_DESTRUCTION_REGEX = [
   /:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/,
 ];
 
-const SECRET_EXPORT_UTILITIES = new Set([
-  "curl",
-  "wget",
-  "nc",
-  "ncat",
-  "netcat",
-  "socat",
-]);
-
-const SECRET_EXPORT_TARGETS = [
-  /(?:\.ssh\/(?:id_|authorized_keys)|\.aws\/credentials|\.config\/gh\/hosts\.yml)/i,
-  /(?:api[_-]?key|access[_-]?token|private[_-]?key|session[_-]?cookie)/i,
-];
-
 const ROOT_DESTRUCTION_REASON =
   "Emergency brake: command contains unmistakable broad system destruction.";
 const SECRET_EXPORT_REASON =
@@ -105,42 +91,48 @@ function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
   );
 }
 
-/**
- * Obvious credential export through a network utility. Detected structurally —
- * the executable itself must be the network tool — so a quoted mention inside
- * unrelated text (`echo "curl api_key"`, docs, commit messages) does not trip
- * the brake, exactly like the destruction detectors above. Wrapper peeling
- * (`sh -c`, `ssh host …`, `sudo …`) still reaches the real executable.
- */
 function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
-  for (const { effective, redirections } of analyzed) {
-    for (const [commandIndex, tokens] of effective.entries()) {
-      const first = tokens[0];
-      if (first === undefined) continue;
-      if (!SECRET_EXPORT_UTILITIES.has(shellBasename(first.value))) continue;
-      const args = [
-        ...tokens.slice(1).map((token) => token.value),
-        ...(redirections[commandIndex] ?? [])
-          .filter((redirection) => redirection.operator.includes("<"))
-          .map((redirection) => redirection.target),
-      ].join(" ");
-      if (SECRET_EXPORT_TARGETS.some((pattern) => pattern.test(args)))
-        return true;
-    }
+  return analyzed.some(({ effective, redirections }) =>
+    effective.some((command, commandIndex) =>
+      commandExportsSecret(command, redirections[commandIndex] ?? []),
+    ),
+  );
+}
+
+/** The command text under review: the `command` metadata when it is a
+ *  string, else the string patterns joined one per line. */
+function reviewedCommand(request: PermissionRequest): string {
+  return typeof request.metadata.command === "string"
+    ? request.metadata.command
+    : request.patterns
+        .filter((pattern) => typeof pattern === "string")
+        .join("\n");
+}
+
+/** Lexes the command and resolves every segment's effective commands under
+ *  one shared budget, or returns `undefined` when any limit is hit. */
+function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
+  const lex = lexSegmentsBounded(command);
+  if (lex.truncated) return undefined;
+  const budget = newAnalysisBudget();
+  const analyzed: AnalyzedSegment[] = [];
+  for (const segment of lex.segments) {
+    const analysis = analyzeEffectiveCommands(segment, budget);
+    if (analysis.truncated) return undefined;
+    analyzed.push({
+      segment,
+      effective: analysis.commands,
+      redirections: analysis.redirections,
+    });
   }
-  return false;
+  return analyzed;
 }
 
 export function emergencyBrakeReason(
   request: PermissionRequest,
 ): string | undefined {
   if (request.permission !== "bash") return;
-  const command =
-    typeof request.metadata.command === "string"
-      ? request.metadata.command
-      : request.patterns
-          .filter((pattern) => typeof pattern === "string")
-          .join("\n");
+  const command = reviewedCommand(request);
 
   // Resource limits come first and are their own outcome: an input the static
   // analysis cannot finish is rejected for THAT reason, before any lexing or
@@ -152,19 +144,8 @@ export function emergencyBrakeReason(
   // body-free form so quoted payloads cannot trigger false destructive-command
   // matches; dynamic expansions remain visible to the reviewer evidence.
   const { sanitizedCommand } = extractHeredocs(command);
-  const lex = lexSegmentsBounded(sanitizedCommand);
-  if (lex.truncated) return ANALYSIS_LIMIT_REASON;
-  const budget = newAnalysisBudget();
-  const analyzed: AnalyzedSegment[] = [];
-  for (const segment of lex.segments) {
-    const analysis = analyzeEffectiveCommands(segment, budget);
-    if (analysis.truncated) return ANALYSIS_LIMIT_REASON;
-    analyzed.push({
-      segment,
-      effective: analysis.commands,
-      redirections: analysis.redirections,
-    });
-  }
+  const analyzed = analyzeSegments(sanitizedCommand);
+  if (analyzed === undefined) return ANALYSIS_LIMIT_REASON;
 
   if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
   if (isFindRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;

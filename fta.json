@@ -22,7 +22,6 @@
     "review-coordinator-support.ts",
     "review-engine.ts",
     "decision.ts",
-    "emergency-brake.ts",
     "policy-engine.ts",
     "backend.ts",
     "review.ts",
