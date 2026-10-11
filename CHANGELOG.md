@@ -24,6 +24,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (configuration, reviewer models, how it works, safety, supply chain,
   compatibility, development).
 
+### Removed
+
+- The `./tui` entry no longer re-exports `DEFAULT_CONFIG`, `decodeUiStatus`
+  and `ReviewUiState`; it exports only the TUI plugin. Import
+  `decodeUiStatus` and `ReviewUiState` from the main entry, and use
+  `resolveConfig({})` for the default configuration.
+
 ## [2.4.2] - 2026-10-09
 
 ### Added

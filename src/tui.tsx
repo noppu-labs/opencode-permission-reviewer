@@ -177,7 +177,3 @@ const module: { id: string; tui: TuiPlugin; setup: typeof setupTuiV2 } = {
 };
 
 export default module;
-// biome-ignore lint/performance/noBarrelFile: the "./tui" package entry (copied raw to dist/tui/tui.tsx); the named re-exports are its existing public surface
-export { DEFAULT_CONFIG } from "./config.ts";
-export { decodeUiStatus } from "./ui-protocol.ts";
-export { ReviewUiState } from "./ui-state.ts";
