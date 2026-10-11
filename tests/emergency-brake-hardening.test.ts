@@ -213,6 +213,8 @@ describe("device and copy detectors resolve long-option prefixes", () => {
     "cp src /dev/sda --suf x",
     "install src /dev/sda --mo 0644",
     "cp --context src /dev/sda",
+    "cp --backup src /dev/sda",
+    "install --backup src /dev/sda",
   ])(
     "blocks a device or copy command with an abbreviated option, case %#",
     (command) => {
@@ -230,6 +232,8 @@ describe("device and copy detectors resolve long-option prefixes", () => {
     "cp --target /mnt src /dev/sda",
     "cp --suf x src /mnt/copy",
     "cp --sparse always src /mnt/copy",
+    "cp src --sparse /dev/sda",
+    "cp src --no-preserve /dev/sda",
   ])(
     "keeps a non-destructive device or copy command allowed, case %#",
     (command) => {
