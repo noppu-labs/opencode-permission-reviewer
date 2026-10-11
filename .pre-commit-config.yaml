@@ -102,8 +102,8 @@ repos:
         exclude: ^tests/live-fixture/
 
   # TypeScript and JavaScript, from the bun.lock pins through `bun run`, never `bunx` (see
-  # docs/DEVELOPMENT.md, "Where the pins live"). Settings in biome.jsonc. The remaining FTA
-  # exemptions are in fta.json (docs/DEVELOPMENT.md, "the ratchet").
+  # docs/DEVELOPMENT.md, "Where the pins live"). Settings in biome.jsonc (the test directories
+  # have their own limits) and fta.json; see docs/DEVELOPMENT.md, "Test files".
   - repo: local
     hooks:
       - id: biome

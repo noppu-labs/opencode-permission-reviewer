@@ -131,8 +131,8 @@ Every accepted finding carries its reason where it applies:
   are permanent and say why there: `ARG` for `tests/**`, and `E501` for the dataset modules whose
   case strings are verbatim benchmark input.
 - gitleaks: an allowlist entry in `.gitleaks.toml`, scoped by path and exact token.
-- FTA: an `exclude_directories` entry. JSON has no comments, so the reason goes in the pull
-  request description. Don't exempt a source file; fix the finding.
+- FTA: no per-file suppression. Only the test directories are excluded (`exclude_directories`, see
+  "Test files"); fix a finding anywhere else.
 
 Sequential `await` in a loop is flagged by `noAwaitInLoops` outside the test directories. Keep it,
 with a suppression saying why order matters, where the order is the point (spawning processes in
@@ -149,11 +149,10 @@ or a covered case. If that is not enough, don't restructure the file; ask.
 
 ### Exemptions (the ratchet)
 
-The ratchet is empty. Biome's one `overrides` entry covers the two test directories as a whole, not
-a list of files ("Test files"), and every source, script and benchmark library file is under the
-complexity, length and FTA limits. The test directories are exempt from FTA as a whole, so `fta.json` lists
-no files. Don't add to the
-ratchet to get a new change through: fix the finding, or suppress it on the line with a reason.
+The ratchet is empty. Biome's one `overrides` entry and FTA's `exclude_directories` cover the two
+test directories as a whole, not a list of files (see "Test files"), and every source, script and
+benchmark library file is under the complexity, length and FTA limits. Don't add to the ratchet to
+get a new change through: fix the finding, or suppress it on the line with a reason.
 
 ### Ignored audit advisories
 

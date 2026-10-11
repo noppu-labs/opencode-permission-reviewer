@@ -66,6 +66,7 @@
     }
   },
   "overrides": [
+    // Test directories only: see docs/DEVELOPMENT.md, "Test files".
     {
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],
       "linter": {
