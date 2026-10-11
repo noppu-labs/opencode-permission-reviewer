@@ -5,19 +5,17 @@ import {
   assembleEvidence,
   defaultEvidenceProviders,
 } from "../../context/evidence-assembler.ts";
+import type { NormalizedReviewRequest } from "../../core/contracts.ts";
 import type { ReviewEnginePorts } from "../../core/review-engine.ts";
 import type { ReviewEnvelope } from "../../types.ts";
 import { createV2ContextReader } from "./context-reader.ts";
-import type { normalizeV2Permission } from "./permission-codec.ts";
 import type { ReviewRun } from "./server-state.ts";
 import type { ServerRuntime } from "./server-status.ts";
-
-type NormalizedPermission = ReturnType<typeof normalizeV2Permission>;
 
 async function collectEvidence(
   server: ServerRuntime,
   run: ReviewRun,
-  permission: NormalizedPermission,
+  permission: NormalizedReviewRequest,
   client: OpenCodeClient,
 ): Promise<ReviewEnvelope> {
   const envelope = await assembleEvidence(
@@ -42,7 +40,7 @@ async function collectEvidence(
 export function reviewPorts(
   server: ServerRuntime,
   run: ReviewRun,
-  permission: NormalizedPermission,
+  permission: NormalizedReviewRequest,
   client: OpenCodeClient,
 ): ReviewEnginePorts {
   return {

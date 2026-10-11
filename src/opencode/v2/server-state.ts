@@ -6,6 +6,7 @@ import type { Plugin } from "@opencode/plugin";
 import type { PermissionEvaluation } from "@opencode/plugin/promise/permission";
 import { createAuditWriter } from "../../audit.ts";
 import type { loadResolvedConfig } from "../../config/loader.ts";
+import type { NormalizedReviewRequest } from "../../core/contracts.ts";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
 import type { ReviewEnvelope } from "../../types.ts";
@@ -14,7 +15,6 @@ import { ScriptAnalysisRegistry } from "../../verified-ssh-script.ts";
 import type { V2ReviewBackend } from "./backend-factory.ts";
 import type { connectV2Host } from "./connection.ts";
 import { V2AskDecisions } from "./event-codec.ts";
-import type { normalizeV2Permission } from "./permission-codec.ts";
 
 export type Context = Parameters<Plugin.Plugin["setup"]>[0];
 type Config = ReturnType<typeof loadResolvedConfig>;
@@ -37,7 +37,7 @@ export interface ReviewRun {
   readonly attempt: ReviewAttempt;
   readonly budget: number;
   actionSnapshot?: string;
-  normalized?: ReturnType<typeof normalizeV2Permission>;
+  normalized?: NormalizedReviewRequest;
   envelope?: ReviewEnvelope;
 }
 

@@ -2,6 +2,7 @@
 // snapshot and normalise the action, verify its session and the host
 // connection, then run the review engine. Any failure escalates through the
 // failure-safe disposition.
+import type { NormalizedReviewRequest } from "../../core/contracts.ts";
 import { evaluateReview } from "../../core/review-engine.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import { formatFailureReason } from "../../failure-reason.ts";
@@ -14,13 +15,11 @@ import { reviewPorts } from "./server-review-ports.ts";
 import type { ReviewRun } from "./server-state.ts";
 import { publishStatus, type ServerRuntime } from "./server-status.ts";
 
-type NormalizedPermission = ReturnType<typeof normalizeV2Permission>;
-
 /** Snapshots and normalises the pending action with its exact tool input. */
 function beginReview(
   server: ServerRuntime,
   run: ReviewRun,
-): NormalizedPermission {
+): NormalizedReviewRequest {
   const { input } = run;
   const source = input.source;
   const exact = source
