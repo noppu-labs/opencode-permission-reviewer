@@ -6,6 +6,22 @@ import type { ShellToken } from "./shell-token.ts";
 
 const EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 
+/** Options find accepts before its paths (`-D` and `-f` take a value and are
+ *  handled apart; `-O<level>` is matched by prefix). */
+const LEADING_OPTIONS = new Set([
+  "-H",
+  "-L",
+  "-P",
+  "-E",
+  "-X",
+  "-d",
+  "-s",
+  "-x",
+]);
+
+/** Non-option words that start the expression and end the paths. */
+const EXPRESSION_STARTS = new Set(["!", "("]);
+
 /**
  * `find / … -delete` and `find / … -exec rm -rf {} …` reach root through the
  * find expression rather than through a literal `rm` operand, so the rm lexer
@@ -23,51 +39,72 @@ interface FindParts {
   expression: readonly ShellToken[];
 }
 
+interface LeadingOptions {
+  /** The index of the first word after the leading options and any `--`. */
+  next: number;
+  /** The index of the first expression primary seen before any path. */
+  primary: number | undefined;
+  /** The `-f` values, which are search paths too. */
+  paths: ShellToken[];
+}
+
 /** Splits a find command line into its search paths and its expression. The
- *  paths start at the first operand after the leading options (`-D` takes a
- *  value) and run up to the first word that starts the expression. When an
- *  expression option such as `-maxdepth` already came first, find reads no
- *  paths after it, so only that first operand is a path. */
+ *  paths are the `-f` values plus every word from the first operand up to the
+ *  first word that starts the expression. When an expression primary such as
+ *  `-maxdepth` comes first, find rejects the command line, and only the first
+ *  operand is still checked. */
 function splitFind(command: readonly ShellToken[]): FindParts {
-  const first = firstOperandIndex(command);
-  if (first === undefined) return { paths: [], expression: [] };
-  const expressionFirst = command
-    .slice(1, first)
-    .some((token) => isOptionWord(token.value) && !isGlobalOption(token.value));
-  let end = first + 1;
+  const { next, primary, paths } = skipLeadingOptions(command);
+  if (next >= command.length)
+    return { paths, expression: command.slice(primary ?? next) };
+  let end = primary === undefined ? next : next + 1;
   while (
-    !expressionFirst &&
+    primary === undefined &&
     end < command.length &&
     !startsExpression(elementAt(command, end, "command").value)
   )
     end += 1;
-  return { paths: command.slice(first, end), expression: command.slice(end) };
+  paths.push(...command.slice(next, end));
+  return { paths, expression: command.slice(end) };
 }
 
-function firstOperandIndex(command: readonly ShellToken[]): number | undefined {
-  for (let index = 1; index < command.length; index += 1) {
-    const value = elementAt(command, index, "command").value;
-    if (value === "-D") index += 1;
-    else if (!isOptionWord(value)) return index;
+/** Skips the options that precede the paths; `--` ends them. */
+function skipLeadingOptions(command: readonly ShellToken[]): LeadingOptions {
+  const leading: LeadingOptions = { next: 1, primary: undefined, paths: [] };
+  while (leading.next < command.length) {
+    const value = elementAt(command, leading.next, "command").value;
+    if (value === "--") {
+      leading.next += 1;
+      break;
+    }
+    if (!isOptionWord(value)) break;
+    skipLeadingOption(command, leading, value);
   }
-  return undefined;
+  return leading;
 }
 
-/** The options find accepts before its paths: `-H`, `-L`, `-P`, `-D` and
- *  `-O<level>`. */
-function isGlobalOption(value: string): boolean {
-  return (
-    value === "-H" ||
-    value === "-L" ||
-    value === "-P" ||
-    value === "-D" ||
-    value.startsWith("-O")
-  );
+/** `-D` takes a value and `-f` takes a path (collected, as long as no
+ *  expression primary came first); any other non-leading option is a primary. */
+function skipLeadingOption(
+  command: readonly ShellToken[],
+  leading: LeadingOptions,
+  value: string,
+): void {
+  if (value === "-D") leading.next += 1;
+  else if (value === "-f" && leading.primary === undefined) {
+    const path = command[leading.next + 1];
+    if (path !== undefined) leading.paths.push(path);
+    leading.next += 1;
+  } else if (!isLeadingOption(value)) leading.primary ??= leading.next;
+  leading.next += 1;
 }
 
-/** A word that starts the expression: an option word, `!`, `(`, `)` or `,`. */
+function isLeadingOption(value: string): boolean {
+  return LEADING_OPTIONS.has(value) || value.startsWith("-O");
+}
+
 function startsExpression(value: string): boolean {
-  return isOptionWord(value) || ["!", "(", ")", ","].includes(value);
+  return isOptionWord(value) || EXPRESSION_STARTS.has(value);
 }
 
 function expressionDeletes(expression: readonly ShellToken[]): boolean {

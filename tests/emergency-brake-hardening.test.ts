@@ -125,6 +125,15 @@ describe("find checks every search path", () => {
     "find /srv / -exec rm -rf {} +",
     "sudo find /tmp / -delete",
     "sh -c 'find /tmp / -delete'",
+    "find -- /tmp / -delete",
+    "find -L -- /tmp / -delete",
+    "find -d /tmp / -delete",
+    "find -s /tmp / -delete",
+    "find -x /tmp / -delete",
+    "find -f /tmp / -delete",
+    "find -f / -delete",
+    "find /tmp , / -delete",
+    "find /tmp ')' / -delete",
   ])("blocks when any search path is the root, case %#", (command) => {
     expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
       blocked,
