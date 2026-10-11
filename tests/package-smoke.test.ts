@@ -4,6 +4,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -320,7 +321,7 @@ describe("npm install dedupe shape", () => {
   }, 120_000);
 
   test("an npm install of the tarball keeps a single solid-js runtime in the tree", async () => {
-    installDir = mkdtempSync(join(tmpdir(), "reviewer-install-"));
+    installDir = realpathSync(mkdtempSync(join(tmpdir(), "reviewer-install-")));
     // Mirror opencode's installer (arborist reify with ignoreScripts).
     const install = Bun.spawnSync({
       cmd: [
@@ -398,7 +399,9 @@ describe("npm install dedupe shape", () => {
     // tools, and the reachable native/platform set. Overrides in this
     // repository's package.json do not follow the tarball, so only what is
     // asserted here (or in npm audit) guards the consumer tree.
-    installDir ??= mkdtempSync(join(tmpdir(), "reviewer-install-"));
+    installDir ??= realpathSync(
+      mkdtempSync(join(tmpdir(), "reviewer-install-")),
+    );
     if (!existsSync(join(installDir, "node_modules", PACKAGE_NAME))) {
       const install = Bun.spawnSync({
         cmd: [
