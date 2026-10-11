@@ -251,9 +251,9 @@ describe("assembleEvidence bash capability", () => {
     expect(envelope.evidenceCompleteness?.capability).toBe(true);
   });
 
-  test("a blank command is not parsed", async () => {
+  test("a blank command without patterns is not parsed", async () => {
     const { envelope } = await assemble(
-      request({ metadata: { command: "  \n " } }),
+      request({ metadata: { command: "  \n " }, patterns: [] }),
     );
     expect(shape(envelope)).not.toContain("parsedCommand");
     expect(envelope.evidenceCompleteness?.capability).toBe(false);

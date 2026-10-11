@@ -454,3 +454,30 @@ describe("watch runs its command through a shell", () => {
     ).toBeUndefined();
   });
 });
+
+describe("a blank command metadata is reviewed through the patterns", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each(["", "   "])(
+    "a destructive pattern is blocked, case %#",
+    (command) => {
+      expect(
+        emergencyBrakeReason(
+          request({ metadata: { command }, patterns: ["rm -rf /"] }),
+        ),
+      ).toBe(blocked);
+    },
+  );
+
+  test.each(["", "   "])(
+    "harmless patterns stay allowed, case %#",
+    (command) => {
+      expect(
+        emergencyBrakeReason(
+          request({ metadata: { command }, patterns: ["ls -la", "echo ok"] }),
+        ),
+      ).toBeUndefined();
+    },
+  );
+});

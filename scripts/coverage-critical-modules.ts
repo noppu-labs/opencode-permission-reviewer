@@ -12,6 +12,7 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/config-rule-condition.ts",
   "src/policy/profile-templates.ts",
   "src/emergency-brake.ts",
+  "src/reviewed-command.ts",
   "src/brake-arguments.ts",
   "src/brake-block-device.ts",
   "src/brake-device-copy.ts",

@@ -7,6 +7,7 @@ import type {
 } from "../capability/capability-types.ts";
 import { parseCommand } from "../capability/command-parser.ts";
 import { REVIEWER_PROMPT_VERSION } from "../policy.ts";
+import { reviewedCommand } from "../reviewed-command.ts";
 import type { PermissionRequest } from "../types.ts";
 import { collectVerifiedSshScript } from "../verified-script-evidence.ts";
 import type { VerifiedScriptCommand } from "../verified-ssh-command.ts";
@@ -52,10 +53,7 @@ export function analyzeBashCommand(
   capability?: CapabilityAssessment | undefined;
 } {
   if (request.permission !== "bash") return {};
-  const command =
-    typeof request.metadata.command === "string"
-      ? request.metadata.command
-      : request.patterns.filter((p) => typeof p === "string").join("\n");
+  const command = reviewedCommand(request);
   if (!command.trim()) return {};
   let parsed: ParsedCommand | undefined;
   try {

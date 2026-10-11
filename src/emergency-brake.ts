@@ -10,6 +10,7 @@ import { hasRmFlags } from "./brake-rm-flags.ts";
 import { isLiveRootGlob, resolvesToRoot } from "./brake-root-target.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
+import { reviewedCommand } from "./reviewed-command.ts";
 import { analyzeSegmentRedirections } from "./shell-effective-commands.ts";
 import {
   lexSegmentsBounded,
@@ -109,16 +110,6 @@ function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
       commandExportsSecret(command, redirections[commandIndex] ?? []),
     ),
   );
-}
-
-/** The command text under review: the `command` metadata when it is a
- *  string, else the string patterns joined one per line. */
-function reviewedCommand(request: PermissionRequest): string {
-  return typeof request.metadata.command === "string"
-    ? request.metadata.command
-    : request.patterns
-        .filter((pattern) => typeof pattern === "string")
-        .join("\n");
 }
 
 /** Lexes the command and resolves every segment's effective commands under
