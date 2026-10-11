@@ -27,6 +27,14 @@ function holdMessages(client: MockClient): HeldCalls<MessagesResolver> {
   return calls;
 }
 
+/** Answers every held call with the same value, in arrival order. */
+function releaseAll<V>(
+  resolvers: readonly ((value: V) => void)[],
+  value: V,
+): void {
+  for (const resolve of resolvers) resolve(value);
+}
+
 // /tmp/opencode is one of the plugin's approved enrichment roots. It exists on
 // machines that run OpenCode, but not on a fresh CI runner or a clean clone.
 beforeAll(async () => {
@@ -42,8 +50,9 @@ describe("runtime decisions", () => {
     // Let the reviewer reach the model call, then have the human reject.
     await held(1);
     manualReply(harness, "per_1", "reject");
-    for (const resolve of resolvers)
-      resolve({ data: { info: { structured: decision("allow") } } });
+    releaseAll(resolvers, {
+      data: { info: { structured: decision("allow") } },
+    });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     expect(phases(client)).toEqual(["reviewing"]);
@@ -59,8 +68,7 @@ describe("runtime decisions", () => {
     harness.runtime.handle(request());
     await held(1);
     manualReply(harness, "per_1", "once");
-    for (const resolve of resolvers)
-      resolve({ data: { info: { structured: decision("deny") } } });
+    releaseAll(resolvers, { data: { info: { structured: decision("deny") } } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     expect(phases(client)).toEqual(["reviewing"]);
@@ -79,8 +87,9 @@ describe("runtime decisions", () => {
     // Evidence collection time varies by runner, so wait for both model calls.
     await held(2);
     manualReply(harness, "per_2", "reject");
-    for (const resolve of resolvers)
-      resolve({ data: { info: { structured: decision("allow") } } });
+    releaseAll(resolvers, {
+      data: { info: { structured: decision("allow") } },
+    });
     await harness.runtime.waitForIdle();
     // The sibling review that was NOT answered manually completes normally.
     expect(
@@ -108,10 +117,9 @@ describe("runtime decisions", () => {
     await held(1);
     manualReply(harness, "per_1", "reject");
     // Low-confidence allow becomes an escalate; the manual reply must still win.
-    for (const resolve of resolvers)
-      resolve({
-        data: { info: { structured: decision("allow", { confidence: 0.2 }) } },
-      });
+    releaseAll(resolvers, {
+      data: { info: { structured: decision("allow", { confidence: 0.2 }) } },
+    });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     expect(phases(client)).toEqual(["reviewing"]);
@@ -148,7 +156,7 @@ describe("runtime decisions", () => {
     await held(1);
     // The human answers while the transcript fetch is still pending.
     manualReply(harness, "per_1", "reject");
-    for (const resolve of msgResolvers) resolve({ data: client.messageData });
+    releaseAll(msgResolvers, { data: client.messageData });
     await harness.runtime.waitForIdle();
     expect(client.creates).toHaveLength(0);
     expect(client.prompts).toHaveLength(0);
@@ -164,8 +172,7 @@ describe("runtime decisions", () => {
     await held(1);
     manualReply(harness, "per_1", "reject");
     // Now the transcript fetch fails; the error path must NOT re-emit "manual".
-    for (const resolve of msgResolvers)
-      resolve({ error: { message: "database unavailable" } });
+    releaseAll(msgResolvers, { error: { message: "database unavailable" } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     expect(phases(client)).toEqual(["reviewing"]);

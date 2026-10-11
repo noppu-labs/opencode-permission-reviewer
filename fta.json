@@ -42,7 +42,6 @@
     "package-smoke.test.ts",
     "policy-engine.test.ts",
     "redact.test.ts",
-    "runtime-manual-replies.test.ts",
     "shell-lexer.test.ts",
     "stress.test.ts",
     "system-one-transport.test.ts",
