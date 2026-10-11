@@ -77,20 +77,5 @@
         "organizeImports": "on"
       }
     }
-  },
-  // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
-  // the stacked PR that fixes those files and deletes the entry.
-  "overrides": [
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 1 file.
-    {
-      "includes": ["benchmarks/permission-reviewer/tests/opencode-v1.test.mjs"],
-      "linter": {
-        "rules": {
-          "complexity": {
-            "noExcessiveCognitiveComplexity": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }

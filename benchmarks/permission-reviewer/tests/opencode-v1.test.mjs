@@ -17,6 +17,52 @@ const model = {
 };
 process.env.PRB_TEST_HOST_PASSWORD = "synthetic-local-password";
 
+const reply = (response, [status, body]) => {
+  response.statusCode = status;
+  response.end(body);
+};
+const accepted = () => [200, "true"];
+/** [method, URL prefix, answer] rows for one session, tried in order; the first match answers. */
+const hostRoutes = (sessionID, { tokens, outcome, remove, dispose }) => [
+  ["POST", "/session?", () => [200, JSON.stringify({ id: sessionID })]],
+  [
+    "POST",
+    `/session/${sessionID}/message?`,
+    () => [
+      200,
+      JSON.stringify({
+        info: { providerID: "xai", modelID: "grok-4.6", tokens },
+        parts: [{ type: "text", text: JSON.stringify(decision(outcome)) }],
+      }),
+    ],
+  ],
+  ["DELETE", "", remove],
+  ["POST", "/instance/dispose?", dispose],
+];
+const answer = (routes, request) => {
+  const route = routes.find(
+    ([method, prefix]) =>
+      request.method === method && request.url.startsWith(prefix),
+  );
+  return route ? route[2]() : [404, "{}"];
+};
+/** A synthetic OpenCode host serving one session; `remove` and `dispose` answer its cleanup calls. */
+function fakeHost(
+  sessionID,
+  { tokens, outcome, remove = accepted, dispose = accepted, record },
+) {
+  const routes = hostRoutes(sessionID, { tokens, outcome, remove, dispose });
+  return createServer(async (request, response) => {
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    record(request, chunks);
+    response.setHeader("Content-Type", "application/json");
+    reply(response, answer(routes, request));
+  });
+}
+const methodAndUrl = (seen) => (request) =>
+  seen.push({ method: request.method, url: request.url });
+
 test("OpenCode subscription configuration requires loopback, an explicit variant, and no API key", () => {
   assert.equal(validateModel(model).variant, "low");
   assert.throws(
@@ -43,46 +89,18 @@ test("OpenCode subscription configuration requires loopback, an explicit variant
 
 test("OpenCode host receives the exact prompt with low variant and no operational tools", async () => {
   const seen = [];
-  const server = createServer(async (request, response) => {
-    const chunks = [];
-    for await (const chunk of request) chunks.push(chunk);
-    const body = chunks.length
-      ? JSON.parse(Buffer.concat(chunks).toString("utf8"))
-      : null;
-    seen.push({
-      method: request.method,
-      url: request.url,
-      body,
-      authorization: request.headers.authorization,
-    });
-    response.setHeader("Content-Type", "application/json");
-    if (request.method === "POST" && request.url.startsWith("/session?")) {
-      response.end(JSON.stringify({ id: "ses_synthetic" }));
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/session/ses_synthetic/message?")
-    ) {
-      response.end(
-        JSON.stringify({
-          info: {
-            providerID: "xai",
-            modelID: "grok-4.6",
-            tokens: { input: 60, output: 20, reasoning: 5 },
-          },
-          parts: [{ type: "text", text: JSON.stringify(decision("deny")) }],
-        }),
-      );
-    } else if (request.method === "DELETE") {
-      response.end("true");
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/instance/dispose?")
-    ) {
-      response.end("true");
-    } else {
-      response.statusCode = 404;
-      response.end("{}");
-    }
+  const server = fakeHost("ses_synthetic", {
+    tokens: { input: 60, output: 20, reasoning: 5 },
+    outcome: "deny",
+    record: (request, chunks) =>
+      seen.push({
+        method: request.method,
+        url: request.url,
+        body: chunks.length
+          ? JSON.parse(Buffer.concat(chunks).toString("utf8"))
+          : null,
+        authorization: request.headers.authorization,
+      }),
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
@@ -158,39 +176,11 @@ test("OpenCode transport errors request a stop rather than exhausting a subscrip
 
 test("OpenCode instance disposal still runs when session deletion fails", async () => {
   const seen = [];
-  const server = createServer(async (request, response) => {
-    const chunks = [];
-    for await (const chunk of request) chunks.push(chunk);
-    seen.push({ method: request.method, url: request.url });
-    response.setHeader("Content-Type", "application/json");
-    if (request.method === "POST" && request.url.startsWith("/session?")) {
-      response.end(JSON.stringify({ id: "ses_cleanup" }));
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/session/ses_cleanup/message?")
-    ) {
-      response.end(
-        JSON.stringify({
-          info: {
-            providerID: "xai",
-            modelID: "grok-4.6",
-            tokens: { input: 1, output: 1, reasoning: 0 },
-          },
-          parts: [{ type: "text", text: JSON.stringify(decision("allow")) }],
-        }),
-      );
-    } else if (request.method === "DELETE") {
-      response.statusCode = 500;
-      response.end("{}");
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/instance/dispose?")
-    ) {
-      response.end("true");
-    } else {
-      response.statusCode = 404;
-      response.end("{}");
-    }
+  const server = fakeHost("ses_cleanup", {
+    tokens: { input: 1, output: 1, reasoning: 0 },
+    outcome: "allow",
+    remove: () => [500, "{}"],
+    record: methodAndUrl(seen),
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
@@ -210,39 +200,11 @@ test("OpenCode instance disposal still runs when session deletion fails", async 
 
 test("OpenCode instance disposal failure requests a global safety stop", async () => {
   const seen = [];
-  const server = createServer(async (request, response) => {
-    const chunks = [];
-    for await (const chunk of request) chunks.push(chunk);
-    seen.push({ method: request.method, url: request.url });
-    response.setHeader("Content-Type", "application/json");
-    if (request.method === "POST" && request.url.startsWith("/session?")) {
-      response.end(JSON.stringify({ id: "ses_disposal_failure" }));
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/session/ses_disposal_failure/message?")
-    ) {
-      response.end(
-        JSON.stringify({
-          info: {
-            providerID: "xai",
-            modelID: "grok-4.6",
-            tokens: { input: 1, output: 1, reasoning: 0 },
-          },
-          parts: [{ type: "text", text: JSON.stringify(decision("allow")) }],
-        }),
-      );
-    } else if (request.method === "DELETE") {
-      response.end("true");
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/instance/dispose?")
-    ) {
-      response.statusCode = 500;
-      response.end("{}");
-    } else {
-      response.statusCode = 404;
-      response.end("{}");
-    }
+  const server = fakeHost("ses_disposal_failure", {
+    tokens: { input: 1, output: 1, reasoning: 0 },
+    outcome: "allow",
+    dispose: () => [500, "{}"],
+    record: methodAndUrl(seen),
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
@@ -272,42 +234,14 @@ test("OpenCode instance disposal failure requests a global safety stop", async (
 test("OpenCode instance disposal retries transient failures without stopping the run", async () => {
   const seen = [];
   let disposalAttempts = 0;
-  const server = createServer(async (request, response) => {
-    const chunks = [];
-    for await (const chunk of request) chunks.push(chunk);
-    seen.push({ method: request.method, url: request.url });
-    response.setHeader("Content-Type", "application/json");
-    if (request.method === "POST" && request.url.startsWith("/session?")) {
-      response.end(JSON.stringify({ id: "ses_disposal_retry" }));
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/session/ses_disposal_retry/message?")
-    ) {
-      response.end(
-        JSON.stringify({
-          info: {
-            providerID: "xai",
-            modelID: "grok-4.6",
-            tokens: { input: 1, output: 1, reasoning: 0 },
-          },
-          parts: [{ type: "text", text: JSON.stringify(decision("allow")) }],
-        }),
-      );
-    } else if (request.method === "DELETE") {
-      response.end("true");
-    } else if (
-      request.method === "POST" &&
-      request.url.startsWith("/instance/dispose?")
-    ) {
+  const server = fakeHost("ses_disposal_retry", {
+    tokens: { input: 1, output: 1, reasoning: 0 },
+    outcome: "allow",
+    dispose: () => {
       disposalAttempts++;
-      if (disposalAttempts < 3) {
-        response.statusCode = 503;
-        response.end("{}");
-      } else response.end("true");
-    } else {
-      response.statusCode = 404;
-      response.end("{}");
-    }
+      return disposalAttempts < 3 ? [503, "{}"] : [200, "true"];
+    },
+    record: methodAndUrl(seen),
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
   try {
