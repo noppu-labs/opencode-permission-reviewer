@@ -8,6 +8,8 @@ export interface HostEventStream {
     signal: AbortSignal;
   }) => AsyncGenerator<OpenCodeEvent>;
   push: (event: OpenCodeEvent) => void;
+  /** Events pushed but not yet handed to the subscriber. */
+  queued: () => number;
   end: () => void;
   fail: (error: Error) => void;
 }
@@ -48,6 +50,7 @@ export function hostEventStream(): HostEventStream {
       events.push(event);
       resume?.();
     },
+    queued: (): number => events.length,
     end: (): void => {
       ended = true;
       resume?.();

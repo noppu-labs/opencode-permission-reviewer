@@ -5,6 +5,7 @@ import type {
   ReviewerConfig,
 } from "../src/types.ts";
 import { config, decision, defined, systemOneScores } from "./helpers.ts";
+import { until } from "./poll-until.ts";
 import { lifecycle } from "./v2-server-fixture.ts";
 
 const { start, held, release } = lifecycle();
@@ -281,7 +282,15 @@ test.each([
       result: denied,
     });
     await harness.evaluate(harness.input());
-    await Bun.sleep(5);
+    await until(
+      async () =>
+        (
+          (await harness.rpc.snapshot()).reviews[0] as
+            | { phase?: string }
+            | undefined
+        )?.phase !== "reviewing",
+      "the final UI status",
+    );
     const [status] = (await harness.rpc.snapshot()).reviews;
     expect(status).toMatchObject({
       phase: "denied",

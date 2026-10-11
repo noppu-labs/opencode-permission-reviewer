@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test";
+import { until } from "./poll-until.ts";
 import {
   type Input,
   lifecycle,
@@ -92,7 +93,10 @@ test.each([
       data: { sessionID: "ses_other" },
       ...located,
     });
-    await Bun.sleep(5);
+    await until(
+      () => harness.queuedEvents() === 0,
+      "the server to take every host event",
+    );
     expect(input.effect).toBe("ask");
     harness.send(cancel);
     await work;
@@ -107,7 +111,10 @@ test("v2 host event failures are logged and later reviews are denied with the re
   const errors = quietErrors();
   const harness = await start();
   harness.failEvents(new Error("stream reset"));
-  await Bun.sleep(5);
+  await until(
+    () => errors.mock.calls.length > 0,
+    "the subscription failure log",
+  );
   expect(errors).toHaveBeenCalledWith(
     "[opencode-permission-reviewer] Host event subscription failed",
     "Error: stream reset",
@@ -130,16 +137,21 @@ test.each([false, true])(
   "v2 UI publication failures are logged only when debug is %p",
   async (debug) => {
     const errors = quietErrors();
+    const phases: string[] = [];
     const harness = await start({
       config: { debug },
-      emit: async (): Promise<void> => {
+      emit: async (_name: string, payload: unknown): Promise<void> => {
+        phases.push((payload as { status: { phase: string } }).status.phase);
         throw new Error("UI gone");
       },
     });
     const input = harness.input();
     await harness.evaluate(input);
     expect(input.effect).toBe("allow");
-    await Bun.sleep(5);
+    await until(
+      () => phases.includes("approved"),
+      "the final UI status publication",
+    );
     const logged = errors.mock.calls.some(
       ([message]) =>
         message ===

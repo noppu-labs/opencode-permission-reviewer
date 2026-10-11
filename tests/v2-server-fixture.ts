@@ -35,6 +35,7 @@ export interface ServerFixture {
   endEvents: () => void;
   event: (sessionID: string, location?: string) => void;
   send: (event: unknown) => void;
+  queuedEvents: () => number;
   failEvents: (error: Error) => void;
   tool: (name: string, event: unknown) => void;
   dispose: () => Promise<void>;
@@ -183,6 +184,7 @@ export async function fixture(
         location: { directory: location },
       } as OpenCodeEvent),
     send: (event: unknown): void => events.push(event as OpenCodeEvent),
+    queuedEvents: events.queued,
     failEvents: events.fail,
     tool: (name: string, event: unknown): void => toolHooks.get(name)?.(event),
     dispose,
