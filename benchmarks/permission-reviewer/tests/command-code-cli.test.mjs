@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { requestCommandCodeCli } from "../lib/command-code-cli.mjs";
-import { validateModel } from "../lib/providers.mjs";
+import { validateModel } from "../lib/model-validation.mjs";
 
 const model = {
   id: "deepseek-high",

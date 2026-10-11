@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { tmpdir } from "node:os";
 import test from "node:test";
+import { validateModel } from "../lib/model-validation.mjs";
 import { requestOpenCodeV1 } from "../lib/opencode-v1.mjs";
-import { validateModel } from "../lib/providers.mjs";
 import { decision } from "./helpers.mjs";
 
 const model = {

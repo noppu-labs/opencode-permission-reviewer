@@ -1,12 +1,10 @@
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import test from "node:test";
-import {
-  buildBody,
-  extractResponse,
-  requestCompletion,
-  validateModel,
-} from "../lib/providers.mjs";
+import { buildBody } from "../lib/chat-body.mjs";
+import { extractResponse } from "../lib/chat-response.mjs";
+import { validateModel } from "../lib/model-validation.mjs";
+import { requestCompletion } from "../lib/providers.mjs";
 import { decision, model } from "./helpers.mjs";
 
 const prepared = {

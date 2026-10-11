@@ -1,6 +1,7 @@
 import { requestCommandCodeCli } from "./command-code-cli.mjs";
+import { validateModel } from "./model-validation.mjs";
 import { requestOpenCodeV1 } from "./opencode-v1.mjs";
-import { requestCompletion, validateModel } from "./providers.mjs";
+import { requestCompletion } from "./providers.mjs";
 import { requestSystemOne } from "./system-one.mjs";
 import { assert } from "./util.mjs";
 

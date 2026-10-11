@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { buildBody, requestCompletion } from "../lib/providers.mjs";
+import { buildBody } from "../lib/chat-body.mjs";
+import { requestCompletion } from "../lib/providers.mjs";
 import { decision, model } from "./helpers.mjs";
 import { inSequence, withEnv } from "./run-fixtures.mjs";
 

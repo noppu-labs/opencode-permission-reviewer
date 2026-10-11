@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { extractResponse } from "../lib/providers.mjs";
+import { extractResponse } from "../lib/chat-response.mjs";
 
 const reply = (message, finish_reason = "stop") => ({
   choices: [{ finish_reason, message }],

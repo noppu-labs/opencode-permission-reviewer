@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateModel } from "../lib/providers.mjs";
+import { validateModel } from "../lib/model-validation.mjs";
 
 const chat = {
   id: "chat",

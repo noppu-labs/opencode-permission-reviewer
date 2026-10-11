@@ -14,7 +14,6 @@
     "metrics.mjs",
     "opencode-v1.mjs",
     "plugin.mjs",
-    "providers.mjs",
     "publication.mjs",
     "util.mjs",
     "command-code-cli.test.mjs",
