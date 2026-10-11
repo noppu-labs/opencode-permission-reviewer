@@ -588,6 +588,9 @@ describe("find exec commands share the analysis budget", () => {
 });
 
 describe("partition tools read their short options", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
   test.each([
     "sfdisk -W always /dev/sda",
     "sfdisk -w always /dev/sda",
@@ -596,9 +599,9 @@ describe("partition tools read their short options", () => {
     "sfdisk -N 1 -w always /dev/sda",
     "sudo sfdisk -w always /dev/sda",
   ])("blocks a partition table rewrite, case %#", (command) => {
-    expect(
-      emergencyBrakeReason(request({ metadata: { command } })),
-    ).toBeString();
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
   });
 
   test.each([
@@ -615,6 +618,9 @@ describe("partition tools read their short options", () => {
 });
 
 describe("sgdisk clears the partition table with its clear option", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
   test.each([
     "sgdisk -o /dev/sda",
     "sgdisk --clear /dev/sda",
@@ -622,9 +628,9 @@ describe("sgdisk clears the partition table with its clear option", () => {
     "sgdisk -og /dev/sda",
     "sudo sgdisk -o /dev/nvme0n1",
   ])("blocks a new empty partition table, case %#", (command) => {
-    expect(
-      emergencyBrakeReason(request({ metadata: { command } })),
-    ).toBeString();
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
   });
 
   test.each([
