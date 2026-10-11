@@ -9,6 +9,7 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/policy.ts",
   "src/policy/policy-engine.ts",
   "src/policy/policy-conditions.ts",
+  "src/config-rule-condition.ts",
   "src/policy/profile-templates.ts",
   "src/emergency-brake.ts",
   "src/brake-arguments.ts",
