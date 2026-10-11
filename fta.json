@@ -16,7 +16,6 @@
     "plugin.mjs",
     "providers.mjs",
     "publication.mjs",
-    "run.mjs",
     "util.mjs",
     "command-code-cli.test.mjs",
     "live-opencode-v1.mjs",

@@ -8,7 +8,8 @@ import { compareRows, printSummary, summarize } from "./lib/metrics.mjs";
 import { openPlugin } from "./lib/plugin.mjs";
 import { validateModel } from "./lib/providers.mjs";
 import { publicReport } from "./lib/publication.mjs";
-import { rowBase, runBenchmark } from "./lib/run.mjs";
+import { runBenchmark } from "./lib/run.mjs";
+import { rowBase } from "./lib/run-rows.mjs";
 import { systemOneDifficultSubset } from "./lib/subsets.mjs";
 import {
   assert,
