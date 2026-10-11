@@ -10,12 +10,13 @@ import { hasRmFlags } from "./brake-rm-flags.ts";
 import { isLiveRootGlob, resolvesToRoot } from "./brake-root-target.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
-import { analyzeCommandStrings } from "./shell-effective-commands.ts";
+import { analyzeSegmentRedirections } from "./shell-effective-commands.ts";
 import {
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
 } from "./shell-lexer.ts";
+import type { ShellRedirection } from "./shell-redirections.ts";
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
 import type { PermissionRequest } from "./types.ts";
 
@@ -25,8 +26,9 @@ interface AnalyzedSegment {
   segment: ShellSegment;
   effective: ShellToken[][];
   redirections: Redirection[][];
-  /** Redirections of the segments inside its command strings. */
-  commandStringRedirections: Redirection[];
+  /** Redirections the segment and the segments of its command strings
+   *  carry, including those of a segment without a command. */
+  segmentRedirections: ShellRedirection[];
 }
 
 /*
@@ -92,9 +94,9 @@ function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
 
 function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
   return analyzed.some(
-    ({ segment, effective, redirections, commandStringRedirections }) =>
+    ({ segment, effective, redirections, segmentRedirections }) =>
       redirectTargetsBlockDevice(segment.tokens) ||
-      commandStringRedirections.some(redirectionWritesBlockDevice) ||
+      segmentRedirections.some(redirectionWritesBlockDevice) ||
       effective.some((command, commandIndex) =>
         commandDestroysDevice(command, redirections[commandIndex] ?? []),
       ),
@@ -127,13 +129,13 @@ function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
   const budget = newAnalysisBudget();
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
-    const analysis = analyzeCommandStrings(segment, budget);
+    const analysis = analyzeSegmentRedirections(segment, budget);
     if (analysis.truncated) return undefined;
     analyzed.push({
       segment,
       effective: analysis.commands,
       redirections: analysis.redirections,
-      commandStringRedirections: analysis.commandStringRedirections,
+      segmentRedirections: analysis.segmentRedirections,
     });
   }
   return analyzed;

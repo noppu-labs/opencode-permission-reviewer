@@ -43,38 +43,38 @@ export function analyzeEffectiveCommands(
   segment: ShellSegment,
   budget?: AnalysisBudget,
 ): EffectiveCommandsAnalysis {
-  const { commands, redirections, truncated } = analyzeCommandStrings(
+  const { commands, redirections, truncated } = analyzeSegmentRedirections(
     segment,
     budget,
   );
   return { commands, redirections, truncated };
 }
 
-/** The effective-command analysis plus the redirections that the segments of
- *  re-entered command strings carry themselves, whether or not those segments
- *  yield an effective command (`sh -c 'exec > file'` yields none). */
-interface CommandStringsAnalysis extends EffectiveCommandsAnalysis {
-  commandStringRedirections: ShellRedirection[];
+/** The effective-command analysis plus the redirections that the segment and
+ *  every segment of its command strings carry themselves, whether or not
+ *  those segments yield an effective command (`exec > file` yields none). */
+interface SegmentRedirectionsAnalysis extends EffectiveCommandsAnalysis {
+  segmentRedirections: ShellRedirection[];
 }
 
 /** `analyzeEffectiveCommands` from the same single walk and budget, with
- *  `commandStringRedirections` as well. */
-export function analyzeCommandStrings(
+ *  `segmentRedirections` as well. */
+export function analyzeSegmentRedirections(
   segment: ShellSegment,
   budget?: AnalysisBudget,
-): CommandStringsAnalysis {
+): SegmentRedirectionsAnalysis {
   const sink: WalkSink = {
     commands: [],
     redirections: [],
     truncated: false,
     budget: budget ?? newAnalysisBudget(),
-    commandStringRedirections: [],
+    segmentRedirections: [],
   };
   walk(segment.tokens, sink, [], 0);
   return {
     commands: sink.commands,
     redirections: sink.redirections,
     truncated: sink.truncated,
-    commandStringRedirections: sink.commandStringRedirections,
+    segmentRedirections: sink.segmentRedirections,
   };
 }

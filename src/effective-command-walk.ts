@@ -31,10 +31,10 @@ import { sshRemoteCommand } from "./ssh-remote-command.ts";
 const MAX_WALK_DEPTH = 32;
 
 /** Where every level of one walk collects its effective commands, and the
- *  redirections each re-entered segment carries itself. */
+ *  redirections each level's segment carries itself. */
 export interface WalkSink extends EffectiveCommandsAnalysis {
   budget: AnalysisBudget;
-  commandStringRedirections: ShellRedirection[];
+  segmentRedirections: ShellRedirection[];
 }
 
 /** One level of the walk: the redirections its commands carry, inherited
@@ -64,8 +64,7 @@ export function walk(
     return;
   }
   const normalized = normalizeShellRedirections(tokens);
-  if (depth > 0)
-    sink.commandStringRedirections.push(...normalized.redirections);
+  sink.segmentRedirections.push(...normalized.redirections);
   const words = normalized.tokens;
   const level: WalkLevel = {
     sink,

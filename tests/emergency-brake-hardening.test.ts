@@ -364,7 +364,7 @@ describe("output duplication onto a block device is a write whatever the descrip
   });
 });
 
-describe("redirections of an exec inside a command string are checked like top-level ones", () => {
+describe("redirections of a segment are checked at every level, with or without a command", () => {
   const blocked =
     "Emergency brake: command contains unmistakable broad system destruction.";
 
@@ -375,11 +375,31 @@ describe("redirections of an exec inside a command string are checked like top-l
     "sh -c 'exec &> /dev/sda'",
     "sudo sh -c 'exec > /dev/nvme0n1'",
     'sh -c "exec 1> /dev/sda; echo x"',
+    "ssh host 'exec > /dev/sda'",
+    "su -c 'exec > /dev/sda'",
+    "env -S 'sh -c \"exec > /dev/sda\"'",
   ])("blocks a device redirection in a command string, case %#", (command) => {
     expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
       blocked,
     );
   });
+
+  test.each([
+    "exec >& /dev/sda",
+    "exec 1>& /dev/sda",
+    ">& /dev/sda",
+    "exec >&/dev/sda",
+    "exec 2>&/dev/sda",
+    "exec >| /dev/sda",
+    ">| /dev/sda",
+  ])(
+    "blocks a device redirection in a segment without a command, case %#",
+    (command) => {
+      expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+        blocked,
+      );
+    },
+  );
 
   test.each([
     "sh -c 'exec > /tmp/log'",
