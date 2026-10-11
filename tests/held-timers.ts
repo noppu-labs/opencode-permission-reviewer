@@ -10,9 +10,17 @@ export interface HeldTimers {
   restore(): void;
 }
 
+let installed = false;
+
 /** Holds every `setTimeout` of exactly 1000 ms until `fire` runs it, and lets
- *  `clearTimeout` cancel a held one. Other timers run as usual. */
+ *  `clearTimeout` cancel a held one. Other timers run as usual. Throws when
+ *  another hold is still installed: a second spy would wrap the first. */
 export function holdOneSecondTimers(): HeldTimers {
+  if (installed)
+    throw new Error(
+      "holdOneSecondTimers: already installed; call restore first",
+    );
+  installed = true;
   const setReal = globalThis.setTimeout;
   const clearReal = globalThis.clearTimeout;
   const held = new Map<object, () => void>();
@@ -44,6 +52,7 @@ export function holdOneSecondTimers(): HeldTimers {
       set.mockRestore();
       clear.mockRestore();
       held.clear();
+      installed = false;
     },
   };
 }
