@@ -190,6 +190,15 @@ const untilAborted = (init) =>
   new Promise((_, reject) =>
     init.signal.addEventListener("abort", () => reject(init.signal.reason)),
   );
+/** AbortSignal.timeout's timer does not hold the event loop open, so hold it until `work` settles. */
+async function keptAlive(work) {
+  const hold = setInterval(() => {}, 1000);
+  try {
+    return await work();
+  } finally {
+    clearInterval(hold);
+  }
+}
 
 test("the caller's abort signal and the timeout both stop the request", async () => {
   const caller = new AbortController();
@@ -199,13 +208,17 @@ test("the caller's abort signal and the timeout both stop the request", async ()
     fetchImpl: async (_url, init) => Promise.reject(init.signal.reason),
   });
   assert.equal(stopped.error, "caller stop");
-  const timedOut = await requestCompletion(model, prepared, {
-    timeoutMs: 5,
-    fetchImpl: async (_url, init) => untilAborted(init),
-  });
+  const timedOut = await keptAlive(() =>
+    requestCompletion(model, prepared, {
+      timeoutMs: 5,
+      fetchImpl: async (_url, init) => untilAborted(init),
+    }),
+  );
   // The timeout reason's text is the runtime's own; Node and Bun word it differently.
   const timeout = AbortSignal.timeout(1);
-  await new Promise((resolve) => timeout.addEventListener("abort", resolve));
+  await keptAlive(
+    () => new Promise((resolve) => timeout.addEventListener("abort", resolve)),
+  );
   assert.equal(timedOut.error, timeout.reason.message);
   assert.equal(timedOut.status, null);
 });
