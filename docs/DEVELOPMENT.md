@@ -122,53 +122,12 @@ The ratchet is empty for the source. Biome has no `overrides` entries that turn 
 a list of files, and every source, script and benchmark library file is under the complexity,
 length and FTA limits.
 
-The only pending exemptions left are FTA exclusions for test files and test helpers that are
-still over the cap. They live in `fta.json` `exclude_filenames`. JSON has no comments, so the
-reason is recorded here: all of them are pending, owned by the follow-up pull request
-`quality/9b-split-tests`, which splits or shortens each file and removes its entry. The entries
-match by basename, so a new file must not reuse one of these names.
-
-- `actor-resolver.test.ts`: `tests/actor-resolver.test.ts`
-- `ask-decisions.test.ts`: `tests/ask-decisions.test.ts`
-- `audit.test.ts`: `tests/audit.test.ts`
-- `capability.test.ts`: `tests/capability.test.ts`
-- `cli-init.test.ts`: `tests/cli-init.test.ts`
-- `capture-contracts.ts`: `tests/compatibility/capture-contracts.ts`
-- `emergency-brake.test.ts`: `tests/emergency-brake.test.ts`
-- `git-evidence.test.ts`: `tests/git-evidence.test.ts`
-- `git-operation-evidence.test.ts`: `tests/git-operation-evidence.test.ts`
-- `helpers.ts`: `tests/helpers.ts`
-- `live-harness.ts`: `tests/live-harness.ts`
-- `live-host-regressions.ts`: `tests/live-host-regressions.ts`
-- `live-v2-smoke.ts`: `tests/live-v2-smoke.ts`
-- `package-smoke.test.ts`: `tests/package-smoke.test.ts`
-- `policy-engine.test.ts`: `tests/policy-engine.test.ts`
-- `redact.test.ts`: `tests/redact.test.ts`
-- `shell-lexer.test.ts`: `tests/shell-lexer.test.ts`
-- `stress.test.ts`: `tests/stress.test.ts`
-- `system-one-transport.test.ts`: `tests/system-one/system-one-transport.test.ts`
-- `trust-actor-provenance.test.ts`: `tests/trust-hardening/trust-actor-provenance.test.ts`
-- `trust-reviewer-isolation.test.ts`: `tests/trust-hardening/trust-reviewer-isolation.test.ts`
-- `trust-rule-conditions.test.ts`: `tests/trust-hardening/trust-rule-conditions.test.ts`
-- `tui-elapsed.test.ts`: `tests/tui-elapsed.test.ts`
-- `tui-slot-contract.test.ts`: `tests/tui-slot-contract.test.ts`
-- `tui-v2.test.ts`: `tests/tui-v2.test.ts`
-- `ui-protocol.test.ts`: `tests/ui-protocol.test.ts`
-- `v1-backend.test.ts`: `tests/v1-backend.test.ts`
-- `v2-backend.test.ts`: `tests/v2-backend.test.ts`
-- `v2-connection.test.ts`: `tests/v2-connection.test.ts`
-- `v2-server.test.ts`: `tests/v2-server.test.ts`
-- `command-code-cli.test.mjs`: `benchmarks/permission-reviewer/tests/command-code-cli.test.mjs`
-- `live-opencode-v1.mjs`: `benchmarks/permission-reviewer/tests/live-opencode-v1.mjs`
-- `metrics.test.mjs`: `benchmarks/permission-reviewer/tests/metrics.test.mjs`
-- `opencode-v1.test.mjs`: `benchmarks/permission-reviewer/tests/opencode-v1.test.mjs`
-- `plugin-parity.mjs`: `benchmarks/permission-reviewer/tests/plugin-parity.mjs`
-- `providers.test.mjs`: `benchmarks/permission-reviewer/tests/providers.test.mjs`
-- `runner.test.mjs`: `benchmarks/permission-reviewer/tests/runner.test.mjs`
-
-Don't add to this list to get a new change through. Fix the finding, or suppress it on the line
-with a reason. When `quality/9b-split-tests` lands, the list is empty and so is
-`exclude_filenames`.
+The only pending exemptions left are the `fta.json` `exclude_filenames` entries: test files and
+test helpers still over the FTA cap. JSON has no comments, so the owner is recorded here: every
+entry is owned by the follow-up pull request `quality/9b-split-tests`, which excludes the test
+directories from FTA by directory and removes these entries. The entries match by basename, so a
+new file must not reuse one of these names. Don't add to the list to get a new change through: fix
+the finding, or suppress it on the line with a reason.
 
 ### Ignored audit advisories
 
