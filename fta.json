@@ -39,7 +39,6 @@
     "live-harness.ts",
     "live-host-regressions.ts",
     "live-v2-smoke.ts",
-    "package-script-evidence.test.ts",
     "package-smoke.test.ts",
     "policy-engine.test.ts",
     "redact.test.ts",

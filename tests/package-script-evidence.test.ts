@@ -159,13 +159,9 @@ test("nearest contained manifest is selected for a nested working directory", as
   expect(text).not.toContain("root-script");
 });
 
-test("local package scripts report network possibility rather than an observed request", () => {
-  for (const command of [
-    "bun run check",
-    "npm run build",
-    "pnpm run lint",
-    "yarn run test",
-  ]) {
+test.each(["bun run check", "npm run build", "pnpm run lint", "yarn run test"])(
+  "local package script `%s` reports network possibility rather than an observed request",
+  (command) => {
     const cap = analyzeCapability(
       parseCommand(command),
       "/workspace",
@@ -174,18 +170,18 @@ test("local package scripts report network possibility rather than an observed r
     expect(cap.network.observed.value).toBe("unknown");
     expect(cap.network.possible.value).toBe(true);
     expect(cap.executesCode.value).toBe(true);
-  }
-  for (const command of [
-    "bun install",
-    "npm install",
-    "curl https://example.invalid",
-  ]) {
+  },
+);
+
+test.each(["bun install", "npm install", "curl https://example.invalid"])(
+  "`%s` reports an observed network request, unlike a local package script",
+  (command) => {
     expect(
       analyzeCapability(parseCommand(command), "/workspace", "/workspace")
         .network.observed.value,
     ).toBe(true);
-  }
-});
+  },
+);
 
 test("environment and timeout wrappers retain the same manifest definition", async () => {
   const directory = await fixture({ check: "printf same-script" });
