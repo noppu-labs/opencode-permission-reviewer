@@ -11,7 +11,6 @@
     "cli.mjs",
     "dataset.mjs",
     "metrics.mjs",
-    "opencode-v1.mjs",
     "plugin.mjs",
     "publication.mjs",
     "util.mjs",
