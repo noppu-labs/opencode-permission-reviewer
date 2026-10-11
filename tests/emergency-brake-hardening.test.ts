@@ -363,3 +363,33 @@ describe("output duplication onto a block device is a write whatever the descrip
     ).toBeUndefined();
   });
 });
+
+describe("redirections of an exec inside a command string are checked like top-level ones", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "sh -c 'exec > /dev/sda'",
+    "sh -c 'exec 3<> /dev/sda'",
+    "bash -c 'exec >> /dev/sdb'",
+    "sh -c 'exec &> /dev/sda'",
+    "sudo sh -c 'exec > /dev/nvme0n1'",
+    'sh -c "exec 1> /dev/sda; echo x"',
+  ])("blocks a device redirection in a command string, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
+  });
+
+  test.each([
+    "sh -c 'exec > /tmp/log'",
+    "sh -c 'exec 2> /dev/null'",
+    "sh -c 'exec < /dev/sda'",
+    "sh -c 'exec 3< /dev/sda'",
+    "sh -c 'exec'",
+  ])("keeps a harmless redirection allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
