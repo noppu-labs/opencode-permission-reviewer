@@ -14,15 +14,21 @@ export const PARTITION_TOOL_CHECKS = new Map<string, PartitionCheck>([
   ["parted", partedDestroysPartitions],
 ]);
 
-/** sgdisk with a zap or partition-delete option. */
+/** sgdisk with a zap option or a partition delete: `-d` with a separate
+ *  number word, or `-d` glued to its number. A bare `-d` deletes nothing. */
 function sgdiskDestroysPartitions(args: readonly ShellToken[]): boolean {
   const destructive = args.some(
-    (t) => SGDISK_ZAP_OPTIONS.has(t.value) || t.value.startsWith("--delete"),
+    ({ value }) =>
+      SGDISK_ZAP_OPTIONS.has(value) ||
+      value.startsWith("--delete") ||
+      (value.startsWith("-d") && isAllDigits(value.slice(2))),
   );
   const deleteShort = args.some((t) => t.value === "-d");
-  return (
-    destructive || (deleteShort && args.some((t) => /^[0-9]+$/.test(t.value)))
-  );
+  return destructive || (deleteShort && args.some((t) => isAllDigits(t.value)));
+}
+
+function isAllDigits(value: string): boolean {
+  return value !== "" && [...value].every((c) => c >= "0" && c <= "9");
 }
 
 /** sfdisk: --delete (with partition list) and --wipe* destroy data.

@@ -233,3 +233,44 @@ describe("device and copy detectors resolve long-option prefixes", () => {
     },
   );
 });
+
+describe("device format and wipe options follow each tool", () => {
+  test.each([
+    "mkfs.xfs -n size=8192 /dev/sdb",
+    "mkfs.btrfs -n 65536 /dev/sdb",
+    "mkfs.vfat -n DATA /dev/sdb",
+    "mkfs -t xfs -n size=8192 /dev/sdb",
+    "mkfs -txfs -n size=8192 /dev/sdb",
+    "mkswap -n /dev/sdb",
+    "sgdisk -d1 /dev/sda",
+    "sgdisk -d12 /dev/sda",
+    "wipefs -o 0x438 /dev/sda",
+    "wipefs -o0x438 /dev/sda",
+    "wipefs --offset 0x438 /dev/sda",
+    "wipefs --offs=0x438 /dev/sda",
+    "wipefs -fo 0x438 /dev/sda",
+    "sudo mkfs.xfs -n size=8192 /dev/sdb",
+  ])("blocks a device format or wipe, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
+
+  test.each([
+    "mkfs.ext4 -n /dev/sdb",
+    "mke2fs -n /dev/sdb",
+    "mkfs -n /dev/sdb",
+    "mkfs -t ext4 -n /dev/sdb",
+    "mkfs.xfs -N /dev/sdb",
+    "mkfs.xfs --dry-run /dev/sdb",
+    "sgdisk -d /dev/sda",
+    "sgdisk -p /dev/sda",
+    "wipefs /dev/sda",
+    "wipefs --no-act /dev/sda",
+    "wipefs -o 0x438 disk.img",
+  ])("keeps a dry run or listing allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});

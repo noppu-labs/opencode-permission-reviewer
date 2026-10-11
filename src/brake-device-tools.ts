@@ -82,27 +82,66 @@ function copiesOntoBlockDevice(tool: DeviceCommand): boolean {
   return copyOverwritesBlockDevice(tool.command, tool.base);
 }
 
-/** mkfs / mkfs.* / mke2fs / mkswap with a real block-device target, unless a
- *  dry-run flag is given. */
+const EXT_FORMATTERS = new Set([
+  "mke2fs",
+  "mkfs.ext2",
+  "mkfs.ext3",
+  "mkfs.ext4",
+]);
+const EXT_FILESYSTEM_TYPES = new Set(["ext2", "ext3", "ext4"]);
+
+/** mkfs / mkfs.* / mke2fs / mkswap with a real block-device target, unless the
+ *  tool's own dry-run flag is given. `--dry-run` suppresses the verdict for
+ *  every tool; `-n` only for the ext family and `-N` only for mkfs.xfs. */
 function formatsBlockDevice(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
-  return !tool.args.some((t) => t.value === "-n" || t.value === "--dry-run");
+  const dryRunFlag = shortDryRunFlag(tool);
+  return !tool.args.some(
+    (t) => t.value === "--dry-run" || t.value === dryRunFlag,
+  );
+}
+
+/** The short dry-run flag of a formatter, or undefined when it has none. */
+function shortDryRunFlag(tool: DeviceCommand): string | undefined {
+  if (tool.base === "mkfs.xfs") return "-N";
+  return isExtFormatter(tool) ? "-n" : undefined;
+}
+
+/** mke2fs, mkfs.ext2/3/4, or plain mkfs that builds an ext filesystem. */
+function isExtFormatter(tool: DeviceCommand): boolean {
+  if (EXT_FORMATTERS.has(tool.base)) return true;
+  if (tool.base !== "mkfs") return false;
+  const type = mkfsTypeOption(tool.args);
+  return type === undefined || EXT_FILESYSTEM_TYPES.has(type);
+}
+
+/** The value of the last `-t <type>` or `-t<type>` option of mkfs. */
+function mkfsTypeOption(args: readonly ShellToken[]): string | undefined {
+  let type: string | undefined;
+  args.forEach(({ value }, index) => {
+    if (value === "-t") type = args[index + 1]?.value;
+    else if (value.startsWith("-t")) type = value.slice(2);
+  });
+  return type;
 }
 
 /** wipefs with a real block-device target and a signature-erasing option; a
  *  bare wipefs only lists signatures. */
 function wipefsWipesSignatures(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
-  return tool.args.some(({ value: v }) => {
-    const long = resolveGnuLongOption(v, WIPEFS_LONG_OPTIONS)?.name;
-    return (
-      long === "all" ||
-      long === "types" ||
-      v === "-a" ||
-      shortFlagClusterIncludes(v, "a") ||
-      v.startsWith("-t")
-    );
-  });
+  return tool.args.some(({ value }) => wipefsErasingOption(value));
+}
+
+/** `--all`, `--types`, `--offset` and their short forms erase signatures. */
+function wipefsErasingOption(value: string): boolean {
+  const long = resolveGnuLongOption(value, WIPEFS_LONG_OPTIONS)?.name;
+  if (long === "all" || long === "types" || long === "offset") return true;
+  return (
+    shortFlagClusterIncludes(value, "a") ||
+    value.startsWith("-t") ||
+    value.startsWith("-o") ||
+    (shortFlagClusterIncludes(value, "o") && value.endsWith("o"))
+  );
 }
 
 /** dd: detect `of=<real block device>` (the lexer already stripped quotes). */
