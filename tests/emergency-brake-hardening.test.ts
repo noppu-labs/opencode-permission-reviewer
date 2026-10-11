@@ -155,3 +155,32 @@ describe("find checks every search path", () => {
     ).toBeUndefined();
   });
 });
+
+describe("a root glob may end in a slash", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "rm -r /*/",
+    "rm -rf /*/",
+    "rm -r //*//",
+    'rm -r "/"*/',
+    "find /*/ -delete",
+  ])("blocks a live root glob with trailing slashes, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
+  });
+
+  test.each([
+    "rm -r '/*/'",
+    "rm -r /\\*/",
+    "rm -r /*/tmp",
+    "rm -r /tmp/*/",
+    "find /tmp/*/ -delete",
+  ])("keeps a deeper or literal path allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});

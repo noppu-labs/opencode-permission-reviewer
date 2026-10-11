@@ -21,21 +21,28 @@ export function resolvesToRoot(rawTarget: string): boolean {
 
 /**
  * A live glob that expands to every entry of the filesystem root (`/*`,
- * `//**`): the shell expands it before rm runs, so `rm -rf /*` destroys the
- * system exactly like `rm -rf /`. The star is only an operator while its
+ * `//**`): the shell expands it before rm runs, so `rm -rf /*` destroys
+ * the system exactly like `rm -rf /`. The star is only an operator while its
  * characters sit in an UNQUOTED span: `"/"*` still globs (only the slash is
  * quoted), while `'/*'` or `/\*` name a literal file and stay with the
  * reviewer. Trailing `*` and `**` both count: without globstar, `**`
- * behaves like `*` at the root level.
+ * behaves like `*` at the root level. Trailing slashes after the star only
+ * limit the matches to directories, so they do not change the target.
  */
 export function isLiveRootGlob(token: ShellToken): boolean {
   if (!token.value.startsWith("/")) return false;
   const components = token.value.split("/");
-  const last = elementAt(components, components.length - 1, "components");
-  if (!/^\*+$/.test(last)) return false;
-  const starStart = token.value.length - last.length;
-  if (tokenCharIsQuoted(token, starStart)) return false;
-  return componentsReachRoot(components.slice(0, -1));
+  let end = components.length;
+  while (end > 1 && elementAt(components, end - 1, "components") === "")
+    end -= 1;
+  const star = elementAt(components, end - 1, "components");
+  if (!/^\*+$/.test(star)) return false;
+  const trailingSlashes = components.length - end;
+  if (
+    tokenCharIsQuoted(token, token.value.length - trailingSlashes - star.length)
+  )
+    return false;
+  return componentsReachRoot(components.slice(0, end - 1));
 }
 
 /** Whether absolute-path components lead back to `/` once empty and `.`
