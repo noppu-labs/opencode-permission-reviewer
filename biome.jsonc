@@ -65,6 +65,23 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],
+      "linter": {
+        "rules": {
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 800
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
   "javascript": {
     "formatter": {
       "quoteStyle": "double",

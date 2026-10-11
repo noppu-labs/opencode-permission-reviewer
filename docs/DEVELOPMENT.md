@@ -44,7 +44,7 @@ are ignored by ID (see "Ignored audit advisories").
 | yamllint (`--strict`) | YAML style | `.yamllint.yaml` |
 | markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
-| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600) | `biome.jsonc` |
+| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600, or 800 in the test directories) | `biome.jsonc` |
 | `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
 | FTA | Maintainability score per file, cap 52, for everything except the test directories | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
@@ -90,8 +90,8 @@ it an integer. A syntax error in `fta.json` is caught by `check-json`.
 Tests are exempt by directory: `tests` and `benchmarks/permission-reviewer/tests`. In test files FTA
 mostly measures a cyclomatic cliff: two or more branch constructs anywhere in a file put it at
 55-75 whatever its size, so it rewarded loop rewrites rather than simpler tests. Tests are still
-held to Biome's 600-line cap and cognitive complexity of 10. `src`, `scripts` and the benchmark
-library stay under the FTA cap.
+held to Biome's cognitive complexity of 10, and to a 600-line cap that is raised to 800 for them
+(see "File length"). `src`, `scripts` and the benchmark library stay under the FTA cap.
 
 ### Suppressions
 
@@ -115,19 +115,21 @@ transport replies); otherwise use `Promise.all`.
 
 ### File length
 
-TypeScript and JavaScript files stay under 600 lines (Biome), tests included, and the files outside
-the test directories stay under the FTA cap. Python modules stay under 600 lines (pylint). When a
-test file is too long, first merge near-identical tests into a table-driven one, move repeated
-setup into helpers and combine tests that assert the same behavior, without dropping an assertion
-or a covered case. If that is not enough, don't restructure the file; ask. A file that has to wait
-may get a narrow exemption: a Biome `overrides` entry with `maxLines` set to its current length, so
-it cannot grow. No file has a `maxLines` entry today.
+TypeScript and JavaScript files stay under 600 lines (Biome) and under the FTA cap. The two test
+directories, `tests` and `benchmarks/permission-reviewer/tests`, get 800 lines and no FTA check
+(everything else: 600 lines, FTA 52). Test files hold long tables and fixtures, and splitting
+them costs more clarity than it buys. The 800 is a `noExcessiveLinesPerFile` override in
+`biome.jsonc` for those two directories. Python modules stay under 600 lines (pylint). When a test
+file is too long, first merge near-identical tests into a table-driven one, move repeated setup
+into helpers and combine tests that assert the same behavior, without dropping an assertion or a
+covered case. If that is not enough, don't restructure the file; ask.
 
 ### Exemptions (the ratchet)
 
-The ratchet is empty. Biome has no `overrides` entries that turn off a rule for a list of files,
-and every source, script and benchmark library file is under the complexity, length and FTA limits.
-The test directories are exempt from FTA as a whole, so `fta.json` lists no files. Don't add to the
+The ratchet is empty. Biome's one `overrides` entry covers the two test directories as a whole, not
+a list of files, and every source, script and benchmark library file is under the complexity,
+length and FTA limits. The test directories are exempt from FTA as a whole, so `fta.json` lists
+no files. Don't add to the
 ratchet to get a new change through: fix the finding, or suppress it on the line with a reason.
 
 ### Ignored audit advisories
