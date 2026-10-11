@@ -5,12 +5,8 @@ import { elementAt } from "./element-at.ts";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
 import { sshValueOption } from "./ssh-value-options.ts";
 
-function commandName(value: string): string {
-  return basename(value);
-}
-
 export function findSshIndex(tokens: ReadonlyArray<string>): number {
-  return tokens.findIndex((token) => commandName(token) === "ssh");
+  return tokens.findIndex((token) => basename(token) === "ssh");
 }
 
 export interface SshInvocation {
@@ -101,7 +97,7 @@ function remoteCommand(tokens: ReadonlyArray<string>): string {
 
 export function catSource(tokens: ReadonlyArray<string>): string | undefined {
   const [head] = tokens;
-  if (tokens.length < 2 || head === undefined || commandName(head) !== "cat")
+  if (tokens.length < 2 || head === undefined || basename(head) !== "cat")
     return;
   const positional = tokens
     .slice(1)

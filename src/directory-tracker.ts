@@ -1,7 +1,7 @@
 // Working-directory state across one command's segments: pending `cd`s, the operators that decide
 // whether they apply, and subshell groups that save and restore the parent state.
 
-import { basename, isAbsolute, resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
 
 interface PendingCd {
@@ -100,6 +100,7 @@ export function applyGrouping(
   else if (endedBy === ")") closeSubshell(tracker);
 }
 
+// `tokens` is a segment whose command is `cd`; the caller checks the head.
 export function recordCd(tracker: DirectoryTracker, tokens: string[]): void {
   const { directory, directoryReason } = tracker;
   const target = cdTarget(tokens, directory);
@@ -115,9 +116,7 @@ function cdTarget(
   tokens: string[],
   directory: string | undefined,
 ): { directory?: string; reason?: string } {
-  const [head] = tokens;
-  if (tokens.length < 2 || head === undefined || basename(head) !== "cd")
-    return {};
+  if (tokens.length < 2) return {};
   const values = tokens[1] === "--" ? tokens.slice(2) : tokens.slice(1);
   const [target] = values;
   if (values.length !== 1 || target === undefined)

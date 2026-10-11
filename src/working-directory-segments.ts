@@ -10,18 +10,6 @@ import {
 } from "./directory-tracker.ts";
 import { commandSegments } from "./shell-lexer.ts";
 
-function shellCommandSegments(
-  command: string,
-): Array<{ tokens: string[]; preceding?: string; endedBy?: string }> {
-  return commandSegments(command).map((segment) => ({
-    tokens: segment.tokens,
-    ...(segment.preceding === undefined
-      ? {}
-      : { preceding: segment.preceding }),
-    ...(segment.endedBy === undefined ? {} : { endedBy: segment.endedBy }),
-  }));
-}
-
 export interface ShellCommandSegmentWithDirectory {
   tokens: string[];
   preceding?: string;
@@ -40,7 +28,7 @@ export function shellCommandSegmentsWithDirectory(
     subshellStates: [],
   };
   const result: ShellCommandSegmentWithDirectory[] = [];
-  for (const segment of shellCommandSegments(command)) {
+  for (const segment of commandSegments(command)) {
     applyPendingCd(tracker, segment.preceding);
     result.push({
       ...segment,
@@ -53,13 +41,9 @@ export function shellCommandSegmentsWithDirectory(
     });
     // A paren marker has no tokens: a grouping event with no command of its own.
     const [head] = segment.tokens;
-    if (head !== undefined && commandName(head) === "cd")
+    if (head !== undefined && basename(head) === "cd")
       recordCd(tracker, segment.tokens);
     applyGrouping(tracker, segment.endedBy);
   }
   return result;
-}
-
-function commandName(value: string): string {
-  return basename(value);
 }
