@@ -25,10 +25,14 @@ ensureSolidTransformPlugin();
 export const { tui }: typeof import("../src/tui.tsx") = await import(
   "../src/tui.tsx"
 );
+export const { setupTuiV2 }: typeof import("../src/ui/v2.tsx") = await import(
+  "../src/ui/v2.tsx"
+);
 export const {
   resolveReviewTheme,
-  setupTuiV2,
-}: typeof import("../src/ui/v2.tsx") = await import("../src/ui/v2.tsx");
+}: typeof import("../src/ui/review-theme.ts") = await import(
+  "../src/ui/review-theme.ts"
+);
 export const { testRender }: typeof import("@opentui/solid") = await import(
   "@opentui/solid"
 );
