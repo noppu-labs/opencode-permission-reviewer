@@ -13,14 +13,10 @@ import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 import { satisfies } from "semver";
 import { SUPPORTED_V2_RANGE } from "../opencode/host-guard.ts";
-import {
-  applyPlannedWrites,
-  type HostGeneration,
-  type PackageInfo,
-  type PluginEntry,
-  planFileChange,
-  readConfigFile,
-} from "./init-config-files.ts";
+import { applyPlannedWrites } from "./init-apply.ts";
+import { planFileChange } from "./init-config-files.ts";
+import { readConfigFile } from "./init-config-read.ts";
+import type { HostGeneration, PackageInfo, PluginEntry } from "./init-types.ts";
 
 export async function runInit(argv: string[]): Promise<number> {
   const { values } = parseArgs({
