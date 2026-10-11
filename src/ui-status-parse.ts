@@ -28,7 +28,7 @@ function fieldsPass(
   return Object.entries(checks).every(([key, check]) => check(value[key]));
 }
 
-const DECISION_CHECKS: Record<string, Check> = {
+const DECISION_CHECKS: Partial<Record<keyof ReviewDecision, Check>> = {
   outcome: oneOf(["allow", "deny", "escalate"]),
   risk_level: oneOf(["low", "medium", "high", "critical"]),
   user_authorization: oneOf(["high", "medium", "low", "unknown"]),
@@ -41,7 +41,7 @@ function isDecision(value: unknown): value is ReviewDecision {
   return isRecord(value) && fieldsPass(value, DECISION_CHECKS);
 }
 
-const STATUS_CHECKS: Record<string, Check> = {
+const STATUS_CHECKS: Record<keyof ReviewUiStatus, Check> = {
   version: (value: unknown): boolean => value === 1,
   requestID: isString,
   sessionID: isString,

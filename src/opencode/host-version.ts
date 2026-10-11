@@ -1,3 +1,4 @@
+import type { PluginInput } from "@opencode-ai/plugin";
 import { withTimeout } from "./transport.ts";
 
 interface RawClient {
@@ -13,9 +14,9 @@ interface RawClient {
  * undefined, without a promise, when the client exposes no raw GET.
  */
 export function probeHostVersion(
-  client: unknown,
+  client: PluginInput["client"],
 ): Promise<string | undefined> | undefined {
-  const raw = (client as { _client?: RawClient })._client;
+  const raw = (client as unknown as { _client?: RawClient })._client;
   return raw?.get
     ? withTimeout(
         raw.get({ url: "/global/health", signal: AbortSignal.timeout(2000) }),

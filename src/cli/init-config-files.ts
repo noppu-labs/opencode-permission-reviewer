@@ -1,6 +1,7 @@
 // Planning `init`'s change to one config file: create, append with a backup, noop when already registered, or error.
 import { existsSync } from "node:fs";
 import { dirname } from "node:path";
+import { isRecord } from "../is-record.ts";
 import { readConfigFile } from "./init-config-read.ts";
 import { isOurEntry } from "./init-entry-match.ts";
 import {
@@ -64,7 +65,7 @@ function existingEntryAction(
 function entrySpec(existing: unknown): unknown {
   if (typeof existing === "string") return existing;
   if (Array.isArray(existing)) return existing[0];
-  return (existing as { package?: unknown }).package;
+  return isRecord(existing) ? existing.package : undefined;
 }
 
 export function backupPath(path: string): string {
