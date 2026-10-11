@@ -58,7 +58,8 @@ export const PINNED_BLOBS = {
   "src/brake-block-device.ts": "30299a9ed68dc2338159d6639022103d45754a0b",
   "src/brake-device-copy.ts": "86361409b3f260f93fd800b176819120ab3e1e6f",
   "src/brake-partition-tools.ts": "8dc43e073d18c16cf4da787fca8d7d02b042d8d4",
-  "src/brake-format-tools.ts": "27d809fcf49283a0dfc8aba196242e2308482f1d",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/brake-format-tools.ts": "3c0949288a71100beb89e64955be2d399d89452f",
   "src/brake-device-tools.ts": "d937ace3fa5e8aa7e8e6a55a618e3c7149b18677",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-network-export.ts": "f44ec03d976cce0833d3e232b56a2924408c0888",

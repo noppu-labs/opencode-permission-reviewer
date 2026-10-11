@@ -12,7 +12,7 @@ const EXT_FILESYSTEM_TYPES = new Set(["ext2", "ext3", "ext4"]);
 
 /** mkfs / mkfs.* / mke2fs / mkswap, unless the tool's own dry-run flag is
  *  given. `--dry-run` suppresses the verdict for every tool; `-n` only for the
- *  ext family and `-N` only for mkfs.xfs. */
+ *  ext family and mkfs.ntfs, and `-N` only for mkfs.xfs. */
 export function formatDestroysDevice(
   base: string,
   args: readonly ShellToken[],
@@ -27,6 +27,7 @@ function shortDryRunFlag(
   args: readonly ShellToken[],
 ): string | undefined {
   if (base === "mkfs.xfs") return "-N";
+  if (base === "mkfs.ntfs") return "-n";
   return isExtFormatter(base, args) ? "-n" : undefined;
 }
 
