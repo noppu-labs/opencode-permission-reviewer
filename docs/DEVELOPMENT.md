@@ -46,7 +46,7 @@ are ignored by ID (see "Ignored audit advisories").
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
 | Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600) | `biome.jsonc` |
 | `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
-| FTA | Maintainability score per file, cap 52 | `fta.json` |
+| FTA | Maintainability score per file, cap 52, for everything except the test directories | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
 | `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
 | ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml` |
@@ -79,12 +79,19 @@ and the `exclude_directories` in `fta.json`, and `extensions` adds `.mjs` to the
 JavaScript files it reads by default. Two behaviors of the tool matter when you edit it:
 
 - A file fails only when its score is strictly greater than the cap.
-- `exclude_filenames` matches basenames only; a path does not exclude. A new file that reuses an
-  excluded basename, for example from splitting a large file, is silently exempt. Check the list
-  whenever you add or move a file.
+- An `exclude_directories` entry with one segment, like `tests`, matches a directory of that name
+  at any depth. An entry with several segments, like `benchmarks/permission-reviewer/tests`,
+  matches from the repository root. No `tests` directory exists under `src`, `scripts` or
+  `benchmarks/permission-reviewer/lib`, and a new one would be exempt too.
 
 An invalid or wrong-typed `score_cap` is silently ignored (the default of 1000 applies), so keep
 it an integer. A syntax error in `fta.json` is caught by `check-json`.
+
+Tests are exempt by directory: `tests` and `benchmarks/permission-reviewer/tests`. In test files FTA
+mostly measures a cyclomatic cliff: two or more branch constructs anywhere in a file put it at
+55-75 whatever its size, so it rewarded loop rewrites rather than simpler tests. Tests are still
+held to Biome's 600-line cap and cognitive complexity of 10. `src`, `scripts` and the benchmark
+library stay under the FTA cap.
 
 ### Suppressions
 
@@ -99,8 +106,8 @@ Every accepted finding carries its reason where it applies:
   are permanent and say why there: `ARG` for `tests/**`, and `E501` for the dataset modules whose
   case strings are verbatim benchmark input.
 - gitleaks: an allowlist entry in `.gitleaks.toml`, scoped by path and exact token.
-- FTA: an `exclude_filenames` entry. JSON has no comments, so the reason goes in the pull request
-  description.
+- FTA: an `exclude_directories` entry. JSON has no comments, so the reason goes in the pull
+  request description. Don't exempt a source file; fix the finding.
 
 Sequential `await` in a loop is flagged by `noAwaitInLoops`. Keep it, with a suppression saying why
 order matters, where the order is the point (spawning processes in turn, retries, ordered
@@ -108,26 +115,20 @@ transport replies); otherwise use `Promise.all`.
 
 ### File length
 
-TypeScript and JavaScript files stay under 600 lines (Biome) and under the FTA cap, tests
-included. Python modules stay under 600 lines (pylint). When a test file is too long, first merge
-near-identical tests into a table-driven one, move repeated setup into helpers and combine tests
-that assert the same behavior, without dropping an assertion or a covered case. If that is not
-enough, don't restructure the file; ask. A file that has to wait may get a narrow exemption: a
-Biome `overrides` entry with `maxLines` set to its current length, so it cannot grow, plus an FTA
-`exclude_filenames` entry if it is over the cap. No file has a `maxLines` entry today.
+TypeScript and JavaScript files stay under 600 lines (Biome), tests included, and the files outside
+the test directories stay under the FTA cap. Python modules stay under 600 lines (pylint). When a
+test file is too long, first merge near-identical tests into a table-driven one, move repeated
+setup into helpers and combine tests that assert the same behavior, without dropping an assertion
+or a covered case. If that is not enough, don't restructure the file; ask. A file that has to wait
+may get a narrow exemption: a Biome `overrides` entry with `maxLines` set to its current length, so
+it cannot grow. No file has a `maxLines` entry today.
 
-### Pending exemptions (the ratchet)
+### Exemptions (the ratchet)
 
-The ratchet is empty for the source. Biome has no `overrides` entries that turn off a rule for
-a list of files, and every source, script and benchmark library file is under the complexity,
-length and FTA limits.
-
-The only pending exemptions left are the `fta.json` `exclude_filenames` entries: test files and
-test helpers still over the FTA cap. JSON has no comments, so the owner is recorded here: every
-entry is owned by the follow-up pull request `quality/9b-split-tests`, which excludes the test
-directories from FTA by directory and removes these entries. The entries match by basename, so a
-new file must not reuse one of these names. Don't add to the list to get a new change through: fix
-the finding, or suppress it on the line with a reason.
+The ratchet is empty. Biome has no `overrides` entries that turn off a rule for a list of files,
+and every source, script and benchmark library file is under the complexity, length and FTA limits.
+The test directories are exempt from FTA as a whole, so `fta.json` lists no files. Don't add to the
+ratchet to get a new change through: fix the finding, or suppress it on the line with a reason.
 
 ### Ignored audit advisories
 
