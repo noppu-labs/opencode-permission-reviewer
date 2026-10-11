@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import test from "node:test";
+import test, { after } from "node:test";
 import { requestOpenCodeV1 } from "../lib/opencode-v1.mjs";
 import { inSequence } from "./run-fixtures.mjs";
 
@@ -12,7 +12,12 @@ const model = {
   variant: "low",
   format: "text",
 };
+const priorPassword = process.env.PRB_TEST_SESSION_PASSWORD;
 process.env.PRB_TEST_SESSION_PASSWORD = "synthetic-session-password";
+after(() => {
+  if (priorPassword === undefined) delete process.env.PRB_TEST_SESSION_PASSWORD;
+  else process.env.PRB_TEST_SESSION_PASSWORD = priorPassword;
+});
 const prepared = {
   system: "POLICY",
   user: "EVIDENCE",
