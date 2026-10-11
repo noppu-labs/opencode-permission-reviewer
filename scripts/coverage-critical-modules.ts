@@ -18,6 +18,7 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/brake-device-tools.ts",
   "src/brake-find-root.ts",
   "src/brake-network-export.ts",
+  "src/brake-partition-tools.ts",
   "src/brake-rm-flags.ts",
   "src/brake-root-target.ts",
   "src/gnu-long-options.ts",

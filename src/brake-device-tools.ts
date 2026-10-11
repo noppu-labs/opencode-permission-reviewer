@@ -5,11 +5,9 @@ import {
   redirectTargetsBlockDevice,
 } from "./brake-block-device.ts";
 import { copyOverwritesBlockDevice } from "./brake-device-copy.ts";
+import { PARTITION_TOOL_CHECKS } from "./brake-partition-tools.ts";
 import type { Redirection } from "./capability/capability-types.ts";
-import {
-  SFDISK_LONG_OPTIONS,
-  WIPEFS_LONG_OPTIONS,
-} from "./gnu-long-option-tables.ts";
+import { WIPEFS_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
 import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
 
@@ -24,8 +22,6 @@ type DeviceCheck = (tool: DeviceCommand) => boolean;
 
 const MKFS_FAMILY = /^mkfs(?:\.[a-z0-9]+)?$/;
 
-const SGDISK_ZAP_OPTIONS = new Set(["--zap-all", "-Z", "--zap", "-z"]);
-
 const DEVICE_TOOL_CHECKS = new Map<string, DeviceCheck>([
   // tee copies its stdin into every file operand: a real block device
   // operand is a raw overwrite, as unmistakable as shred.
@@ -36,9 +32,6 @@ const DEVICE_TOOL_CHECKS = new Map<string, DeviceCheck>([
   ["shred", overwritesBlockOperand],
   ["wipefs", wipefsWipesSignatures],
   ["dd", ddWritesBlockDevice],
-  ["sgdisk", sgdiskDestroysPartitions],
-  ["sfdisk", sfdiskDestroysPartitions],
-  ["parted", partedDestroysPartitions],
 ]);
 
 /**
@@ -75,6 +68,9 @@ export function commandDestroysDevice(
 function deviceToolCheck(base: string): DeviceCheck | undefined {
   if (MKFS_FAMILY.test(base) || base === "mke2fs" || base === "mkswap")
     return formatsBlockDevice;
+  const partition = PARTITION_TOOL_CHECKS.get(base);
+  if (partition !== undefined)
+    return (tool: DeviceCommand) => tool.targetsBlock && partition(tool.args);
   return DEVICE_TOOL_CHECKS.get(base);
 }
 
@@ -114,38 +110,6 @@ function ddWritesBlockDevice(tool: DeviceCommand): boolean {
   return tool.args.some(
     (t) => t.value.startsWith("of=") && isBlockDeviceTarget(t.value.slice(3)),
   );
-}
-
-/** sgdisk with a real block-device target and a zap or partition-delete
- *  option. */
-function sgdiskDestroysPartitions(tool: DeviceCommand): boolean {
-  if (!tool.targetsBlock) return false;
-  const destructive = tool.args.some(
-    (t) => SGDISK_ZAP_OPTIONS.has(t.value) || t.value.startsWith("--delete"),
-  );
-  const deleteShort = tool.args.some((t) => t.value === "-d");
-  return (
-    destructive ||
-    (deleteShort && tool.args.some((t) => /^[0-9]+$/.test(t.value)))
-  );
-}
-
-/** sfdisk: --delete (with partition list) and --wipe* destroy data.
- *  NOTE: sfdisk's `-d` is `--dump` (read-only backup), NOT delete — do not
- *  share the sgdisk short-flag set. */
-function sfdiskDestroysPartitions(tool: DeviceCommand): boolean {
-  if (!tool.targetsBlock) return false;
-  return tool.args.some((t) => {
-    const long = resolveGnuLongOption(t.value, SFDISK_LONG_OPTIONS)?.name;
-    return long === "delete" || long?.startsWith("wipe") === true;
-  });
-}
-
-/** parted: `mklabel` rewrites the partition table; `rm N` deletes a
- *  partition. */
-function partedDestroysPartitions(tool: DeviceCommand): boolean {
-  if (!tool.targetsBlock) return false;
-  return tool.args.some((t) => t.value === "mklabel" || t.value === "rm");
 }
 
 /** Whether a short-flag cluster (e.g. `-af`) contains a given flag letter. */
