@@ -1,4 +1,3 @@
-import { commandName, splitArguments } from "./brake-arguments.ts";
 import {
   redirectionWritesBlockDevice,
   redirectTargetsBlockDevice,
@@ -6,8 +5,7 @@ import {
 import { commandDestroysDevice } from "./brake-device-tools.ts";
 import { isRootFind } from "./brake-find-root.ts";
 import { commandExportsSecret } from "./brake-network-export.ts";
-import { hasRmFlags } from "./brake-rm-flags.ts";
-import { isLiveRootGlob, resolvesToRoot } from "./brake-root-target.ts";
+import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
@@ -75,18 +73,6 @@ const ANALYSIS_LIMIT_REASON =
 
 function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
   return analyzed.some(({ effective }) => effective.some(isRootRm));
-}
-
-function isRootRm(command: ShellToken[]): boolean {
-  if (commandName(command) !== "rm") return false;
-  const flags = hasRmFlags(command);
-  if (!flags.recursive) return false;
-  const rootProtectionOff = flags.force || flags.noPreserveRoot;
-  return splitArguments(command).operands.some(
-    (operand) =>
-      isLiveRootGlob(operand) ||
-      (rootProtectionOff && resolvesToRoot(operand.value)),
-  );
 }
 
 function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
