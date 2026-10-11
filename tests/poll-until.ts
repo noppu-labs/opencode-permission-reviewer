@@ -9,7 +9,6 @@ export async function until(
 ): Promise<void> {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
-    // biome-ignore lint/performance/noAwaitInLoops: polls until the condition holds or the deadline passes
     await Bun.sleep(1);
     if (await check()) return;
   }

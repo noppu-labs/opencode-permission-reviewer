@@ -6,7 +6,6 @@ import { fixture, type ServerFixture } from "./v2-server-fixture.ts";
 
 test("server maps decisions without elevating existing allow or deny and reports application independently", async () => {
   for (const kind of ["allow", "deny", "escalate"] as const) {
-    // biome-ignore lint/performance/noAwaitInLoops: each case builds a full server fixture (temp dir, audit file, event stream) and asserts exact review counts, so cases run in order with cleanup before the next
     const harness = await fixture({
       result: {
         kind,
@@ -18,7 +17,6 @@ test("server maps decisions without elevating existing allow or deny and reports
     try {
       for (const effect of ["allow", "deny"] as const) {
         const unchanged = { ...harness.input(), effect };
-        // biome-ignore lint/performance/noAwaitInLoops: sequential steps on one server harness: each evaluation is checked before the next runs against the same review state
         await harness.evaluate(unchanged);
         expect(unchanged.effect).toBe(effect);
       }
@@ -73,12 +71,10 @@ test("deadline, interrupted session, event loss, and shutdown suppress late appr
     const delay = new Promise<void>((resolve) => {
       release = resolve;
     });
-    // biome-ignore lint/performance/noAwaitInLoops: each interruption case builds its own server fixture with a delayed pending review and timed events; run in order so the sleeps do not overlap
     const harness = await fixture({ delay, budget });
     try {
       const input = harness.input();
       const work = harness.evaluate(input);
-      // biome-ignore lint/performance/noAwaitInLoops: polls until the delayed review has started
       while (harness.reviews() === 0) await Bun.sleep(1);
       harness.event("ses_main", "/another-location");
       await Bun.sleep(1);
@@ -108,7 +104,6 @@ test("overload stays bounded and independent sessions keep independent outcomes"
       harness.input(`ses_${index}`),
     );
     const work = Promise.all(inputs.map(harness.evaluate));
-    // biome-ignore lint/performance/noAwaitInLoops: polls until all 32 reviews have started
     while (harness.reviews() < 32) await Bun.sleep(1);
     const overload = harness.input("ses_overload");
     await harness.evaluate(overload);
@@ -129,7 +124,6 @@ test("overload stays bounded and independent sessions keep independent outcomes"
 
 test("v2 host setup enforces the supported range and reports it", async () => {
   for (const version of ["2.0.3", "2.0.4", "2.0.11", "2.0.12", "2.1.0"]) {
-    // biome-ignore lint/performance/noAwaitInLoops: each version builds a full server fixture and cleans it up before the next
     const harness = await fixture({ hostVersion: version });
     try {
       expect(await harness.rpc.status()).toMatchObject({
@@ -176,7 +170,6 @@ test("action mutations and incomplete evidence cannot reuse an approval, and con
   try {
     const input = changing.input();
     const work = changing.evaluate(input);
-    // biome-ignore lint/performance/noAwaitInLoops: polls until the delayed review has started
     while (changing.reviews() === 0) await Bun.sleep(1);
     Reflect.set(input, "metadata", { command: "printf changed" });
     release();
@@ -188,7 +181,6 @@ test("action mutations and incomplete evidence cannot reuse an approval, and con
     await changing.cleanup();
   }
   for (const connectionError of [false, true]) {
-    // biome-ignore lint/performance/noAwaitInLoops: each case builds a server fixture (own temp dir and audit file) and cleans it up before the next
     const harness = await fixture({ connectionError });
     try {
       const input = harness.input();
@@ -262,7 +254,6 @@ test("v2 audit records carry Jev's scores only when the reviewer result has them
     },
   ];
   for (const { result, expected } of cases) {
-    // biome-ignore lint/performance/noAwaitInLoops: each case builds a server fixture, disposes it and reads its audit file back; run in order
     const harness = await fixture({ result });
     try {
       await harness.evaluate(harness.input());
@@ -303,7 +294,6 @@ test("v2 failure-safe overrides keep Jev's scores from the replaced result", asy
   try {
     const input = harness.input();
     const work = harness.evaluate(input);
-    // biome-ignore lint/performance/noAwaitInLoops: polls until the delayed review has started
     while (harness.reviews() === 0) await Bun.sleep(1);
     Reflect.set(input, "metadata", { command: "printf changed" });
     release();

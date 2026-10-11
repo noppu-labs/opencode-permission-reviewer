@@ -70,6 +70,20 @@
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],
       "linter": {
         "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": {
+              "level": "error",
+              "options": {
+                "maxAllowedComplexity": 14
+              }
+            }
+          },
+          "performance": {
+            "noAwaitInLoops": "off"
+          },
+          "security": {
+            "noSecrets": "off"
+          },
           "style": {
             "noExcessiveLinesPerFile": {
               "level": "error",

@@ -85,13 +85,10 @@ describe("extractHeredocs scanner states", () => {
 describe("extractHeredocs delimiter words", () => {
   test.each([
     ["cat <<\"it's\"\nbody\nit's\nls", "cat <<'it'\\''s' <#>\nls", "it's"],
-    // biome-ignore lint/security/noSecrets: an escaped heredoc delimiter word, not a credential
     ["cat <<$'A\\x4G'\nbody\nA\x04G\nls", "cat <<'A\x04G' <#>\nls", "A\x04G"],
-    // biome-ignore lint/security/noSecrets: an escaped heredoc delimiter word, not a credential
     ["cat <<$'\\x41'\nbody\nA\nls", "cat <<A <#>\nls", "A"],
     ["cat <<$'\\xZ'\nbody\nxZ\nls", "cat <<xZ <#>\nls", "xZ"],
     ["cat <<$'\\101'\nbody\nA\nls", "cat <<A <#>\nls", "A"],
-    // biome-ignore lint/security/noSecrets: an escaped heredoc delimiter word, not a credential
     ["cat <<$'\\18'\nbody\n\x018\nls", "cat <<'\x018' <#>\nls", "\x018"],
     ["cat <<$'\\60'\nbody\n0\nls", "cat <<0 <#>\nls", "0"],
     ["cat <<$'\\0101'\nbody\n\b1\nls", "cat <<'\b1' <#>\nls", "\b1"],
@@ -101,7 +98,6 @@ describe("extractHeredocs delimiter words", () => {
     ["cat <<$'\\q'\nbody\nq\nls", "cat <<q <#>\nls", "q"],
     ['cat <<"E\\$F"\nbody\nE$F\nls', "cat <<'E$F' <#>\nls", "E$F"],
     ['cat <<"E\\"F"\nbody\nE"F\nls', "cat <<'E\"F' <#>\nls", 'E"F'],
-    // biome-ignore lint/security/noSecrets: an escaped heredoc delimiter word, not a credential
     ['cat <<"E\\nF"\nbody\nE\\nF\nls', "cat <<'E\\nF' <#>\nls", "E\\nF"],
   ])("%p", (command, sanitized, delimiter) => {
     expect(extraction(command)).toEqual({

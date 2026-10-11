@@ -206,7 +206,6 @@ describe("local script evidence enrichment", () => {
         `cd ${outside} && python3 payload.py`,
         `cd ${outside} && python3 ${join(outside, "payload.py")}`,
       ]) {
-        // biome-ignore lint/performance/noAwaitInLoops: the finally below deletes the outside fixture, so each case must finish reading it before cleanup can run
         const result = await enrichLocalScriptEvidence(
           request({ patterns: [command], metadata: { command } }),
           directory,

@@ -123,7 +123,6 @@ describe("redactSecrets — credential formats", () => {
     );
     expect(usernameOnly).not.toContain(usernameToken);
     expect(usernameOnly).toContain(
-      // biome-ignore lint/security/noSecrets: expected redacted output (a [REDACTED:...] placeholder URL), not a credential
       "https://[REDACTED:userinfo]@example.invalid",
     );
     expect(redactSecrets("git@github.com:org/repo.git")).toBe(

@@ -107,7 +107,6 @@ describe("trust hardening — git conversion-filter neutralization edge cases", 
     try {
       const run = await initGitRepo(directory);
       for (let i = 0; i < 55; i += 1) {
-        // biome-ignore lint/performance/noAwaitInLoops: 55 git config writes to the same repo, serialized by git's .git/config lock
         await run(["config", `filter.filler${i}.clean`, "cat"]);
       }
       writeFileSync(join(directory, "data.txt"), "BBBB\n");

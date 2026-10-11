@@ -106,7 +106,6 @@ describe("coordinator audit records", () => {
     );
     // Pins the canonical form so audit records stay correlatable across versions.
     expect(record.actionHash).toBe(
-      // biome-ignore lint/security/noSecrets: a SHA-256 hex digest pinned as the expected value, not a credential
       "a235e10ca35924b993710c8eb897d1eaf669c2dd97fb63f4d6cef9bd2725f253",
     );
   });

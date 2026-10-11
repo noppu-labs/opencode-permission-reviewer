@@ -16,7 +16,6 @@ async function* subscription(
     while (draining() || !(signal.aborted || channel.ended)) {
       if (channel.queue.length) yield channel.queue.shift();
       else {
-        // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
         await new Promise<void>((resolve) => {
           channel.wake = resolve;
         });

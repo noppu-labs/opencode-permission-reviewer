@@ -73,7 +73,6 @@ export async function start(state: Host): Promise<Running> {
   ): Promise<void> => {
     const deadline = Date.now() + timeout;
     while (Date.now() < deadline) {
-      // biome-ignore lint/performance/noAwaitInLoops: polls the fake host until the condition holds or the deadline passes
       await view.flush();
       if (check()) return;
       await Bun.sleep(10);

@@ -425,7 +425,6 @@ test("registered V2 service registrations fail closed on a missing, unreadable o
     ],
   ];
   for (const [contents, message] of cases) {
-    // biome-ignore lint/performance/noAwaitInLoops: each case rewrites the shared XDG_STATE_HOME registration and restores the client stub before the next
     expect(await registeredServiceError(contents)).toBe(message);
   }
 });

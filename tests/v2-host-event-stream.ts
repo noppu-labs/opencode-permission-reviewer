@@ -36,7 +36,6 @@ export function hostEventStream(): HostEventStream {
           const event = next();
           if (event) yield event;
           else {
-            // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
             await new Promise<void>((resolve) => {
               resume = resolve;
             });

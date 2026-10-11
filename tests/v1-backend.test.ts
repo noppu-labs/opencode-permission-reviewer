@@ -512,7 +512,6 @@ test("independent backends never expose empty or partial isolation files", async
     const observed: string[][] = [];
     while (writing)
       observed.push(
-        // biome-ignore lint/performance/noAwaitInLoops: samples the shared isolation files repeatedly while the concurrent writers are still running
         await Promise.all(paths.map((path) => readFile(path, "utf8"))),
       );
     expect((await writers).every((result) => result.kind === "allow")).toBe(
@@ -565,7 +564,6 @@ test("separate processes replace shared isolation files without partial reads", 
     const observed: string[][] = [];
     while (writing)
       observed.push(
-        // biome-ignore lint/performance/noAwaitInLoops: samples the shared isolation files repeatedly while the spawned writer processes are still running
         await Promise.all(paths.map((path) => readFile(path, "utf8"))),
       );
     const errors = await Promise.all(

@@ -131,7 +131,6 @@ for await (const line of createInterface({ input: process.stdin })) {
   const baseUrl = `http://127.0.0.1:${port}/`;
   let ready = false;
   for (let attempt = 0; attempt < 300; attempt++) {
-    // biome-ignore lint/performance/noAwaitInLoops: polls the spawned host's health endpoint every 100 ms and stops at the first ready response
     ready = await fetch(new URL("/global/health", baseUrl), {
       headers: {
         Authorization: `Basic ${Buffer.from(`opencode:${hostPassword}`).toString("base64")}`,
@@ -162,7 +161,6 @@ for await (const line of createInterface({ input: process.stdin })) {
   if (parallel) responses.push(...(await Promise.all([request(), request()])));
   else
     for (let attempt = 0; attempt < 5; attempt++) {
-      // biome-ignore lint/performance/noAwaitInLoops: the sequential mode asserts that at most one provider call is in flight, so requests must not overlap
       responses.push(await request());
     }
   for (const response of responses) {
@@ -195,7 +193,6 @@ for await (const line of createInterface({ input: process.stdin })) {
   };
   let remainingMcpPids = await liveMcpPids();
   for (let attempt = 0; attempt < 100 && remainingMcpPids.length; attempt++) {
-    // biome-ignore lint/performance/noAwaitInLoops: polls every 50 ms until the MCP child processes have exited; each check runs after the previous one still saw live pids
     await new Promise((resolve) => setTimeout(resolve, 50));
     remainingMcpPids = await liveMcpPids();
   }
