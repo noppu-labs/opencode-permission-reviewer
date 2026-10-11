@@ -4,6 +4,7 @@ import type {
   PermissionRequest,
   ReviewDecision,
 } from "./types.ts";
+import { parseUiStatus } from "./ui-status-parse.ts";
 
 export const UI_COMMAND_PREFIX = "opencode-permission-reviewer.status.";
 // Time to wait for the server's first "reviewing" ack after permission.asked.
@@ -107,86 +108,6 @@ export function createUiStatus(
       ? {}
       : { actorProfile: options.actorProfile }),
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function isDecision(value: unknown): value is ReviewDecision {
-  if (!isRecord(value)) return false;
-  return (
-    (value.outcome === "allow" ||
-      value.outcome === "deny" ||
-      value.outcome === "escalate") &&
-    (value.risk_level === "low" ||
-      value.risk_level === "medium" ||
-      value.risk_level === "high" ||
-      value.risk_level === "critical") &&
-    (value.user_authorization === "high" ||
-      value.user_authorization === "medium" ||
-      value.user_authorization === "low" ||
-      value.user_authorization === "unknown") &&
-    typeof value.rationale === "string" &&
-    typeof value.confidence === "number" &&
-    Number.isFinite(value.confidence) &&
-    value.confidence >= 0 &&
-    value.confidence <= 1
-  );
-}
-
-function parseUiStatus(value: unknown): ReviewUiStatus | undefined {
-  if (!isRecord(value) || value.version !== 1) return;
-  if (
-    typeof value.requestID !== "string" ||
-    typeof value.sessionID !== "string"
-  )
-    return;
-  if (
-    value.phase !== "reviewing" &&
-    value.phase !== "approved" &&
-    value.phase !== "denied" &&
-    value.phase !== "manual" &&
-    value.phase !== "unknown"
-  ) {
-    return;
-  }
-  if (typeof value.permission !== "string" || typeof value.action !== "string")
-    return;
-  if (typeof value.model !== "string" || typeof value.variant !== "string")
-    return;
-  if (typeof value.emittedAt !== "number" || !Number.isFinite(value.emittedAt))
-    return;
-  if (
-    typeof value.timeoutMs !== "number" ||
-    !Number.isFinite(value.timeoutMs) ||
-    value.timeoutMs < 0
-  )
-    return;
-  if (value.reason !== undefined && typeof value.reason !== "string") return;
-  if (value.decision !== undefined && !isDecision(value.decision)) return;
-  if (
-    value.escalationDisposition !== undefined &&
-    value.escalationDisposition !== "manual" &&
-    value.escalationDisposition !== "deny"
-  ) {
-    return;
-  }
-  if (value.actorName !== undefined && typeof value.actorName !== "string")
-    return;
-  if (
-    value.actorProfile !== undefined &&
-    value.actorProfile !== "read-only" &&
-    value.actorProfile !== "validation" &&
-    value.actorProfile !== "workspace" &&
-    value.actorProfile !== "operator" &&
-    value.actorProfile !== "reviewer" &&
-    value.actorProfile !== "unknown"
-  ) {
-    return;
-  }
-
-  return value as unknown as ReviewUiStatus;
 }
 
 export function encodeUiStatus(status: ReviewUiStatus): string {

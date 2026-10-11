@@ -31,7 +31,6 @@
     "init.ts",
     "init-config-files.ts",
     "tui.tsx",
-    "ui-protocol.ts",
     "components.tsx",
     "v2.tsx",
     "actor-resolver.test.ts",

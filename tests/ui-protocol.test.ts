@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewDecision } from "../src/types.ts";
 import {
   createUiStatus,
   decodeUiStatus,
   encodeUiStatus,
   permissionAction,
+  type ReviewUiPhase,
   UI_COMMAND_PREFIX,
   UI_START_GRACE_MS,
   UI_WATCHDOG_GRACE_MS,
@@ -17,33 +19,29 @@ const options = {
   timeoutMs: 120_000,
 };
 
+const ROUND_TRIPS: ReadonlyArray<{
+  phase: ReviewUiPhase;
+  outcome: ReviewDecision["outcome"];
+  disposition?: "deny";
+}> = [
+  { phase: "reviewing", outcome: "allow" },
+  { phase: "approved", outcome: "allow" },
+  { phase: "denied", outcome: "deny", disposition: "deny" },
+  { phase: "manual", outcome: "escalate" },
+];
+
 describe("TUI status protocol", () => {
   test("round-trips every phase without losing decision details", () => {
-    for (const phase of [
-      "reviewing",
-      "approved",
-      "denied",
-      "manual",
-    ] as const) {
+    for (const { phase, outcome, disposition } of ROUND_TRIPS) {
       const status = createUiStatus(request(), phase, {
         ...options,
         emittedAt: 123,
         reason: "Concrete reason",
-        decision: decision(
-          phase === "denied"
-            ? "deny"
-            : phase === "manual"
-              ? "escalate"
-              : "allow",
-        ),
-        ...(phase === "denied"
-          ? { escalationDisposition: "deny" as const }
-          : {}),
+        decision: decision(outcome),
+        ...(disposition ? { escalationDisposition: disposition } : {}),
       });
       expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
-      if (phase === "denied") {
-        expect(status.escalationDisposition).toBe("deny");
-      }
+      expect(status.escalationDisposition).toBe(disposition);
     }
   });
 

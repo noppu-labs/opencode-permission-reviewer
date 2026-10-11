@@ -21,6 +21,7 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/config/trusted-degradation.ts",
   "dist/tui/config/jsonc.ts",
   "dist/tui/ui-protocol.ts",
+  "dist/tui/ui-status-parse.ts",
   "dist/tui/ui-state.ts",
   "dist/tui/types.ts",
   "dist/tui/opencode/event-normalizer.ts",
