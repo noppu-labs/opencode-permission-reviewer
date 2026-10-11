@@ -242,3 +242,15 @@ test("the body puts provider parameters first and appends the retry note before 
     ],
   );
 });
+
+test("a JSON null completion body is a caught error that keeps the raw text", async () => {
+  const result = await requestCompletion(model, prepared, {
+    fetchImpl: async () => new Response("null"),
+  });
+  assert.deepEqual(withoutLatency(result), {
+    ok: false,
+    error: "Cannot read properties of null (reading 'usage')",
+    rawText: "null",
+    status: 200,
+  });
+});
