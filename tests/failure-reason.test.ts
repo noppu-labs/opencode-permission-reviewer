@@ -120,9 +120,7 @@ test("review coordination failure audits deny with phase and cause", async () =>
     await expect(harness.runtime.process(request())).rejects.toThrow(
       "Transport",
     );
-    const audits = (
-      harness.ctx as unknown as { auditRecords: Array<Record<string, unknown>> }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({
       outcome: "deny",

@@ -367,9 +367,7 @@ describe("runtime escalationMode deny", () => {
     });
     const harness = runtime(client, { escalationMode: "deny" });
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: Array<Record<string, unknown>> }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     // Final outcome is deny; flattened fields keep the ORIGINAL structured
     // decision (not a synthetic high/1.0 deny). reviewerOutcome stays escalate.
     expect(audits[0]).toMatchObject({
@@ -389,9 +387,7 @@ describe("runtime escalationMode deny", () => {
       new Promise(() => {});
     const harness = runtime(client, { timeoutMs: 10, escalationMode: "deny" });
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: Array<Record<string, unknown>> }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits[0]).toMatchObject({
       schemaVersion: 3,
       outcome: "deny",
@@ -412,9 +408,7 @@ describe("runtime escalationMode deny", () => {
     });
     const harness = runtime(client);
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: Array<Record<string, unknown>> }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits[0]).toMatchObject({
       schemaVersion: 3,
       outcome: "escalate",
@@ -426,9 +420,7 @@ describe("runtime escalationMode deny", () => {
   test("audit on explicit allow has reviewerOutcome and no escalationDisposition", async () => {
     const harness = runtime();
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: Array<Record<string, unknown>> }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits[0]).toMatchObject({
       schemaVersion: 3,
       outcome: "allow",

@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
 import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
@@ -11,10 +10,6 @@ import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
 });
-
-function auditRecords(ctx: unknown): ReviewAuditRecord[] {
-  return (ctx as { auditRecords: ReviewAuditRecord[] }).auditRecords;
-}
 
 describe("coordinator audit records", () => {
   test("a manual reply that supersedes an in-flight review writes exactly one superseded audit record", async () => {
@@ -41,7 +36,7 @@ describe("coordinator audit records", () => {
       resolve({ data: { info: { structured: decision("allow") } } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
-    const audits = auditRecords(harness.ctx).filter(
+    const audits = harness.ctx.auditRecords.filter(
       (record) => record.requestID === "per_1",
     );
     expect(audits).toHaveLength(1);
@@ -81,7 +76,7 @@ describe("coordinator audit records", () => {
       }),
     );
     const byRequest = new Map(
-      auditRecords(harness.ctx).map((record) => [record.requestID, record]),
+      harness.ctx.auditRecords.map((record) => [record.requestID, record]),
     );
     const first = defined(byRequest.get("per_a"), "per_a audit");
     const second = defined(byRequest.get("per_b"), "per_b audit");
@@ -105,7 +100,7 @@ describe("coordinator audit records", () => {
       }),
     );
     const record = defined(
-      auditRecords(harness.ctx).find((r) => r.requestID === "per_pin"),
+      harness.ctx.auditRecords.find((r) => r.requestID === "per_pin"),
       "per_pin audit",
     );
     // Pins the canonical form so audit records stay correlatable across versions.
@@ -131,7 +126,7 @@ describe("coordinator audit records", () => {
         request({ metadata: { command }, patterns: [command] }),
       );
       expect(
-        defined(auditRecords(harness.ctx)[0], "audit record").verifiedScript,
+        defined(harness.ctx.auditRecords[0], "audit record").verifiedScript,
       ).toEqual({
         sha256: createHash("sha256").update("echo ok\n").digest("hex"),
         status: "full",

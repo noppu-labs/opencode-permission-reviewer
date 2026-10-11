@@ -400,10 +400,7 @@ describe("ask decisions in the coordinator lifecycle", () => {
     );
     const result = await runtime.process(request());
     expect(result.kind).toBe("allow");
-    const records = (ctx as unknown as { auditRecords: unknown[] })
-      .auditRecords as Array<{
-      askDecisions?: AskDecision[];
-    }>;
+    const records = ctx.auditRecords;
     expect(records).toHaveLength(1);
     const record = defined(records[0], "audit record");
     expect(record.askDecisions).toEqual([
@@ -432,10 +429,7 @@ describe("ask decisions in the coordinator lifecycle", () => {
       registry,
     );
     await runtime.process(request());
-    const records = (ctx as unknown as { auditRecords: unknown[] })
-      .auditRecords as Array<{
-      askDecisions?: AskDecision[];
-    }>;
+    const records = ctx.auditRecords;
     const record = defined(records[0], "audit record");
     expect(record.askDecisions).toHaveLength(5);
     expect(
@@ -456,10 +450,7 @@ describe("ask decisions in the coordinator lifecycle", () => {
       registry,
     );
     await runtime.process(request());
-    const records = (ctx as unknown as { auditRecords: unknown[] })
-      .auditRecords as Array<{
-      askDecisions?: AskDecision[];
-    }>;
+    const records = ctx.auditRecords;
     const record = defined(records[0], "audit record");
     expect(record.askDecisions).toBeUndefined();
   });

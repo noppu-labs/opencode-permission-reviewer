@@ -237,6 +237,11 @@ export function config(
   return { ...DEFAULT_CONFIG, ...overrides };
 }
 
+/** The runtime context `runtime()` builds, plus the audit records it captured. */
+export type TestRuntimeContext = RuntimeContext & {
+  auditRecords: ReviewAuditRecord[];
+};
+
 export function runtime(
   client = new MockClient(),
   configOverrides: Partial<ReviewerConfig> = {},
@@ -247,7 +252,7 @@ export function runtime(
 ): {
   runtime: ApprovalReviewerRuntime;
   client: MockClient;
-  ctx: RuntimeContext;
+  ctx: TestRuntimeContext;
 } {
   const auditRecords: ReviewAuditRecord[] = [];
   const ctx: RuntimeContext = {

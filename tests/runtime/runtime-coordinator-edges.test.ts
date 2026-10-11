@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
-import type { ReviewAuditRecord } from "../../src/audit-record.ts";
 import type { ClientResponse } from "../../src/opencode/types.ts";
 import type { ReviewExecutionResult } from "../../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "../helpers.ts";
@@ -13,10 +12,6 @@ const SUPERSEDED: ReviewExecutionResult = {
   reason: "Request already answered manually; automatic review superseded.",
   decisionSource: "manual-superseded",
 };
-
-function auditRecords(ctx: unknown): ReviewAuditRecord[] {
-  return (ctx as { auditRecords: ReviewAuditRecord[] }).auditRecords;
-}
 
 function collectLogs(): {
   logs: Array<[string, unknown]>;
@@ -79,13 +74,11 @@ describe("coordinator edges", () => {
     expect(client.replies).toHaveLength(1);
     expect(replyBody(client.replies[0]).reply).toBe("reject");
     expect(phases(client)).toEqual(["reviewing"]);
-    expect(defined(auditRecords(harness.ctx)[0], "audit record")).toMatchObject(
-      {
-        outcome: "escalate",
-        decisionSource: "manual-superseded",
-        application: "superseded",
-      },
-    );
+    expect(defined(harness.ctx.auditRecords[0], "audit record")).toMatchObject({
+      outcome: "escalate",
+      decisionSource: "manual-superseded",
+      application: "superseded",
+    });
   });
 
   test("process() after dispose() supersedes without a reply or a model call", async () => {
@@ -97,9 +90,10 @@ describe("coordinator edges", () => {
     expect(client.replies).toHaveLength(0);
     expect(client.prompts).toHaveLength(0);
     expect(phases(client)).toEqual(["reviewing"]);
-    expect(defined(auditRecords(harness.ctx)[0], "audit record")).toMatchObject(
-      { outcome: "escalate", application: "superseded" },
-    );
+    expect(defined(harness.ctx.auditRecords[0], "audit record")).toMatchObject({
+      outcome: "escalate",
+      application: "superseded",
+    });
   });
 
   test("handle() after dispose() starts nothing", async () => {

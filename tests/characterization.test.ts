@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
 import type { ReviewUiStatus } from "../src/ui-protocol.ts";
@@ -30,9 +29,7 @@ describe("characterization gaps (baseline prereq)", () => {
     };
     harness.runtime.handle(permission);
     await harness.runtime.waitForIdle();
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({
       outcome: "allow",
@@ -276,8 +273,7 @@ describe("characterization gaps (baseline prereq)", () => {
         }),
       ),
     ).rejects.toThrow("permission.reply failed");
-    const audits = (harness.ctx as unknown as { auditRecords: unknown[] })
-      .auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({
       outcome: "escalate",
@@ -290,9 +286,7 @@ describe("characterization gaps (baseline prereq)", () => {
   test("audit records carry host identity and accepted application on the success path", async () => {
     const harness = runtime();
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     const audit = defined(audits[0], "audits[0]");
     expect(audit.schemaVersion).toBe(3);
@@ -330,9 +324,7 @@ describe("actor-aware context threading", () => {
     ];
     const harness = runtime(client);
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     const audit = defined(audits[0], "audits[0]");
     expect(audit.actor).toMatchObject({
@@ -371,9 +363,7 @@ describe("actor-aware context threading", () => {
     // No agent/mode on the assistant message and no session.get on the mock.
     const harness = runtime();
     await harness.runtime.process(request());
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     const audit = defined(audits[0], "audits[0]");
     expect(audit.actor).toMatchObject({
@@ -418,9 +408,7 @@ describe("actor-aware context threading", () => {
         metadata: { command: "rm -rf /tmp/scratch" },
       }),
     );
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     const audit = defined(audits[0], "audits[0]");
     expect(audit.capability).toMatchObject({
@@ -437,9 +425,7 @@ describe("actor-aware context threading", () => {
   test("capability is absent for non-bash permissions", async () => {
     const harness = runtime();
     await harness.runtime.process(request({ permission: "edit" }));
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     const audit = defined(audits[0], "audits[0]");
     expect(audit.capability).toBeUndefined();
@@ -450,9 +436,7 @@ describe("actor-aware context threading", () => {
     await reading.runtime.process(
       request({ permission: "bash", metadata: { command: "cat .env" } }),
     );
-    const readingAudits = (
-      reading.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const readingAudits = reading.ctx.auditRecords;
     expect(readingAudits).toHaveLength(1);
     const readingAudit = defined(readingAudits[0], "readingAudits[0]");
     expect(readingAudit.schemaVersion).toBe(3);
@@ -464,9 +448,7 @@ describe("actor-aware context threading", () => {
     await plain.runtime.process(
       request({ permission: "bash", metadata: { command: "cat notes.txt" } }),
     );
-    const plainAudits = (
-      plain.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const plainAudits = plain.ctx.auditRecords;
     expect(plainAudits).toHaveLength(1);
     const plainAudit = defined(plainAudits[0], "plainAudits[0]");
     expect(plainAudit.schemaVersion).toBe(3);
@@ -478,9 +460,7 @@ describe("actor-aware context threading", () => {
     await harness.runtime.process(
       request({ permission: "bash", metadata: { command: "echo hello" } }),
     );
-    const audits = (
-      harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] }
-    ).auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     const audit = defined(audits[0], "audits[0]");
     expect(audit.policyTrace).toMatchObject({

@@ -1,9 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
-import type {
-  ClientResponse,
-  RuntimeContext,
-} from "../../src/opencode/types.ts";
+import type { ClientResponse } from "../../src/opencode/types.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "../../src/policy.ts";
 import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
 import { decision, defined, MockClient, request, runtime } from "../helpers.ts";
@@ -112,8 +109,7 @@ describe("runtime decisions", () => {
       }),
     );
     expect(result.kind).toBe("allow");
-    const audits = (harness.ctx as RuntimeContext & { auditRecords: unknown[] })
-      .auditRecords;
+    const audits = harness.ctx.auditRecords;
     expect(audits).toHaveLength(1);
     expect(audits[0]).toMatchObject({
       requestID: "per_1",

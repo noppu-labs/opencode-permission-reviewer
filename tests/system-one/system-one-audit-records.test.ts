@@ -24,8 +24,7 @@ describe("System One scores in V1 audit records", () => {
   }
 
   function audits(harness: ReturnType<typeof runtime>): ReviewAuditRecord[] {
-    return (harness.ctx as unknown as { auditRecords: ReviewAuditRecord[] })
-      .auditRecords;
+    return harness.ctx.auditRecords;
   }
 
   test("records Jev-only scores and omits them for an invalid decision", async () => {

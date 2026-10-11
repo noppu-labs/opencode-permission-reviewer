@@ -95,7 +95,7 @@ test("admission failure applies the configured denial before releasing attempt s
     expect(harness.client.prompts).toHaveLength(0);
     expect(harness.client.replies).toHaveLength(1);
     expect(harness.client.replies[0]).toHaveProperty("body.reply", "reject");
-    expect(Reflect.get(harness.ctx, "auditRecords")[0]).toMatchObject({
+    expect(harness.ctx.auditRecords[0]).toMatchObject({
       outcome: "deny",
       application: "reply-accepted",
     });
