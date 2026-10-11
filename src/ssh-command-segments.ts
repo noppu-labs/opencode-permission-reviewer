@@ -2,6 +2,7 @@
 
 import { basename } from "node:path";
 import { elementAt } from "./element-at.ts";
+import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
 import { sshValueOption } from "./ssh-value-options.ts";
 
 function commandName(value: string): string {
@@ -107,6 +108,6 @@ export function catSource(tokens: ReadonlyArray<string>): string | undefined {
     .filter((value) => value !== "--" && !value.startsWith("-"));
   const [source] = positional;
   if (positional.length !== 1 || source === undefined) return;
-  if (/[$`*?{}<>]/.test(source)) return;
+  if (UNRESOLVED_EXPANSION.test(source)) return;
   return source;
 }

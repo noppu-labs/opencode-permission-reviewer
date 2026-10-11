@@ -2,6 +2,7 @@
 // an argument list to the script operand.
 
 import { elementAt } from "./element-at.ts";
+import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
 import {
   OPTIONS_WITH_VALUE,
   stopsBeforeTarget,
@@ -56,7 +57,7 @@ function operandTarget(
   spec: InterpreterSpec | undefined,
   fileTargetPending: boolean,
 ): string | undefined {
-  if (/[$`*?{}<>]/.test(token)) return;
+  if (UNRESOLVED_EXPANSION.test(token)) return;
   // The first non-option operand after a file-target subcommand is
   // decisive: a path-like token is the executed file, anything else is a
   // manifest script or package reference.

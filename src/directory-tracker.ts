@@ -2,6 +2,7 @@
 // whether they apply, and subshell groups that save and restore the parent state.
 
 import { basename, isAbsolute, resolve } from "node:path";
+import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
 
 interface PendingCd {
   before?: string;
@@ -121,7 +122,7 @@ function cdTarget(
   const [target] = values;
   if (values.length !== 1 || target === undefined)
     return { reason: "cd target is absent or ambiguous" };
-  if (/[$`*?{}<>]/.test(target))
+  if (UNRESOLVED_EXPANSION.test(target))
     return { reason: "cd target contains unresolved shell expansion" };
   if (isAbsolute(target)) return { directory: resolve(target) };
   if (directory === undefined) {
