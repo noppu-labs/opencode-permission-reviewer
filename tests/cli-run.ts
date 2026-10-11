@@ -9,6 +9,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { defined } from "./helpers.ts";
 
 const ROOT = realpathSync(join(import.meta.dir, ".."));
 export const PKG = JSON.parse(
@@ -19,13 +20,15 @@ export const PKG = JSON.parse(
   engines: { bun: string; opencode: string };
 };
 
-export interface CliSandbox {
+interface CliSandbox {
   tmp: string;
   home: string;
   project: string;
 }
 
-export function makeSandbox(): CliSandbox {
+type CliOptions = { stdin?: string; env?: Record<string, string> };
+
+function makeSandbox(): CliSandbox {
   const tmp = realpathSync(mkdtempSync(join(tmpdir(), "cli-output-")));
   const box = { tmp, home: join(tmp, "home"), project: join(tmp, "proj") };
   mkdirSync(box.home);
@@ -33,14 +36,14 @@ export function makeSandbox(): CliSandbox {
   return box;
 }
 
-export function removeSandbox(box: CliSandbox): void {
+function removeSandbox(box: CliSandbox): void {
   rmSync(box.tmp, { recursive: true, force: true });
 }
 
-export async function spawnCli(
+async function spawnCli(
   box: CliSandbox,
   args: string[],
-  options: { stdin?: string; env?: Record<string, string> } = {},
+  options: CliOptions = {},
 ): Promise<{ code: number; stdout: string; stderr: string }> {
   const env: Record<string, string | undefined> = {
     ...process.env,
@@ -81,4 +84,27 @@ export async function spawnCli(
       .replace(/\.bak-\d{8}-\d{6}/g, ".bak-<STAMP>")
       .replaceAll(`bun/${process.versions.bun}`, "bun/<BUN>");
   return { code, stdout: norm(stdout), stderr: norm(stderr) };
+}
+
+/** One test file's sandbox: `fresh` replaces it, `cli` runs the CLI in the
+ *  current one and `remove`, for that file's `afterEach`, deletes it. */
+export interface CliSession {
+  fresh: () => CliSandbox;
+  cli: (args: string[], options?: CliOptions) => ReturnType<typeof spawnCli>;
+  remove: () => void;
+}
+
+export function cliSandbox(): CliSession {
+  let box: CliSandbox | undefined;
+  return {
+    fresh: (): CliSandbox => {
+      box = makeSandbox();
+      return box;
+    },
+    cli: (args: string[], options?: CliOptions): ReturnType<typeof spawnCli> =>
+      spawnCli(defined(box, "CLI sandbox"), args, options),
+    remove: (): void => {
+      if (box) removeSandbox(box);
+    },
+  };
 }

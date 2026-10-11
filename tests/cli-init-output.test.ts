@@ -1,30 +1,17 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import {
-  type CliSandbox,
-  makeSandbox,
-  PKG,
-  removeSandbox,
-  spawnCli,
-} from "./cli-run.ts";
+import { type CliSession, cliSandbox, PKG } from "./cli-run.ts";
 
 let tmp: string;
 let project: string;
-let box: CliSandbox;
+const sandbox = cliSandbox();
+const cli: CliSession["cli"] = sandbox.cli;
 
-afterEach(() => removeSandbox(box));
+afterEach(sandbox.remove);
 
 function fresh(): void {
-  box = makeSandbox();
-  ({ tmp, project } = box);
-}
-
-function cli(
-  args: string[],
-  options?: { stdin?: string; env?: Record<string, string> },
-): ReturnType<typeof spawnCli> {
-  return spawnCli(box, args, options);
+  ({ tmp, project } = sandbox.fresh());
 }
 
 describe("init output", () => {
