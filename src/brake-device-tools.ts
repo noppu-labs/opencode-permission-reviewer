@@ -5,6 +5,7 @@ import {
   redirectTargetsBlockDevice,
 } from "./brake-block-device.ts";
 import { copyOverwritesBlockDevice } from "./brake-device-copy.ts";
+import { formatDestroysDevice } from "./brake-format-tools.ts";
 import { PARTITION_TOOL_CHECKS } from "./brake-partition-tools.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { WIPEFS_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
@@ -67,7 +68,8 @@ export function commandDestroysDevice(
 
 function deviceToolCheck(base: string): DeviceCheck | undefined {
   if (MKFS_FAMILY.test(base) || base === "mke2fs" || base === "mkswap")
-    return formatsBlockDevice;
+    return (tool: DeviceCommand) =>
+      tool.targetsBlock && formatDestroysDevice(tool.base, tool.args);
   const partition = PARTITION_TOOL_CHECKS.get(base);
   if (partition !== undefined)
     return (tool: DeviceCommand) => tool.targetsBlock && partition(tool.args);
@@ -80,49 +82,6 @@ function overwritesBlockOperand(tool: DeviceCommand): boolean {
 
 function copiesOntoBlockDevice(tool: DeviceCommand): boolean {
   return copyOverwritesBlockDevice(tool.command, tool.base);
-}
-
-const EXT_FORMATTERS = new Set([
-  "mke2fs",
-  "mkfs.ext2",
-  "mkfs.ext3",
-  "mkfs.ext4",
-]);
-const EXT_FILESYSTEM_TYPES = new Set(["ext2", "ext3", "ext4"]);
-
-/** mkfs / mkfs.* / mke2fs / mkswap with a real block-device target, unless the
- *  tool's own dry-run flag is given. `--dry-run` suppresses the verdict for
- *  every tool; `-n` only for the ext family and `-N` only for mkfs.xfs. */
-function formatsBlockDevice(tool: DeviceCommand): boolean {
-  if (!tool.targetsBlock) return false;
-  const dryRunFlag = shortDryRunFlag(tool);
-  return !tool.args.some(
-    (t) => t.value === "--dry-run" || t.value === dryRunFlag,
-  );
-}
-
-/** The short dry-run flag of a formatter, or undefined when it has none. */
-function shortDryRunFlag(tool: DeviceCommand): string | undefined {
-  if (tool.base === "mkfs.xfs") return "-N";
-  return isExtFormatter(tool) ? "-n" : undefined;
-}
-
-/** mke2fs, mkfs.ext2/3/4, or plain mkfs that builds an ext filesystem. */
-function isExtFormatter(tool: DeviceCommand): boolean {
-  if (EXT_FORMATTERS.has(tool.base)) return true;
-  if (tool.base !== "mkfs") return false;
-  const type = mkfsTypeOption(tool.args);
-  return type === undefined || EXT_FILESYSTEM_TYPES.has(type);
-}
-
-/** The value of the last `-t <type>` or `-t<type>` option of mkfs. */
-function mkfsTypeOption(args: readonly ShellToken[]): string | undefined {
-  let type: string | undefined;
-  args.forEach(({ value }, index) => {
-    if (value === "-t") type = args[index + 1]?.value;
-    else if (value.startsWith("-t")) type = value.slice(2);
-  });
-  return type;
 }
 
 /** wipefs with a real block-device target and a signature-erasing option; a
