@@ -12,7 +12,7 @@ export interface ReviewerLocation {
 }
 
 /** The backend state an isolated location activates against. */
-export interface LocationOwner {
+interface LocationOwner {
   closing(): boolean;
   register(ctx: Context): Promise<() => Promise<void>>;
   signal: AbortSignal;

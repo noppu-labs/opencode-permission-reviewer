@@ -9,7 +9,7 @@ type Context = Parameters<Plugin.Definition["setup"]>[0];
 
 /** The reviewer's status for one directory, kept in sync over the read-only
  *  reviewer RPC: a snapshot, then revisioned update events. */
-export interface ReviewFeed {
+interface ReviewFeed {
   readonly directory: string | undefined;
   readonly state: ReviewUiState;
   connect(): Promise<void>;

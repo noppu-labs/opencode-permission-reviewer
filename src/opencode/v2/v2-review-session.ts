@@ -7,7 +7,7 @@ import { type PendingGeneration, TOOL } from "./v2-review-pending.ts";
 import { readReviewerResponse } from "./v2-review-response.ts";
 
 /** The review session to create: its ID, isolated location and model. */
-export interface ReviewSessionRequest {
+interface ReviewSessionRequest {
   id: string;
   directory: string;
   providerID: string;

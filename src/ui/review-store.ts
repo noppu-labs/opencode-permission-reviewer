@@ -6,7 +6,7 @@ import {
 import { ReviewUiState } from "../ui-state.ts";
 import { object } from "./host-value.ts";
 
-export interface ReviewSnapshot extends Record<string, unknown> {
+interface ReviewSnapshot extends Record<string, unknown> {
   generation: string;
   revision: number;
   reviews: unknown[];
