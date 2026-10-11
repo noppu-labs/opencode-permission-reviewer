@@ -98,8 +98,7 @@
         "scripts/check-coverage.ts",
         "tests/live-harness.ts",
         "tests/package-smoke.test.ts",
-        "tests/stress.test.ts",
-        "tests/ui-protocol.test.ts"
+        "tests/stress.test.ts"
       ],
       "linter": {
         "rules": {
