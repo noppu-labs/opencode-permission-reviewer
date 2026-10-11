@@ -15,7 +15,7 @@ const FAILED =
 export const cli = (args, runtime = "node") =>
   new Promise((resolve) => {
     execFile(
-      runtime,
+      runtime, // NOSONAR(S4036) test harness: runs the developer's own node or bun from PATH, as the README's commands do
       ["cli.mjs", ...args],
       { cwd: benchmark, timeout: 120_000 },
       (error, stdout, stderr) =>
