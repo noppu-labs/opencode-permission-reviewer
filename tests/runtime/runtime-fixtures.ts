@@ -62,3 +62,11 @@ export function holdCalls<R>(
     });
   return { resolvers, held, hold };
 }
+
+/** Answers every held call with the same value, in arrival order. */
+export function releaseAll<V>(
+  resolvers: readonly ((value: V) => void)[],
+  value: V,
+): void {
+  for (const resolve of resolvers) resolve(value);
+}

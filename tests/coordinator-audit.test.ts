@@ -6,7 +6,7 @@ import { join } from "node:path";
 import type { ClientResponse } from "../src/opencode/types.ts";
 import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
-import { holdCalls } from "./runtime/runtime-fixtures.ts";
+import { holdCalls, releaseAll } from "./runtime/runtime-fixtures.ts";
 
 type PromptResolver = (value: ClientResponse<Record<string, unknown>>) => void;
 
@@ -33,8 +33,9 @@ describe("coordinator audit records", () => {
         reply: "reject",
       },
     });
-    for (const resolve of calls.resolvers)
-      resolve({ data: { info: { structured: decision("allow") } } });
+    releaseAll(calls.resolvers, {
+      data: { info: { structured: decision("allow") } },
+    });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     const audits = harness.ctx.auditRecords.filter(

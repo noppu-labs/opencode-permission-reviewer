@@ -7,6 +7,7 @@ import {
   holdCalls,
   manualReply,
   phases,
+  releaseAll,
   replyBody,
 } from "./runtime-fixtures.ts";
 
@@ -25,14 +26,6 @@ function holdMessages(client: MockClient): HeldCalls<MessagesResolver> {
   client.messagesImpl = (): Promise<ClientResponse<unknown>> =>
     new Promise((resolve) => calls.hold(resolve));
   return calls;
-}
-
-/** Answers every held call with the same value, in arrival order. */
-function releaseAll<V>(
-  resolvers: readonly ((value: V) => void)[],
-  value: V,
-): void {
-  for (const resolve of resolvers) resolve(value);
 }
 
 // /tmp/opencode is one of the plugin's approved enrichment roots. It exists on

@@ -9,7 +9,7 @@ import {
 import type { ClientResponse } from "../src/opencode/types.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
-import { holdCalls } from "./runtime/runtime-fixtures.ts";
+import { holdCalls, releaseAll } from "./runtime/runtime-fixtures.ts";
 
 type PromptResolver = (value: ClientResponse<Record<string, unknown>>) => void;
 
@@ -445,8 +445,9 @@ describe("runtime escalationMode deny", () => {
       type: "permission.replied",
       properties: { sessionID: "ses_main", requestID: "per_1", reply: "once" },
     });
-    for (const resolve of calls.resolvers)
-      resolve({ data: { info: { structured: decision("escalate") } } });
+    releaseAll(calls.resolvers, {
+      data: { info: { structured: decision("escalate") } },
+    });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
     expect(client.uiStatuses.map((s) => s.phase)).toEqual(["reviewing"]);
