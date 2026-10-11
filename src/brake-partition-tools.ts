@@ -6,6 +6,11 @@ type PartitionCheck = (args: readonly ShellToken[]) => boolean;
 
 const SGDISK_ZAP_OPTIONS = new Set(["--zap-all", "-Z", "--zap", "-z"]);
 
+/** The sgdisk (popt) short options that take a value. */
+const SGDISK_VALUE_LETTERS = new Set(
+  "A a b B c d h i j k l m n N r R S t T u U".split(" "),
+);
+
 /** The sfdisk short options that take a value (`o:O:N:u:X:Y:w:W:`). */
 const SFDISK_VALUE_LETTERS = new Set(["o", "O", "N", "u", "X", "Y", "w", "W"]);
 
@@ -17,7 +22,8 @@ export const PARTITION_TOOL_CHECKS = new Map<string, PartitionCheck>([
   ["parted", partedDestroysPartitions],
 ]);
 
-/** sgdisk with a zap option or a partition delete: `-d` (alone or ending a
+/** sgdisk with a zap option, a new empty table (`-o`, `--clear`, alone or in
+ *  a cluster such as `-go`) or a partition delete: `-d` (alone or ending a
  *  short cluster) with a separate number word, or `d` followed by its number
  *  inside a cluster (`-d1`, `-pd1`). A delete flag without a number deletes
  *  nothing. */
@@ -25,8 +31,10 @@ function sgdiskDestroysPartitions(args: readonly ShellToken[]): boolean {
   const destructive = args.some(
     ({ value }) =>
       SGDISK_ZAP_OPTIONS.has(value) ||
+      value === "--clear" ||
       value.startsWith("--delete") ||
-      deleteLetterWithNumber(value),
+      deleteLetterWithNumber(value) ||
+      clusterReaches(value, "o", SGDISK_VALUE_LETTERS),
   );
   const deleteShort = args.some(({ value }) => endsWithDeleteLetter(value));
   return destructive || (deleteShort && args.some((t) => isAllDigits(t.value)));

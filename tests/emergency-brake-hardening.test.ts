@@ -579,3 +579,29 @@ describe("partition tools read their short options", () => {
     ).toBeUndefined();
   });
 });
+
+describe("sgdisk clears the partition table with its clear option", () => {
+  test.each([
+    "sgdisk -o /dev/sda",
+    "sgdisk --clear /dev/sda",
+    "sgdisk -go /dev/sda",
+    "sgdisk -og /dev/sda",
+    "sudo sgdisk -o /dev/nvme0n1",
+  ])("blocks a new empty partition table, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
+
+  test.each([
+    "sgdisk -p /dev/sda",
+    "sgdisk --print /dev/sda",
+    "sgdisk -O /dev/sda",
+    "sgdisk -c1:boot /dev/sda",
+    "sgdisk -o disk.img",
+  ])("keeps a listing or a non-device target allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
