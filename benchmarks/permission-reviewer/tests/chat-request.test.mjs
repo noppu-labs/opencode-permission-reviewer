@@ -267,5 +267,8 @@ test("a JSON null completion body is a caught error that keeps the raw text", as
   const { error, ...rest } = withoutLatency(result);
   assert.deepEqual(rest, { ok: false, rawText: "null", status: 200 });
   // The TypeError text is the runtime's own; Node and Bun word it differently.
-  assert.match(error, /null.*usage/);
+  assert.match(
+    error,
+    /^(Cannot read properties of null \(reading 'usage'\)|null is not an object \(evaluating 'raw\.usage'\))$/,
+  );
 });
