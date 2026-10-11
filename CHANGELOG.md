@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `resolveConfig({})` for the default configuration. This needs the next
   major version.
 
+### Security
+
+- The emergency brake recognises more forms of unmistakably destructive
+  commands, and the capability analyzer classifies more wrapped commands.
+  Tracked privately per SECURITY.md.
+
 ## [2.4.2] - 2026-10-09
 
 ### Added
