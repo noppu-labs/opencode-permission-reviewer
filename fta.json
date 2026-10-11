@@ -8,7 +8,6 @@
     "node_modules"
   ],
   "exclude_filenames": [
-    "cli.mjs",
     "command-code-cli.test.mjs",
     "live-opencode-v1.mjs",
     "metrics.test.mjs",
