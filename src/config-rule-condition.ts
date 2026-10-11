@@ -43,21 +43,34 @@ const CONDITION_LISTS: ReadonlyArray<
   ["repositoryTrust", new Set(["trusted", "untrusted", "unknown"])],
 ];
 
-const CONDITION_FLAG_KEYS = [
-  "writesWorkspace",
-  "writesExternal",
-  "writesTemporary",
-  "deletion",
-  "executesCode",
-  "createsAdHocCode",
-  "packageManagement",
-  "gitMutation",
-  "networkObserved",
-  "credentialRead",
-  "privilegeEscalation",
-  "remoteEnabled",
-  "persistence",
-] as const;
+/** The boolean conditions, each backed by one capability fact. */
+export type ConditionFlag = Exclude<
+  keyof PolicyCondition,
+  "always" | "actionClass" | "actorProfile" | "repositoryTrust"
+>;
+
+/** Every flag condition, in the order flags are validated and evaluated. As
+ *  with `ACTION_CLASS_MEMBERS`, the `Record` annotation makes a flag missing
+ *  from this list a compile error. */
+const CONDITION_FLAG_MEMBERS: Record<ConditionFlag, true> = {
+  writesWorkspace: true,
+  writesExternal: true,
+  writesTemporary: true,
+  deletion: true,
+  executesCode: true,
+  createsAdHocCode: true,
+  packageManagement: true,
+  gitMutation: true,
+  networkObserved: true,
+  credentialRead: true,
+  privilegeEscalation: true,
+  remoteEnabled: true,
+  persistence: true,
+};
+
+export const CONDITION_FLAG_KEYS = Object.keys(
+  CONDITION_FLAG_MEMBERS,
+) as readonly ConditionFlag[];
 
 const KNOWN_CONDITION_KEYS: ReadonlySet<string> = new Set([
   "always",

@@ -1,5 +1,9 @@
 import type { ActorContext } from "../actor-context-types.ts";
 import type { CapabilityAssessment } from "../capability/capability-types.ts";
+import {
+  CONDITION_FLAG_KEYS,
+  type ConditionFlag,
+} from "../config-rule-condition.ts";
 import type {
   ActorProfile,
   CapabilityActionClass,
@@ -48,74 +52,44 @@ function listConditionHolds<S, V>(
   return list.includes(observed(subject));
 }
 
-type CapabilityFlag = Exclude<
-  keyof PolicyCondition,
-  "always" | "actionClass" | "actorProfile" | "repositoryTrust"
->;
 type MaybeCapability = CapabilityAssessment | undefined;
 type MaybeFact = boolean | "unknown" | undefined;
 
-/** Each boolean condition and the capability fact it requires, in evaluation
- *  order. */
-const CAPABILITY_FLAG_FACTS: ReadonlyArray<
-  readonly [CapabilityFlag, (cap: MaybeCapability) => MaybeFact]
-> = [
-  [
-    "writesWorkspace",
-    (cap: MaybeCapability): MaybeFact => cap?.writeEffects.workspaceWrite.value,
-  ],
-  [
-    "writesExternal",
-    (cap: MaybeCapability): MaybeFact => cap?.writeEffects.externalWrite.value,
-  ],
-  [
-    "writesTemporary",
-    (cap: MaybeCapability): MaybeFact => cap?.writeEffects.temporaryWrite.value,
-  ],
-  [
-    "deletion",
-    (cap: MaybeCapability): MaybeFact => cap?.writeEffects.deletion.value,
-  ],
-  [
-    "executesCode",
-    (cap: MaybeCapability): MaybeFact => cap?.executesCode.value,
-  ],
-  [
-    "createsAdHocCode",
-    (cap: MaybeCapability): MaybeFact => cap?.createsAdHocCode.value,
-  ],
+/** The capability fact each boolean condition requires. The `Record`
+ *  annotation makes a flag without a fact a compile error; flags are evaluated
+ *  in `CONDITION_FLAG_KEYS` order. */
+const CAPABILITY_FLAG_FACTS: Readonly<
+  Record<ConditionFlag, (cap: MaybeCapability) => MaybeFact>
+> = {
+  writesWorkspace: (cap: MaybeCapability): MaybeFact =>
+    cap?.writeEffects.workspaceWrite.value,
+  writesExternal: (cap: MaybeCapability): MaybeFact =>
+    cap?.writeEffects.externalWrite.value,
+  writesTemporary: (cap: MaybeCapability): MaybeFact =>
+    cap?.writeEffects.temporaryWrite.value,
+  deletion: (cap: MaybeCapability): MaybeFact =>
+    cap?.writeEffects.deletion.value,
+  executesCode: (cap: MaybeCapability): MaybeFact => cap?.executesCode.value,
+  createsAdHocCode: (cap: MaybeCapability): MaybeFact =>
+    cap?.createsAdHocCode.value,
   // Capability facts, not the dominant action class, decide package-management
   // matches: a command can execute code AND drive a package lifecycle at once
   // (e.g. `bun install`), and requiring the single dominant class to be
   // "package-management" would make the condition unmatchable for exactly the
   // most dangerous variants.
-  [
-    "packageManagement",
-    (cap: MaybeCapability): MaybeFact =>
-      cap?.invokesPackageLifecycleScripts.value,
-  ],
-  ["gitMutation", (cap: MaybeCapability): MaybeFact => cap?.git.possible.value],
-  [
-    "networkObserved",
-    (cap: MaybeCapability): MaybeFact => cap?.network.observed.value,
-  ],
-  [
-    "credentialRead",
-    (cap: MaybeCapability): MaybeFact => cap?.credentialRead.value,
-  ],
-  [
-    "privilegeEscalation",
-    (cap: MaybeCapability): MaybeFact => cap?.process.privilegeEscalation.value,
-  ],
-  [
-    "remoteEnabled",
-    (cap: MaybeCapability): MaybeFact => cap?.remote.enabled.value,
-  ],
-  [
-    "persistence",
-    (cap: MaybeCapability): MaybeFact => cap?.process.persistence.value,
-  ],
-];
+  packageManagement: (cap: MaybeCapability): MaybeFact =>
+    cap?.invokesPackageLifecycleScripts.value,
+  gitMutation: (cap: MaybeCapability): MaybeFact => cap?.git.possible.value,
+  networkObserved: (cap: MaybeCapability): MaybeFact =>
+    cap?.network.observed.value,
+  credentialRead: (cap: MaybeCapability): MaybeFact =>
+    cap?.credentialRead.value,
+  privilegeEscalation: (cap: MaybeCapability): MaybeFact =>
+    cap?.process.privilegeEscalation.value,
+  remoteEnabled: (cap: MaybeCapability): MaybeFact => cap?.remote.enabled.value,
+  persistence: (cap: MaybeCapability): MaybeFact =>
+    cap?.process.persistence.value,
+};
 
 /** A flag set to `true` requires its fact to be `true`; any other value leaves
  *  the rule unconstrained. Without a capability no set flag holds. */
@@ -123,7 +97,7 @@ function capabilityFlagsHold(
   cond: PolicyCondition,
   cap: MaybeCapability,
 ): boolean {
-  return CAPABILITY_FLAG_FACTS.every(
-    ([flag, fact]) => cond[flag] !== true || fact(cap) === true,
+  return CONDITION_FLAG_KEYS.every(
+    (flag) => cond[flag] !== true || CAPABILITY_FLAG_FACTS[flag](cap) === true,
   );
 }
