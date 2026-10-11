@@ -88,6 +88,7 @@ describe("Git state evidence enrichment", () => {
       "chroot ./root git push origin",
       "env -C other git push origin",
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 8000);
       expect(result.text).toBe("");
     }
@@ -96,6 +97,7 @@ describe("Git state evidence enrichment", () => {
       "sudo -u fixture git push origin",
       "git >output.log push origin",
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 8000);
       expect(result.text).toContain(
         "https://local.example.invalid/project.git",
@@ -150,6 +152,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
         stdout: "pipe",
         stderr: "pipe",
       });
+      // Sequential: each case spawns a bun process, so running them one at a time keeps start-up load flat under CI.
       const [exitCode, text] = await Promise.all([
         child.exited,
         new Response(child.stdout).text(),
@@ -203,6 +206,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `cd ${directory} && git checkout HEAD -- target.py`,
       `git -C ${directory} checkout HEAD -- target.py`,
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(outer, command, 24_000);
       expect(result.text).toContain(`"repositoryRoot": "${directory}"`);
       expect(result.text).toContain('"branch": "staging"');
@@ -224,6 +228,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `cd ${elsewhere} && git checkout HEAD -- target.py`,
       `git -C ${elsewhere} checkout HEAD -- target.py`,
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(workspace, command, 8_000);
       expect(result.text).toContain('"status": "unavailable"');
       expect(result.text).toContain(
@@ -353,6 +358,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git pull -s recursive origin main",
       "git ls-remote --sort=committerdate origin",
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain('"input": "origin"');
       expect(result.text).toContain('"kind": "configured-remote"');
@@ -371,6 +377,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git push --repo=https://override.example.invalid/x.git main",
       "git push main --repo=https://override.example.invalid/x.git",
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain(
         '"input": "https://override.example.invalid/x.git"',
@@ -403,6 +410,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git push origin main",
       "git pull",
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain("https://<redacted>@example.invalid/x.git");
       expect(result.text).not.toContain("synthetic-password-");
@@ -412,6 +420,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       `git -C missing push ${url} main`,
       `git -C /outside push ${url} main`,
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain('"status": "unavailable"');
       expect(result.text).toContain("https://<redacted>@example.invalid/x.git");
@@ -475,6 +484,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
       "git pull --all",
       "git remote update",
     ]) {
+      // Sequential: each case spawns several git inspections under runGit's 2,000 ms timeout, so overlapping cases under CI load could time out into a false "unavailable".
       const result = await enrich(directory, command, 24_000);
       expect(result.text).toContain('"source": "all configured remotes"');
       expect(result.text).toContain("origin");

@@ -425,7 +425,7 @@ test("registered V2 service registrations fail closed on a missing, unreadable o
     ],
   ];
   for (const [contents, message] of cases) {
-    // Sequential: each case rewrites the shared XDG_STATE_HOME registration and restores the client stub.
+    // Sequential: each case points the process-wide XDG_STATE_HOME at its own root and stubs the shared client factory.
     expect(await registeredServiceError(contents)).toBe(message);
   }
 });

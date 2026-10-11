@@ -206,7 +206,6 @@ describe("local script evidence enrichment", () => {
         `cd ${outside} && python3 payload.py`,
         `cd ${outside} && python3 ${join(outside, "payload.py")}`,
       ]) {
-        // Sequential: the finally below deletes the outside fixture, so each case must finish reading it first.
         const result = await enrichLocalScriptEvidence(
           request({ patterns: [command], metadata: { command } }),
           directory,

@@ -13,6 +13,7 @@ describe("explain CLI", () => {
         stdout: "pipe",
         stderr: "pipe",
       });
+      // Sequential: each case spawns a bun process, so running them one at a time keeps start-up load flat under CI.
       expect(await proc.exited).toBe(0);
       const result = JSON.parse(await new Response(proc.stdout).text());
       expect(result.command).toBe("");

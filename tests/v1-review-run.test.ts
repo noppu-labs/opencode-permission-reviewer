@@ -195,7 +195,6 @@ test("cleanup failures never change the decision", async () => {
 test("reviewer time is recorded per prompt, cumulatively across the text retry", async () => {
   const run = harness({ outputFormat: "text" });
   run.client.nextTexts = ["not a decision", JSON.stringify(decision("deny"))];
-  // The clock only moves inside a prompt: 7 ms for the first, 11 for the retry.
   let clock = 0;
   const steps = [7, 11];
   const now = spyOn(performance, "now").mockImplementation(() => clock);
