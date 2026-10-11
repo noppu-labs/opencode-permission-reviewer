@@ -51,6 +51,5 @@ function execRunsDestructiveRm(words: readonly ShellToken[]): boolean {
   if (start === -1) return false;
   const executable = words.slice(start);
   if (commandName(executable) !== "rm") return false;
-  const { recursive, force } = hasRmFlags(executable);
-  return recursive && force;
+  return hasRmFlags(executable).recursive;
 }

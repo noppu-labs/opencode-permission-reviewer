@@ -14,7 +14,7 @@ export function targetsRoot(token: ShellToken): boolean {
  * value): those stay non-literal and out of the brake's remit, so `rm -rf '\/'`
  * is left untouched (it is a file literally named `\`-slash, not root).
  */
-function resolvesToRoot(rawTarget: string): boolean {
+export function resolvesToRoot(rawTarget: string): boolean {
   if (!rawTarget.startsWith("/")) return false;
   return componentsReachRoot(rawTarget.split("/"));
 }
@@ -28,7 +28,7 @@ function resolvesToRoot(rawTarget: string): boolean {
  * reviewer. Trailing `*` and `**` both count: without globstar, `**`
  * behaves like `*` at the root level.
  */
-function isLiveRootGlob(token: ShellToken): boolean {
+export function isLiveRootGlob(token: ShellToken): boolean {
   if (!token.value.startsWith("/")) return false;
   const components = token.value.split("/");
   const last = elementAt(components, components.length - 1, "components");

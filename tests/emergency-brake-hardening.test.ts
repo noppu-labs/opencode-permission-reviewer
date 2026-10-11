@@ -64,3 +64,51 @@ describe("rm records whether root protection is switched off", () => {
     },
   );
 });
+
+describe("recursive rm on a protected target needs no force", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "rm -r /*",
+    "rm -R /*",
+    "rm --recursive /*",
+    "rm -r //**",
+    'rm -r "/"*',
+    "rm -r --no-preserve-root /",
+    "rm -R --no-preserve-root /tmp/..",
+    "sudo rm -r /*",
+    "sh -c 'rm -r /*'",
+    "find / -exec rm -r {} +",
+    "find / -name x -exec rm -R {} \\;",
+  ])(
+    "blocks recursive rm on a protected target without force, case %#",
+    (command) => {
+      expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+        blocked,
+      );
+    },
+  );
+
+  test.each([
+    // Plain `/` needs force or --no-preserve-root: GNU and BSD rm refuse it.
+    "rm -r /",
+    "rm -r --one-file-system /",
+    // coreutils rejects an abbreviated --no-preserve-root and removes nothing.
+    "rm -r --no-pres /",
+    // The later option wins, as in coreutils.
+    "rm -r --no-preserve-root --preserve-root /",
+    // Literal file names and non-root paths.
+    "rm -r '/*'",
+    "rm -r /\\*",
+    "rm -r /tmp/build",
+    "rm -R /var/tmp/cache/*",
+    "rm --rec ./dist",
+    "rm /*",
+    "find /tmp -exec rm -r {} +",
+  ])("keeps a non-destructive neighbour allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});

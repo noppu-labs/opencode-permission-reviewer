@@ -45,13 +45,12 @@ export const PINNED_BLOBS = {
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/emergency-brake.ts": "0589f1c4c3a42c911228ed3db8a67b536bca25a5",
+  "src/emergency-brake.ts": "6dacb946bd565cfccacba58e27b24211375de582",
   "src/brake-arguments.ts": "4f9e33b37e7a631f058ab9f1663c513151de1593",
   "src/brake-rm-flags.ts": "f01b8f6cce63f423cd457fe44ad37057073daa66",
+  "src/brake-root-target.ts": "1b84b5522bbbc1232a1bdf62c57e5a537c06ac68",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/brake-root-target.ts": "17c8a09bff9cb9653b332728c637785ddaee7c63",
-  "src/brake-find-root.ts": "4c083bf94bf7a61df3574f1b8406b3eae6fda0c3",
+  "src/brake-find-root.ts": "97e31a92f7ff8ba40fb291ec70e2ae6745ddbcd0",
   "src/brake-block-device.ts": "66af9ea6b35fb1e8e0e941e550e1996b8558c482",
   "src/brake-device-copy.ts": "284ddab26fcb742e25ba644eab95da822cd618dd",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
