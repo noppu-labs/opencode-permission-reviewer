@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import {
+  type Dirent,
   existsSync,
   mkdtempSync,
   readdirSync,
@@ -97,6 +98,118 @@ async function readFromTarball(path: string, member: string): Promise<string> {
   ]);
   if (exitCode !== 0) throw new Error(`tar extract ${member} failed`);
   return text;
+}
+
+// Mirror opencode's installer (arborist reify with ignoreScripts).
+function npmInstallTarball(dir: string): number | null {
+  const install = Bun.spawnSync({
+    cmd: [
+      "npm",
+      "install",
+      "--prefix",
+      dir,
+      "--ignore-scripts",
+      "--no-audit",
+      "--no-fund",
+      packOnce(),
+    ],
+    cwd: dir,
+    stdout: "ignore",
+    stderr: "pipe",
+  });
+  return install.exitCode;
+}
+
+// Package walks skip plain files, the .bin shim directory and npm's hidden lockfile.
+function isSkippedEntry(entry: Dirent): boolean {
+  return (
+    !entry.isDirectory() ||
+    entry.name === ".bin" ||
+    entry.name === ".package-lock.json"
+  );
+}
+
+function findSolidDirs(dir: string, found: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (isSkippedEntry(entry)) continue;
+    const full = join(dir, entry.name);
+    if (dir.endsWith("node_modules") && entry.name === "solid-js") {
+      found.push(full);
+      continue; // do not descend into the package's own internals
+    }
+    findSolidDirs(full, found);
+  }
+}
+
+// Native/platform surveillance: every platform-specific package name in
+// the consumer tree. The set is frozen; adding one is a supply-chain
+// review, not an accident.
+const CONSUMER_PLATFORM_PATTERN =
+  /(?:-|--)(?:linux|darwin|win32|android|freebsd|netbsd|openbsd|sunos|aix|arm|arm64|x64|x86|ia32|ppc64|riscv64|s390x|musl|glibc|android-arm(?:64)?|fuchsia)(?:$|[/-])/;
+
+function isNativePackage(dir: string, name: string, scoped: boolean): boolean {
+  return (
+    (scoped || dir.endsWith("node_modules")) &&
+    CONSUMER_PLATFORM_PATTERN.test(name)
+  );
+}
+
+function findNatives(dir: string, found: string[], scope?: string): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    if (isSkippedEntry(entry)) continue;
+    const full = join(dir, entry.name);
+    if (dir.endsWith("node_modules") && entry.name.startsWith("@")) {
+      findNatives(full, found, entry.name);
+      continue;
+    }
+    const packageName =
+      scope === undefined ? entry.name : `${scope}/${entry.name}`;
+    if (isNativePackage(dir, packageName, scope !== undefined)) {
+      found.push(packageName);
+      continue;
+    }
+    findNatives(full, found);
+  }
+}
+
+function assertNoEsbuildScope(nodeModules: string): void {
+  for (const entry of readdirSync(nodeModules, { withFileTypes: true })) {
+    if (entry.name.startsWith("@esbuild")) {
+      throw new Error(
+        `@esbuild scope leaked into the consumer tree: ${entry.name}`,
+      );
+    }
+  }
+}
+
+function findSsrImports(dir: string, found: string[]): void {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      findSsrImports(full, found);
+    } else if (
+      /\.(?:[cm]?js|tsx?)$/.test(entry.name) &&
+      readFileSync(full, "utf8").includes("solid-js/web")
+    ) {
+      found.push(full);
+    }
+  }
+}
+
+type AuditVia = string | { url?: string; severity?: string };
+type AuditVulnerabilities = Record<string, { via?: AuditVia[] }>;
+
+// Judge advisories, not affected packages: every dependent of a
+// vulnerable package is itself reported at the same severity.
+function severeAdvisoryIds(vulnerabilities: AuditVulnerabilities): Set<string> {
+  const severe = new Set<string>();
+  const vias = Object.values(vulnerabilities).flatMap((v) => v.via ?? []);
+  for (const via of vias) {
+    if (typeof via === "string") continue;
+    if (via.severity !== "high" && via.severity !== "critical") continue;
+    severe.add(via.url?.split("/").pop() ?? JSON.stringify(via));
+  }
+  return severe;
 }
 
 describe("npm pack ship set", () => {
@@ -322,23 +435,7 @@ describe("npm install dedupe shape", () => {
 
   test("an npm install of the tarball keeps a single solid-js runtime in the tree", async () => {
     installDir = realpathSync(mkdtempSync(join(tmpdir(), "reviewer-install-")));
-    // Mirror opencode's installer (arborist reify with ignoreScripts).
-    const install = Bun.spawnSync({
-      cmd: [
-        "npm",
-        "install",
-        "--prefix",
-        installDir,
-        "--ignore-scripts",
-        "--no-audit",
-        "--no-fund",
-        packOnce(),
-      ],
-      cwd: installDir,
-      stdout: "ignore",
-      stderr: "pipe",
-    });
-    expect(install.exitCode).toBe(0);
+    expect(npmInstallTarball(installDir)).toBe(0);
 
     const pluginDir = join(installDir, "node_modules", PACKAGE_NAME);
     expect(existsSync(pluginDir)).toBe(true);
@@ -358,23 +455,7 @@ describe("npm install dedupe shape", () => {
 
     // Tree-wide scan: exactly one solid-js package directory anywhere.
     const solidDirs: string[] = [];
-    const walk = (dir: string): void => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (
-          !entry.isDirectory() ||
-          entry.name === ".bin" ||
-          entry.name === ".package-lock.json"
-        )
-          continue;
-        const full = join(dir, entry.name);
-        if (dir.endsWith("node_modules") && entry.name === "solid-js") {
-          solidDirs.push(full);
-          continue; // do not descend into the package's own internals
-        }
-        walk(full);
-      }
-    };
-    walk(join(installDir, "node_modules"));
+    findSolidDirs(join(installDir, "node_modules"), solidDirs);
     expect(solidDirs).toHaveLength(1);
     const [solidDir] = solidDirs;
     if (solidDir === undefined) throw new Error("no solid-js directory found");
@@ -403,22 +484,7 @@ describe("npm install dedupe shape", () => {
       mkdtempSync(join(tmpdir(), "reviewer-install-")),
     );
     if (!existsSync(join(installDir, "node_modules", PACKAGE_NAME))) {
-      const install = Bun.spawnSync({
-        cmd: [
-          "npm",
-          "install",
-          "--prefix",
-          installDir,
-          "--ignore-scripts",
-          "--no-audit",
-          "--no-fund",
-          packOnce(),
-        ],
-        cwd: installDir,
-        stdout: "ignore",
-        stderr: "pipe",
-      });
-      expect(install.exitCode).toBe(0);
+      expect(npmInstallTarball(installDir)).toBe(0);
     }
 
     // @babel/core reaches the consumer tree through @opentui/solid, which
@@ -451,48 +517,10 @@ describe("npm install dedupe shape", () => {
     // The build toolchain must not follow the tarball: esbuild (and the
     // advisory it carries) is dev-only by design.
     expect(existsSync(join(installDir, "node_modules", "esbuild"))).toBe(false);
-    for (const entry of readdirSync(join(installDir, "node_modules"), {
-      withFileTypes: true,
-    })) {
-      if (entry.name.startsWith("@esbuild")) {
-        throw new Error(
-          `@esbuild scope leaked into the consumer tree: ${entry.name}`,
-        );
-      }
-    }
+    assertNoEsbuildScope(join(installDir, "node_modules"));
 
-    // Native/platform surveillance: every platform-specific package name in
-    // the consumer tree. The set is frozen; adding one is a supply-chain
-    // review, not an accident.
-    const platformPattern =
-      /(?:-|--)(?:linux|darwin|win32|android|freebsd|netbsd|openbsd|sunos|aix|arm|arm64|x64|x86|ia32|ppc64|riscv64|s390x|musl|glibc|android-arm(?:64)?|fuchsia)(?:$|[/-])/;
     const natives: string[] = [];
-    const walkNatives = (dir: string, scope?: string): void => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (
-          !entry.isDirectory() ||
-          entry.name === ".bin" ||
-          entry.name === ".package-lock.json"
-        )
-          continue;
-        const full = join(dir, entry.name);
-        if (dir.endsWith("node_modules") && entry.name.startsWith("@")) {
-          walkNatives(full, entry.name);
-          continue;
-        }
-        const packageName =
-          scope === undefined ? entry.name : `${scope}/${entry.name}`;
-        if (
-          (scope !== undefined || dir.endsWith("node_modules")) &&
-          platformPattern.test(packageName)
-        ) {
-          natives.push(packageName);
-          continue;
-        }
-        walkNatives(full);
-      }
-    };
-    walkNatives(join(installDir, "node_modules"));
+    findNatives(join(installDir, "node_modules"), natives);
     expect(natives.some((name) => name.startsWith("@opentui/core-"))).toBe(
       true,
     );
@@ -528,21 +556,11 @@ describe("npm install dedupe shape", () => {
     ) as { version: string };
     expect(solidPkg.version).toBe("1.9.12");
     const ssrImporters: string[] = [];
-    const findSsrImports = (dir: string): void => {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        const full = join(dir, entry.name);
-        if (entry.isDirectory()) {
-          findSsrImports(full);
-        } else if (
-          /\.(?:[cm]?js|tsx?)$/.test(entry.name) &&
-          readFileSync(full, "utf8").includes("solid-js/web")
-        ) {
-          ssrImporters.push(full);
-        }
-      }
-    };
-    findSsrImports(join(installDir, "node_modules", PACKAGE_NAME, "dist"));
-    findSsrImports(join(installDir, "node_modules", "@opentui"));
+    findSsrImports(
+      join(installDir, "node_modules", PACKAGE_NAME, "dist"),
+      ssrImporters,
+    );
+    findSsrImports(join(installDir, "node_modules", "@opentui"), ssrImporters);
     expect(ssrImporters).toEqual([]);
     const residualAdvisories = new Set([
       "GHSA-p6vx-979v-rg4c",
@@ -559,12 +577,10 @@ describe("npm install dedupe shape", () => {
       stdout: "pipe",
       stderr: "pipe",
     });
-    const auditText = audit.stdout.toString();
-    type AuditVia = string | { url?: string; severity?: string };
-    let vulnerabilities: Record<string, { via?: AuditVia[] }> | undefined;
+    let vulnerabilities: AuditVulnerabilities | undefined;
     try {
-      const parsed = JSON.parse(auditText) as {
-        vulnerabilities?: Record<string, { via?: AuditVia[] }>;
+      const parsed = JSON.parse(audit.stdout.toString()) as {
+        vulnerabilities?: AuditVulnerabilities;
       };
       vulnerabilities = parsed.vulnerabilities;
     } catch {
@@ -572,16 +588,7 @@ describe("npm install dedupe shape", () => {
       // checks above rather than failing the suite offline.
     }
     if (vulnerabilities !== undefined) {
-      // Judge advisories, not affected packages: every dependent of a
-      // vulnerable package is itself reported at the same severity.
-      const severe = new Set<string>();
-      for (const vulnerability of Object.values(vulnerabilities)) {
-        for (const via of vulnerability.via ?? []) {
-          if (typeof via === "string") continue;
-          if (via.severity !== "high" && via.severity !== "critical") continue;
-          severe.add(via.url?.split("/").pop() ?? JSON.stringify(via));
-        }
-      }
+      const severe = severeAdvisoryIds(vulnerabilities);
       expect([...severe].filter((id) => !residualAdvisories.has(id))).toEqual(
         [],
       );
