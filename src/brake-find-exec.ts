@@ -31,14 +31,16 @@ export function execRemovesRoot(exec: readonly ShellToken[][]): boolean {
   return exec.some(isRootRm);
 }
 
-/** Walks every exec action's argv under the shared `budget`. */
+/** Walks every exec action's argv under the shared `budget`. When `charged`,
+ *  each walk first costs the budget one command per argv token. */
 export function analyzeExecCommands(
   expression: readonly ShellToken[],
   budget: AnalysisBudget,
+  charged: boolean,
 ): ExecCommands {
   const runs = expression.flatMap((token, index) =>
     EXEC_ACTIONS.has(token.value)
-      ? [actionCommands(expression.slice(index + 1), budget)]
+      ? [actionCommands(expression.slice(index + 1), budget, charged)]
       : [],
   );
   return {
@@ -52,15 +54,26 @@ export function analyzeExecCommands(
 function actionCommands(
   words: readonly ShellToken[],
   budget: AnalysisBudget,
+  charged: boolean,
 ): ExecCommands {
   const start = words.findIndex(
     (word) => word.value !== "{" && word.value !== "}",
   );
   if (start === -1) return { commands: [], truncated: false };
-  return analyzeEffectiveCommands(
-    { tokens: [...execArgv(words, start)] },
-    budget,
-  );
+  const argv = execArgv(words, start);
+  if (charged && !chargeArgv(argv, budget))
+    return { commands: [], truncated: true };
+  return analyzeEffectiveCommands({ tokens: [...argv] }, budget);
+}
+
+/** Charges one command per argv token, at least one, and reports whether
+ *  any budget is left for the walk. */
+function chargeArgv(
+  argv: readonly ShellToken[],
+  budget: AnalysisBudget,
+): boolean {
+  budget.remainingCommands -= Math.max(1, argv.length);
+  return budget.remainingCommands > 0;
 }
 
 /** An `rm` that find runs is destructive when it is recursive: find hands it

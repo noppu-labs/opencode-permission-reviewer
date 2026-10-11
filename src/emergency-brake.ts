@@ -33,7 +33,8 @@ interface AnalyzedSegment {
   /** Redirections the segment and the segments of its command strings
    *  carry, including those of a segment without a command. */
   segmentRedirections: ShellRedirection[];
-  /** The segment's find commands, with the commands their exec actions run. */
+  /** The segment's find commands, including those that exec actions run,
+   *  with the commands their exec actions run. */
   finds: FindCommand[];
 }
 
@@ -128,10 +129,8 @@ function analyzeSegment(
 ): AnalyzedSegment | undefined {
   const analysis = analyzeSegmentRedirections(segment, budget);
   if (analysis.truncated) return undefined;
-  const finds = analysis.commands.flatMap(
-    (command) => analyzeFind(command, budget) ?? [],
-  );
-  if (finds.some(({ exec }) => exec.truncated)) return undefined;
+  const finds = analyzeFinds(analysis.commands, budget);
+  if (finds === undefined) return undefined;
   return {
     segment,
     effective: analysis.commands,
@@ -139,6 +138,27 @@ function analyzeSegment(
     segmentRedirections: analysis.segmentRedirections,
     finds,
   };
+}
+
+/** The find commands among `commands` and among the commands their exec
+ *  actions run, at any depth, or `undefined` when any exec walk hits a limit.
+ *  The exec walks of a nested find are charged to the shared `budget` per
+ *  argv token, which keeps the nested work linear in the budget. */
+function analyzeFinds(
+  commands: readonly ShellToken[][],
+  budget: AnalysisBudget,
+): FindCommand[] | undefined {
+  const finds: FindCommand[] = [];
+  const pending = commands.map((command) => ({ command, nested: false }));
+  for (let next = pending.pop(); next; next = pending.pop()) {
+    const find = analyzeFind(next.command, budget, next.nested);
+    if (find?.exec.truncated) return undefined;
+    if (find === undefined) continue;
+    finds.push(find);
+    for (const command of find.exec.commands)
+      pending.push({ command, nested: true });
+  }
+  return finds;
 }
 
 export function emergencyBrakeReason(

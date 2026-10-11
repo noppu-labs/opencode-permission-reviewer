@@ -587,6 +587,47 @@ describe("find exec commands share the analysis budget", () => {
   );
 });
 
+describe("a find run by an exec action is judged like a top-level find", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+  const limited =
+    "Emergency brake: command exceeded the static analysis budget (input size, token count, or command-string expansion). Split the command into smaller steps and retry. This is a resource limit, not a detected destruction.";
+
+  test.each([
+    "find . -exec find / -delete \\;",
+    "find /tmp -exec find / -exec rm -rf {} + \\;",
+    "find . -exec sudo find / -delete \\;",
+    "find . -ok find /tmp / -delete \\;",
+  ])(
+    "judges a find run by an exec action like a top-level find, case %#",
+    (command) => {
+      expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+        blocked,
+      );
+    },
+  );
+
+  test.each([
+    "find . -exec find /tmp -delete \\;",
+    "find / -exec find . -name x \\;",
+    "find . -exec find {} -type f \\;",
+  ])("keeps a find run by an exec action allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+
+  test.each([
+    `find . -exec sh -c 'find . -exec ${"timeout 9 ".repeat(33)}ls {} \\;' \\;`,
+    `find . ${"-exec find . ".repeat(100)}`,
+    `find . ${"-exec find . ".repeat(10)}${"-exec -- ".repeat(500)}`,
+  ])("rejects nested finds beyond the analysis budget, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      limited,
+    );
+  });
+});
+
 describe("partition tools read their short options", () => {
   const blocked =
     "Emergency brake: command contains unmistakable broad system destruction.";

@@ -25,14 +25,17 @@ export interface FindCommand extends FindParts {
 }
 
 /** Splits a find command and walks its exec actions under the shared
- *  `budget`; `undefined` for any other command. */
+ *  `budget`, charged per argv token when the find is `nested` in another
+ *  find's exec action; `undefined` for any other command. */
 export function analyzeFind(
   command: readonly ShellToken[],
   budget: AnalysisBudget,
+  nested: boolean,
 ): FindCommand | undefined {
   if (commandName(command) !== "find") return undefined;
   const { paths, expression } = splitFind(command);
-  return { paths, expression, exec: analyzeExecCommands(expression, budget) };
+  const exec = analyzeExecCommands(expression, budget, nested);
+  return { paths, expression, exec };
 }
 
 /**
