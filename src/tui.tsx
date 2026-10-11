@@ -9,7 +9,9 @@ import { reviewBudgetMs } from "./config.ts";
 // would evaluate the whole server engine (git/ssh evidence, `node:child_process`)
 // inside the TUI process.
 import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
-import { ReviewOverlay, ReviewResult, SPINNER } from "./ui/components.tsx";
+import { SPINNER } from "./ui/components.tsx";
+import { ReviewOverlay } from "./ui/review-overlay.tsx";
+import { ReviewResult } from "./ui/review-result.tsx";
 import { setupTuiV2 } from "./ui/v2.tsx";
 import { decodeUiStatus, type ReviewUiStatus } from "./ui-protocol.ts";
 import { ReviewUiState } from "./ui-state.ts";

@@ -33,13 +33,12 @@ export const {
 }: typeof import("../src/ui/review-theme.ts") = await import(
   "../src/ui/review-theme.ts"
 );
-export const {
-  ReviewOverlay,
-  ReviewProgress,
-  ReviewResult,
-}: typeof import("../src/ui/components.tsx") = await import(
-  "../src/ui/components.tsx"
-);
+export const { ReviewProgress }: typeof import("../src/ui/components.tsx") =
+  await import("../src/ui/components.tsx");
+export const { ReviewResult }: typeof import("../src/ui/review-result.tsx") =
+  await import("../src/ui/review-result.tsx");
+export const { ReviewOverlay }: typeof import("../src/ui/review-overlay.tsx") =
+  await import("../src/ui/review-overlay.tsx");
 export const { testRender }: typeof import("@opentui/solid") = await import(
   "@opentui/solid"
 );

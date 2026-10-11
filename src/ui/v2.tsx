@@ -2,12 +2,9 @@
 import type { Plugin } from "@opencode/plugin/tui";
 import { createSignal, Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
-import {
-  ReviewProgress,
-  ReviewResult,
-  type ReviewTheme,
-} from "./components.tsx";
+import { ReviewProgress, type ReviewTheme } from "./components.tsx";
 import { createReviewFeed } from "./review-feed.ts";
+import { ReviewResult } from "./review-result.tsx";
 import { resolveReviewTheme } from "./review-theme.ts";
 
 type Context = Parameters<Plugin.Definition["setup"]>[0];

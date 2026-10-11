@@ -4,6 +4,8 @@
 export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/tui.tsx",
   "dist/tui/ui/components.tsx",
+  "dist/tui/ui/review-overlay.tsx",
+  "dist/tui/ui/review-result.tsx",
   "dist/tui/ui/v2.tsx",
   "dist/tui/ui/rpc.ts",
   "dist/tui/ui/review-feed.ts",

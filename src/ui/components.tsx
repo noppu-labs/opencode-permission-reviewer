@@ -1,6 +1,6 @@
 /** @jsxImportSource @opentui/solid */
 
-import type { ColorInput, MouseEvent } from "@opentui/core";
+import type { ColorInput } from "@opentui/core";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
@@ -15,14 +15,16 @@ export interface ReviewTheme {
 }
 export const SPINNER = ["◐", "◓", "◑", "◒"] as const;
 
+/** Collapses line breaks and tabs so a value renders on one row. */
+export const singleLine = (value: string): string =>
+  value.replace(/[\r\n\t]+/g, " ");
+
 /** Compact, non-modal progress strip for hosts with an editable composer. */
 export function ReviewProgress(props: {
   theme: () => ReviewTheme;
   status: ReviewUiStatus;
   frame: () => number;
 }): JSX.Element {
-  const singleLine = (value: string): string =>
-    value.replace(/[\r\n\t]+/g, " ");
   const elapsed = (): string => {
     props.frame();
     return `${(Math.max(0, Date.now() - props.status.emittedAt) / 1_000).toFixed(1)}s`;
@@ -70,134 +72,6 @@ export function ReviewProgress(props: {
           </span>
         </Show>
       </text>
-    </box>
-  );
-}
-
-export function ReviewOverlay(props: {
-  theme: () => ReviewTheme;
-  status: ReviewUiStatus;
-  /** Spinner signal, read inside text children so only those update per tick. */
-  frame: () => number;
-}): JSX.Element {
-  const theme = props.theme;
-  const elapsed = (): string => {
-    // Reading the tick signal inside the text child is what re-renders it every
-    // 250ms: Date.now() and status.emittedAt are plain values, so a text that
-    // reads no signal is evaluated once at mount and freezes.
-    props.frame();
-    const elapsedMs = Math.max(0, Date.now() - props.status.emittedAt);
-    return `${(elapsedMs / 1_000).toFixed(1)}s`;
-  };
-
-  return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: <box> is an OpenTUI terminal renderable, not a DOM element, so the ARIA role rule does not apply
-    <box
-      position="absolute"
-      left={0}
-      right={0}
-      bottom={0}
-      height="auto"
-      maxHeight={12}
-      overflow="hidden"
-      backgroundColor={theme().backgroundPanel}
-      border={["left"]}
-      borderColor={theme().info}
-      flexDirection="column"
-      onMouseDown={(event: MouseEvent): void => {
-        event.preventDefault();
-        event.stopPropagation();
-      }}
-      onMouseUp={(event: MouseEvent): void => {
-        event.preventDefault();
-        event.stopPropagation();
-      }}
-    >
-      <box
-        flexDirection="column"
-        gap={1}
-        paddingTop={1}
-        paddingBottom={1}
-        paddingLeft={2}
-        paddingRight={3}
-      >
-        <box flexDirection="row" gap={1}>
-          <text fg={theme().info}>
-            {SPINNER[props.frame() % SPINNER.length] ?? "◐"}
-          </text>
-          <text fg={theme().text}>Reviewing this permission</text>
-          <box flexGrow={1} />
-          <text fg={theme().textMuted}>{elapsed()}</text>
-        </box>
-        <box flexDirection="row" gap={1} paddingLeft={2}>
-          <text fg={theme().textMuted}>{props.status.permission}</text>
-          <text fg={theme().text} wrapMode="word">
-            {props.status.action}
-          </text>
-          <Show when={props.status.actorName}>
-            <text fg={theme().textMuted}>· actor {props.status.actorName}</text>
-          </Show>
-        </box>
-        <box paddingLeft={2} flexDirection="row" gap={1}>
-          <text fg={theme().textMuted}>
-            {props.status.model} · reasoning {props.status.variant}
-          </text>
-          <box flexGrow={1} />
-          <text fg={theme().textMuted}>No action needed</text>
-        </box>
-      </box>
-    </box>
-  );
-}
-
-export function ReviewResult(props: {
-  theme: () => ReviewTheme;
-  status: ReviewUiStatus;
-}): JSX.Element {
-  const theme = props.theme;
-  const appearance = (): { color: ColorInput; icon: string; title: string } => {
-    if (props.status.phase === "unknown") {
-      return {
-        color: theme().textMuted,
-        icon: "?",
-        title: "Review status unavailable",
-      };
-    }
-    if (props.status.phase === "approved") {
-      return { color: theme().success, icon: "✓", title: "Review approved" };
-    }
-    // Fail-closed escalate→deny is distinct from an explicit reviewer/policy deny.
-    if (props.status.escalationDisposition === "deny") {
-      return {
-        color: theme().error,
-        icon: "✕",
-        title: "Review blocked (fail-closed)",
-      };
-    }
-    return { color: theme().error, icon: "✕", title: "Review blocked" };
-  };
-  const singleLine = (value: string): string =>
-    value.replace(/[\r\n\t]+/g, " ");
-
-  return (
-    <box
-      height={props.status.reason ? 2 : 1}
-      flexShrink={0}
-      overflow="hidden"
-      backgroundColor={theme().backgroundPanel}
-      flexDirection="column"
-      paddingLeft={1}
-      paddingRight={1}
-    >
-      <text fg={appearance().color} wrapMode="none" truncate>
-        {appearance().icon} {appearance().title} · {props.status.permission} ·{" "}
-        {singleLine(props.status.action)}
-      </text>
-      <Show when={props.status.reason}>
-        <text fg={theme().textMuted} wrapMode="none" truncate>
-          {singleLine(props.status.reason ?? "")}
-        </text>
-      </Show>
     </box>
   );
 }
