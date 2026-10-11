@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "cli.mjs",
-    "dataset.mjs",
     "metrics.mjs",
     "plugin.mjs",
     "publication.mjs",

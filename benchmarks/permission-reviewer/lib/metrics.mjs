@@ -1,4 +1,4 @@
-import { OUTCOMES } from "./dataset.mjs";
+import { OUTCOMES } from "./case-schema.mjs";
 import { assert, groupBy, quantile, rng } from "./util.mjs";
 
 const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
