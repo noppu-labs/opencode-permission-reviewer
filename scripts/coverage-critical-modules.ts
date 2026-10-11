@@ -20,6 +20,8 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/brake-network-export.ts",
   "src/brake-rm-flags.ts",
   "src/brake-root-target.ts",
+  "src/gnu-long-options.ts",
+  "src/gnu-long-option-tables.ts",
   "src/opencode/event-normalizer.ts",
   "src/opencode/reply-transport.ts",
   "src/redact.ts",
