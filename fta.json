@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "cli.mjs",
-    "plugin.mjs",
     "command-code-cli.test.mjs",
     "live-opencode-v1.mjs",
     "metrics.test.mjs",

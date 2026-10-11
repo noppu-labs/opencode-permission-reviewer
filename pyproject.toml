@@ -60,7 +60,7 @@ skip = "bun.lock,*.lock,./node_modules,./dist,./coverage,benchmarks/permission-r
 # unparseable: the runtime reason string in src/opencode/v1/reviewer-backend.ts, asserted by
 #   tests and quoted in docs and the CHANGELOG.
 # truncat: a regex stem in the pinned src/core/review-engine.ts (PINNED_BLOBS in
-#   benchmarks/permission-reviewer/lib/plugin.mjs hashes that file).
+#   benchmarks/permission-reviewer/lib/pinned-blobs.mjs hashes that file).
 # opeator: a deliberate invalid enum value under test in
 #   tests/trust-hardening/trust-rule-conditions.test.ts.
 ignore-words-list = "afterall,unparseable,truncat,opeator"
