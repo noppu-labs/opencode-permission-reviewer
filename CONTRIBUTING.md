@@ -56,10 +56,10 @@ Your pull request should also meet these rules:
   `sk-syntheticcredential...`, documentation IP ranges (`192.0.2.x`, `198.51.100.x`,
   `203.0.113.x`), and `*.invalid` hostnames. Never commit real tokens, keys, personal filesystem
   paths, or internal codenames. Put new secret-shaped test values in
-  `tests/fixtures/synthetic-secrets.ts`: Biome's `noSecrets` is off in the test directories, and
-  `.gitleaks.toml` allowlists that path with the exact values. Build a value that has a
-  recognised scanner prefix by concatenation (`"ghp_" + "synthetic…"`), so no continuous literal
-  in source matches a secret scanner; the assertions still see the full value.
+  `tests/fixtures/synthetic-secrets.ts`, which `.gitleaks.toml` allowlists by path and exact
+  value. Build a value that has a recognised scanner prefix by concatenation
+  (`"ghp_" + "synthetic…"`), so no continuous literal in source matches a secret scanner; the
+  assertions still see the full value.
 - Behavior stays backward compatible unless you are intentionally changing a version pin or an
   enforcement invariant. If you are, say so in the pull request.
 - User-facing strings are in English. The policy and reviewer prompts are English, and runtime

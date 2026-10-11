@@ -87,15 +87,11 @@ JavaScript files it reads by default. Two behaviors of the tool matter when you 
 An invalid or wrong-typed `score_cap` is silently ignored (the default of 1000 applies), so keep
 it an integer. A syntax error in `fta.json` is caught by `check-json`.
 
-Tests are exempt by directory: `tests` and `benchmarks/permission-reviewer/tests`. In test files FTA
-mostly measures a cyclomatic cliff: two or more branch constructs anywhere in a file put it at
-55-75 whatever its size, so it rewarded loop rewrites rather than simpler tests. `src`, `scripts`
-and the benchmark library stay under the FTA cap.
-
 ### Test files
 
-The two test directories, `tests` and `benchmarks/permission-reviewer/tests`, have their own limits.
-One `overrides` entry in `biome.jsonc` sets them. Everything else keeps the defaults.
+The two test directories, `tests` and `benchmarks/permission-reviewer/tests`, have their own limits:
+one `overrides` entry in `biome.jsonc` and the `exclude_directories` in `fta.json`. Everything else
+keeps the defaults.
 
 | Rule | Test directories | Everything else |
 | --- | --- | --- |
@@ -115,6 +111,8 @@ One `overrides` entry in `biome.jsonc` sets them. Everything else keeps the defa
 - `noSecrets`: synthetic credentials are deliberate fixtures. gitleaks scans them with its
   path-scoped allowlist (`.gitleaks.toml`), on the staged diff and on the whole tree in CI, so it
   stays the secret check.
+- FTA: in test files the score mostly tracks a cyclomatic cliff (two or more branch constructs put
+  a file at 55-75 whatever its size), so the cap rewarded loop rewrites rather than simpler tests.
 
 The override leaves `tests/live-fixture` excluded and changes no other rule. Source, scripts and the
 benchmark library (`benchmarks/permission-reviewer/lib`) keep all four rules at the defaults.
@@ -150,10 +148,9 @@ or a covered case. If that is not enough, don't restructure the file; ask.
 
 ### Exemptions (the ratchet)
 
-The ratchet is empty. Biome's one `overrides` entry and FTA's `exclude_directories` cover the two
-test directories as a whole, not a list of files (see "Test files"), and every source, script and
-benchmark library file is under the complexity, length and FTA limits. Don't add to the ratchet to
-get a new change through: fix the finding, or suppress it on the line with a reason.
+The ratchet is empty: no per-file exemption exists in `biome.jsonc` or `fta.json` (the test
+directories are covered as a whole, see "Test files"). Don't add one to get a change through: fix
+the finding, or suppress it on the line with a reason.
 
 ### Ignored audit advisories
 
