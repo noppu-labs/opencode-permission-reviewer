@@ -35,7 +35,8 @@ import type {
 } from "../types.ts";
 import { renderVerifiedSshScriptCommand } from "../verified-ssh-command.ts";
 import { VERIFIED_SCRIPT_LIMIT } from "../verified-ssh-script.ts";
-import { inspectConfigSources, runDoctor } from "./doctor-command.ts";
+import { inspectConfigSources } from "./config-sources.ts";
+import { runDoctor } from "./doctor-command.ts";
 import { runInit } from "./init.ts";
 
 // Guarded so importing the module (e.g. via the "./cli" export or in tests)

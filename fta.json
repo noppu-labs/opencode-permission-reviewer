@@ -26,7 +26,6 @@
     "providers.test.mjs",
     "runner.test.mjs",
     "explain.ts",
-    "doctor-command.ts",
     "actor-resolver.test.ts",
     "ask-decisions.test.ts",
     "audit.test.ts",
