@@ -16,12 +16,20 @@ interface ToolCall {
   readonly input: unknown;
 }
 
-export function toolKey(
-  sessionID: string,
-  messageID: string,
-  id: string,
-): string {
+function toolKey(sessionID: string, messageID: string, id: string): string {
   return `${sessionID}:${messageID}:${id}`;
+}
+
+/** The exact tool input the tool hooks retain for the pending action. */
+export function exactToolInput(
+  state: Pick<ServerState, "tools">,
+  input: PermissionEvaluation,
+): unknown {
+  return input.source
+    ? state.tools.get(
+        toolKey(input.sessionID, input.source.messageID, input.source.id),
+      )?.input
+    : undefined;
 }
 
 /** The pending action as the review saw it, with the exact tool input the
@@ -29,6 +37,7 @@ export function toolKey(
 export function snapshotAction(
   state: Pick<ServerState, "tools">,
   input: PermissionEvaluation,
+  exact: unknown = exactToolInput(state, input),
 ): string {
   return JSON.stringify({
     sessionID: input.sessionID,
@@ -37,11 +46,7 @@ export function snapshotAction(
     resources: input.resources,
     metadata: input.metadata,
     source: input.source,
-    exact: input.source
-      ? state.tools.get(
-          toolKey(input.sessionID, input.source.messageID, input.source.id),
-        )?.input
-      : undefined,
+    exact,
   });
 }
 

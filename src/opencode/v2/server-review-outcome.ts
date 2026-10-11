@@ -1,7 +1,6 @@
 // The end of a V2 review: the failure-safe overrides for a changed or
 // cancelled action, the permission effect the hook returns, and the UI status
 // and audit record queued after it.
-import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
 import type { PermissionRequest, ReviewExecutionResult } from "../../types.ts";
 import { createUiStatus, type ReviewUiStatus } from "../../ui-protocol.ts";
 import { reviewAuditRecord } from "./server-audit.ts";
@@ -57,12 +56,15 @@ function finalPhase(
 }
 
 function finalVariant(
-  config: ServerState["config"],
+  {
+    config,
+    systemOneReviewer,
+  }: Pick<ServerState, "config" | "systemOneReviewer">,
   result: ReviewExecutionResult,
 ): string {
   if (result.reviewerModel && result.reviewerModel !== config.model)
     return config.escalationReviewer?.variant ?? config.variant;
-  return isSystemOneReviewerModel(config.model) ? "system-one" : config.variant;
+  return systemOneReviewer ? "system-one" : config.variant;
 }
 
 function finalStatus(
@@ -73,7 +75,7 @@ function finalStatus(
 ): ReviewUiStatus {
   return createUiStatus(request, finalPhase(result.kind), {
     model: result.reviewerModel ?? server.config.model,
-    variant: finalVariant(server.config, result),
+    variant: finalVariant(server, result),
     timeoutMs: budget,
     reason: result.reason,
     ...(result.decision ? { decision: result.decision } : {}),

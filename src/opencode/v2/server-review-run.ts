@@ -9,7 +9,7 @@ import { formatFailureReason } from "../../failure-reason.ts";
 import type { ReviewExecutionResult } from "../../types.ts";
 import { createUiStatus } from "../../ui-protocol.ts";
 import { normalizeV2Permission } from "./permission-codec.ts";
-import { snapshotAction, toolKey } from "./server-events.ts";
+import { exactToolInput, snapshotAction } from "./server-events.ts";
 import { finishReview } from "./server-review-outcome.ts";
 import { reviewPorts } from "./server-review-ports.ts";
 import type { ReviewRun } from "./server-state.ts";
@@ -21,12 +21,8 @@ function beginReview(
   run: ReviewRun,
 ): NormalizedReviewRequest {
   const { input } = run;
-  const source = input.source;
-  const exact = source
-    ? server.tools.get(toolKey(input.sessionID, source.messageID, source.id))
-        ?.input
-    : undefined;
-  run.actionSnapshot = snapshotAction(server, input);
+  const exact = exactToolInput(server, input);
+  run.actionSnapshot = snapshotAction(server, input, exact);
   if (run.actionSnapshot.length > 1_000_000)
     throw new Error("Pending action exceeds the evidence size limit");
   const permission = normalizeV2Permission(
