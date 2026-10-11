@@ -91,7 +91,7 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
       expect(state.snapshots).toEqual([DIRECTORY, SECOND]);
       expect(first.signal.aborted).toBe(true);
       settle(pending);
-      await Bun.sleep(1_300);
+      await running.settle();
       expect(running.frame()).toContain("Reviewing this permission");
       expect(running.frame()).not.toContain("Old directory");
       expect(running.frame()).not.toContain("Review approved");
@@ -142,6 +142,7 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
     const first = latest(running.state);
     await running.sees("Review status unavailable");
     expect(first.signal.aborted).toBe(true);
+    await running.reconnect();
     await running.until(
       () => running.state.snapshots.length === 2,
       "reconnect snapshot",
@@ -159,7 +160,7 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
     running.dispose();
     expect(first.signal.aborted).toBe(true);
     expect(running.state.mode.depth).toBe(0);
-    await Bun.sleep(1_300);
+    await running.settle();
     expect(running.state.snapshots).toHaveLength(1);
   });
 
@@ -169,7 +170,7 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
     await running.until(() => running.state.snapshots.length === 1, "snapshot");
     running.dispose();
     pending.resolve(snapshot([status("reviewing")]));
-    await Bun.sleep(1_300);
+    await running.settle();
     expect(running.state.snapshots).toHaveLength(1);
     expect(running.state.mode.depth).toBe(0);
   });

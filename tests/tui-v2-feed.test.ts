@@ -58,6 +58,7 @@ describe("V2 TUI reviewer feed", () => {
     expect(running.frame()).toContain("Reconnecting to reviewer status");
     expect(running.state.mode.depth).toBe(0);
     expect(first.signal.aborted).toBe(true);
+    await running.reconnect();
     await running.until(
       () => running.state.snapshots.length === 2,
       "reconnect snapshot",
@@ -83,6 +84,7 @@ describe("V2 TUI reviewer feed", () => {
     expect(first.signal.aborted).toBe(true);
     expect(running.frame()).not.toContain("Review approved");
     expect(running.frame()).not.toContain("Review blocked");
+    await running.reconnect();
     await running.until(
       () => running.state.snapshots.length === 2,
       "reconnect snapshot",
@@ -171,6 +173,7 @@ describe("V2 TUI reviewer feed", () => {
           respond: [() => invalid, () => snapshot([status("reviewing")])],
         }),
       );
+      await running.reconnect();
       await running.until(
         () => running.state.snapshots.length === 2,
         "retried snapshot",
@@ -195,6 +198,8 @@ describe("V2 TUI reviewer feed", () => {
     first.ended = true;
     first.wake?.();
     await running.sees("Review status unavailable");
+    await running.reconnect();
+    await running.reconnect();
     await running.until(
       () => running.state.snapshots.length === 3,
       "second retry",

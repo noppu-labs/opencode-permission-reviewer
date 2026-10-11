@@ -1,3 +1,4 @@
+import { holdOneSecondTimers } from "./held-timers.ts";
 import { setupTuiV2, testRender } from "./tui-loader.ts";
 import type { Host } from "./tui-v2-feed-data.ts";
 import { reviewerClient } from "./tui-v2-feed-rpc.ts";
@@ -41,6 +42,11 @@ export interface Running {
   frame(): string;
   until(check: () => boolean, label: string, timeout?: number): Promise<void>;
   sees(text: string, present?: boolean): Promise<void>;
+  /** Waits until the feed schedules its 1 s reconnect, then fires it. */
+  reconnect(): Promise<void>;
+  /** Lets the feed settle past its 250 ms sweep, then fires every pending
+   *  1 s timer as if its second had passed. */
+  settle(): Promise<void>;
   dispose(): void;
 }
 
@@ -52,6 +58,8 @@ export function stopAll(): void {
 
 export async function start(state: Host): Promise<Running> {
   const slot = { render: (): unknown => null };
+  const timers = holdOneSecondTimers();
+  cleanups.push(timers.restore);
   const dispose = await setupTuiV2(context(state, slot));
   let disposed = false;
   const stop = (): void => {
@@ -81,5 +89,14 @@ export async function start(state: Host): Promise<Running> {
   };
   const sees = (text: string, present = true): Promise<void> =>
     until(() => frame().includes(text) === present, text);
-  return { state, frame, until, sees, dispose: stop };
+  const reconnect = async (): Promise<void> => {
+    await until(() => timers.pending > 0, "a scheduled reconnect");
+    timers.fire();
+  };
+  const settle = async (): Promise<void> => {
+    await Bun.sleep(300);
+    timers.fire();
+    await view.flush();
+  };
+  return { state, frame, until, sees, reconnect, settle, dispose: stop };
 }
