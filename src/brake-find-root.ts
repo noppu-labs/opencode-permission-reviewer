@@ -2,22 +2,14 @@ import { commandName, isOptionWord } from "./brake-arguments.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import { elementAt } from "./element-at.ts";
-import type { ShellToken } from "./shell-token.ts";
+import { type ShellToken, sliceToken } from "./shell-token.ts";
 
 const EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 
-/** Options find accepts before its paths (`-D` and `-f` take a value and are
- *  handled apart; `-O<level>` is matched by prefix). */
-const LEADING_OPTIONS = new Set([
-  "-H",
-  "-L",
-  "-P",
-  "-E",
-  "-X",
-  "-d",
-  "-s",
-  "-x",
-]);
+/** The letters of the flags find accepts before its paths, alone or
+ *  clustered (`-H -L -P -E -X -d -s -x`, e.g. `-dx`). A cluster may end in
+ *  `f`, which takes a path (`-D` and `-O<level>` are handled apart). */
+const LEADING_LETTERS = new Set(["E", "H", "L", "P", "X", "d", "s", "x"]);
 
 /** Non-option words that start the expression and end the paths. */
 const EXPRESSION_STARTS = new Set(["!", "("]);
@@ -48,59 +40,106 @@ interface LeadingOptions {
   paths: ShellToken[];
 }
 
+/** A word made of leading letters; `file` when it ends in `f`, and `glued`
+ *  the index where a path value starts inside the word (or -1 when the value
+ *  is the next word). */
+interface LeadingCluster {
+  file: boolean;
+  glued: number;
+}
+
 /** Splits a find command line into its search paths and its expression. The
  *  paths are the `-f` values plus every word from the first operand up to the
  *  first word that starts the expression. When an expression primary such as
- *  `-maxdepth` comes first, find rejects the command line, and only the first
- *  operand is still checked. */
+ *  `-maxdepth` comes first, find rejects the command line: only the first
+ *  operand is still checked as a path, and the expression starts at that
+ *  primary. */
 function splitFind(command: readonly ShellToken[]): FindParts {
   const { next, primary, paths } = skipLeadingOptions(command);
-  if (next >= command.length)
-    return { paths, expression: command.slice(primary ?? next) };
-  let end = primary === undefined ? next : next + 1;
+  const operands =
+    primary === undefined
+      ? scanPaths(command, next)
+      : command.slice(next, next + 1);
+  paths.push(...operands);
+  return {
+    paths,
+    expression: command.slice(primary ?? next + operands.length),
+  };
+}
+
+/** The words from `start` up to the first one that starts the expression. */
+function scanPaths(
+  command: readonly ShellToken[],
+  start: number,
+): readonly ShellToken[] {
+  let end = start;
   while (
-    primary === undefined &&
     end < command.length &&
     !startsExpression(elementAt(command, end, "command").value)
   )
     end += 1;
-  paths.push(...command.slice(next, end));
-  return { paths, expression: command.slice(end) };
+  return command.slice(start, end);
 }
 
 /** Skips the options that precede the paths; `--` ends them. */
 function skipLeadingOptions(command: readonly ShellToken[]): LeadingOptions {
   const leading: LeadingOptions = { next: 1, primary: undefined, paths: [] };
   while (leading.next < command.length) {
-    const value = elementAt(command, leading.next, "command").value;
-    if (value === "--") {
+    const word = elementAt(command, leading.next, "command");
+    if (word.value === "--") {
       leading.next += 1;
       break;
     }
-    if (!isOptionWord(value)) break;
-    skipLeadingOption(command, leading, value);
+    if (!isOptionWord(word.value)) break;
+    skipLeadingOption(command, leading, word);
   }
   return leading;
 }
 
-/** `-D` takes a value and `-f` takes a path (collected, as long as no
- *  expression primary came first); any other non-leading option is a primary. */
+/** `-D` takes a value; a cluster ending in `f` takes a path, collected as
+ *  long as no expression primary came first; any other option is a primary. */
 function skipLeadingOption(
   command: readonly ShellToken[],
   leading: LeadingOptions,
-  value: string,
+  word: ShellToken,
 ): void {
-  if (value === "-D") leading.next += 1;
-  else if (value === "-f" && leading.primary === undefined) {
-    const path = command[leading.next + 1];
-    if (path !== undefined) leading.paths.push(path);
-    leading.next += 1;
-  } else if (!isLeadingOption(value)) leading.primary ??= leading.next;
+  const cluster = leadingCluster(word.value);
+  if (word.value === "-D") leading.next += 1;
+  else if (cluster?.file && leading.primary === undefined)
+    collectFilePath(command, leading, word, cluster);
+  else if (cluster === undefined && !word.value.startsWith("-O"))
+    leading.primary ??= leading.next;
   leading.next += 1;
 }
 
-function isLeadingOption(value: string): boolean {
-  return LEADING_OPTIONS.has(value) || value.startsWith("-O");
+/** Collects a `-f` value: the rest of the word when glued, else the next
+ *  word. The glued value keeps its quote spans for the root checks. */
+function collectFilePath(
+  command: readonly ShellToken[],
+  leading: LeadingOptions,
+  word: ShellToken,
+  cluster: LeadingCluster,
+): void {
+  if (cluster.glued >= 0) {
+    leading.paths.push(sliceToken(word, cluster.glued));
+    return;
+  }
+  const path = command[leading.next + 1];
+  if (path !== undefined) leading.paths.push(path);
+  leading.next += 1;
+}
+
+/** Reads a word as a cluster of leading letters, optionally ending in `f`
+ *  with a glued path value starting at `/`; `undefined` for any other word. */
+function leadingCluster(value: string): LeadingCluster | undefined {
+  let index = 1;
+  while (index < value.length && LEADING_LETTERS.has(value.charAt(index)))
+    index += 1;
+  if (index === value.length) return { file: false, glued: -1 };
+  if (value.charAt(index) !== "f") return undefined;
+  if (index + 1 === value.length) return { file: true, glued: -1 };
+  if (value.charAt(index + 1) !== "/") return undefined;
+  return { file: true, glued: index + 1 };
 }
 
 function startsExpression(value: string): boolean {

@@ -134,6 +134,17 @@ describe("find checks every search path", () => {
     "find -f / -delete",
     "find /tmp , / -delete",
     "find /tmp ')' / -delete",
+    "find -f / -delete x",
+    "find -f / -delete -print",
+    "find -L -f / -delete x",
+    "find -f / -delete <<EOF\nbody\nEOF",
+    "find -dx /tmp / -delete",
+    "find -Lx /tmp / -delete",
+    "find -sx /tmp / -delete",
+    "find -dL /tmp / -delete",
+    "find -Hf /tmp / -delete",
+    "find -f/ -delete",
+    "find -Lf/ -delete",
   ])("blocks when any search path is the root, case %#", (command) => {
     expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
       blocked,
@@ -149,6 +160,9 @@ describe("find checks every search path", () => {
     "find /tmp '(' -name x ')' -delete",
     // An expression word before the paths: find rejects the command line.
     "find -maxdepth 1 / -delete",
+    "find -dx /tmp /var -delete",
+    "find -Hf /tmp -delete",
+    "find -delete",
   ])("keeps a non-root search allowed, case %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
