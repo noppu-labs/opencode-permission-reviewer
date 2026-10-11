@@ -34,7 +34,8 @@ type-checks, runs every hook on every file and the whole-tree gitleaks scan, the
 The CI `quality` job runs the same hooks once; the `check` job repeats build, typecheck and tests
 on the minimum and the pinned Bun versions. The release workflow runs the same hooks in its own
 read-only `quality` job, which the artifact-building job needs, so that job only runs steps pinned
-by `bun.lock`.
+by `bun.lock`. That job sets `SKIP=bun-audit`, so a release is not blocked by advisories that have
+no upstream fix yet (see "Ignored audit advisories").
 
 | Tool | What it checks | Settings |
 | --- | --- | --- |
@@ -143,7 +144,9 @@ still fails on anything new:
 Resolving them is a dependency decision; remove the matching `--ignore` flag when it is made.
 `bun audit` needs network access. As a hook it runs only when `bun.lock` or `package.json`
 changes, but `pre-commit run --all-files` (and so `bun run check` and the CI `quality` job) always
-runs it, so a new advisory fails the next push.
+runs it, so a new advisory fails the next push. The release workflow's `quality` job skips this
+hook (`SKIP=bun-audit`) until `GHSA-p6vx-979v-rg4c`, `GHSA-jp82-f5mq-hwhp` and
+`GHSA-ch52-4w7c-c8xp` have fixes; remove the `env` entry from that step then.
 
 ## Live testing
 

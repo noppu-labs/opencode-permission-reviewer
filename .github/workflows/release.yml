@@ -87,7 +87,10 @@ jobs:
 
       - run: uv sync --locked --no-build
 
+      # bun-audit is skipped: advisories without upstream fixes would block releases. The CI quality job still runs it.
       - run: uv run --frozen --no-build pre-commit run --all-files --show-diff-on-failure
+        env:
+          SKIP: bun-audit
 
       - run: uv run --frozen --no-build pre-commit run --hook-stage manual gitleaks-tree --all-files
 
