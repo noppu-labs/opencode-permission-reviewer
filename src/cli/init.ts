@@ -7,7 +7,7 @@
  * use. Never prints the full config contents (user configs may carry secrets).
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
@@ -17,6 +17,7 @@ import { applyPlannedWrites } from "./init-apply.ts";
 import { planFileChange } from "./init-config-files.ts";
 import { readConfigFile } from "./init-config-read.ts";
 import type { HostGeneration, PackageInfo, PluginEntry } from "./init-types.ts";
+import { findPackageJson } from "./package-json.ts";
 
 export async function runInit(argv: string[]): Promise<number> {
   const { values } = parseArgs({
@@ -207,27 +208,16 @@ registered entry or a malformed config.
 }
 
 function readPackageInfo(): PackageInfo {
-  let dir = import.meta.dirname ?? process.cwd();
-  for (let depth = 0; depth < 8; depth++) {
-    const candidate = join(dir, "package.json");
-    if (existsSync(candidate)) {
-      const raw = JSON.parse(readFileSync(candidate, "utf8")) as {
-        name?: string;
-        version?: string;
-        engines?: { bun?: string; opencode?: string };
-      };
-      return {
-        name: raw.name ?? "opencode-permission-reviewer",
-        version: raw.version ?? "0.0.0",
-        engines: raw.engines ?? {},
-        root: dir,
-      };
-    }
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error("init: could not locate package.json");
+  const found = findPackageJson(import.meta.dirname ?? process.cwd());
+  if (found === undefined)
+    throw new Error("init: could not locate package.json");
+  const raw = found.manifest;
+  return {
+    name: raw.name ?? "opencode-permission-reviewer",
+    version: raw.version ?? "0.0.0",
+    engines: raw.engines ?? {},
+    root: found.dir,
+  };
 }
 
 function buildEntry(

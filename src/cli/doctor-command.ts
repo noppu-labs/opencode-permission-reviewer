@@ -1,8 +1,8 @@
 // The `doctor` subcommand: versions, config sources, audit path writability and policy mode.
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { mkdir, open } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { dirname } from "node:path";
 import { parseArgs } from "node:util";
 import { OpenCode } from "@opencode/client";
 import { resolveAuditPath } from "../audit.ts";
@@ -18,6 +18,7 @@ import {
 } from "../policy/policy-engine.ts";
 import { ReviewerRpc } from "../ui/rpc.ts";
 import { probeOpencodeVersion } from "./init.ts";
+import { findPackageJson } from "./package-json.ts";
 
 export async function runDoctor(argv: string[]): Promise<number> {
   const { values } = parseArgs({
@@ -129,29 +130,16 @@ export async function runDoctor(argv: string[]): Promise<number> {
   return 0;
 }
 
-/** Locate the nearest package.json by walking up from this module. The CLI
- *  lives at <root>/src/cli (source) or <root>/dist (bundle), so the package
- *  root is a different number of levels up in each layout; searching upward
- *  works for both. */
 function readPackageJson(): {
-  version: string;
+  version: string | undefined;
   engines: { opencode?: string; bun?: string };
 } {
-  let dir = import.meta.dirname;
-  for (let depth = 0; depth < 8; depth++) {
-    const candidate = join(dir, "package.json");
-    if (existsSync(candidate)) {
-      const raw = JSON.parse(readFileSync(candidate, "utf8")) as {
-        version: string;
-        engines?: { opencode?: string; bun?: string };
-      };
-      return { version: raw.version, engines: raw.engines ?? {} };
-    }
-    const parent = dirname(dir);
-    if (parent === dir) break;
-    dir = parent;
-  }
-  throw new Error("could not locate package.json");
+  const found = findPackageJson(import.meta.dirname);
+  if (found === undefined) throw new Error("could not locate package.json");
+  return {
+    version: found.manifest.version,
+    engines: found.manifest.engines ?? {},
+  };
 }
 
 interface SourceInfo {
