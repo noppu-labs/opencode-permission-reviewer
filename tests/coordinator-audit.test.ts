@@ -6,6 +6,9 @@ import { join } from "node:path";
 import type { ClientResponse } from "../src/opencode/types.ts";
 import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
+import { holdCalls } from "./runtime/runtime-fixtures.ts";
+
+type PromptResolver = (value: ClientResponse<Record<string, unknown>>) => void;
 
 beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
@@ -14,16 +17,14 @@ beforeAll(async () => {
 describe("coordinator audit records", () => {
   test("a manual reply that supersedes an in-flight review writes exactly one superseded audit record", async () => {
     const client = new MockClient();
-    const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
-      [];
+    const calls = holdCalls<PromptResolver>("reviewer prompts");
     client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+      new Promise((resolve) => calls.hold(resolve));
     const harness = runtime(client);
     harness.runtime.handle(request());
-    // Let the reviewer reach the model call, then have the human reject.
-    await new Promise((r) => setTimeout(r, 5));
+    // The reviewer reaches the model call, then the human rejects.
+    await calls.held(1);
+    expect(calls.resolvers).toHaveLength(1);
     harness.runtime.handlePermissionReply({
       type: "permission.replied",
       properties: {
@@ -32,7 +33,7 @@ describe("coordinator audit records", () => {
         reply: "reject",
       },
     });
-    for (const resolve of resolvers)
+    for (const resolve of calls.resolvers)
       resolve({ data: { info: { structured: decision("allow") } } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);

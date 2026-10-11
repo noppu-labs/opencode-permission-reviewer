@@ -9,6 +9,9 @@ import {
 import type { ClientResponse } from "../src/opencode/types.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
+import { holdCalls } from "./runtime/runtime-fixtures.ts";
+
+type PromptResolver = (value: ClientResponse<Record<string, unknown>>) => void;
 
 function cfg(overrides: Partial<ReviewerConfig> = {}): ReviewerConfig {
   return {
@@ -432,20 +435,17 @@ describe("runtime escalationMode deny", () => {
 
   test("manual supersede still wins under escalationMode deny", async () => {
     const client = new MockClient();
-    const resolvers: Array<(value: { data: Record<string, unknown> }) => void> =
-      [];
+    const calls = holdCalls<PromptResolver>("reviewer prompts");
     client.promptImpl = (): Promise<ClientResponse<Record<string, unknown>>> =>
-      new Promise((resolve) => {
-        resolvers.push(resolve);
-      });
+      new Promise((resolve) => calls.hold(resolve));
     const harness = runtime(client, { escalationMode: "deny" });
     harness.runtime.handle(request());
-    await new Promise((r) => setTimeout(r, 5));
+    await calls.held(1);
     harness.runtime.handlePermissionReply({
       type: "permission.replied",
       properties: { sessionID: "ses_main", requestID: "per_1", reply: "once" },
     });
-    for (const resolve of resolvers)
+    for (const resolve of calls.resolvers)
       resolve({ data: { info: { structured: decision("escalate") } } });
     await harness.runtime.waitForIdle();
     expect(client.replies).toHaveLength(0);
