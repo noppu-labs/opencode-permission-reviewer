@@ -1,4 +1,5 @@
-import { expect, spyOn, test } from "bun:test";
+import { expect, test } from "bun:test";
+import { holdOneSecondTimers } from "./held-timers.ts";
 import { until } from "./poll-until.ts";
 import {
   type Input,
@@ -175,26 +176,6 @@ test("v2 shutdown logs a failed backend cleanup", async () => {
   );
 });
 
-/** Holds every 1 s timer started until the returned release runs, then fires
- *  them, so UI publications bounded by 1 s stay pending however slow the
- *  runner is. Other timers run as usual. */
-function holdOneSecondTimers(): () => void {
-  const original = globalThis.setTimeout;
-  const held: Array<() => void> = [];
-  const timers = spyOn(globalThis, "setTimeout").mockImplementation(((
-    callback: () => void,
-    ms?: number,
-  ) => {
-    if (ms !== 1000) return original(callback, ms);
-    held.push(callback);
-    return original(() => {}, 0);
-  }) as typeof setTimeout);
-  return (): void => {
-    timers.mockRestore();
-    for (const fire of held.splice(0)) fire();
-  };
-}
-
 async function evaluateBatch(
   harness: ServerFixture,
   batch: number,
@@ -214,7 +195,9 @@ test("v2 UI statuses stay bounded and notifications past capacity are omitted", 
         ? Promise.resolve()
         : new Promise<void>(() => {}),
   });
-  const release = holdOneSecondTimers();
+  // UI publications are bounded by 1 s; holding that bound keeps them pending
+  // however slow the runner is, so the notification queue still fills.
+  const timers = holdOneSecondTimers();
   try {
     await Array.from({ length: 9 }).reduce<Promise<void>>(
       (previous, _, batch) =>
@@ -222,7 +205,8 @@ test("v2 UI statuses stay bounded and notifications past capacity are omitted", 
       Promise.resolve(),
     );
   } finally {
-    release();
+    timers.fire();
+    timers.restore();
   }
   const reviews = (await harness.rpc.snapshot()).reviews as Array<{
     sessionID: string;
