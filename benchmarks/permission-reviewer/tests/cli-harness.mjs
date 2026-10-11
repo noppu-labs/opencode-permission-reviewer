@@ -8,15 +8,20 @@ import { readJSONL } from "../lib/util.mjs";
 
 export const benchmark = fileURLToPath(new URL("../", import.meta.url));
 export const repo = fileURLToPath(new URL("../../../", import.meta.url));
+/** Preloaded into a spawned CLI, it stops the clock that `Date.now()` reads. */
+export const frozenClock = fileURLToPath(
+  new URL("./frozen-clock.mjs", import.meta.url),
+);
 const FAILED =
   "ERROR: benchmark command failed; check configuration and private run files.\n";
 
-/** Run the CLI and resolve with its exit code and output, failed or not. */
-export const cli = (args, runtime = "node") =>
+/** Run the CLI and resolve with its exit code and output, failed or not.
+ *  `flags` go to the runtime before the script. */
+export const cli = (args, runtime = "node", flags = []) =>
   new Promise((resolve) => {
     execFile(
       runtime, // NOSONAR(S4036) test harness: runs the developer's own node or bun from PATH, as the README's commands do
-      ["cli.mjs", ...args],
+      [...flags, "cli.mjs", ...args],
       { cwd: benchmark, timeout: 120_000 },
       (error, stdout, stderr) =>
         resolve({ code: error ? error.code : 0, stdout, stderr }),
