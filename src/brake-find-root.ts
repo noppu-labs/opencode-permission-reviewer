@@ -1,7 +1,13 @@
 import { commandName, isOptionWord } from "./brake-arguments.ts";
-import { execRemovesRoot, expressionDeletes } from "./brake-find-exec.ts";
+import {
+  analyzeExecCommands,
+  type ExecCommands,
+  execRemovesRoot,
+  expressionDeletes,
+} from "./brake-find-exec.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import { elementAt } from "./element-at.ts";
+import type { AnalysisBudget } from "./shell-lexer.ts";
 import { type ShellToken, sliceToken } from "./shell-token.ts";
 
 /** The letters of the flags find accepts before its paths, alone or
@@ -12,6 +18,23 @@ const LEADING_LETTERS = new Set(["E", "H", "L", "P", "X", "d", "s", "x"]);
 /** Non-option words that start the expression and end the paths. */
 const EXPRESSION_STARTS = new Set(["!", "("]);
 
+/** A find command split into its search paths and its expression, with the
+ *  commands its exec actions run. */
+export interface FindCommand extends FindParts {
+  exec: ExecCommands;
+}
+
+/** Splits a find command and walks its exec actions under the shared
+ *  `budget`; `undefined` for any other command. */
+export function analyzeFind(
+  command: readonly ShellToken[],
+  budget: AnalysisBudget,
+): FindCommand | undefined {
+  if (commandName(command) !== "find") return undefined;
+  const { paths, expression } = splitFind(command);
+  return { paths, expression, exec: analyzeExecCommands(expression, budget) };
+}
+
 /**
  * `find / … -delete` and `find / … -exec rm -rf {} …` reach root through the
  * find expression rather than through a literal `rm` operand, so the rm lexer
@@ -19,12 +42,10 @@ const EXPRESSION_STARTS = new Set(["!", "("]);
  * to `/` and the expression deletes its results, the destruction is unmistakable.
  * An rm that an exec action runs is also judged like a top-level rm.
  */
-export function isRootFind(command: readonly ShellToken[]): boolean {
-  if (commandName(command) !== "find") return false;
-  const { paths, expression } = splitFind(command);
+export function isRootFind({ paths, expression, exec }: FindCommand): boolean {
   return (
-    (paths.some(targetsRoot) && expressionDeletes(expression)) ||
-    execRemovesRoot(expression)
+    (paths.some(targetsRoot) && expressionDeletes(expression, exec.commands)) ||
+    execRemovesRoot(exec.commands)
   );
 }
 

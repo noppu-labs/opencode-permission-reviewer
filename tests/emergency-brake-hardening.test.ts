@@ -553,6 +553,40 @@ describe("a find exec rm is judged by the rm root rule", () => {
   });
 });
 
+describe("find exec commands share the analysis budget", () => {
+  const limited =
+    "Emergency brake: command exceeded the static analysis budget (input size, token count, or command-string expansion). Split the command into smaller steps and retry. This is a resource limit, not a detected destruction.";
+
+  test.each([
+    `find / -exec ${"timeout 9 ".repeat(33)}rm -rf {} +`,
+    `find / -exec ${"busybox ".repeat(33)}rm -rf {} +`,
+    `find . -exec ${"busybox ".repeat(33)}rm -rf / +`,
+    `find / -exec ${"chroot / ".repeat(33)}rm -rf {} +`,
+    `find . -exec sh -c '${"true; ".repeat(4100)}rm -rf /' \\;`,
+    `find /tmp -ok ${"timeout 9 ".repeat(33)}ls {} \\;`,
+  ])(
+    "rejects a find exec command beyond the analysis budget, case %#",
+    (command) => {
+      expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+        limited,
+      );
+    },
+  );
+
+  test.each([
+    "find /tmp -exec sudo rm -rf {} +",
+    "find / -exec sudo ls -l {} +",
+    `find / -exec ${"timeout 9 ".repeat(32)}ls {} +`,
+  ])(
+    "keeps a find exec command within the analysis budget allowed, case %#",
+    (command) => {
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeUndefined();
+    },
+  );
+});
+
 describe("partition tools read their short options", () => {
   test.each([
     "sfdisk -W always /dev/sda",

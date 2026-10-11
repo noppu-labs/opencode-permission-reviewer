@@ -3,7 +3,11 @@ import {
   redirectTargetsBlockDevice,
 } from "./brake-block-device.ts";
 import { commandDestroysDevice } from "./brake-device-tools.ts";
-import { isRootFind } from "./brake-find-root.ts";
+import {
+  analyzeFind,
+  type FindCommand,
+  isRootFind,
+} from "./brake-find-root.ts";
 import { commandExportsSecret } from "./brake-network-export.ts";
 import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
@@ -11,6 +15,7 @@ import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import { analyzeSegmentRedirections } from "./shell-effective-commands.ts";
 import {
+  type AnalysisBudget,
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
@@ -28,6 +33,8 @@ interface AnalyzedSegment {
   /** Redirections the segment and the segments of its command strings
    *  carry, including those of a segment without a command. */
   segmentRedirections: ShellRedirection[];
+  /** The segment's find commands, with the commands their exec actions run. */
+  finds: FindCommand[];
 }
 
 /*
@@ -49,12 +56,12 @@ interface AnalyzedSegment {
  * heredocs. Those remain the reviewer's job; the brake only catches literal,
  * unambiguous `rm -rf /`-style root destruction (target resolves to `/`).
  *
- * The whole command is lexed and destructured exactly once per request under
- * a shared analysis budget (input size, tokens, depth, re-lexed text, and
- * total effective commands). When any limit is hit, the brake rejects with a
- * resource-limit reason of its own: the command was NOT proven destructive,
- * only unanalyzable within bounds, and downstream gates must not confuse the
- * two.
+ * The whole command, including the commands that find exec actions run, is
+ * lexed and destructured exactly once per request under a shared analysis
+ * budget (input size, tokens, depth, re-lexed text, and total effective
+ * commands). When any limit is hit, the brake rejects with a resource-limit
+ * reason of its own: the command was NOT proven destructive, only
+ * unanalyzable within bounds, and downstream gates must not confuse the two.
  */
 
 const ROOT_DESTRUCTION_REGEX = [
@@ -76,7 +83,7 @@ function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
 }
 
 function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
-  return analyzed.some(({ effective }) => effective.some(isRootFind));
+  return analyzed.some(({ finds }) => finds.some(isRootFind));
 }
 
 function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
@@ -106,16 +113,32 @@ function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
   const budget = newAnalysisBudget();
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
-    const analysis = analyzeSegmentRedirections(segment, budget);
-    if (analysis.truncated) return undefined;
-    analyzed.push({
-      segment,
-      effective: analysis.commands,
-      redirections: analysis.redirections,
-      segmentRedirections: analysis.segmentRedirections,
-    });
+    const analysis = analyzeSegment(segment, budget);
+    if (analysis === undefined) return undefined;
+    analyzed.push(analysis);
   }
   return analyzed;
+}
+
+/** Resolves one segment and the exec actions of its find commands, or
+ *  returns `undefined` when any of those walks hits a limit. */
+function analyzeSegment(
+  segment: ShellSegment,
+  budget: AnalysisBudget,
+): AnalyzedSegment | undefined {
+  const analysis = analyzeSegmentRedirections(segment, budget);
+  if (analysis.truncated) return undefined;
+  const finds = analysis.commands.flatMap(
+    (command) => analyzeFind(command, budget) ?? [],
+  );
+  if (finds.some(({ exec }) => exec.truncated)) return undefined;
+  return {
+    segment,
+    effective: analysis.commands,
+    redirections: analysis.redirections,
+    segmentRedirections: analysis.segmentRedirections,
+    finds,
+  };
 }
 
 export function emergencyBrakeReason(

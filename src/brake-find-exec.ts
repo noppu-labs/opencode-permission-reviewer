@@ -1,42 +1,66 @@
 import { commandName } from "./brake-arguments.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
 import { isRootRm } from "./brake-root-rm.ts";
-import { effectiveCommands } from "./shell-effective-commands.ts";
+import { analyzeEffectiveCommands } from "./shell-effective-commands.ts";
+import type { AnalysisBudget } from "./shell-lexer.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 const EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 
-export function expressionDeletes(expression: readonly ShellToken[]): boolean {
+/** The commands a find expression's exec actions run, with their wrappers
+ *  peeled like those of any shell command. `truncated` is true when a walk
+ *  hit a limit of the request's analysis budget. */
+export interface ExecCommands {
+  commands: ShellToken[][];
+  truncated: boolean;
+}
+
+export function expressionDeletes(
+  expression: readonly ShellToken[],
+  exec: readonly ShellToken[][],
+): boolean {
   return (
     expression.some((token) => token.value === "-delete") ||
-    execCommands(expression).some(isRecursiveRm)
+    exec.some(isRecursiveRm)
   );
 }
 
 /** Whether an exec action runs an rm that the rm root rule blocks, whatever
  *  paths find searches. */
-export function execRemovesRoot(expression: readonly ShellToken[]): boolean {
-  return execCommands(expression).some(isRootRm);
+export function execRemovesRoot(exec: readonly ShellToken[][]): boolean {
+  return exec.some(isRootRm);
 }
 
-/** The commands the exec actions run, with their wrappers peeled like those
- *  of any shell command. */
-function execCommands(expression: readonly ShellToken[]): ShellToken[][] {
-  return expression.flatMap((token, index) =>
+/** Walks every exec action's argv under the shared `budget`. */
+export function analyzeExecCommands(
+  expression: readonly ShellToken[],
+  budget: AnalysisBudget,
+): ExecCommands {
+  const runs = expression.flatMap((token, index) =>
     EXEC_ACTIONS.has(token.value)
-      ? actionCommands(expression.slice(index + 1))
+      ? [actionCommands(expression.slice(index + 1), budget)]
       : [],
   );
+  return {
+    commands: runs.flatMap((run) => run.commands),
+    truncated: runs.some((run) => run.truncated),
+  };
 }
 
 /** The first non-placeholder word after `-exec` starts the command, and its
  *  argv ends at the `;` or the `+` that follows `{}`. */
-function actionCommands(words: readonly ShellToken[]): ShellToken[][] {
+function actionCommands(
+  words: readonly ShellToken[],
+  budget: AnalysisBudget,
+): ExecCommands {
   const start = words.findIndex(
     (word) => word.value !== "{" && word.value !== "}",
   );
-  if (start === -1) return [];
-  return effectiveCommands({ tokens: [...execArgv(words, start)] });
+  if (start === -1) return { commands: [], truncated: false };
+  return analyzeEffectiveCommands(
+    { tokens: [...execArgv(words, start)] },
+    budget,
+  );
 }
 
 /** An `rm` that find runs is destructive when it is recursive: find hands it
