@@ -103,7 +103,7 @@ describe("planFileChange", () => {
     expect(planFileChange(path, pkg, "v2")).toEqual({ path, action: "noop" });
   });
 
-  test("an npm spec for another version of the package, even a range, is an error", () => {
+  test("an npm spec other than name@<exact version>, including the caret spec init --npm writes, plans as error (base behaviour)", () => {
     const path = join(freshDir(), "opencode.json");
     [`${pkg.name}@1.0.0`, `${pkg.name}@^9.9.9`].forEach((spec) => {
       writeFileSync(path, JSON.stringify({ plugin: [spec] }));
