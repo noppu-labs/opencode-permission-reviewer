@@ -12,37 +12,12 @@ import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
 import { SPINNER } from "./ui/components.tsx";
 import { ReviewOverlay } from "./ui/review-overlay.tsx";
 import { ReviewResult } from "./ui/review-result.tsx";
+import { activeStatus, notifyManual } from "./ui/v1-host.ts";
 import { setupTuiV2 } from "./ui/v2.tsx";
 import { decodeUiStatus, type ReviewUiStatus } from "./ui-protocol.ts";
 import { ReviewUiState } from "./ui-state.ts";
 
 const REVIEW_MODE = "permission-reviewer";
-
-function routeSessionID(api: TuiPluginApi): string | undefined {
-  const route = api.route.current;
-  if (route.name !== "session") return;
-  const params = "params" in route ? route.params : undefined;
-  const sessionID = params?.sessionID;
-  return typeof sessionID === "string" ? sessionID : undefined;
-}
-
-function parentSessionID(
-  api: TuiPluginApi,
-  sessionID: string,
-): string | undefined {
-  return api.state.session.get(sessionID)?.parentID;
-}
-
-function notifyManual(api: TuiPluginApi, status: ReviewUiStatus): void {
-  api.ui.toast({
-    variant: "warning",
-    title: "Manual review required",
-    message:
-      status.reason ??
-      "The reviewer could not decide. This permission now needs your approval.",
-    duration: 8_000,
-  });
-}
 
 export const tui: TuiPlugin = async (
   api: TuiPluginApi,
@@ -66,11 +41,7 @@ export const tui: TuiPlugin = async (
     setRevision((value) => value + 1);
   };
 
-  const active = (): ReviewUiStatus | undefined => {
-    const sessionID = routeSessionID(api);
-    if (!sessionID) return;
-    return state.activeFor(sessionID, (id) => parentSessionID(api, id));
-  };
+  const active = (): ReviewUiStatus | undefined => activeStatus(api, state);
 
   let popMode: (() => void) | undefined;
   const syncMode = (): void => {

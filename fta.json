@@ -30,7 +30,6 @@
     "index.ts",
     "init.ts",
     "init-config-files.ts",
-    "tui.tsx",
     "actor-resolver.test.ts",
     "ask-decisions.test.ts",
     "audit.test.ts",

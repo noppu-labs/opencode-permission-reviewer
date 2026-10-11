@@ -22,6 +22,7 @@ const files = [
   ["src/ui/components.tsx", "ui/components.tsx"],
   ["src/ui/review-overlay.tsx", "ui/review-overlay.tsx"],
   ["src/ui/review-result.tsx", "ui/review-result.tsx"],
+  ["src/ui/v1-host.ts", "ui/v1-host.ts"],
   ["src/ui/v2.tsx", "ui/v2.tsx"],
   ["src/ui/rpc.ts", "ui/rpc.ts"],
   ["src/ui/review-feed.ts", "ui/review-feed.ts"],
