@@ -15,7 +15,7 @@ const retryable = (a) =>
 
 /** Claim one call from the run budget and send it; `stop` names why no call was sent. */
 async function issueAttempt(run, job, p, s) {
-  const { cfg, counters, io } = run;
+  const { cfg, counters, io, completion } = run;
   if (counters.calls >= cfg.maxCalls) return { stop: "budget-exhausted" };
   if (counters.issuedCalls > 0 && cfg.maxRequestDelayMs > 0) {
     const waitMs = randomInt(cfg.minRequestDelayMs, cfg.maxRequestDelayMs + 1);
@@ -36,7 +36,7 @@ async function issueAttempt(run, job, p, s) {
     ordinal: s.attempts.length + 1,
     at: new Date().toISOString(),
   });
-  const attempt = await run.completion(job.m, p, {
+  const attempt = await completion(job.m, p, {
     timeoutMs: cfg.timeoutMs,
     retryNote: s.retryNote,
     signal: run.abort.signal,

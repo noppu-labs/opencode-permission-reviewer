@@ -229,3 +229,19 @@ test("a model without a format is recorded with the text profile", async () =>
     });
     assert.equal((await rowsOf(dir))[0].profile, "text");
   }));
+
+test("the completion and progress callbacks are called without a receiver", async () =>
+  inTemp(async (dir) => {
+    const receivers = [];
+    await runBenchmark({
+      ...runInput(dir, {}, 1),
+      completion: function () {
+        receivers.push(this);
+        return success();
+      },
+      onProgress: function () {
+        receivers.push(this);
+      },
+    });
+    assert.deepEqual(receivers, [undefined, undefined]);
+  }));
