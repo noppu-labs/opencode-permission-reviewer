@@ -1,5 +1,6 @@
 import {
   isStringArray,
+  nonEmptyStringOr,
   optional,
   resolveActorProfiles,
   resolveEscalationMode,
@@ -7,13 +8,13 @@ import {
   trimmedText,
 } from "./config-fields.ts";
 import {
-  boundedInteger,
   CONFIDENCE_FLOORS,
   CONTEXT_BUDGETS,
   integerKnobs,
   LINEAGE_LIMITS,
   numberKnobs,
   REVIEW_TIMEOUT,
+  reviewBudgetKnob,
 } from "./config-knobs.ts";
 import { resolvePolicyRules } from "./config-policy-rules.ts";
 import {
@@ -76,26 +77,14 @@ export function resolveConfig(
     model: isProviderModelId(source.model)
       ? source.model
       : DEFAULT_CONFIG.model,
-    variant:
-      typeof source.variant === "string" && source.variant.length > 0
-        ? source.variant
-        : DEFAULT_CONFIG.variant,
+    variant: nonEmptyStringOr(source.variant, DEFAULT_CONFIG.variant),
     outputFormat: source.outputFormat === "text" ? "text" : "json_schema",
     ...optional(
       "escalationReviewer",
       resolveEscalationReviewer(source.escalationReviewer, DEFAULT_CONFIG),
     ),
     ...integerKnobs(source, REVIEW_TIMEOUT, DEFAULT_CONFIG),
-    ...(source.reviewBudgetMs === undefined
-      ? {}
-      : {
-          reviewBudgetMs: boundedInteger(
-            source.reviewBudgetMs,
-            180_000,
-            5_000,
-            900_000,
-          ),
-        }),
+    ...reviewBudgetKnob(source),
     ...integerKnobs(source, CONTEXT_BUDGETS, DEFAULT_CONFIG),
     ...numberKnobs(source, CONFIDENCE_FLOORS, DEFAULT_CONFIG),
     retainReviewSessions: flag(source, "retainReviewSessions"),

@@ -19,9 +19,9 @@ export const PINNED_BLOBS = {
   "src/context/pending-permission.ts":
     "97ba73673a05a5a9d118098b266b1f6177ea2ad0",
   "src/context/synthetic-parts.ts": "e9da061fa189c9df4566cf0976e4d88607000603",
-  "src/config.ts": "c580e3b071ca5e992a1777c53ab6069ecd7c8ab4",
+  "src/config.ts": "de7f2cda9fea53bed690b0316ac929965b7ce8f5",
   "src/config-fields.ts": "ad5aa5bcee0d873c523a8b903bf43ed676fabe01",
-  "src/config-knobs.ts": "51b98b95bacbf60b4a790f84ad91ed1cc60c16b7",
+  "src/config-knobs.ts": "e576c89b91d0eee6eec91998a4680728025792c4",
   "src/config-policy-rules.ts": "c114277b0c48c7edba60e15be44f80f84cd6f9d4",
   "src/config-risk-policy.ts": "b0153a9fbe82baebecbbb3dd1afe0196978bab91",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

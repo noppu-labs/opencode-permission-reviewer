@@ -28,6 +28,23 @@ type KnobBounds<K extends NumericKey> = Readonly<
   Record<K, readonly [min: number, max: number]>
 >;
 
+/** The total review deadline: absent when the source omits it, otherwise an
+ *  integer clamped to [5 s, 15 min], or 3 min when the value is not one. */
+export function reviewBudgetKnob(
+  source: Record<string, unknown>,
+): Pick<ReviewerConfig, "reviewBudgetMs"> {
+  return source.reviewBudgetMs === undefined
+    ? {}
+    : {
+        reviewBudgetMs: boundedInteger(
+          source.reviewBudgetMs,
+          180_000,
+          5_000,
+          900_000,
+        ),
+      };
+}
+
 export const REVIEW_TIMEOUT: KnobBounds<"timeoutMs"> = {
   timeoutMs: [5_000, 600_000],
 };
