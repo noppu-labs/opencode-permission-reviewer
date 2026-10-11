@@ -1,4 +1,4 @@
-import { afterEach, expect, test } from "bun:test";
+import { afterEach, expect, spyOn, test } from "bun:test";
 import { mkdtempSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -195,7 +195,18 @@ test("cleanup failures never change the decision", async () => {
 test("reviewer time is recorded per prompt, cumulatively across the text retry", async () => {
   const run = harness({ outputFormat: "text" });
   run.client.nextTexts = ["not a decision", JSON.stringify(decision("deny"))];
-  const { result } = await run.review();
+  // The clock only moves inside a prompt: 7 ms for the first, 11 for the retry.
+  let clock = 0;
+  const steps = [7, 11];
+  const now = spyOn(performance, "now").mockImplementation(() => clock);
+  const prompt = run.client.session.prompt;
+  run.client.session.prompt = (
+    options: unknown,
+  ): Promise<ClientResponse<Record<string, unknown>>> => {
+    clock += steps.shift() ?? 0;
+    return prompt(options);
+  };
+  const { result } = await run.review().finally(() => now.mockRestore());
   expect(JSON.stringify(result)).toBe(
     JSON.stringify({
       kind: "deny",
@@ -206,9 +217,7 @@ test("reviewer time is recorded per prompt, cumulatively across the text retry",
       decisionSource: "llm-reviewer",
     }),
   );
-  const [first, total] = run.recorded;
-  expect(run.recorded).toHaveLength(2);
-  expect(total).toBeGreaterThanOrEqual(first as number);
+  expect(run.recorded).toEqual([7, 7 + 11]);
 });
 
 test("reviewer time is recorded before an invalid prompt response fails", async () => {
