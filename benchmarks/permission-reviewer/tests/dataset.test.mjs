@@ -7,7 +7,8 @@ import {
   selectCases,
   validateCases,
 } from "../lib/dataset.mjs";
-import { sha256, shuffle } from "../lib/util.mjs";
+import { shuffle } from "../lib/sampling.mjs";
+import { sha256 } from "../lib/util.mjs";
 
 const data = await loadDataset(
   fileURLToPath(new URL("../data/cases.jsonl", import.meta.url)),

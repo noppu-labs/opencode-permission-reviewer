@@ -3,13 +3,12 @@ import {
   chmod,
   lstat,
   mkdir,
-  open,
   readFile,
   rename,
   stat,
   writeFile,
 } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname } from "node:path";
 export const sha256 = (value) =>
   createHash("sha256")
     .update(typeof value === "string" ? value : stable(value))
@@ -71,62 +70,34 @@ export async function atomicJSON(path, value) {
 export async function readJSON(path) {
   return JSON.parse(await readFile(path, "utf8"));
 }
+function parseLine(line) {
+  try {
+    return { value: JSON.parse(line) };
+  } catch (error) {
+    return { error };
+  }
+}
+const truncatedTail = (rows, lines, i) => ({
+  rows,
+  truncatedBytes: Buffer.byteLength(lines[i]),
+  validText: lines.slice(0, i).join("\n") + (i ? "\n" : ""),
+});
 export async function readJSONL(path, { recoverTail = false } = {}) {
   const text = await readFile(path, "utf8");
   const lines = text.split("\n");
   const rows = [];
   for (let i = 0; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
-    try {
-      rows.push(JSON.parse(lines[i]));
-    } catch (e) {
-      if (recoverTail && i === lines.length - 1 && !text.endsWith("\n"))
-        return {
-          rows,
-          truncatedBytes: Buffer.byteLength(lines[i]),
-          validText: lines.slice(0, i).join("\n") + (i ? "\n" : ""),
-        };
-      throw new Error(`${path}:${i + 1}: invalid JSON (${e.message})`, {
-        cause: e,
+    const { value, error } = parseLine(lines[i]);
+    if (!error) rows.push(value);
+    else if (recoverTail && i === lines.length - 1 && !text.endsWith("\n"))
+      return truncatedTail(rows, lines, i);
+    else
+      throw new Error(`${path}:${i + 1}: invalid JSON (${error.message})`, {
+        cause: error,
       });
-    }
   }
   return { rows, truncatedBytes: 0, validText: text };
-}
-export function rng(seed = 17) {
-  let a = Number(seed) >>> 0;
-  return () => {
-    a += 0x6d2b79f5;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-export function shuffle(items, seed = 17) {
-  const out = [...items],
-    r = rng(seed);
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(r() * (i + 1));
-    [out[i], out[j]] = [out[j], out[i]];
-  }
-  return out;
-}
-export const groupBy = (rows, key) => {
-  const out = new Map();
-  for (const row of rows) {
-    const k = typeof key === "function" ? key(row) : row[key];
-    if (!out.has(k)) out.set(k, []);
-    out.get(k).push(row);
-  }
-  return out;
-};
-export function quantile(values, p) {
-  if (!values.length) return null;
-  const a = [...values].sort((x, y) => x - y);
-  const i = (a.length - 1) * p,
-    lo = Math.floor(i);
-  return a[lo] + (a[Math.ceil(i)] - a[lo]) * (i - lo);
 }
 export function numberArg(value, fallback, min, max, name = "number") {
   if (value === undefined) return fallback;
@@ -141,26 +112,3 @@ export function safeError(error) {
   return String(error?.message ?? error).slice(0, 2000);
 }
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-export async function lockDirectory(dir) {
-  await privateDir(dir);
-  const path = resolve(dir, ".run.lock");
-  let fd;
-  try {
-    fd = await open(path, "wx", 0o600);
-  } catch (e) {
-    if (e.code === "EEXIST")
-      throw new Error(
-        `Run directory is locked: ${path}. Verify no process is running before removing a stale lock.`,
-        { cause: e },
-      );
-    throw e;
-  }
-  await fd.writeFile(
-    JSON.stringify({ pid: process.pid, at: new Date().toISOString() }),
-  );
-  return async () => {
-    await fd.close();
-    const { unlink } = await import("node:fs/promises");
-    await unlink(path);
-  };
-}

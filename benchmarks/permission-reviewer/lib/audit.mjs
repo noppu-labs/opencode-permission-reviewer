@@ -1,6 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import { assert, exists, privateDir, shuffle } from "./util.mjs";
+import { shuffle } from "./sampling.mjs";
+import { assert, exists, privateDir } from "./util.mjs";
 export async function exportReview(
   rows,
   path,

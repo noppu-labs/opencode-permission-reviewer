@@ -1,5 +1,6 @@
 import { OUTCOMES } from "./case-schema.mjs";
-import { assert, groupBy, quantile, rng } from "./util.mjs";
+import { groupBy, quantile, rng } from "./sampling.mjs";
+import { assert } from "./util.mjs";
 
 const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
 const rate = (a, p) => (a.length ? a.filter(p).length / a.length : null);

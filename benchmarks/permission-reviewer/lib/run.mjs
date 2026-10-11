@@ -6,11 +6,13 @@ import {
   recoverInFlight,
   writer,
 } from "./run-journal.mjs";
+import { lockDirectory } from "./run-lock.mjs";
 import { runManifest, runPaths } from "./run-manifest.mjs";
 import { claimOutput, finishRun } from "./run-output.mjs";
 import { jobList, runWorkers } from "./run-queue.mjs";
 import { createExecutor } from "./run-rows.mjs";
-import { assert, lockDirectory, sha256, shuffle } from "./util.mjs";
+import { shuffle } from "./sampling.mjs";
+import { assert, sha256 } from "./util.mjs";
 
 export async function runBenchmark({
   cases,
