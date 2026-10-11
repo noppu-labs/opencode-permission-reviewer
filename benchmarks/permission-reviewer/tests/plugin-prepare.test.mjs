@@ -128,3 +128,22 @@ test("bash commands are parsed and analysed; other requests carry no command ana
     assert(!("capability" in other));
   }
 });
+
+test("the adapter's parsers are the core's decision and System One parsers", async () => {
+  const decisions = await core("src/decision.ts");
+  const review = await core("src/system-one/review.ts");
+  const { config } = await adapter.prepare(bashInput(), textModel);
+  const text = JSON.stringify({ version: 2, outcome: "deny" });
+  assert.deepEqual(adapter.parse(text), decisions.parseDecisionFromText(text));
+  const object = JSON.parse(text);
+  assert.deepEqual(
+    adapter.parseObject(object),
+    decisions.parseDecision(object),
+  );
+  const answer = { model: "jev-1", answers: {} };
+  assert.deepEqual(
+    adapter.parseSystemOne(answer, config),
+    review.parseSystemOneReview(answer, config),
+  );
+  assert.deepEqual(adapter.promptVersion, policy.REVIEWER_PROMPT_VERSION);
+});
