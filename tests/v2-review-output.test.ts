@@ -161,6 +161,7 @@ test.each([
   run.stubs[stub] = async (input: StubInput): Promise<unknown> => value(input);
   const result = await run.review();
   expect(inputsOf(run.calls, "session.create")).toEqual([]);
+  expect(result.reviewSessionID).toMatch(/^ses_[0-9a-f]{32}$/);
   expect(JSON.stringify(result)).toBe(
     escalation(
       `reviewer session call failed (Error): ${reason}`,
