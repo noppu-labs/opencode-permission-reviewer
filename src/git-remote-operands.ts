@@ -3,6 +3,7 @@
 import { elementAt } from "./element-at.ts";
 import type { PlannedGitActions } from "./git-command-plan.ts";
 import { NETWORK_VALUE_OPTIONS } from "./git-network-options.ts";
+import { NO_VALUE_OPTIONS } from "./shell-wrapper-options.ts";
 
 /** Verbs of `git remote` that operate on a named remote as their next
  *  positional. `update` takes an optional group, not a remote name. */
@@ -25,7 +26,7 @@ function networkOperand(
   index: number,
   subcommand: string,
 ): { operand?: string | undefined; repoOverride?: string | undefined } {
-  const valueOpts = NETWORK_VALUE_OPTIONS[subcommand] ?? new Set<string>();
+  const valueOpts = NETWORK_VALUE_OPTIONS[subcommand] ?? NO_VALUE_OPTIONS;
   let afterSeparator = false;
   let operand: string | undefined;
   let repoOverride: string | undefined;

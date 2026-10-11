@@ -5,7 +5,7 @@ import { SHELL_KEYWORDS, VALUE_OPTIONS } from "./shell-lexer-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
-const NO_VALUE_OPTIONS: ReadonlySet<string> = new Set();
+export const NO_VALUE_OPTIONS: ReadonlySet<string> = new Set();
 
 /** Skip leading keywords, then leading VAR=value assignments (env-style,
  *  only at the head). */

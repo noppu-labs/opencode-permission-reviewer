@@ -1,6 +1,7 @@
 // Source and destination operands of the cp/mv/ln/rsync/rename file-mutation tools.
 
 import { elementAt } from "../element-at.ts";
+import { NO_VALUE_OPTIONS } from "../shell-wrapper-options.ts";
 import { MUTATION_VALUE_OPTIONS } from "./bash-command-tables.ts";
 
 /** A remote operand for rsync-style tools: a URL scheme, or an `host:path`
@@ -20,7 +21,7 @@ export function mutationOperands(
   base: string,
   cmd: ReadonlyArray<{ value: string }>,
 ): { sources: string[]; destinations: string[]; sawOperand: boolean } {
-  const valueOpts = MUTATION_VALUE_OPTIONS[base] ?? new Set<string>();
+  const valueOpts = MUTATION_VALUE_OPTIONS[base] ?? NO_VALUE_OPTIONS;
   const { operands, targetDirectory } = scanMutationArguments(cmd, valueOpts);
   if (targetDirectory !== undefined) {
     // `-t DIR` redirects every SOURCE argument into DIR: with it, no operand

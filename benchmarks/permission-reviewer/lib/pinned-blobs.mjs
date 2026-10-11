@@ -70,7 +70,7 @@ export const PINNED_BLOBS = {
   "src/shell-effective-commands.ts": "66e9183f50e24ff07424ffa211ded46dca6ba4ce",
   "src/effective-command-walk.ts": "aedd2ffc4ef201aba00595e543d26e2a0f600421",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-wrapper-options.ts": "9926f878a195ab02df4cc2f22568b83565cef2e9",
+  "src/shell-wrapper-options.ts": "485e789ca42726abe0b5c89b2c16ed5e67ddf619",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-command-strings.ts": "0794d8de3dc08ebc7ac275f7a16f85806aad1751",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -134,7 +134,7 @@ export const PINNED_BLOBS = {
   "src/capability/process-classifiers.ts":
     "b578ec0a5ff7535fab34e1fc2a1ca74af454b699",
   "src/capability/mutation-operands.ts":
-    "57dc2a11a4c1885b99f7fb779e062dcae7a214ad",
+    "5d6f8ae63819d2f6919a71d97b2d2008f0d5a36f",
   "src/capability/read-only-tool-mutations.ts":
     "684c044741a3788a2c504a42a9250bbbafb9ed7a",
   "src/capability/git-subcommand-forms.ts":
