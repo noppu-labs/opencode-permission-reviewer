@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { printSummary, summarize } from "../lib/metrics.mjs";
+import { summarize } from "../lib/metrics.mjs";
+import { printSummary } from "../lib/summary-table.mjs";
 import { full, noEscalate } from "./metric-fixtures.mjs";
 
 test("the printed summary table formats scores, n/a and counts in fixed columns", () => {

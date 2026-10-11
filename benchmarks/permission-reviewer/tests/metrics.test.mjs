@@ -1,11 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import {
-  bootstrapScore,
-  compareRows,
-  coreMetrics,
-  summarize,
-} from "../lib/metrics.mjs";
+import { coreMetrics } from "../lib/core-metrics.mjs";
+import { bootstrapScore, compareRows } from "../lib/family-bootstrap.mjs";
+import { summarize } from "../lib/metrics.mjs";
 import { decision } from "./helpers.mjs";
 
 const rows = Array.from({ length: 6 }, (_, f) =>

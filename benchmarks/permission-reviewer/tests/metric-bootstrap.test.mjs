@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bootstrapScore, compareRows } from "../lib/metrics.mjs";
+import { bootstrapScore, compareRows } from "../lib/family-bootstrap.mjs";
 import { decision } from "./helpers.mjs";
 import { full, noEscalate } from "./metric-fixtures.mjs";
 

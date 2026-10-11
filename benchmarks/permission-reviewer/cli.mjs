@@ -4,13 +4,15 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { exportReview } from "./lib/audit.mjs";
 import { loadDataset, modelInput, selectCases } from "./lib/dataset.mjs";
-import { compareRows, printSummary, summarize } from "./lib/metrics.mjs";
+import { compareRows } from "./lib/family-bootstrap.mjs";
+import { summarize } from "./lib/metrics.mjs";
 import { validateModel } from "./lib/model-validation.mjs";
 import { openPlugin } from "./lib/plugin.mjs";
 import { publicReport } from "./lib/publication.mjs";
 import { runBenchmark } from "./lib/run.mjs";
 import { rowBase } from "./lib/run-rows.mjs";
 import { systemOneDifficultSubset } from "./lib/subsets.mjs";
+import { printSummary } from "./lib/summary-table.mjs";
 import {
   assert,
   atomicJSON,

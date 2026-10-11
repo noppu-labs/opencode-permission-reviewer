@@ -85,7 +85,6 @@
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
-        "benchmarks/permission-reviewer/lib/metrics.mjs",
         "benchmarks/permission-reviewer/lib/plugin.mjs",
         "benchmarks/permission-reviewer/tests/opencode-v1.test.mjs"
       ],
