@@ -13,14 +13,28 @@ export function expressionDeletes(expression: readonly ShellToken[]): boolean {
   );
 }
 
-/** The first non-placeholder word after `-exec` is the executable; an `rm`
- *  there is judged by the same flag rule as a top-level `rm`. */
+/** The first non-placeholder word after `-exec` is the executable, and its
+ *  argv ends at the `;` or the `+` that follows `{}`. An `rm` there is
+ *  destructive when it is recursive: find hands it the root's children. */
 function execRunsDestructiveRm(words: readonly ShellToken[]): boolean {
   const start = words.findIndex(
     (word) => word.value !== "{" && word.value !== "}",
   );
   if (start === -1) return false;
-  const executable = words.slice(start);
+  const executable = execArgv(words, start);
   if (commandName(executable) !== "rm") return false;
   return hasRmFlags(executable).recursive;
+}
+
+function execArgv(
+  words: readonly ShellToken[],
+  start: number,
+): readonly ShellToken[] {
+  const end = words.findIndex(
+    (word, index) =>
+      index > start &&
+      (word.value === ";" ||
+        (word.value === "+" && words[index - 1]?.value === "{}")),
+  );
+  return words.slice(start, end === -1 ? undefined : end);
 }

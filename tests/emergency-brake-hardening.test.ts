@@ -81,6 +81,9 @@ describe("recursive rm on a protected target needs no force", () => {
     "sh -c 'rm -r /*'",
     "find / -exec rm -r {} +",
     "find / -name x -exec rm -R {} \\;",
+    "find / -exec rm -r {} \\; -print",
+    "find / -exec rm {} -r \\;",
+    "find / -exec rm {} \\; -exec rm -r {} +",
   ])(
     "blocks recursive rm on a protected target without force, case %#",
     (command) => {
@@ -106,6 +109,9 @@ describe("recursive rm on a protected target needs no force", () => {
     "rm --rec ./dist",
     "rm /*",
     "find /tmp -exec rm -r {} +",
+    "find / -type f -name '*.bak' -exec rm {} \\; -printf '%p\\n'",
+    "find / -name '*.pyc' -exec rm {} \\; -print",
+    "find / -name '*.pyc' -exec rm -v {} \\; -o -prune",
   ])("keeps a non-destructive neighbour allowed, case %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
