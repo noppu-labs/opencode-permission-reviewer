@@ -25,7 +25,6 @@
     "plugin-parity.mjs",
     "providers.test.mjs",
     "runner.test.mjs",
-    "explain.ts",
     "actor-resolver.test.ts",
     "ask-decisions.test.ts",
     "audit.test.ts",
