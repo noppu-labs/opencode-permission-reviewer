@@ -2,6 +2,8 @@ import { expect, test } from "bun:test";
 import { createUiStatus } from "../src/ui-protocol.ts";
 import { defined, request } from "./helpers.ts";
 import { resolveReviewTheme, setupTuiV2, testRender } from "./tui-loader.ts";
+import type { Channel } from "./tui-v2-feed-data.ts";
+import { subscription } from "./tui-v2-feed-rpc.ts";
 
 test("TUI resolves nested, flat, and unavailable host themes", () => {
   expect(
@@ -94,7 +96,6 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     revision: 1,
     reviews: [reviewing],
   };
-  type Channel = { queue: unknown[]; ended: boolean; wake?: () => void };
   const channels: Channel[] = [];
   const ctx = {
     location: { directory },
@@ -132,27 +133,11 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
           return snapshot;
         },
         events: {
-          subscribe: async function* (
+          subscribe: (
             _name: string,
             { signal }: { signal: AbortSignal },
-          ): AsyncGenerator<unknown, void, unknown> {
-            const channel: Channel = { queue: [], ended: false };
-            channels.push(channel);
-            const wake = () => channel.wake?.();
-            signal.addEventListener("abort", wake);
-            try {
-              while (!signal.aborted && !channel.ended) {
-                if (channel.queue.length) yield channel.queue.shift();
-                else {
-                  await new Promise<void>((resolve) => {
-                    channel.wake = resolve;
-                  });
-                }
-              }
-            } finally {
-              signal.removeEventListener("abort", wake);
-            }
-          },
+          ): AsyncGenerator<unknown, void, unknown> =>
+            subscription(channels, signal),
         },
       }),
     },
