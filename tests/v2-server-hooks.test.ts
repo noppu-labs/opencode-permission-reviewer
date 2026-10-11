@@ -205,8 +205,11 @@ test("v2 UI statuses stay bounded and notifications past capacity are omitted", 
       Promise.resolve(),
     );
   } finally {
-    timers.fire();
-    timers.restore();
+    try {
+      timers.fire();
+    } finally {
+      timers.restore();
+    }
   }
   const reviews = (await harness.rpc.snapshot()).reviews as Array<{
     sessionID: string;
