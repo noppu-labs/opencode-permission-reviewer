@@ -10,7 +10,7 @@ import {
   writeFile,
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import test from "node:test";
 import { PINNED_BLOBS } from "../lib/pinned-blobs.mjs";
 import { openPlugin } from "../lib/plugin.mjs";
@@ -18,11 +18,17 @@ import { sourceSnapshot } from "../lib/source-snapshot.mjs";
 import { repo } from "./plugin-fixtures.mjs";
 
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
+/** Runs `check` in a fresh directory that Git treats as outside any work
+ *  tree, even when the temporary directory lies inside one. */
 async function scratch(check) {
   const dir = await mkdtemp(join(tmpdir(), "prb-plugin-"));
+  const ceiling = process.env.GIT_CEILING_DIRECTORIES;
+  process.env.GIT_CEILING_DIRECTORIES = dirname(dir);
   try {
     await check(dir);
   } finally {
+    if (ceiling === undefined) delete process.env.GIT_CEILING_DIRECTORIES;
+    else process.env.GIT_CEILING_DIRECTORIES = ceiling;
     await rm(dir, { recursive: true, force: true });
   }
 }
