@@ -91,15 +91,20 @@ function wipefsWipesSignatures(tool: DeviceCommand): boolean {
   return tool.args.some(({ value }) => wipefsErasingOption(value));
 }
 
-/** `--all`, `--types`, `--offset` and the short letters `a`, `t` and `o`
- *  (anywhere in a cluster: `t` and `o` take the rest of it as their value)
- *  erase signatures. */
+/** `--all`, `--types`, `--offset` and short clusters that reach `a`, `t` or
+ *  `o` erase signatures; `O` takes the rest of its cluster as a value. */
 function wipefsErasingOption(value: string): boolean {
   const long = resolveGnuLongOption(value, WIPEFS_LONG_OPTIONS)?.name;
   if (long === "all" || long === "types" || long === "offset") return true;
-  return ["a", "t", "o"].some((letter) =>
-    shortFlagClusterIncludes(value, letter),
-  );
+  return isShortCluster(value) && clusterErases(value.slice(1));
+}
+
+function clusterErases(letters: string): boolean {
+  for (const letter of letters) {
+    if (letter === "a" || letter === "t" || letter === "o") return true;
+    if (letter === "O") return false;
+  }
+  return false;
 }
 
 /** dd: detect `of=<real block device>` (the lexer already stripped quotes). */
@@ -109,12 +114,6 @@ function ddWritesBlockDevice(tool: DeviceCommand): boolean {
   );
 }
 
-/** Whether a short-flag cluster (e.g. `-af`) contains a given flag letter. */
-function shortFlagClusterIncludes(value: string, letter: string): boolean {
-  return (
-    value.startsWith("-") &&
-    !value.startsWith("--") &&
-    value.length > 1 &&
-    value.includes(letter)
-  );
+function isShortCluster(value: string): boolean {
+  return value.startsWith("-") && !value.startsWith("--");
 }

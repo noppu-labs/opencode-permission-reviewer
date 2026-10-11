@@ -33,19 +33,53 @@ function shortDryRunFlag(
 /** mke2fs, mkfs.ext2/3/4, or plain mkfs that builds an ext filesystem. */
 function isExtFormatter(base: string, args: readonly ShellToken[]): boolean {
   if (EXT_FORMATTERS.has(base)) return true;
-  if (base !== "mkfs") return false;
-  const type = mkfsTypeOption(args);
+  return base === "mkfs" && mkfsBuildsExt(args);
+}
+
+/** Plain mkfs reads its own options (`-V`, `-t`, `-h` and the long options of
+ *  its table) up to the first option it does not know or `--`; the last type
+ *  there is the filesystem, none means the ext default. A type option past
+ *  that point belongs to the filesystem tool, but a non-ext one still rules
+ *  the ext default out. A type whose value cannot be read is non-ext. */
+function mkfsBuildsExt(allArgs: readonly ShellToken[]): boolean {
+  const end = allArgs.findIndex((t) => t.value === "--");
+  const args = end === -1 ? allArgs : allArgs.slice(0, end);
+  const stop = args.findIndex(isUnknownMkfsOption);
+  const split = stop === -1 ? args.length : stop;
+  const own = mkfsTypeValues(args, 0, split);
+  const rest = mkfsTypeValues(args, split, args.length);
+  return isExtType(own[own.length - 1]) && rest.every(isExtType);
+}
+
+function isExtType(type: string | undefined): boolean {
   return type === undefined || EXT_FILESYSTEM_TYPES.has(type);
 }
 
-/** The filesystem type of the last type option of plain mkfs, or undefined
- *  when none is given. A type option whose value cannot be read gives "". */
-function mkfsTypeOption(args: readonly ShellToken[]): string | undefined {
-  let type: string | undefined;
-  args.forEach((_token, index) => {
-    type = mkfsTypeValue(args, index) ?? type;
-  });
-  return type;
+function mkfsTypeValues(
+  args: readonly ShellToken[],
+  from: number,
+  to: number,
+): string[] {
+  const values: string[] = [];
+  for (let index = from; index < to; index += 1) {
+    const value = mkfsTypeValue(args, index);
+    if (value !== undefined) values.push(value);
+  }
+  return values;
+}
+
+/** An option word mkfs's own getopt does not recognise: a `--` name outside its
+ *  table, or a short cluster with a letter other than `V` and `h` before any
+ *  `t`. */
+function isUnknownMkfsOption(token: ShellToken): boolean {
+  const word = token.value;
+  if (!word.startsWith("-") || word === "-") return false;
+  if (word.startsWith("--"))
+    return resolveGnuLongOption(word, MKFS_LONG_OPTIONS) === undefined;
+  const letters = word.slice(1);
+  const type = letters.indexOf("t");
+  const own = type === -1 ? letters : letters.slice(0, type);
+  return ![...own].every((letter) => letter === "V" || letter === "h");
 }
 
 /** The value taken by the type option at `index`: `--type[=]`, any prefix of

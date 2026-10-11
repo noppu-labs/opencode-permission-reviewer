@@ -310,3 +310,28 @@ describe("device option clusters and long names are read in full", () => {
     ).toBeUndefined();
   });
 });
+
+describe("device option scans stop where the tool stops reading options", () => {
+  test.each([
+    "mkfs -t vfat -n -text4 /dev/sdb",
+    "mkfs -t xfs -n size=8192 -L -text4 /dev/sdb",
+    "mkfs -n -t xfs /dev/sdb",
+    "mkfs -t ext4 -n -t xfs /dev/sdb",
+  ])("blocks a device format or wipe, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
+
+  test.each([
+    "wipefs -Ooffset /dev/sda",
+    "wipefs -Otype /dev/sda",
+    "wipefs -fOoffset /dev/sda",
+    "mkfs -n -t ext4 /dev/sdb",
+    "mkfs -t ext4 -n -L -text4 /dev/sdb",
+  ])("keeps a dry run or listing allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
