@@ -9,28 +9,65 @@ const EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 /**
  * `find / … -delete` and `find / … -exec rm -rf {} …` reach root through the
  * find expression rather than through a literal `rm` operand, so the rm lexer
- * does not see them. Detect them directly: when the search root resolves
+ * does not see them. Detect them directly: when any search path resolves
  * to `/` and the expression deletes its results, the destruction is unmistakable.
  */
 export function isRootFind(command: readonly ShellToken[]): boolean {
   if (commandName(command) !== "find") return false;
-  const rootIndex = searchRootIndex(command);
-  if (rootIndex === undefined) return false;
-  return (
-    targetsRoot(elementAt(command, rootIndex, "command")) &&
-    expressionDeletes(command.slice(rootIndex + 1))
-  );
+  const { paths, expression } = splitFind(command);
+  return paths.some(targetsRoot) && expressionDeletes(expression);
 }
 
-/** The index of the search root: the first operand after the leading options
- *  (`-D` takes a value). Everything after it is the expression. */
-function searchRootIndex(command: readonly ShellToken[]): number | undefined {
+interface FindParts {
+  paths: readonly ShellToken[];
+  expression: readonly ShellToken[];
+}
+
+/** Splits a find command line into its search paths and its expression. The
+ *  paths start at the first operand after the leading options (`-D` takes a
+ *  value) and run up to the first word that starts the expression. When an
+ *  expression option such as `-maxdepth` already came first, find reads no
+ *  paths after it, so only that first operand is a path. */
+function splitFind(command: readonly ShellToken[]): FindParts {
+  const first = firstOperandIndex(command);
+  if (first === undefined) return { paths: [], expression: [] };
+  const expressionFirst = command
+    .slice(1, first)
+    .some((token) => isOptionWord(token.value) && !isGlobalOption(token.value));
+  let end = first + 1;
+  while (
+    !expressionFirst &&
+    end < command.length &&
+    !startsExpression(elementAt(command, end, "command").value)
+  )
+    end += 1;
+  return { paths: command.slice(first, end), expression: command.slice(end) };
+}
+
+function firstOperandIndex(command: readonly ShellToken[]): number | undefined {
   for (let index = 1; index < command.length; index += 1) {
     const value = elementAt(command, index, "command").value;
     if (value === "-D") index += 1;
     else if (!isOptionWord(value)) return index;
   }
   return undefined;
+}
+
+/** The options find accepts before its paths: `-H`, `-L`, `-P`, `-D` and
+ *  `-O<level>`. */
+function isGlobalOption(value: string): boolean {
+  return (
+    value === "-H" ||
+    value === "-L" ||
+    value === "-P" ||
+    value === "-D" ||
+    value.startsWith("-O")
+  );
+}
+
+/** A word that starts the expression: an option word, `!`, `(`, `)` or `,`. */
+function startsExpression(value: string): boolean {
+  return isOptionWord(value) || ["!", "(", ")", ","].includes(value);
 }
 
 function expressionDeletes(expression: readonly ShellToken[]): boolean {

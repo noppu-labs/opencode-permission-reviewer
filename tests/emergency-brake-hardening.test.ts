@@ -112,3 +112,37 @@ describe("recursive rm on a protected target needs no force", () => {
     ).toBeUndefined();
   });
 });
+
+describe("find checks every search path", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "find /tmp / -delete",
+    "find /tmp /var / -delete",
+    "find -L /tmp / -delete",
+    "find /tmp //* -delete",
+    "find /srv / -exec rm -rf {} +",
+    "sudo find /tmp / -delete",
+    "sh -c 'find /tmp / -delete'",
+  ])("blocks when any search path is the root, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
+  });
+
+  test.each([
+    "find /tmp /var -delete",
+    // A word after the first expression word belongs to the expression.
+    "find /tmp ! -name / -delete",
+    "find /tmp -name / -delete",
+    "find /tmp / -print",
+    "find /tmp '(' -name x ')' -delete",
+    // An expression word before the paths: find rejects the command line.
+    "find -maxdepth 1 / -delete",
+  ])("keeps a non-root search allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
