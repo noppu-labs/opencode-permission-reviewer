@@ -9,7 +9,6 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { defined } from "./helpers.ts";
 
 const ROOT = realpathSync(join(import.meta.dir, ".."));
 export const PKG = JSON.parse(
@@ -86,8 +85,7 @@ async function spawnCli(
   return { code, stdout: norm(stdout), stderr: norm(stderr) };
 }
 
-/** One test file's sandbox: `fresh` replaces it, `cli` runs the CLI in the
- *  current one and `remove`, for that file's `afterEach`, deletes it. */
+/** One sandbox per test file: call `fresh` in each test and pass `remove` to `afterEach`. */
 export interface CliSession {
   fresh: () => CliSandbox;
   cli: (args: string[], options?: CliOptions) => ReturnType<typeof spawnCli>;
@@ -101,10 +99,16 @@ export function cliSandbox(): CliSession {
       box = makeSandbox();
       return box;
     },
-    cli: (args: string[], options?: CliOptions): ReturnType<typeof spawnCli> =>
-      spawnCli(defined(box, "CLI sandbox"), args, options),
+    cli: (
+      args: string[],
+      options?: CliOptions,
+    ): ReturnType<typeof spawnCli> => {
+      if (!box) throw new Error("expected CLI sandbox to be defined");
+      return spawnCli(box, args, options);
+    },
     remove: (): void => {
       if (box) removeSandbox(box);
+      box = undefined;
     },
   };
 }
