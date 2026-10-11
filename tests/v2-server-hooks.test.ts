@@ -32,24 +32,30 @@ function edit(harness: ServerFixture, id: string): Input {
   };
 }
 
-async function effectOf(harness: ServerFixture, id: string): Promise<string> {
+async function outcomeOf(harness: ServerFixture, id: string): Promise<Input> {
   const input = edit(harness, id);
   await harness.evaluate(input);
-  return input.effect;
+  return input;
 }
+
+const incomplete = {
+  effect: "ask" as const,
+  message:
+    "Automatic approval is blocked: a material part of the pending action was elided or truncated in the reviewer evidence, so the model judged an incomplete view of the action.",
+};
 
 test("v2 reviews read the exact tool input retained by the tool hooks", async () => {
   const harness = await start();
   harness.tool("execute.before", toolEvent("call_kept"));
-  expect(await effectOf(harness, "call_kept")).toBe("allow");
-  expect(await effectOf(harness, "call_unknown")).not.toBe("allow");
+  expect((await outcomeOf(harness, "call_kept")).effect).toBe("allow");
+  expect(await outcomeOf(harness, "call_unknown")).toMatchObject(incomplete);
   harness.tool("execute.after", toolEvent("call_kept"));
-  expect(await effectOf(harness, "call_kept")).not.toBe("allow");
+  expect(await outcomeOf(harness, "call_kept")).toMatchObject(incomplete);
   Array.from({ length: 513 }, (_, index) =>
     harness.tool("execute.before", toolEvent(`call_${index}`)),
   );
-  expect(await effectOf(harness, "call_0")).not.toBe("allow");
-  expect(await effectOf(harness, "call_512")).toBe("allow");
+  expect(await outcomeOf(harness, "call_0")).toMatchObject(incomplete);
+  expect((await outcomeOf(harness, "call_512")).effect).toBe("allow");
 });
 
 test("v2 reviews deny when the retained tool input is replaced during the review", async () => {
