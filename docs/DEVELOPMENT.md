@@ -112,24 +112,63 @@ TypeScript and JavaScript files stay under 600 lines (Biome) and under the FTA c
 included. Python modules stay under 600 lines (pylint). When a test file is too long, first merge
 near-identical tests into a table-driven one, move repeated setup into helpers and combine tests
 that assert the same behavior, without dropping an assertion or a covered case. If that is not
-enough, don't restructure the file; ask. A deferred file keeps a narrow exemption: a Biome
-`overrides` entry with `maxLines` set to its current length, so it cannot grow, plus an FTA
-`exclude_filenames` entry if it is over the cap.
+enough, don't restructure the file; ask. A file that has to wait may get a narrow exemption: a
+Biome `overrides` entry with `maxLines` set to its current length, so it cannot grow, plus an FTA
+`exclude_filenames` entry if it is over the cap. No file has a `maxLines` entry today.
 
 ### Pending exemptions (the ratchet)
 
-The tooling landed with its full end-state configuration, plus temporary exemptions for what the
-code does not pass yet. Each exemption is narrow (it matches only what fails today) and names the
-stacked `quality/<n>-<slug>` pull request that fixes the code and deletes it:
+The ratchet is empty for the source. Biome has no `overrides` entries that turn off a rule for
+a list of files, and every source, script and benchmark library file is under the complexity,
+length and FTA limits.
 
-- `biome.jsonc`: `overrides` turns off one rule per entry for an exact list of files. Entries are
-  ordered by the pull request that removes them.
-- `fta.json`: `exclude_filenames` lists every file above the cap. JSON has no comments, so the
-  pull request that removes each one is listed in the description of the pull request that added
-  it.
+The only pending exemptions left are FTA exclusions for test files and test helpers that are
+still over the cap. They live in `fta.json` `exclude_filenames`. JSON has no comments, so the
+reason is recorded here: all of them are pending, owned by the follow-up pull request
+`quality/9b-split-tests`, which splits or shortens each file and removes its entry. The entries
+match by basename, so a new file must not reuse one of these names.
 
-Don't add to these lists to get a new change through. Fix the finding, or suppress it on the line
-with a reason. When the last stacked pull request lands, none of them remain.
+- `actor-resolver.test.ts`: `tests/actor-resolver.test.ts`
+- `ask-decisions.test.ts`: `tests/ask-decisions.test.ts`
+- `audit.test.ts`: `tests/audit.test.ts`
+- `capability.test.ts`: `tests/capability.test.ts`
+- `cli-init.test.ts`: `tests/cli-init.test.ts`
+- `capture-contracts.ts`: `tests/compatibility/capture-contracts.ts`
+- `emergency-brake.test.ts`: `tests/emergency-brake.test.ts`
+- `git-evidence.test.ts`: `tests/git-evidence.test.ts`
+- `git-operation-evidence.test.ts`: `tests/git-operation-evidence.test.ts`
+- `helpers.ts`: `tests/helpers.ts`
+- `live-harness.ts`: `tests/live-harness.ts`
+- `live-host-regressions.ts`: `tests/live-host-regressions.ts`
+- `live-v2-smoke.ts`: `tests/live-v2-smoke.ts`
+- `package-smoke.test.ts`: `tests/package-smoke.test.ts`
+- `policy-engine.test.ts`: `tests/policy-engine.test.ts`
+- `redact.test.ts`: `tests/redact.test.ts`
+- `shell-lexer.test.ts`: `tests/shell-lexer.test.ts`
+- `stress.test.ts`: `tests/stress.test.ts`
+- `system-one-transport.test.ts`: `tests/system-one/system-one-transport.test.ts`
+- `trust-actor-provenance.test.ts`: `tests/trust-hardening/trust-actor-provenance.test.ts`
+- `trust-reviewer-isolation.test.ts`: `tests/trust-hardening/trust-reviewer-isolation.test.ts`
+- `trust-rule-conditions.test.ts`: `tests/trust-hardening/trust-rule-conditions.test.ts`
+- `tui-elapsed.test.ts`: `tests/tui-elapsed.test.ts`
+- `tui-slot-contract.test.ts`: `tests/tui-slot-contract.test.ts`
+- `tui-v2.test.ts`: `tests/tui-v2.test.ts`
+- `ui-protocol.test.ts`: `tests/ui-protocol.test.ts`
+- `v1-backend.test.ts`: `tests/v1-backend.test.ts`
+- `v2-backend.test.ts`: `tests/v2-backend.test.ts`
+- `v2-connection.test.ts`: `tests/v2-connection.test.ts`
+- `v2-server.test.ts`: `tests/v2-server.test.ts`
+- `command-code-cli.test.mjs`: `benchmarks/permission-reviewer/tests/command-code-cli.test.mjs`
+- `live-opencode-v1.mjs`: `benchmarks/permission-reviewer/tests/live-opencode-v1.mjs`
+- `metrics.test.mjs`: `benchmarks/permission-reviewer/tests/metrics.test.mjs`
+- `opencode-v1.test.mjs`: `benchmarks/permission-reviewer/tests/opencode-v1.test.mjs`
+- `plugin-parity.mjs`: `benchmarks/permission-reviewer/tests/plugin-parity.mjs`
+- `providers.test.mjs`: `benchmarks/permission-reviewer/tests/providers.test.mjs`
+- `runner.test.mjs`: `benchmarks/permission-reviewer/tests/runner.test.mjs`
+
+Don't add to this list to get a new change through. Fix the finding, or suppress it on the line
+with a reason. When `quality/9b-split-tests` lands, the list is empty and so is
+`exclude_filenames`.
 
 ### Ignored audit advisories
 
