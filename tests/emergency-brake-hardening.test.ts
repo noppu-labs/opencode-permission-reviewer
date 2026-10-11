@@ -429,6 +429,8 @@ describe("watch runs its command through a shell", () => {
     "watch -s /tmp/shots 'rm -rf /'",
     "watch --int 5 'rm -rf /'",
     "watch -dn 'rm -rf /'",
+    "watch '' 'rm -rf /'",
+    "watch -n 5 rm -rf '/*'",
   ])("blocks destruction run through watch, case %#", (command) => {
     expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
       blocked,
@@ -442,7 +444,11 @@ describe("watch runs its command through a shell", () => {
     "watch -x 'rm -rf /'",
     "watch --exec 'rm -rf /'",
     "watch 'echo rm -rf /'",
-  ])("keeps a watched read-only command allowed, case %#", (command) => {
+    "watch 'echo x > /dev/null'",
+    "sudo watch 'lsblk'",
+    "watch -s /tmp/shots 'ls -la'",
+    "watch --int 5 'df -h'",
+  ])("keeps a legitimate watch form allowed, case %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
     ).toBeUndefined();

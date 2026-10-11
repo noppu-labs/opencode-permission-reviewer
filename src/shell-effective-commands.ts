@@ -1,8 +1,8 @@
 /*
  * Effective-command walk over the segments shell-scanner.ts produces: peels
  * wrappers and destructures command-string forms (`sh -c`, `su -c`,
- * `env -S`, `ssh host cmd`, `busybox applet`, `chroot root cmd`,
- * `timeout duration cmd`). The emergency brake, the capability parser and the
+ * `env -S`, `watch cmd`, `ssh host cmd`, `busybox applet`,
+ * `chroot root cmd`, `timeout duration cmd`). The emergency brake, the capability parser and the
  * script evidence enrichers all consume it.
  *
  * Command-string recursion depth and the total number of resolved effective
