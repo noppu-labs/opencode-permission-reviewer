@@ -391,6 +391,7 @@ try {
             : { data: { id: requesterSessionID, parentID: "ses_missing" } },
       },
     };
+    // Sequential: each origin reruns through the shared captured-messages array and MCP start log.
     await run({ maxParentSessions: 0 }, { ...ctx, client: child });
     const messages = JSON.stringify(captured.at(-1)?.messages);
     assert(!messages.includes('\\"actor\\": \\"user\\"'));

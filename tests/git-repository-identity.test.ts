@@ -110,6 +110,7 @@ describe("repository identity", () => {
 
   test("repository identity decides which literal destinations match a configured remote", async () => {
     for (const [literal, configured, matches] of IDENTITIES) {
+      // Sequential: every case rewrites the one shared origin URL.
       await git(identityRepository, "remote", "set-url", "origin", configured);
       const { targets } = await resolveRemoteTargets(
         identityRepository,

@@ -17,6 +17,7 @@ test("server maps decisions without elevating existing allow or deny and reports
     try {
       for (const effect of ["allow", "deny"] as const) {
         const unchanged = { ...harness.input(), effect };
+        // Sequential: each evaluation is checked before the next runs against the same review state.
         await harness.evaluate(unchanged);
         expect(unchanged.effect).toBe(effect);
       }

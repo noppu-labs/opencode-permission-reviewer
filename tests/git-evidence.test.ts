@@ -68,6 +68,7 @@ async function addRemote(
 
 afterEach(async () => {
   for (const directory of temporaryDirectories.splice(0)) {
+    // Sequential: fixtures nest, so two recursive removals must not walk the same tree.
     await rm(directory, { recursive: true, force: true });
   }
 });
@@ -483,6 +484,7 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
   test("operands beyond the resolution cap are counted as omitted", async () => {
     const directory = await repository();
     for (const name of ["a", "b", "c", "d", "e", "f", "g"]) {
+      // Sequential: each remote add rewrites the shared .git/config, which git locks while writing.
       await addRemote(directory, name, `https://example.invalid/${name}.git`);
     }
     // One remote operand per network command: push's extra positionals are

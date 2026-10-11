@@ -161,6 +161,7 @@ for await (const line of createInterface({ input: process.stdin })) {
   if (parallel) responses.push(...(await Promise.all([request(), request()])));
   else
     for (let attempt = 0; attempt < 5; attempt++) {
+      // Sequential: the mode asserts at most one provider call in flight.
       responses.push(await request());
     }
   for (const response of responses) {

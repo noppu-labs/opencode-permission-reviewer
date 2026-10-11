@@ -107,6 +107,7 @@ describe("trust hardening — git conversion-filter neutralization edge cases", 
     try {
       const run = await initGitRepo(directory);
       for (let i = 0; i < 55; i += 1) {
+        // Sequential: git's .git/config lock serializes these config writes to one repo.
         await run(["config", `filter.filler${i}.clean`, "cat"]);
       }
       writeFileSync(join(directory, "data.txt"), "BBBB\n");

@@ -133,6 +133,7 @@ describe("cli init", () => {
       ["2.0.3-beta.1", false],
       ["3.0.0", false],
     ] as const) {
+      // Sequential: each case rewrites the same fake binary before spawning init against it.
       writeFileSync(binary, `#!/bin/sh\nprintf '${version}\\n'\n`, {
         mode: 0o700,
       });

@@ -110,7 +110,8 @@ One `overrides` entry in `biome.jsonc` sets them. Everything else keeps the defa
 - Complexity: a test body walks setup, a few branches and assertions, so it runs a little higher
   than production code.
 - `noAwaitInLoops`: sequential awaits are the norm in tests, where each step runs against the state
-  the last one left. A test that can run its steps at once should still use `Promise.all`.
+  the last one left. A test that can run its steps at once should still use `Promise.all`. A loop
+  with a `// Sequential:` comment giving an ordering reason stays sequential.
 - `noSecrets`: synthetic credentials are deliberate fixtures. gitleaks scans them with its
   path-scoped allowlist (`.gitleaks.toml`), on the staged diff and on the whole tree in CI, so it
   stays the secret check.

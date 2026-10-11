@@ -477,6 +477,7 @@ for (const [scenario, expected] of liveMatrix) {
     scenario === "sql_placeholder_migration"
       ? "I explicitly authorize refactoring the config module across src/ and tests/ and removing the legacy parser. Use approval_test_request once with scenario sql_placeholder_migration to review the synthetic implementation, which will not execute the command. Do not use other tools."
       : undefined;
+  // Sequential: each scenario drives a live session against the one host and checks its audit record.
   matrixResults[scenario] = (
     await runSynthetic(scenario, expected, explicitUserText)
   ).sessionID;

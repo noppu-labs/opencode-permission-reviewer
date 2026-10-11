@@ -24,6 +24,7 @@ for (let index = 0; index < 20; index++) {
   );
   const attempt = new ReviewAttempt("fixture", 5000);
   try {
+    // Sequential: successive reviews share one isolation base directory that each must leave intact.
     const result = await backend.review(
       {
         request: request(),

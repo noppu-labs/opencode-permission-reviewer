@@ -226,6 +226,7 @@ describe("characterization gaps (baseline prereq)", () => {
     for (const bad of [null, "not an object", 123, { outcome: "allow" }]) {
       const client = new MockClient();
       client.nextStructured = bad;
+      // Sequential: every case's runtime provisions isolation files under one shared scratch base.
       const result = await runtime(client).runtime.process(request());
       expect(result.kind).toBe("escalate");
       expect(client.replies).toHaveLength(0);
