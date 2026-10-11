@@ -32,7 +32,6 @@
     "cli-init.test.ts",
     "capture-contracts.ts",
     "emergency-brake.test.ts",
-    "failure-reason.test.ts",
     "git-evidence.test.ts",
     "git-operation-evidence.test.ts",
     "helpers.ts",

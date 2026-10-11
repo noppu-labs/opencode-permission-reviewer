@@ -2,7 +2,7 @@ import { expect, test } from "bun:test";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
+import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import { formatFailureReason } from "../src/failure-reason.ts";
@@ -11,6 +11,7 @@ import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
 import type { ReviewEnvelope } from "../src/types.ts";
 import { config, defined, MockClient, request, runtime } from "./helpers.ts";
+import { hostEventStream } from "./v2-host-event-stream.ts";
 
 type V2Context = Parameters<Plugin.Plugin["setup"]>[0];
 type V2Input = Parameters<typeof normalizeV2Permission>[0] & {
@@ -190,9 +191,7 @@ test("v2 permission review hook failure denies with phase and cause", async () =
   const directory = await mkdtemp(join(tmpdir(), "reviewer-hook-failure-"));
   const auditPath = join(directory, "audit.jsonl");
   let evaluate!: (input: V2Input) => Promise<void>;
-  let resume: (() => void) | undefined;
-  let ended = false;
-  const events: OpenCodeEvent[] = [];
+  const stream = hostEventStream();
   const registration = (): { dispose: () => Promise<void> } => ({
     dispose: async () => {},
   });
@@ -220,25 +219,7 @@ test("v2 permission review hook failure denies with phase and cause", async () =
         time: { created: 1 },
       }),
     },
-    event: {
-      subscribe: async function* ({ signal }: { signal: AbortSignal }) {
-        const wake = () => resume?.();
-        signal.addEventListener("abort", wake);
-        try {
-          while (!signal.aborted && !ended) {
-            if (events.length) yield defined(events.shift(), "queued event");
-            else {
-              // biome-ignore lint/performance/noAwaitInLoops: async generator that yields queued events in arrival order and otherwise waits for the next wake-up
-              await new Promise<void>((resolve) => {
-                resume = resolve;
-              });
-            }
-          }
-        } finally {
-          signal.removeEventListener("abort", wake);
-        }
-      },
-    },
+    event: { subscribe: stream.subscribe },
   } as unknown as Parameters<typeof setupWithServices>[0];
   const client = {
     session: {
@@ -284,8 +265,7 @@ test("v2 permission review hook failure denies with phase and cause", async () =
     expect(input.message).toContain("permission review hook");
     expect(input.message).toContain("ClientError");
     expect(input.message).toContain("socket hang up");
-    ended = true;
-    resume?.();
+    stream.end();
     await dispose();
     const records = (await readFile(auditPath, "utf8"))
       .trim()
@@ -301,8 +281,7 @@ test("v2 permission review hook failure denies with phase and cause", async () =
     expect(String(auditRecord.reason)).toContain("ClientError");
     expect(String(auditRecord.reason)).toContain("socket hang up");
   } finally {
-    ended = true;
-    resume?.();
+    stream.end();
     await dispose().catch(() => {});
     await rm(directory, { recursive: true, force: true }).catch(() => {});
   }
