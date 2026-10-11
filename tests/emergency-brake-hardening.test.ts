@@ -198,3 +198,38 @@ describe("a root glob may end in a slash", () => {
     ).toBeUndefined();
   });
 });
+
+describe("device and copy detectors resolve long-option prefixes", () => {
+  test.each([
+    "wipefs --a /dev/sda",
+    "wipefs --ty ext4 /dev/sda",
+    "sfdisk --del /dev/sda 1",
+    "cp src /dev/sda --suf x",
+    "install src /dev/sda --mo 0644",
+    "cp --context src /dev/sda",
+  ])(
+    "blocks a device or copy command with an abbreviated option, case %#",
+    (command) => {
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeString();
+    },
+  );
+
+  test.each([
+    "wipefs --no-act /dev/sda",
+    "wipefs --j /dev/sda",
+    "sfdisk --du /dev/sda",
+    "sfdisk --wip x /dev/sda",
+    "cp --target /mnt src /dev/sda",
+    "cp --suf x src /mnt/copy",
+    "cp --sparse always src /mnt/copy",
+  ])(
+    "keeps a non-destructive device or copy command allowed, case %#",
+    (command) => {
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeUndefined();
+    },
+  );
+});

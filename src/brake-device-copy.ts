@@ -1,30 +1,16 @@
 import { isOptionWord } from "./brake-arguments.ts";
 import { isBlockDeviceTarget } from "./brake-block-device.ts";
 import { elementAt } from "./element-at.ts";
+import {
+  CP_LONG_OPTIONS,
+  INSTALL_LONG_OPTIONS,
+} from "./gnu-long-option-tables.ts";
+import { type LongOption, resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
 
-const CP_VALUE_OPTIONS = new Set([
-  "-S",
-  "-t",
-  "--suffix",
-  "--target-directory",
-  "--context",
-]);
+const CP_VALUE_OPTIONS = new Set(["-S", "-t"]);
 
-const INSTALL_VALUE_OPTIONS = new Set([
-  "-g",
-  "-m",
-  "-o",
-  "-S",
-  "-t",
-  "--group",
-  "--mode",
-  "--owner",
-  "--suffix",
-  "--target-directory",
-  "--context",
-  "--strip-program",
-]);
+const INSTALL_VALUE_OPTIONS = new Set(["-g", "-m", "-o", "-S", "-t"]);
 
 interface CopyArguments {
   operands: string[];
@@ -40,10 +26,14 @@ export function copyOverwritesBlockDevice(
   command: readonly ShellToken[],
   base: string,
 ): boolean {
-  const { operands, targetDirectory } = parseCopyArguments(
-    command,
-    base === "cp" ? CP_VALUE_OPTIONS : INSTALL_VALUE_OPTIONS,
-  );
+  const { operands, targetDirectory } =
+    base === "cp"
+      ? parseCopyArguments(command, CP_VALUE_OPTIONS, CP_LONG_OPTIONS)
+      : parseCopyArguments(
+          command,
+          INSTALL_VALUE_OPTIONS,
+          INSTALL_LONG_OPTIONS,
+        );
   const destination = operands.at(-1);
   return (
     !targetDirectory &&
@@ -56,6 +46,7 @@ export function copyOverwritesBlockDevice(
 function parseCopyArguments(
   command: readonly ShellToken[],
   valueOptions: ReadonlySet<string>,
+  longOptions: readonly LongOption[],
 ): CopyArguments {
   const parsed: CopyArguments = { operands: [], targetDirectory: false };
   let endOfOptions = false;
@@ -64,22 +55,25 @@ function parseCopyArguments(
     if (endOfOptions || !isOptionWord(value)) parsed.operands.push(value);
     else if (value === "--") endOfOptions = true;
     else if (value.startsWith("--"))
-      index += applyLongOption(parsed, value, valueOptions);
+      index += applyLongOption(parsed, value, longOptions);
     else index += applyShortCluster(parsed, value, valueOptions);
   }
   return parsed;
 }
 
-/** Records a long option and returns how many following words it consumes
- *  as its value. */
+/** Records a long option, resolved like getopt_long (an unambiguous prefix
+ *  counts), and returns how many following words it consumes as its value:
+ *  one for a required argument that is not glued on. An option that does not
+ *  resolve consumes nothing. */
 function applyLongOption(
   parsed: CopyArguments,
   value: string,
-  valueOptions: ReadonlySet<string>,
+  longOptions: readonly LongOption[],
 ): number {
-  const option = elementAt(value.split("=", 1), 0, "option");
-  if (option === "--target-directory") parsed.targetDirectory = true;
-  return valueOptions.has(option) && !value.includes("=") ? 1 : 0;
+  const option = resolveGnuLongOption(value, longOptions);
+  if (option === undefined) return 0;
+  if (option.name === "target-directory") parsed.targetDirectory = true;
+  return option.argument === "required" && !option.inlineValue ? 1 : 0;
 }
 
 /** Records the first value-taking option in a short cluster and returns how

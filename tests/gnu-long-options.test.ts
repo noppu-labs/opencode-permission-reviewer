@@ -1,6 +1,10 @@
 // tests/gnu-long-options.test.ts
 import { describe, expect, test } from "bun:test";
-import { RM_LONG_OPTIONS } from "../src/gnu-long-option-tables.ts";
+import {
+  CP_LONG_OPTIONS,
+  RM_LONG_OPTIONS,
+  SFDISK_LONG_OPTIONS,
+} from "../src/gnu-long-option-tables.ts";
 import { resolveGnuLongOption } from "../src/gnu-long-options.ts";
 
 const resolve = (token: string): string | undefined =>
@@ -100,5 +104,18 @@ describe("GNU long-option resolution (getopt_long rules)", () => {
       argument: "optional",
       inlineValue: true,
     });
+  });
+});
+
+describe("device and copy option tables", () => {
+  test("cp's deprecated --path aliases --parents, so --pa is not ambiguous", () => {
+    expect(resolveGnuLongOption("--pa", CP_LONG_OPTIONS)?.name).toBe("parents");
+  });
+
+  test("sfdisk --wipe is exact, --wip is ambiguous", () => {
+    expect(resolveGnuLongOption("--wipe", SFDISK_LONG_OPTIONS)?.name).toBe(
+      "wipe",
+    );
+    expect(resolveGnuLongOption("--wip", SFDISK_LONG_OPTIONS)).toBeUndefined();
   });
 });

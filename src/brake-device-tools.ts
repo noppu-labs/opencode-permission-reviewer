@@ -6,6 +6,11 @@ import {
 } from "./brake-block-device.ts";
 import { copyOverwritesBlockDevice } from "./brake-device-copy.ts";
 import type { Redirection } from "./capability/capability-types.ts";
+import {
+  SFDISK_LONG_OPTIONS,
+  WIPEFS_LONG_OPTIONS,
+} from "./gnu-long-option-tables.ts";
+import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 interface DeviceCommand {
@@ -92,14 +97,16 @@ function formatsBlockDevice(tool: DeviceCommand): boolean {
  *  bare wipefs only lists signatures. */
 function wipefsWipesSignatures(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
-  return tool.args.some(
-    ({ value: v }) =>
-      v === "--all" ||
+  return tool.args.some(({ value: v }) => {
+    const long = resolveGnuLongOption(v, WIPEFS_LONG_OPTIONS)?.name;
+    return (
+      long === "all" ||
+      long === "types" ||
       v === "-a" ||
       shortFlagClusterIncludes(v, "a") ||
-      v.startsWith("-t") ||
-      v === "--types",
-  );
+      v.startsWith("-t")
+    );
+  });
 }
 
 /** dd: detect `of=<real block device>` (the lexer already stripped quotes). */
@@ -128,9 +135,10 @@ function sgdiskDestroysPartitions(tool: DeviceCommand): boolean {
  *  share the sgdisk short-flag set. */
 function sfdiskDestroysPartitions(tool: DeviceCommand): boolean {
   if (!tool.targetsBlock) return false;
-  return tool.args.some(
-    (t) => t.value === "--delete" || t.value.startsWith("--wipe"),
-  );
+  return tool.args.some((t) => {
+    const long = resolveGnuLongOption(t.value, SFDISK_LONG_OPTIONS)?.name;
+    return long === "delete" || long?.startsWith("wipe") === true;
+  });
 }
 
 /** parted: `mklabel` rewrites the partition table; `rm N` deletes a
