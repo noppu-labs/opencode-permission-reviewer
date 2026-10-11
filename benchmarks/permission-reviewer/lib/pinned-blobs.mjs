@@ -58,7 +58,8 @@ export const PINNED_BLOBS = {
   "src/brake-device-tools.ts": "428f505cec8d4c903d69f6b602eec1ad73683980",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-network-export.ts": "f44ec03d976cce0833d3e232b56a2924408c0888",
-  "src/gnu-long-options.ts": "b99b40346de9d6c4382a4d08108e68ee6dc49940",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/gnu-long-options.ts": "0d1606fcdd1e5758e377b258e006fb963458d46e",
   "src/gnu-long-option-tables.ts": "dab722c262570838172c2a1afe3040f7cfa762f8",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":

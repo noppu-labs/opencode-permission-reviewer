@@ -19,8 +19,9 @@ interface ResolvedLongOption {
 /**
  * Resolves a `--name[=value]` token the way glibc's getopt_long does: an exact
  * name wins, otherwise a prefix shared by one option (or only by its aliases)
- * resolves to it. Unknown, ambiguous, or `=value` on a no-argument option give
- * undefined: the real tool rejects those and runs nothing.
+ * resolves to it. An empty, unknown, or ambiguous name, or `=value` on a
+ * no-argument option, gives undefined: the real tool rejects those and runs
+ * nothing.
  */
 export function resolveGnuLongOption(
   token: string,
@@ -30,6 +31,7 @@ export function resolveGnuLongOption(
   const equals = token.indexOf("=");
   const inlineValue = equals !== -1;
   const name = token.slice(2, inlineValue ? equals : undefined);
+  if (name === "") return undefined;
   const match =
     table.find((option) => option.name === name) ?? uniquePrefix(name, table);
   if (match === undefined) return undefined;
