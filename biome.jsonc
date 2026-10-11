@@ -81,11 +81,10 @@
   // The ratchet. Each entry turns off one rule for exactly the files that fail it today, ordered by
   // the stacked PR that fixes those files and deletes the entry.
   "overrides": [
-    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 9 files.
+    // Pending (quality/9-complexity-rest): complexity/noExcessiveCognitiveComplexity, 8 files.
     {
       "includes": [
         "benchmarks/permission-reviewer/cli.mjs",
-        "benchmarks/permission-reviewer/lib/command-code-cli.mjs",
         "benchmarks/permission-reviewer/lib/dataset.mjs",
         "benchmarks/permission-reviewer/lib/metrics.mjs",
         "benchmarks/permission-reviewer/lib/opencode-v1.mjs",

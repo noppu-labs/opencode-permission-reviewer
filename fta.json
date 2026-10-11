@@ -9,7 +9,6 @@
   ],
   "exclude_filenames": [
     "cli.mjs",
-    "command-code-cli.mjs",
     "dataset.mjs",
     "metrics.mjs",
     "opencode-v1.mjs",
