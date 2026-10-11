@@ -188,5 +188,9 @@ test("a missing binary variable throws and an unspawnable binary halts", async (
     { PRB_TEST_CC_BIN: "/nonexistent/commandcode" },
     () => requestCommandCodeCli(model, prepared),
   );
-  assert.equal(failed(missing), "spawn /nonexistent/commandcode ENOENT");
+  // The spawn error text is the runtime's own; Node and Bun word it differently.
+  assert.match(
+    failed(missing),
+    /ENOENT.*\/nonexistent\/commandcode|\/nonexistent\/commandcode.*ENOENT/,
+  );
 });

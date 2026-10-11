@@ -203,7 +203,10 @@ test("the caller's abort signal and the timeout both stop the request", async ()
     timeoutMs: 5,
     fetchImpl: async (_url, init) => untilAborted(init),
   });
-  assert.equal(timedOut.error, "The operation was aborted due to timeout");
+  // The timeout reason's text is the runtime's own; Node and Bun word it differently.
+  const timeout = AbortSignal.timeout(1);
+  await new Promise((resolve) => timeout.addEventListener("abort", resolve));
+  assert.equal(timedOut.error, timeout.reason.message);
   assert.equal(timedOut.status, null);
 });
 
@@ -248,10 +251,8 @@ test("a JSON null completion body is a caught error that keeps the raw text", as
   const result = await requestCompletion(model, prepared, {
     fetchImpl: async () => new Response("null"),
   });
-  assert.deepEqual(withoutLatency(result), {
-    ok: false,
-    error: "Cannot read properties of null (reading 'usage')",
-    rawText: "null",
-    status: 200,
-  });
+  const { error, ...rest } = withoutLatency(result);
+  assert.deepEqual(rest, { ok: false, rawText: "null", status: 200 });
+  // The TypeError text is the runtime's own; Node and Bun word it differently.
+  assert.match(error, /null.*usage/);
 });

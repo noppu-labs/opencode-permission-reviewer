@@ -8,6 +8,7 @@ import {
   failure,
   inSequence,
   inTemp,
+  replacingGlobal,
   rowsOf,
   runInput,
   scripted,
@@ -165,29 +166,31 @@ test("the manifest protocol and row run mode follow the configured transports", 
     );
   }));
 
-test("without a completion override each transport reaches its own client", async (t) =>
+test("without a completion override each transport reaches its own client", async () =>
   withEnv(env, async () => {
     const urls = [];
-    t.mock.method(globalThis, "fetch", async (url) => {
+    const fetch = async (url) => {
       urls.push(String(url));
       return new Response("{}", { status: 503 });
-    });
+    };
     const errors = {};
-    await inSequence(Object.keys(hosts), (name) =>
-      inTemp(async (dir) => {
-        await runBenchmark({
-          ...runInput(dir, { storePrompts: false }, 1),
-          models: [hosts[name]],
-          adapter: {
-            ...fakeAdapter,
-            prepare: async (input) => ({
-              ...(await fakeAdapter.prepare(input)),
-              systemOne: { state: {}, questions: {} },
-            }),
-          },
-        });
-        errors[name] = (await rowsOf(dir))[0].attempts[0].error;
-      }),
+    await replacingGlobal("fetch", fetch, () =>
+      inSequence(Object.keys(hosts), (name) =>
+        inTemp(async (dir) => {
+          await runBenchmark({
+            ...runInput(dir, { storePrompts: false }, 1),
+            models: [hosts[name]],
+            adapter: {
+              ...fakeAdapter,
+              prepare: async (input) => ({
+                ...(await fakeAdapter.prepare(input)),
+                systemOne: { state: {}, questions: {} },
+              }),
+            },
+          });
+          errors[name] = (await rowsOf(dir))[0].attempts[0].error;
+        }),
+      ),
     );
     assert.equal(urls[0], model.endpoint);
     assert.match(urls[1], /^http:\/\/127\.0\.0\.1:1\/session\?directory=/);

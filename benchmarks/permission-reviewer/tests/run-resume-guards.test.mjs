@@ -12,7 +12,7 @@ import {
   inSequence,
   inTemp,
   keyOf,
-  recordDelays,
+  recordingDelays,
   rowsOf,
   runInput,
   scripted,
@@ -119,47 +119,48 @@ test("resume discards a torn final record and keeps a note of its size", async (
     assert.equal((await rowsOf(dir)).length, 2);
   }));
 
-test("resume replays journaled retries without backoff until the last saved attempt", async (t) =>
-  inTemp(async (dir) => {
-    const delays = recordDelays(t);
-    const completion = scripted(failure(503), success());
-    const retrying = { ...runInput(dir, { httpRetries: 1 }, 1), completion };
-    await runBenchmark(retrying);
-    assert.deepEqual(delays, [500]);
-    await writeFile(join(dir, "results.jsonl"), "");
-    await runBenchmark({
-      ...retrying,
-      options: { ...retrying.options, resume: true },
-    });
-    assert.equal(completion.requests.length, 2);
-    assert.deepEqual(delays, [500]);
+test("resume replays journaled retries without backoff until the last saved attempt", async () =>
+  recordingDelays((delays) =>
+    inTemp(async (dir) => {
+      const completion = scripted(failure(503), success());
+      const retrying = { ...runInput(dir, { httpRetries: 1 }, 1), completion };
+      await runBenchmark(retrying);
+      assert.deepEqual(delays, [500]);
+      await writeFile(join(dir, "results.jsonl"), "");
+      await runBenchmark({
+        ...retrying,
+        options: { ...retrying.options, resume: true },
+      });
+      assert.equal(completion.requests.length, 2);
+      assert.deepEqual(delays, [500]);
 
-    await writeFile(join(dir, "results.jsonl"), "");
-    await reforge(dir, "attempts.jsonl", (rows) => rows.slice(0, 1));
-    await reforge(dir, "events.jsonl", (rows) => {
-      const second = rows.findLast((e) => e.event === "http-start");
-      return rows.filter((e) => e !== second);
-    });
-    const summary = await runBenchmark({
-      ...retrying,
-      options: { ...retrying.options, resume: true },
-    });
-    assert.equal(completion.requests.length, 3);
-    assert.deepEqual(delays, [500, 500]);
-    assert.equal(summary.httpAttemptsTotal, 2);
-    const [row] = await rowsOf(dir);
-    assert.equal(row.status, "valid");
-    assert.deepEqual(
-      (await attemptsOf(dir)).map((a) => a.ordinal),
-      [1, 2],
-    );
-    assert.deepEqual(
-      (await eventsOf(dir))
-        .filter((e) => e.event === "http-start")
-        .map((e) => e.ordinal),
-      [1, 2],
-    );
-  }));
+      await writeFile(join(dir, "results.jsonl"), "");
+      await reforge(dir, "attempts.jsonl", (rows) => rows.slice(0, 1));
+      await reforge(dir, "events.jsonl", (rows) => {
+        const second = rows.findLast((e) => e.event === "http-start");
+        return rows.filter((e) => e !== second);
+      });
+      const summary = await runBenchmark({
+        ...retrying,
+        options: { ...retrying.options, resume: true },
+      });
+      assert.equal(completion.requests.length, 3);
+      assert.deepEqual(delays, [500, 500]);
+      assert.equal(summary.httpAttemptsTotal, 2);
+      const [row] = await rowsOf(dir);
+      assert.equal(row.status, "valid");
+      assert.deepEqual(
+        (await attemptsOf(dir)).map((a) => a.ordinal),
+        [1, 2],
+      );
+      assert.deepEqual(
+        (await eventsOf(dir))
+          .filter((e) => e.event === "http-start")
+          .map((e) => e.ordinal),
+        [1, 2],
+      );
+    }),
+  ));
 
 test("resume treats missing journal files as empty", async () =>
   inTemp(async (dir) => {

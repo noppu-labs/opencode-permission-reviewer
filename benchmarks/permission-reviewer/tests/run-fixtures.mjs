@@ -64,15 +64,26 @@ export async function withEnv(vars, fn) {
   }
 }
 
-/** Record every setTimeout delay requested during the test and fire it at once. */
-export function recordDelays(t) {
+/** Swap `globalThis[name]` for `replacement` while `fn` runs. */
+export async function replacingGlobal(name, replacement, fn) {
+  const original = globalThis[name];
+  globalThis[name] = replacement;
+  try {
+    return await fn();
+  } finally {
+    globalThis[name] = original;
+  }
+}
+
+/** Run `fn(delays)`, recording every setTimeout delay requested meanwhile and firing each at once. */
+export function recordingDelays(fn) {
   const delays = [];
   const real = globalThis.setTimeout;
-  t.mock.method(globalThis, "setTimeout", (fn, ms, ...args) => {
+  const record = (callback, ms, ...args) => {
     delays.push(ms);
-    return real(fn, 0, ...args);
-  });
-  return delays;
+    return real(callback, 0, ...args);
+  };
+  return replacingGlobal("setTimeout", record, () => fn(delays));
 }
 
 export const failure = (status, extra = {}) => ({

@@ -44,7 +44,6 @@ const rejected = [
   [{ ...chat, model: "" }, "chat: model identifier missing"],
   [{ ...chat, transport: "grpc" }, "chat: unsupported transport"],
   [{ ...chat, endpoint: undefined }, "chat: endpoint missing"],
-  [{ ...chat, endpoint: "not a url" }, "Invalid URL"],
   [
     { ...chat, endpoint: "https://u:p@provider.invalid/" },
     "Do not put credentials, query strings or fragments in endpoint URLs.",
@@ -185,6 +184,12 @@ test("model validation rejects each invalid profile with its exact message, in c
   rejected.forEach(([model, message]) => {
     assert.throws(() => validateModel(model), { message }, message);
   }));
+
+test("an unparsable endpoint is the runtime's URL error", () => {
+  assert.throws(() => validateModel({ ...chat, endpoint: "not a url" }), {
+    code: "ERR_INVALID_URL",
+  });
+});
 
 test("model validation fills the default transport and format after the given keys", () => {
   assert.deepEqual(Object.entries(validateModel(chat)), [
