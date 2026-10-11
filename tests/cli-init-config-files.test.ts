@@ -250,22 +250,25 @@ describe("applyPlannedWrites", () => {
     ]);
   });
 
-  test("a write failure other than EEXIST propagates", () => {
-    const directory = freshDir();
-    const locked = join(directory, "locked");
-    mkdirSync(locked);
-    const path = join(locked, "opencode.json");
-    const plan = planFileChange(path, pkg);
-    expect(plan.action).toBe("create");
-    chmodSync(locked, 0o500);
-    try {
-      expect(() => applyPlannedWrites([plan], entry, pkg)).toThrow(
-        expect.objectContaining({ code: "EACCES" }),
-      );
-    } finally {
-      chmodSync(locked, 0o700);
-    }
-  });
+  test.skipIf(process.getuid?.() === 0)(
+    "a write failure other than EEXIST propagates",
+    () => {
+      const directory = freshDir();
+      const locked = join(directory, "locked");
+      mkdirSync(locked);
+      const path = join(locked, "opencode.json");
+      const plan = planFileChange(path, pkg);
+      expect(plan.action).toBe("create");
+      chmodSync(locked, 0o500);
+      try {
+        expect(() => applyPlannedWrites([plan], entry, pkg)).toThrow(
+          expect.objectContaining({ code: "EACCES" }),
+        );
+      } finally {
+        chmodSync(locked, 0o700);
+      }
+    },
+  );
 });
 
 describe("writeEntry", () => {
