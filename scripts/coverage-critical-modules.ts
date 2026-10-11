@@ -17,6 +17,7 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/brake-block-device.ts",
   "src/brake-device-copy.ts",
   "src/brake-device-tools.ts",
+  "src/brake-find-exec.ts",
   "src/brake-find-root.ts",
   "src/brake-format-tools.ts",
   "src/brake-network-export.ts",

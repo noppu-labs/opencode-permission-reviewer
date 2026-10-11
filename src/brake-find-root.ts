@@ -1,10 +1,8 @@
 import { commandName, isOptionWord } from "./brake-arguments.ts";
-import { hasRmFlags } from "./brake-rm-flags.ts";
+import { expressionDeletes } from "./brake-find-exec.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import { elementAt } from "./element-at.ts";
 import { type ShellToken, sliceToken } from "./shell-token.ts";
-
-const EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 
 /** The letters of the flags find accepts before its paths, alone or
  *  clustered (`-H -L -P -E -X -d -s -x`, e.g. `-dx`). A cluster may end in
@@ -144,25 +142,4 @@ function leadingCluster(value: string): LeadingCluster | undefined {
 
 function startsExpression(value: string): boolean {
   return isOptionWord(value) || EXPRESSION_STARTS.has(value);
-}
-
-function expressionDeletes(expression: readonly ShellToken[]): boolean {
-  return expression.some(
-    (token, index) =>
-      token.value === "-delete" ||
-      (EXEC_ACTIONS.has(token.value) &&
-        execRunsDestructiveRm(expression.slice(index + 1))),
-  );
-}
-
-/** The first non-placeholder word after `-exec` is the executable; an `rm`
- *  there is judged by the same flag rule as a top-level `rm`. */
-function execRunsDestructiveRm(words: readonly ShellToken[]): boolean {
-  const start = words.findIndex(
-    (word) => word.value !== "{" && word.value !== "}",
-  );
-  if (start === -1) return false;
-  const executable = words.slice(start);
-  if (commandName(executable) !== "rm") return false;
-  return hasRmFlags(executable).recursive;
 }
