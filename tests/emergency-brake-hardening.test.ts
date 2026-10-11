@@ -525,3 +525,30 @@ describe("find exec commands are read after their wrappers", () => {
     ).toBeUndefined();
   });
 });
+
+describe("a find exec rm is judged by the rm root rule", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "find . -exec rm -rf /* \\;",
+    "find /tmp -exec rm -r --no-preserve-root / \\;",
+    "find . -exec rm -rf / \\;",
+    "find . -name x -exec sudo rm -r /* +",
+  ])("blocks an rm of a protected target, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
+  });
+
+  test.each([
+    "find . -exec rm -rf ./build \\;",
+    "find . -exec rm -r / \\;",
+    "find /tmp -exec rm -rf {} +",
+    "find . -exec rm -rf '/*' \\;",
+  ])("keeps a non-root rm allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});

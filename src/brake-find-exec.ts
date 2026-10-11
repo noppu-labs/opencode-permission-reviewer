@@ -1,5 +1,6 @@
 import { commandName } from "./brake-arguments.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
+import { isRootRm } from "./brake-root-rm.ts";
 import { effectiveCommands } from "./shell-effective-commands.ts";
 import type { ShellToken } from "./shell-token.ts";
 
@@ -10,6 +11,12 @@ export function expressionDeletes(expression: readonly ShellToken[]): boolean {
     expression.some((token) => token.value === "-delete") ||
     execCommands(expression).some(isRecursiveRm)
   );
+}
+
+/** Whether an exec action runs an rm that the rm root rule blocks, whatever
+ *  paths find searches. */
+export function execRemovesRoot(expression: readonly ShellToken[]): boolean {
+  return execCommands(expression).some(isRootRm);
 }
 
 /** The commands the exec actions run, with their wrappers peeled like those

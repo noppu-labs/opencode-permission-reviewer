@@ -1,5 +1,5 @@
 import { commandName, isOptionWord } from "./brake-arguments.ts";
-import { expressionDeletes } from "./brake-find-exec.ts";
+import { execRemovesRoot, expressionDeletes } from "./brake-find-exec.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import { elementAt } from "./element-at.ts";
 import { type ShellToken, sliceToken } from "./shell-token.ts";
@@ -17,11 +17,15 @@ const EXPRESSION_STARTS = new Set(["!", "("]);
  * find expression rather than through a literal `rm` operand, so the rm lexer
  * does not see them. Detect them directly: when any search path resolves
  * to `/` and the expression deletes its results, the destruction is unmistakable.
+ * An rm that an exec action runs is also judged like a top-level rm.
  */
 export function isRootFind(command: readonly ShellToken[]): boolean {
   if (commandName(command) !== "find") return false;
   const { paths, expression } = splitFind(command);
-  return paths.some(targetsRoot) && expressionDeletes(expression);
+  return (
+    (paths.some(targetsRoot) && expressionDeletes(expression)) ||
+    execRemovesRoot(expression)
+  );
 }
 
 interface FindParts {
