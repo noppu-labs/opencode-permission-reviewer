@@ -8,15 +8,11 @@
  */
 
 import { existsSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
-import { satisfies } from "semver";
-import { SUPPORTED_V2_RANGE } from "../opencode/host-guard.ts";
 import { applyPlannedWrites } from "./init-apply.ts";
-import { planFileChange } from "./init-config-files.ts";
-import { readConfigFile } from "./init-config-read.ts";
-import type { HostGeneration, PackageInfo, PluginEntry } from "./init-types.ts";
+import { planInit } from "./init-plan.ts";
+import { printInitHuman, printInitJson, usage } from "./init-report.ts";
+import type { PackageInfo } from "./init-types.ts";
 import { findPackageJson } from "./package-json.ts";
 
 export async function runInit(argv: string[]): Promise<number> {
@@ -51,109 +47,21 @@ export async function runInit(argv: string[]): Promise<number> {
   }
 
   const pkg = readPackageInfo();
-  if (!["auto", "v1", "v2"].includes(values.host)) {
-    console.error("init: --host must be auto, v1, or v2");
-    return 2;
-  }
-  const versionChecks = await runVersionChecks(pkg, values.binary);
-  if (
-    values.host === "auto" &&
-    !versionChecks.find((check) => check.name === "opencode")?.ok
-  ) {
-    console.error(
-      "init: detected host is unavailable or unsupported; no configuration was written",
-    );
-    return 2;
-  }
-  const version = versionChecks.find(
-    (check) => check.name === "opencode",
-  )?.version;
-  const detected = version?.startsWith("1.")
-    ? "v1"
-    : version?.startsWith("2.")
-      ? "v2"
-      : undefined;
-  const host =
-    values.host === "auto" ? detected : (values.host as HostGeneration);
-  if (!host) {
-    console.error(
-      "init: cannot determine the host; pass --host v1 or --host v2",
-    );
-    return 2;
-  }
-  const entry = buildEntry(pkg, Boolean(values.npm), host);
-  const targets = resolveTargets(
-    directory,
-    Boolean(values.global),
-    Boolean(values.tui),
-    host,
-  );
-  const existingSnapshot = readConfigFile(targets.config);
-  const existingConfig =
-    existingSnapshot.status === "read" ? existingSnapshot.config : undefined;
-  if (
-    values.host === "auto" &&
-    existingConfig &&
-    ((host === "v1" && "plugins" in existingConfig) ||
-      (host === "v2" && "plugin" in existingConfig))
-  ) {
-    console.error(
-      "init: binary version and config format disagree; select --host explicitly",
-    );
-    return 2;
-  }
-
-  const plans = [targets.config, ...(targets.tui ? [targets.tui] : [])].map(
-    (p) => planFileChange(p, pkg, host),
-  );
-
-  // --- output -------------------------------------------------------------
+  const plan = await planInit(values, pkg, directory);
+  if (typeof plan === "number") return plan;
 
   if (values.print) {
     // Only the entry, never the full config (may contain secrets).
-    console.log(JSON.stringify(entry, null, 2));
+    console.log(JSON.stringify(plan.entry, null, 2));
     return 0;
   }
 
   if (values.json) {
-    console.log(
-      JSON.stringify(
-        {
-          command: "init",
-          host,
-          dryRun: Boolean(values["dry-run"]),
-          package: { name: pkg.name, version: pkg.version, root: pkg.root },
-          versionChecks,
-          targets: plans.map((p) => ({
-            path: p.path,
-            exists: existsSync(p.path),
-            action: p.action,
-            ...(p.backup ? { backup: p.backup } : {}),
-          })),
-          entry,
-          writes: [],
-          plannedWrites: plans
-            .filter((p) => p.action === "append" || p.action === "create")
-            .map((p) => p.path),
-        },
-        null,
-        2,
-      ),
-    );
+    printInitJson(plan, pkg, Boolean(values["dry-run"]));
     return 0;
   }
 
-  // Human report (stderr so --json/--print stdout stays clean).
-  console.error(`init: opencode-permission-reviewer ${pkg.version}`);
-  for (const c of versionChecks) {
-    const tag = c.ok ? "ok" : "warning";
-    console.error(`  ${c.name}: ${c.version} (${c.range}) ${tag}`);
-  }
-  console.error(`  entry: ${JSON.stringify(entry)}`);
-
-  for (const plan of plans) {
-    console.error(`  ${plan.path}: ${plan.action}`);
-  }
+  printInitHuman(plan, pkg);
 
   if (values["dry-run"]) {
     console.error("init: dry-run, no files written");
@@ -161,50 +69,28 @@ export async function runInit(argv: string[]): Promise<number> {
     return 0;
   }
 
-  // --- interactive gate ---------------------------------------------------
+  const declined = await confirmApply(Boolean(values.yes));
+  if (declined !== undefined) return declined;
 
-  if (!values.yes) {
-    if (!process.stdin.isTTY) {
-      console.error(
-        "init: not a TTY; pass --yes to apply changes non-interactively",
-      );
-      return 2;
-    }
-    process.stderr.write("Apply these changes? [y/N] ");
-    const answer = (await readStdin()).trim().toLowerCase();
-    if (answer !== "y" && answer !== "yes") {
-      console.error("init: aborted, nothing changed");
-      return 0;
-    }
-  }
-
-  // --- write --------------------------------------------------------------
-
-  return applyPlannedWrites(plans, entry, pkg, host);
+  return applyPlannedWrites(plan.plans, plan.entry, pkg, plan.host);
 }
 
-// --- internals ----------------------------------------------------------------
-
-function usage(): string {
-  return `Usage:
-  opencode-permission-reviewer init [--project <dir>] [--global] [--tui]
-                                    [--npm] [--dry-run] [--print] [--yes] [--json]
-
-Register the permission-reviewer plugin in an OpenCode config file.
-Backs up the existing file before writing. Never overwrites an already-
-registered entry or a malformed config.
-
-  --project <dir>   target project directory (default: cwd)
-  --global          target ~/.config/opencode/opencode.json
-  --tui             also register in tui.json
-  --host <host>     v1, v2, or auto (default); auto refuses uncertain detection
-  --binary <path>   OpenCode binary used for version detection
-  --npm             emit an npm spec entry instead of a path reference
-  --dry-run         print the plan, write nothing
-  --print           print only the plugin entry JSON to stdout
-  --yes             skip confirmation (required when stdin is not a TTY)
-  --json            print planned changes as JSON without writing files
-`;
+/** Undefined when the plan may be applied, else the exit code to return. */
+async function confirmApply(yes: boolean): Promise<number | undefined> {
+  if (yes) return undefined;
+  if (!process.stdin.isTTY) {
+    console.error(
+      "init: not a TTY; pass --yes to apply changes non-interactively",
+    );
+    return 2;
+  }
+  process.stderr.write("Apply these changes? [y/N] ");
+  const answer = (await readStdin()).trim().toLowerCase();
+  if (answer !== "y" && answer !== "yes") {
+    console.error("init: aborted, nothing changed");
+    return 0;
+  }
+  return undefined;
 }
 
 function readPackageInfo(): PackageInfo {
@@ -218,119 +104,6 @@ function readPackageInfo(): PackageInfo {
     engines: raw.engines ?? {},
     root: found.dir,
   };
-}
-
-function buildEntry(
-  pkg: PackageInfo,
-  npm: boolean,
-  host: HostGeneration,
-): PluginEntry {
-  // When installed via npm the root is under node_modules; emit a bare spec so
-  // opencode resolves it from its own node_modules. Otherwise emit an absolute
-  // path reference (the documented dev workflow).
-  const fromNodeModules = pkg.root.includes(join("node_modules", ""));
-  if (npm || fromNodeModules) {
-    const name = `${pkg.name}@^${pkg.version}`;
-    return host === "v2" ? { package: name, options: {} } : name;
-  }
-  return host === "v2" ? { package: pkg.root, options: {} } : pkg.root;
-}
-
-function resolveTargets(
-  directory: string,
-  forceGlobal: boolean,
-  wantTui: boolean,
-  host: HostGeneration,
-): { config: string; tui?: string } {
-  const globalDir = join(
-    process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
-    "opencode",
-  );
-  const globalCfg = pickExisting([
-    join(globalDir, "opencode.json"),
-    join(globalDir, "opencode.jsonc"),
-  ]);
-  const projectCfg = pickExisting([
-    join(directory, "opencode.json"),
-    join(directory, "opencode.jsonc"),
-    join(directory, ".opencode", "opencode.json"),
-    join(directory, ".opencode", "opencode.jsonc"),
-  ]);
-  const configPath = forceGlobal
-    ? (globalCfg ?? join(globalDir, "opencode.json"))
-    : (projectCfg ?? globalCfg ?? join(directory, "opencode.json"));
-
-  if (!wantTui) return { config: configPath };
-  if (host === "v2")
-    return { config: configPath, tui: join(globalDir, "cli.json") };
-
-  const tuiDir = forceGlobal ? globalDir : dirname(configPath);
-  const tuiPath =
-    pickExisting([join(tuiDir, "tui.json"), join(tuiDir, "tui.jsonc")]) ??
-    join(tuiDir, "tui.json");
-  return { config: configPath, tui: tuiPath };
-}
-
-function pickExisting(candidates: string[]): string | undefined {
-  return candidates.find((p) => existsSync(p));
-}
-
-interface VersionCheck {
-  name: string;
-  version: string;
-  range: string;
-  ok: boolean;
-}
-
-async function runVersionChecks(
-  pkg: PackageInfo,
-  binary: string,
-): Promise<VersionCheck[]> {
-  const checks: VersionCheck[] = [];
-  const bunVer = process.versions.bun ?? process.versions.node ?? "0.0.0";
-  const bunRange = pkg.engines.bun ?? "(unstated)";
-  checks.push({
-    name: "bun",
-    version: bunVer,
-    range: bunRange,
-    ok: !pkg.engines.bun || satisfies(bunVer, pkg.engines.bun),
-  });
-  const ocVersion = await probeOpencodeVersion(binary);
-  const ocRange = pkg.engines.opencode ?? "(unstated)";
-  checks.push({
-    name: "opencode",
-    version: ocVersion ?? "(not found)",
-    range: ocRange,
-    ok:
-      ocVersion !== undefined &&
-      (!pkg.engines.opencode || satisfies(ocVersion, pkg.engines.opencode)) &&
-      (!ocVersion.startsWith("2.") || satisfies(ocVersion, SUPPORTED_V2_RANGE)),
-  });
-  return checks;
-}
-
-export async function probeOpencodeVersion(
-  binary = "opencode",
-): Promise<string | undefined> {
-  try {
-    const proc = Bun.spawn({
-      cmd: [binary, "--version"],
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const timer = setTimeout(() => proc.kill(), 2000);
-    const [code, out] = await Promise.all([
-      proc.exited,
-      new Response(proc.stdout).text(),
-    ]);
-    clearTimeout(timer);
-    if (code !== 0) return undefined;
-    return (out.match(
-      /\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?/,
-    ) ?? [])[0];
-  } catch {
-    return undefined;
-  }
 }
 
 async function readStdin(): Promise<string> {

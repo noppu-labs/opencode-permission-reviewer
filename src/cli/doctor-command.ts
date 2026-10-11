@@ -17,7 +17,7 @@ import {
   hashEffectivePolicy,
 } from "../policy/policy-engine.ts";
 import { ReviewerRpc } from "../ui/rpc.ts";
-import { probeOpencodeVersion } from "./init.ts";
+import { probeOpencodeVersion } from "./init-host-version.ts";
 import { findPackageJson } from "./package-json.ts";
 
 export async function runDoctor(argv: string[]): Promise<number> {
