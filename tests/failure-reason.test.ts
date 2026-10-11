@@ -127,7 +127,7 @@ test("review coordination failure audits deny with phase and cause", async () =>
       outcome: "deny",
       decisionSource: "failure-safe",
     });
-    const reason = defined(audits[0], "audits[0]").reason as string;
+    const reason = defined(audits[0], "audits[0]").reason;
     expect(reason).toContain("review coordination");
     expect(reason).toContain("ClientError");
     expect(reason).toContain("socket hang up");
