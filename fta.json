@@ -27,7 +27,6 @@
     "runner.test.mjs",
     "explain.ts",
     "doctor-command.ts",
-    "index.ts",
     "init.ts",
     "init-config-files.ts",
     "actor-resolver.test.ts",

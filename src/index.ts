@@ -1,16 +1,25 @@
-import type { Plugin } from "@opencode-ai/plugin";
+import type {
+  Hooks,
+  Plugin,
+  PluginInput,
+  PluginOptions,
+} from "@opencode-ai/plugin";
 import { createAuditWriter } from "./audit.ts";
 import { loadResolvedConfig } from "./config/loader.ts";
 import { AskDecisionRegistry } from "./context/ask-decisions.ts";
 import { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
 import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
-import { withTimeout } from "./opencode/transport.ts";
+import { probeHostVersion } from "./opencode/host-version.ts";
 import type { RuntimeContext } from "./opencode/types.ts";
 import { createV1Adapter } from "./opencode/v1-adapter.ts";
 import { setup } from "./opencode/v2/server.ts";
 
-// biome-ignore lint/nursery/useExplicitType: input and options are contextually typed by the Plugin annotation on server; annotating them wraps the signature and pushes this file over the FTA cap of 52
-export const server: Plugin = async (input, options) => {
+type HookEvent = Parameters<NonNullable<Hooks["event"]>>[0];
+
+export const server: Plugin = async (
+  input: PluginInput,
+  options?: PluginOptions,
+): Promise<Hooks> => {
   // V1 does not report whether plugin options came from global or project
   // config. Treat that unknown provenance like V2: inline values may tighten
   // policy, but only the dedicated global file may select the reviewer or
@@ -26,24 +35,8 @@ export const server: Plugin = async (input, options) => {
     config,
     config.debug ? logger : debugLogger,
   );
-  const raw = (
-    input.client as unknown as {
-      _client?: {
-        get?(options: {
-          url: string;
-          signal: AbortSignal;
-        }): Promise<{ data?: { version?: string } }>;
-      };
-    }
-  )._client;
-  const hostVersion = raw?.get
-    ? await withTimeout(
-        raw.get({ url: "/global/health", signal: AbortSignal.timeout(2000) }),
-        2000,
-      )
-        .then((response) => response.data?.version)
-        .catch(() => undefined)
-    : undefined;
+  const probe = probeHostVersion(input.client);
+  const hostVersion = probe === undefined ? undefined : await probe;
   const ctx: RuntimeContext = {
     ...(hostVersion ? { hostVersion } : {}),
     ...createV1Adapter(
@@ -69,8 +62,7 @@ export const server: Plugin = async (input, options) => {
     askDecisions,
   );
   return {
-    // biome-ignore lint/nursery/useExplicitType: the event payload is contextually typed by the Plugin annotation on server; annotating it needs an SDK type import and pushes this file over the FTA cap of 52
-    event: async ({ event }) => {
+    event: async ({ event }: HookEvent): Promise<void> => {
       // Observe synchronously first: reviews started by later events must see
       // ask decisions captured by this one. The observer is total.
       askDecisions?.observe(event);
