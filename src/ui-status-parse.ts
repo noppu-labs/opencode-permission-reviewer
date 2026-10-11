@@ -1,13 +1,10 @@
+import { isRecord } from "./is-record.ts";
 import type { ReviewDecision } from "./types.ts";
 import type { ReviewUiStatus } from "./ui-protocol.ts";
 
 // Structural checks for a decoded UI status payload. A payload passes only
 // when every field holds a value the protocol defines; it is then returned
 // as is, unknown extra fields included.
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 type Check = (value: unknown) => boolean;
 

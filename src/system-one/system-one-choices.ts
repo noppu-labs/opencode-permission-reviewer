@@ -1,17 +1,12 @@
 // Validation of one Jev choice answer: a known option, a confidence, and
 // probabilities over exactly the options that sum to 1 and favour the choice.
 
+import { isRecord } from "../is-record.ts";
 import type { SystemOneChoiceScore } from "./system-one-types.ts";
 
 export type ParsedChoice<T extends string> = SystemOneChoiceScore<T> & {
   probabilities: Record<T, number>;
 };
-
-export function isPlainObject(
-  value: unknown,
-): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /** Whether `value`'s own keys are exactly `expected`. `Object.keys` never
  *  repeats a key, so a duplicate in `expected` can never match. */
@@ -62,7 +57,7 @@ export function parseChoice<T extends readonly string[]>(
   value: unknown,
   options: T,
 ): ParsedChoice<T[number]> | undefined {
-  if (!isPlainObject(value)) return;
+  if (!isRecord(value)) return;
   const answer = value;
   if (answer.type !== "choice" || !options.includes(answer.choice as T[number]))
     return;

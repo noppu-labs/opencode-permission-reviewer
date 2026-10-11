@@ -4,6 +4,7 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/decision.ts",
   "src/decision-gates.ts",
   "src/decision-schema.ts",
+  "src/is-record.ts",
   "src/escalation.ts",
   "src/policy.ts",
   "src/policy/policy-engine.ts",

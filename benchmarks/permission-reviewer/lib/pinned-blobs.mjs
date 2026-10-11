@@ -28,7 +28,10 @@ export const PINNED_BLOBS = {
   "src/config-rule-condition.ts": "c5d475f4a06542cf79f67058f5ab3d55100c7821",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/reviewer-model.ts": "e8b33fa484ff8de522060c5a4a1d6426d55f9845",
-  "src/decision.ts": "a2f72db3d7280101b3702d9d8d4d5c6419f911b2",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/decision.ts": "4d806acf86e01fec23c9b93d2d98e0b57aa7bb3a",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/is-record.ts": "35b95a114cf76583162098c99d66d72f9cb3b9dd",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/decision-gates.ts": "f54307ffb219fb625546db1a88652ee031c45621",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -95,16 +98,14 @@ export const PINNED_BLOBS = {
   "src/capability/heredoc-extractor.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
-  "src/system-one/review.ts": "3c794bf741679c17a3c6e42dfba6f1b3e41efb7a",
+  "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
   "src/system-one/system-one-questions.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "5008341e04e7fc87061e82001cfc43b91fd06846",
   "src/system-one/system-one-answers.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "25bf718c2a774da4c4fd5e2780e0d392d770594a",
+    "928ff1d66890c8dc51e111e8b030fcfc4fb16e9c",
   "src/system-one/system-one-choices.ts":
-    // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-    "e1109fea7cec6d649b2f14f269c86cd27d56ad37",
+    "c8d2471455a27cb91bfa965199b7812287b92fe6",
   "src/system-one/system-one-consistency.ts":
     "9658f16a6a3ab91e63506906ab41113d5fa77615",
   "src/system-one/system-one-verdict.ts":

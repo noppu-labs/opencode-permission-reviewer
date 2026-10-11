@@ -1,5 +1,6 @@
 import { DEFAULT_CONFIG } from "../config.ts";
 import { DEFAULT_RISK_POLICY } from "../config-risk-policy.ts";
+import { isRecord } from "../is-record.ts";
 import type { PolicyRule } from "../types.ts";
 import { clampRiskPolicy } from "./risk-policy-clamp.ts";
 import {
@@ -11,10 +12,6 @@ import {
  *  handled as a present-but-invalid override, never silently forwarded). */
 function hasKey(object: Record<string, unknown>, key: string): boolean {
   return Object.hasOwn(object, key);
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** Merge the trusted baseline with the untrusted project layer. Project config
@@ -86,11 +83,11 @@ function clampProjectRiskPolicy(
   trusted: Record<string, unknown>,
 ): void {
   if (!hasKey(clamped, "riskPolicy")) return;
-  if (!isPlainObject(clamped.riskPolicy)) {
+  if (!isRecord(clamped.riskPolicy)) {
     delete clamped.riskPolicy;
     return;
   }
-  const trustedPolicy = isPlainObject(trusted.riskPolicy)
+  const trustedPolicy = isRecord(trusted.riskPolicy)
     ? trusted.riskPolicy
     : (DEFAULT_RISK_POLICY as unknown as Record<string, unknown>);
   clamped.riskPolicy = clampRiskPolicy(clamped.riskPolicy, trustedPolicy);

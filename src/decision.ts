@@ -1,3 +1,4 @@
+import { isRecord } from "./is-record.ts";
 import type {
   EvidenceSufficiency,
   ReviewDecision,
@@ -19,10 +20,6 @@ const EVIDENCE_SUFFICIENCY = new Set([
   "insufficient",
   "unknown",
 ]);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /**
  * Parse the reviewer's plain-text response under a strict, fail-closed policy:

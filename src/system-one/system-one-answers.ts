@@ -1,7 +1,7 @@
 // Validation of Jev's answer set: the six choices and the nine noul signals.
+import { isRecord } from "../is-record.ts";
 import {
   finiteProbability,
-  isPlainObject,
   type ParsedChoice,
   parseChoice,
 } from "./system-one-choices.ts";
@@ -30,7 +30,7 @@ export interface ParsedAnswers {
 }
 
 function parseNoul(value: unknown): number | undefined {
-  if (!isPlainObject(value)) return;
+  if (!isRecord(value)) return;
   const answer = value;
   return answer.type === "noul" && finiteProbability(answer.noul)
     ? answer.noul

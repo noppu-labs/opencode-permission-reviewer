@@ -1,12 +1,13 @@
 import type { JsonValue, SystemOneResult } from "@typesafe-ai/sdk";
 import { enforceDecision } from "../decision-gates.ts";
+import { isRecord } from "../is-record.ts";
 import type {
   ReviewDecision,
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
 import { type ParsedAnswers, parseAnswers } from "./system-one-answers.ts";
-import { exactKeys, isPlainObject } from "./system-one-choices.ts";
+import { exactKeys } from "./system-one-choices.ts";
 import { SYSTEM_ONE_QUESTIONS } from "./system-one-questions.ts";
 import type { SystemOnePrimaryBasis } from "./system-one-types.ts";
 import {
@@ -61,7 +62,7 @@ function responseAnswers(
   response: unknown,
   config: ReviewerConfig,
 ): { model: string; answers: Record<string, unknown> } | undefined {
-  if (!isPlainObject(response)) return;
+  if (!isRecord(response)) return;
   const raw = response;
   if (
     typeof raw.model !== "string" ||
@@ -70,7 +71,7 @@ function responseAnswers(
       : !/^jev(?:-|$)/.test(raw.model))
   )
     return;
-  if (!isPlainObject(raw.answers)) return;
+  if (!isRecord(raw.answers)) return;
   const answers = raw.answers;
   if (!exactKeys(answers, Object.keys(SYSTEM_ONE_QUESTIONS))) return;
   return { model: raw.model, answers };

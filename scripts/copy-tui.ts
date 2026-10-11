@@ -45,6 +45,7 @@ const files = [
   ["src/config/trusted-degradation.ts", "config/trusted-degradation.ts"],
   ["src/config/jsonc.ts", "config/jsonc.ts"],
   ["src/descriptor-io.ts", "descriptor-io.ts"],
+  ["src/is-record.ts", "is-record.ts"],
   ["src/ui-protocol.ts", "ui-protocol.ts"],
   ["src/ui-status-parse.ts", "ui-status-parse.ts"],
   ["src/ui-state.ts", "ui-state.ts"],
