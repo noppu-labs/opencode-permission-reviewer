@@ -19,6 +19,7 @@ import {
   privateDir,
   readJSON,
   readJSONL,
+  toJsonl,
 } from "./lib/util.mjs";
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
@@ -263,11 +264,9 @@ async function main() {
         });
       }
     await privateDir(resolve(a.out));
-    await writeFile(
-      resolve(a.out, "results.jsonl"),
-      `${rows.map((r) => JSON.stringify(r)).join("\n")}\n`,
-      { mode: 0o600 },
-    );
+    await writeFile(resolve(a.out, "results.jsonl"), toJsonl(rows), {
+      mode: 0o600,
+    });
     const summary = summarize(rows, { bootstrap, seed });
     summary.liveModelCalls = 0;
     summary.warning =
@@ -311,26 +310,24 @@ async function main() {
       "Render file already exists.",
     );
     await privateDir(resolve(a.out));
-    const lines = [];
+    const requests = [];
     for (const c of cases)
       for (const model of models) {
         // biome-ignore lint/performance/noAwaitInLoops: adapter.prepare is in-process work on fixture envelopes (collect returns the fixture, evidence is built synchronously, no file, git or network I/O), so running cases x models concurrently would overlap nothing; the loop builds requests.jsonl lines in case-then-model order
         const p = await adapter.prepare(modelInput(c), model);
-        lines.push(
-          JSON.stringify({
-            caseId: c.id,
-            modelId: model.id,
-            reachable: p.reachable,
-            promptHash: p.promptHash,
-            evidenceHash: p.evidenceHash,
-            actionEvidenceComplete: p.actionEvidenceComplete,
-            ...(model.transport === "system-one"
-              ? { systemOne: p.systemOne }
-              : { system: p.system, user: p.user, schema: p.schema }),
-          }),
-        );
+        requests.push({
+          caseId: c.id,
+          modelId: model.id,
+          reachable: p.reachable,
+          promptHash: p.promptHash,
+          evidenceHash: p.evidenceHash,
+          actionEvidenceComplete: p.actionEvidenceComplete,
+          ...(model.transport === "system-one"
+            ? { systemOne: p.systemOne }
+            : { system: p.system, user: p.user, schema: p.schema }),
+        });
       }
-    await writeFile(resolve(a.out, "requests.jsonl"), `${lines.join("\n")}\n`, {
+    await writeFile(resolve(a.out, "requests.jsonl"), toJsonl(requests), {
       mode: 0o600,
     });
     await atomicJSON(resolve(a.out, "render-manifest.json"), {
@@ -341,7 +338,7 @@ async function main() {
       promptVersion: adapter.promptVersion,
     });
     console.log(
-      `${lines.length} rendered requests; ZERO network calls and ZERO fixture executions.`,
+      `${requests.length} rendered requests; ZERO network calls and ZERO fixture executions.`,
     );
     return;
   }

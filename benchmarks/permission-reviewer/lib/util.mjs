@@ -99,6 +99,9 @@ export async function readJSONL(path, { recoverTail = false } = {}) {
   }
   return { rows, truncatedBytes: 0, validText: text };
 }
+/** One JSON row per line, newline-terminated: the format readJSONL reads back. */
+export const toJsonl = (rows) =>
+  `${rows.map((r) => JSON.stringify(r)).join("\n")}\n`;
 export function numberArg(value, fallback, min, max, name = "number") {
   if (value === undefined) return fallback;
   const n = Number(value);

@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
-import { readJSONL } from "../lib/util.mjs";
+import { readJSONL, toJsonl } from "../lib/util.mjs";
 
 async function withFile(text, check) {
   const dir = await mkdtemp(join(tmpdir(), "prb-jsonl-"));
@@ -73,5 +73,15 @@ test("a file holding only a truncated row recovers to empty text", async () => {
       truncatedBytes: 5,
       validText: "",
     });
+  });
+});
+
+test("toJsonl writes one compact row per line with a final newline that readJSONL reads back", async () => {
+  const rows = [{ b: 1, a: [1, "x\ny"] }, null, "text"];
+  const text = toJsonl(rows);
+  assert.equal(text, '{"b":1,"a":[1,"x\\ny"]}\nnull\n"text"\n');
+  assert.equal(toJsonl([]), "\n");
+  await withFile(text, async (path) => {
+    assert.deepEqual((await readJSONL(path)).rows, rows);
   });
 });

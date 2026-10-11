@@ -1,7 +1,7 @@
 import { writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { shuffle } from "./sampling.mjs";
-import { assert, exists, privateDir } from "./util.mjs";
+import { assert, exists, privateDir, toJsonl } from "./util.mjs";
 export async function exportReview(
   rows,
   path,
@@ -58,9 +58,7 @@ export async function exportReview(
       "Judge the exposed rationale, not hidden thoughts. Do not infer reasoning quality from confidence or keyword overlap. Mark disputed gold before penalizing the model.",
   }));
   await privateDir(dirname(path));
-  await writeFile(path, `${sheet.map((r) => JSON.stringify(r)).join("\n")}\n`, {
-    mode: 0o600,
-  });
+  await writeFile(path, toJsonl(sheet), { mode: 0o600 });
   return {
     records: sheet.length,
     failures: rows.filter(failure).length,
