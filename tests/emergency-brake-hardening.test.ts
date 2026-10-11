@@ -552,3 +552,30 @@ describe("a find exec rm is judged by the rm root rule", () => {
     ).toBeUndefined();
   });
 });
+
+describe("partition tools read their short options", () => {
+  test.each([
+    "sfdisk -W always /dev/sda",
+    "sfdisk -w always /dev/sda",
+    "sfdisk -Walways /dev/sda",
+    "sfdisk -fW always /dev/sda",
+    "sfdisk -N 1 -w always /dev/sda",
+    "sudo sfdisk -w always /dev/sda",
+  ])("blocks a partition table rewrite, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
+
+  test.each([
+    "sfdisk -l /dev/sda",
+    "sfdisk -d /dev/sda",
+    "sfdisk -Ow /dev/sda",
+    "sfdisk -N1w /dev/sda",
+    "sfdisk -w always disk.img",
+  ])("keeps a listing or a non-device target allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
