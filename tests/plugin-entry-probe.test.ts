@@ -5,11 +5,6 @@ import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
 import { server } from "../src/index.ts";
 import { MockClient, request } from "./helpers.ts";
 
-/**
- * Characterises the V1 plugin entry's host version probe: the raw client's
- * health route, its 2 s bound, and the version that reaches the audit record.
- */
-
 type Get = (options: { url: string; signal: AbortSignal }) => Promise<unknown>;
 
 const roots: string[] = [];

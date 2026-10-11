@@ -1,6 +1,5 @@
-// Descriptor-level file IO shared by the audit file and the config layers:
-// open flags that fall back to 0 where the platform lacks them, a positioned
-// read loop, and a close that never throws.
+// Each open flag is 0 where the platform lacks it, so OR-ing it in is a no-op
+// there rather than an error.
 import { closeSync, constants as fsConstants, readSync } from "node:fs";
 
 export const O_RDONLY: number =

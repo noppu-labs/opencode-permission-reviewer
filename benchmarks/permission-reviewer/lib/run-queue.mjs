@@ -6,7 +6,6 @@ export function jobList(cfg, cases, safeModels) {
         jobs.push({ c, m, rep, key: `${m.id}/${c.id}/${rep}` });
   return jobs;
 }
-/** Workers take the next queued job only after their previous one finished; the worker count is the provider concurrency limit. */
 export function runWorkers(run, { queue, jobs, rows, execute, onProgress }) {
   let cursor = 0;
   async function worker() {

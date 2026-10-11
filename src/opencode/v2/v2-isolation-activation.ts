@@ -46,14 +46,9 @@ function pollDelay(signal: AbortSignal): Promise<void> {
   });
 }
 
-/** Wait until the host reports the isolation bootstrap active for its directory.
- *
- * The client no longer offers a dedicated activation wait, so poll the plugin
- * inventory for this attempt's bootstrap entry: it is identified by its unique
- * local path, the wait ends once the host reports it active, and a reported
- * failure fails loudly. The attempt deadline still bounds the wait, and a
- * transport error rejects like any other reviewer failure.
- */
+/** The client has no activation wait, so poll the plugin inventory until this
+ *  attempt's bootstrap (`isBootstrap`) reports active; a reported failure
+ *  throws. The attempt signal bounds the wait. */
 export async function waitForIsolationActive(
   client: OpenCodeClient,
   directory: string,

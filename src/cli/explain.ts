@@ -1,16 +1,8 @@
 #!/usr/bin/env bun
 /*
- * opencode-permission-reviewer CLI.
- *
- * Subcommands:
- *   init                 register the plugin in an OpenCode config file
- *   explain              dry-run a bash request through the analyzer + policy engine
- *   doctor               report versions, config sources, audit path, policy mode
- *   config print-effective   print the resolved config + effective policy hash
- *   audit report         summarize the JSONL audit trail
- *
- * Backward compatible: invoked with no subcommand (or with a flag first), it
- * runs `explain` against stdin/`--event`, matching the original behavior.
+ * opencode-permission-reviewer CLI dispatcher; `usage()` lists the subcommands.
+ * Invoked with no subcommand, or with a flag first, it runs `explain` against
+ * stdin or `--event`.
  */
 import { runAudit } from "./audit-command.ts";
 import { runConfig } from "./config-command.ts";

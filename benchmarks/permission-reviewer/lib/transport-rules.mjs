@@ -105,7 +105,6 @@ const RULES = new Map([
 ]);
 export const TRANSPORTS = [...RULES.keys()];
 
-/** Check the profile rules of a supported transport. */
 export function checkTransport(transport, model, url) {
   RULES.get(transport)(model, url);
 }

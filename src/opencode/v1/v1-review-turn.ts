@@ -21,15 +21,11 @@ interface ReviewTurn {
 }
 
 /**
- * Prompt the reviewer and turn its answer into a result. Text mode has no
- * host-side schema enforcement or retry (unlike json_schema's
- * `retryCount: 2`), so a single flaky response would escalate: re-prompt
- * once with a corrective note. The retry still goes through the same strict
- * extractor and enforceDecision invariants, so it can never approve anything
- * the first parse would not; it only reduces spurious escalations from
- * weaker models. Structured mode is left alone because OpenCode already
- * retries it. The retry output is authoritative: if it does not parse, the
- * review falls through to the manual-review path.
+ * Text mode has no host-side schema retry (json_schema sets `retryCount: 2`),
+ * so re-prompt once with `TEXT_MODE_RETRY_NOTE`. The retry goes through the
+ * same strict extractor and `enforceDecision`, so it cannot approve anything
+ * the first parse would not; an unparsed retry takes the `invalid-decision`
+ * escalation.
  */
 export async function promptForDecision(
   client: OpenCodeClientLike,
@@ -39,9 +35,8 @@ export async function promptForDecision(
 ): Promise<ReviewExecutionResult> {
   const { outputFormat } = config;
   const first = await promptReviewer(client, config, request, attempt);
-  // Record the elapsed time as soon as the reviewer returns, so a response
-  // that turns out to be invalid (no data / transport error) still carries
-  // reviewerMs in the audit before responseData throws below.
+  // Record the elapsed time before `parseReviewerResponse` can throw, so an
+  // invalid response still carries `reviewerMs` in the audit.
   recordReviewerMs(envelope, first.ms);
   const parsed = parseReviewerResponse(first.response, outputFormat);
   if (parsed || outputFormat !== "text")

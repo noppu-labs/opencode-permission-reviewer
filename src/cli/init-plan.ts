@@ -10,7 +10,6 @@ import type { InitPlan } from "./init-report.ts";
 import { buildEntry, resolveTargets } from "./init-targets.ts";
 import type { HostGeneration, PackageInfo } from "./init-types.ts";
 
-/** The parsed options planning reads. */
 interface PlanOptions {
   host: string;
   binary: string;

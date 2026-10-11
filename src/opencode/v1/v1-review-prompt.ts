@@ -11,13 +11,8 @@ import {
 } from "../transport.ts";
 import type { ClientResponse, OpenCodeClientLike } from "../types.ts";
 
-/**
- * Corrective instruction appended to a text-mode parse-failure retry. Text mode
- * has no host-side schema enforcement, so instead of loosening the strict
- * fail-closed extractor (which could auto-approve a draft decision the model
- * later reversed in prose) the coordinator re-prompts once with this note and
- * parses the retry with the same extractor.
- */
+/** Corrective note for the single text-mode retry; `promptForDecision`
+ *  (v1-review-turn.ts) says why the retry is safe. */
 export const TEXT_MODE_RETRY_NOTE =
   "Your previous response could not be parsed as a decision. Respond again with " +
   "exactly one JSON object conforming to the schema and nothing else - no prose, " +
@@ -66,12 +61,10 @@ export function parseReviewerResponse(
 }
 
 /**
- * Issue a single reviewer prompt in the review session and return the raw
- * response plus its elapsed time. `responseData` is applied by the caller so
- * the caller can record the elapsed time even when the response is invalid.
- * The role/safety rules live in the system prompt so they carry system-level
- * priority over the untrusted evidence; the per-request part (and an optional
- * corrective retry note) is appended as user content.
+ * Returns the raw response so the elapsed time is recorded before
+ * `parseReviewerResponse` validates it. The role and safety rules go in the
+ * system prompt so they outrank the untrusted evidence; the per-request part
+ * and any retry note go in as user content.
  */
 export async function promptReviewer(
   client: OpenCodeClientLike,

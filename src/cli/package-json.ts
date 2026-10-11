@@ -8,10 +8,9 @@ interface PackageManifest {
   engines?: { bun?: string; opencode?: string };
 }
 
-/** Locate the nearest package.json by walking up from `start`, at most eight
- *  levels. The CLI lives at <root>/src/cli (source) or <root>/dist (bundle),
- *  so the package root is a different number of levels up in each layout;
- *  searching upward works for both. Returns undefined when none is found. */
+/** The CLI runs from `<root>/src/cli` (source) or `<root>/dist` (bundle), so
+ *  the package root is a different number of levels up in each; walking up
+ *  works for both. */
 export function findPackageJson(
   start: string,
 ): { dir: string; manifest: PackageManifest } | undefined {

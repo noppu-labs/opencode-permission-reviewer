@@ -38,9 +38,6 @@ export async function setupWithServices(
   return () => shutdown(server, eventTask);
 }
 
-/** Stops the reviewer once: refuses new reviews, unregisters every hook,
- *  cancels and drains pending reviews, then bounds the notification and
- *  backend cleanup waits. */
 async function shutdown(
   state: ServerState,
   eventTask: Promise<void>,

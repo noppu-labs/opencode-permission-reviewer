@@ -25,7 +25,6 @@ beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
 });
 
-// Invalidates one decision field, picked by `item % 5`.
 function mutateDecision(base: Record<string, unknown>, item: number): void {
   switch (item % 5) {
     case 0:

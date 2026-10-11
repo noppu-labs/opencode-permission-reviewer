@@ -23,7 +23,6 @@ const registered = async (): Promise<Registration> => ({
   dispose: async (): Promise<void> => {},
 });
 
-/** A stub that resolves to `value`. */
 export const returns =
   (value: unknown): Stub =>
   async (): Promise<unknown> =>

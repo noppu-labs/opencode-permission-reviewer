@@ -55,9 +55,8 @@ function listConditionHolds<S, V>(
 type MaybeCapability = CapabilityAssessment | undefined;
 type MaybeFact = boolean | "unknown" | undefined;
 
-/** The capability fact each boolean condition requires. The `Record`
- *  annotation makes a flag without a fact a compile error; flags are evaluated
- *  in `CONDITION_FLAG_KEYS` order. */
+/** The capability fact each boolean condition requires; the `Record`
+ *  annotation makes a flag without a fact a compile error. */
 const CAPABILITY_FLAG_FACTS: Readonly<
   Record<ConditionFlag, (cap: MaybeCapability) => MaybeFact>
 > = {

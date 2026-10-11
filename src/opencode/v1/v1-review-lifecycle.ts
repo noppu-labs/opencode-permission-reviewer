@@ -28,10 +28,7 @@ export async function openReviewSession(
 ): Promise<{ id: string; directory: string }> {
   // Never review inside the project if instruction isolation fails.
   const isolated = await attempt.wait(run.isolatedDirectory.resolve());
-  // The isolated location excludes MCP via its local config, but the guard
-  // trusts the host report, not the file: a stale or tampered config, a host
-  // that ignores it, or a user-level addition must all escalate rather than
-  // spawn duplicate MCP processes under this session.
+  // The host's report, not the local config, is the guarantee (`assertNoMcpServers`).
   await assertNoMcpServers(
     run.ctx.client,
     isolated,

@@ -37,7 +37,6 @@ export async function inTemp(fn) {
   }
 }
 
-/** Run `fn` over `items` one after another. */
 export const inSequence = (items, fn) =>
   items.reduce((done, item) => done.then(() => fn(item)), Promise.resolve());
 

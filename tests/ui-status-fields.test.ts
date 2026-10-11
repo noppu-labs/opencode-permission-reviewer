@@ -6,8 +6,6 @@ import {
 } from "../src/ui-protocol.ts";
 import { decision, request } from "./helpers.ts";
 
-/** Field-by-field acceptance of decoded UI status payloads. */
-
 const options = {
   model: "openai/gpt-5.6-luna",
   variant: "max",

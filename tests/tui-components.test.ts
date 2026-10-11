@@ -8,11 +8,6 @@ import {
   testRender,
 } from "./tui-loader.ts";
 
-/**
- * Renders each review panel component on its own and pins the text it shows
- * for every phase, disposition and optional field.
- */
-
 const THEME = {
   backgroundPanel: "#111111",
   text: "#eeeeee",
