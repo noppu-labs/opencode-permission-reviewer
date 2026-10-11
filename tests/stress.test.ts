@@ -25,6 +25,65 @@ beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
 });
 
+// Invalidates one decision field, picked by `item % 5`.
+function mutateDecision(base: Record<string, unknown>, item: number): void {
+  switch (item % 5) {
+    case 0:
+      base.outcome = `allow_${item}`;
+      break;
+    case 1:
+      base.risk_level = item;
+      break;
+    case 2:
+      base.user_authorization = null;
+      break;
+    case 3:
+      base.rationale = item % 2 ? "" : "x".repeat(2_001);
+      break;
+    case 4:
+      base.confidence = item % 2 ? -0.01 : 1.01;
+      break;
+  }
+}
+
+interface GitSnapshotRecord {
+  status?: string;
+  branch?: string;
+  discardTargets?: { values: string[] };
+  planned?: { discardTargets: string[] };
+  affectedTargetNumstat?: string;
+}
+
+function expectScopedGitSnapshot(
+  record: GitSnapshotRecord,
+  item: number,
+): void {
+  if (record.status !== "available") {
+    // Under extreme contention a transient git timeout can withhold the
+    // whole snapshot (fail closed); the deterministic discard-target
+    // scoping must still be correct in the planned actions.
+    expect(record.planned?.discardTargets).toEqual([`target-${item}.txt`]);
+    return;
+  }
+  expect(record.branch).toBe("stress");
+  // The discard-target scoping is the safety property under test and is
+  // derived from command parsing, so it is deterministic regardless of
+  // concurrent git contention.
+  expect(record.discardTargets?.values).toEqual([`target-${item}.txt`]);
+  // The numstat counts come from a live `git diff --numstat` racing with
+  // the other snapshots' git subprocesses on a shared CI runner; under
+  // contention a transient timeout can mark it unavailable. When git does
+  // return a diff, it must be scoped to this request's target and never
+  // cross into another snapshot's target.
+  const numstat = record.affectedTargetNumstat ?? "<unavailable>";
+  if (!numstat.startsWith("<")) {
+    expect(numstat).toContain(`target-${item}.txt`);
+    for (let other = 0; other < 100; other += 1) {
+      if (other !== item) expect(numstat).not.toContain(`target-${other}.txt`);
+    }
+  }
+}
+
 describe("stress and adversarial robustness", () => {
   test("processes 1,000 concurrent independent reviews exactly once", async () => {
     const client = new MockClient();
@@ -94,12 +153,7 @@ describe("stress and adversarial robustness", () => {
   test("rejects 5,000 mutated invalid structured outputs", () => {
     for (let item = 0; item < 5_000; item += 1) {
       const base = decision("allow") as unknown as Record<string, unknown>;
-      const field = item % 5;
-      if (field === 0) base.outcome = `allow_${item}`;
-      if (field === 1) base.risk_level = item;
-      if (field === 2) base.user_authorization = null;
-      if (field === 3) base.rationale = item % 2 ? "" : "x".repeat(2_001);
-      if (field === 4) base.confidence = item % 2 ? -0.01 : 1.01;
+      mutateDecision(base, item);
       expect(parseDecision(base)).toBeUndefined();
     }
   });
@@ -275,40 +329,8 @@ describe("stress and adversarial robustness", () => {
             /^GIT_STATE_ANALYSIS\n/,
             "",
           ),
-        ) as {
-          status?: string;
-          branch?: string;
-          discardTargets?: { values: string[] };
-          planned?: { discardTargets: string[] };
-          affectedTargetNumstat?: string;
-        };
-        if (record.status !== "available") {
-          // Under extreme contention a transient git timeout can withhold the
-          // whole snapshot (fail closed); the deterministic discard-target
-          // scoping must still be correct in the planned actions.
-          expect(record.planned?.discardTargets).toEqual([
-            `target-${item}.txt`,
-          ]);
-          continue;
-        }
-        expect(record.branch).toBe("stress");
-        // The discard-target scoping is the safety property under test and is
-        // derived from command parsing, so it is deterministic regardless of
-        // concurrent git contention.
-        expect(record.discardTargets?.values).toEqual([`target-${item}.txt`]);
-        // The numstat counts come from a live `git diff --numstat` racing with
-        // the other snapshots' git subprocesses on a shared CI runner; under
-        // contention a transient timeout can mark it unavailable. When git does
-        // return a diff, it must be scoped to this request's target and never
-        // cross into another snapshot's target.
-        const numstat = record.affectedTargetNumstat ?? "<unavailable>";
-        if (!numstat.startsWith("<")) {
-          expect(numstat).toContain(`target-${item}.txt`);
-          for (let other = 0; other < 100; other += 1) {
-            if (other !== item)
-              expect(numstat).not.toContain(`target-${other}.txt`);
-          }
-        }
+        ) as GitSnapshotRecord;
+        expectScopedGitSnapshot(record, item);
       }
     } finally {
       await rm(directory, { recursive: true });
