@@ -1,4 +1,4 @@
-import { holdOneSecondTimers } from "./held-timers.ts";
+import { holdOneSecondTimers, runEach } from "./held-timers.ts";
 import { setupTuiV2, testRender } from "./tui-loader.ts";
 import type { Host } from "./tui-v2-feed-data.ts";
 import { reviewerClient } from "./tui-v2-feed-rpc.ts";
@@ -51,9 +51,10 @@ export interface Running {
 }
 
 const cleanups: Array<() => void> = [];
-/** Disposes every plugin and renderer started since the last call. */
+/** Disposes every plugin and renderer started since the last call. Every
+ *  cleanup runs even when one throws, so the timer hold is always restored. */
 export function stopAll(): void {
-  for (const cleanup of cleanups.splice(0).reverse()) cleanup();
+  runEach(cleanups.splice(0).reverse());
 }
 
 export async function start(state: Host): Promise<Running> {

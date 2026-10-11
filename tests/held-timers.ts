@@ -2,7 +2,6 @@ import { spyOn } from "bun:test";
 
 /** One-second timers held back from the real clock until a test fires them. */
 export interface HeldTimers {
-  /** How many held timers are still pending. */
   readonly pending: number;
   /** Runs every pending held timer, as if its second had passed. */
   fire(): void;
@@ -10,11 +9,28 @@ export interface HeldTimers {
   restore(): void;
 }
 
+type Handle = ReturnType<typeof setTimeout>;
+
 let installed = false;
+
+/** Runs every callback even when one throws, then rethrows what failed. */
+export function runEach(callbacks: Iterable<() => void>): void {
+  const errors: unknown[] = [];
+  for (const callback of callbacks) {
+    try {
+      callback();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1) throw new AggregateError(errors, "callbacks failed");
+}
 
 /** Holds every `setTimeout` of exactly 1000 ms until `fire` runs it, and lets
  *  `clearTimeout` cancel a held one. Other timers run as usual. Throws when
- *  another hold is still installed: a second spy would wrap the first. */
+ *  another hold is installed: Bun returns the same spy, so the second hold's
+ *  real `setTimeout` would be the mock. */
 export function holdOneSecondTimers(): HeldTimers {
   if (installed)
     throw new Error(
@@ -23,21 +39,23 @@ export function holdOneSecondTimers(): HeldTimers {
   installed = true;
   const setReal = globalThis.setTimeout;
   const clearReal = globalThis.clearTimeout;
-  const held = new Map<object, () => void>();
+  const held = new Map<Handle, () => void>();
   const set = spyOn(globalThis, "setTimeout").mockImplementation(((
-    callback: () => void,
+    callback: (...args: unknown[]) => void,
     ms?: number,
-  ) => {
-    if (ms !== 1000) return setReal(callback, ms);
-    const handle = {};
-    held.set(handle, callback);
+    ...args: unknown[]
+  ): Handle => {
+    if (ms !== 1000) return setReal(callback, ms, ...args);
+    // A real, already-cleared timer, so the handle keeps the Timer methods.
+    const handle = setReal(() => {}, 0);
+    clearReal(handle);
+    held.set(handle, () => callback(...args));
     return handle;
-  }) as unknown as typeof setTimeout);
+  }) as typeof setTimeout);
   const clear = spyOn(globalThis, "clearTimeout").mockImplementation(((
-    handle?: unknown,
+    handle?: Handle,
   ) => {
-    if (!held.delete(handle as object))
-      clearReal(handle as Parameters<typeof clearTimeout>[0]);
+    if (handle === undefined || !held.delete(handle)) clearReal(handle);
   }) as typeof clearTimeout);
   return {
     get pending(): number {
@@ -46,7 +64,7 @@ export function holdOneSecondTimers(): HeldTimers {
     fire: (): void => {
       const due = [...held.values()];
       held.clear();
-      for (const callback of due) callback();
+      runEach(due);
     },
     restore: (): void => {
       set.mockRestore();
