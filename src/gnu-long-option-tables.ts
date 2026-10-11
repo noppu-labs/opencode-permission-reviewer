@@ -1,4 +1,3 @@
-// src/gnu-long-option-tables.ts
 import type { LongOption } from "./gnu-long-options.ts";
 
 const none = (name: string): LongOption => ({ name, argument: "none" });

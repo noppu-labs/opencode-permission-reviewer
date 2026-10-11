@@ -44,8 +44,8 @@ interface AnalyzedSegment {
  * prefixes (`sudo`, `doas`, `env`, `command`, …), absolute binary paths
  * (`/bin/rm`, `/usr/bin/rm`), combined or separated flags (`-rf`, `-r -f`,
  * `--recursive --force`), end-of-options (`--`), and command-string forms
- * (`sh -c '…'`, `su -c …`, `ssh host …`, `busybox rm …`, `chroot root …`)
- * are peeled before judging the executable.
+ * (`sh -c '…'`, `su -c …`, `ssh host …`, `watch …`, `busybox rm …`,
+ * `chroot root …`) are peeled before judging the executable.
  *
  * It deliberately does NOT expand variables, globs, command substitutions, or
  * heredocs. Those remain the reviewer's job; the brake only catches literal,

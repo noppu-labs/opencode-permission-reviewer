@@ -1,4 +1,5 @@
-// procps-ng watch: where its options end and whether it execs its operands (-x) or joins them into a command string for sh -c.
+// procps-ng watch: where its options end and whether it execs its operands
+// (-x) or joins them into a command string for sh -c.
 
 import { elementAt } from "./element-at.ts";
 import { WATCH_LONG_OPTIONS } from "./gnu-long-option-tables.ts";

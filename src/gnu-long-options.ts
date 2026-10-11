@@ -1,4 +1,3 @@
-// src/gnu-long-options.ts
 /** How a long option takes its argument, as getopt_long's `has_arg`. */
 type LongOptionArgument = "none" | "required" | "optional";
 

@@ -45,7 +45,8 @@ export const PINNED_BLOBS = {
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "6ec379ea34f6530a44d489aa139234ed5d4ce106",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/emergency-brake.ts": "f4e7dce3b9d70e61b2cae2ac31638dae30425308",
   "src/reviewed-command.ts": "61a7fdb0db48adcd05ef1f9a86f89700b41ed594",
   "src/brake-arguments.ts": "4f9e33b37e7a631f058ab9f1663c513151de1593",
   "src/brake-rm-flags.ts": "f01b8f6cce63f423cd457fe44ad37057073daa66",
@@ -63,9 +64,8 @@ export const PINNED_BLOBS = {
   "src/brake-device-tools.ts": "d937ace3fa5e8aa7e8e6a55a618e3c7149b18677",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-network-export.ts": "f44ec03d976cce0833d3e232b56a2924408c0888",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/gnu-long-options.ts": "0d1606fcdd1e5758e377b258e006fb963458d46e",
-  "src/gnu-long-option-tables.ts": "41ec37f4a90edcbfefdb621fb355b1812cbc4d75",
+  "src/gnu-long-options.ts": "a361e90071f964d4cddc3d2d3caadb7869d35419",
+  "src/gnu-long-option-tables.ts": "a089daf75b2525ce897550ab1c373dbd03e85c05",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -105,7 +105,7 @@ export const PINNED_BLOBS = {
   "src/shell-scanner.ts": "f95ccb4dfbe52845197d51ca531e2751fa0372cf",
   "src/ssh-value-options.ts": "79b1030f4e03d09415238c06cdb0acffdbda2bee",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/watch-command.ts": "2513fb2e26a86d1f68712a6d5a7c3a4f09377eda",
+  "src/watch-command.ts": "4f8b02235d656931c059f84292a6083a8eb81d7a",
   "src/capability/heredoc-extractor.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
