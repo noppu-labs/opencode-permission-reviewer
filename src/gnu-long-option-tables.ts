@@ -153,3 +153,11 @@ export const INSTALL_LONG_OPTIONS: readonly LongOption[] = [
   none("help"),
   none("version"),
 ];
+
+/** util-linux mkfs front end (disk-utils/mkfs.c `longopts`). */
+export const MKFS_LONG_OPTIONS: readonly LongOption[] = [
+  required("type"),
+  none("verbose"),
+  none("version"),
+  none("help"),
+];

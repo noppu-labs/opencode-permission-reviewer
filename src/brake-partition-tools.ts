@@ -14,17 +14,39 @@ export const PARTITION_TOOL_CHECKS = new Map<string, PartitionCheck>([
   ["parted", partedDestroysPartitions],
 ]);
 
-/** sgdisk with a zap option or a partition delete: `-d` with a separate
- *  number word, or `-d` glued to its number. A bare `-d` deletes nothing. */
+/** sgdisk with a zap option or a partition delete: `-d` (alone or ending a
+ *  short cluster) with a separate number word, or `d` followed by its number
+ *  inside a cluster (`-d1`, `-pd1`). A delete flag without a number deletes
+ *  nothing. */
 function sgdiskDestroysPartitions(args: readonly ShellToken[]): boolean {
   const destructive = args.some(
     ({ value }) =>
       SGDISK_ZAP_OPTIONS.has(value) ||
       value.startsWith("--delete") ||
-      (value.startsWith("-d") && isAllDigits(value.slice(2))),
+      deleteLetterWithNumber(value),
   );
-  const deleteShort = args.some((t) => t.value === "-d");
+  const deleteShort = args.some(({ value }) => endsWithDeleteLetter(value));
   return destructive || (deleteShort && args.some((t) => isAllDigits(t.value)));
+}
+
+function isShortCluster(value: string): boolean {
+  return value.startsWith("-") && !value.startsWith("--") && value.length > 1;
+}
+
+function endsWithDeleteLetter(value: string): boolean {
+  return isShortCluster(value) && value.endsWith("d");
+}
+
+/** A short cluster that ends in `d` followed by digits, e.g. `-d1`, `-pd12`. */
+function deleteLetterWithNumber(value: string): boolean {
+  if (!isShortCluster(value)) return false;
+  let digitsStart = value.length;
+  while (digitsStart > 1 && isAllDigits(value[digitsStart - 1] ?? ""))
+    digitsStart -= 1;
+  return (
+    digitsStart < value.length &&
+    endsWithDeleteLetter(value.slice(0, digitsStart))
+  );
 }
 
 function isAllDigits(value: string): boolean {

@@ -274,3 +274,39 @@ describe("device format and wipe options follow each tool", () => {
     ).toBeUndefined();
   });
 });
+
+describe("device option clusters and long names are read in full", () => {
+  test.each([
+    "mkfs --type xfs -n /dev/sdb",
+    "mkfs --type=xfs -n /dev/sdb",
+    "mkfs --ty=xfs -n /dev/sdb",
+    "mkfs -Vt xfs -n /dev/sdb",
+    "mkfs -vtxfs -n /dev/sdb",
+    "mkfs --type -n /dev/sdb",
+    "wipefs -fo0x438 /dev/sda",
+    "wipefs -qo0x438 /dev/sda",
+    "wipefs -ft dos /dev/sda",
+    "sgdisk -pd1 /dev/sda",
+    "sgdisk -pd 1 /dev/sda",
+  ])("blocks a device format or wipe, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
+
+  test.each([
+    "mkfs --type ext4 -n /dev/sdb",
+    "mkfs -Vt ext4 -n /dev/sdb",
+    "mkfs --ty=ext3 -n /dev/sdb",
+    "mkfs -t xfs -t ext4 -n /dev/sdb",
+    "wipefs -O offset /dev/sda",
+    "wipefs --no-act /dev/sda",
+    "wipefs -n /dev/sda",
+    "sgdisk -pd /dev/sda",
+    "sgdisk -p /dev/sda",
+  ])("keeps a dry run or listing allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});

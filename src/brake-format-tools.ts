@@ -1,3 +1,5 @@
+import { MKFS_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
+import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 const EXT_FORMATTERS = new Set([
@@ -36,12 +38,36 @@ function isExtFormatter(base: string, args: readonly ShellToken[]): boolean {
   return type === undefined || EXT_FILESYSTEM_TYPES.has(type);
 }
 
-/** The value of the last `-t <type>` or `-t<type>` option of mkfs. */
+/** The filesystem type of the last type option of plain mkfs, or undefined
+ *  when none is given. A type option whose value cannot be read gives "". */
 function mkfsTypeOption(args: readonly ShellToken[]): string | undefined {
   let type: string | undefined;
-  args.forEach(({ value }, index) => {
-    if (value === "-t") type = args[index + 1]?.value;
-    else if (value.startsWith("-t")) type = value.slice(2);
+  args.forEach((_token, index) => {
+    type = mkfsTypeValue(args, index) ?? type;
   });
   return type;
+}
+
+/** The value taken by the type option at `index`: `--type[=]`, any prefix of
+ *  it, or a short cluster containing `t` (the rest of the cluster, else the
+ *  next word). Undefined when the word is not a type option. */
+function mkfsTypeValue(
+  args: readonly ShellToken[],
+  index: number,
+): string | undefined {
+  const word = args[index]?.value ?? "";
+  const next = args[index + 1]?.value ?? "";
+  const long = resolveGnuLongOption(word, MKFS_LONG_OPTIONS);
+  if (long === undefined) return shortTypeValue(word, next);
+  if (long.name !== "type") return undefined;
+  return long.inlineValue ? word.slice(word.indexOf("=") + 1) : next;
+}
+
+/** The type value of a short cluster containing `t`: the rest of the cluster
+ *  after the letter, else the next word. */
+function shortTypeValue(word: string, next: string): string | undefined {
+  if (!word.startsWith("-") || word.startsWith("--")) return undefined;
+  const letter = word.indexOf("t");
+  if (letter === -1) return undefined;
+  return letter + 1 < word.length ? word.slice(letter + 1) : next;
 }

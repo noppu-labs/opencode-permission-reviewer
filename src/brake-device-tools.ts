@@ -91,15 +91,14 @@ function wipefsWipesSignatures(tool: DeviceCommand): boolean {
   return tool.args.some(({ value }) => wipefsErasingOption(value));
 }
 
-/** `--all`, `--types`, `--offset` and their short forms erase signatures. */
+/** `--all`, `--types`, `--offset` and the short letters `a`, `t` and `o`
+ *  (anywhere in a cluster: `t` and `o` take the rest of it as their value)
+ *  erase signatures. */
 function wipefsErasingOption(value: string): boolean {
   const long = resolveGnuLongOption(value, WIPEFS_LONG_OPTIONS)?.name;
   if (long === "all" || long === "types" || long === "offset") return true;
-  return (
-    shortFlagClusterIncludes(value, "a") ||
-    value.startsWith("-t") ||
-    value.startsWith("-o") ||
-    (shortFlagClusterIncludes(value, "o") && value.endsWith("o"))
+  return ["a", "t", "o"].some((letter) =>
+    shortFlagClusterIncludes(value, letter),
   );
 }
 
