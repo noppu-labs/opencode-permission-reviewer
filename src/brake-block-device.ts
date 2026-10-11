@@ -47,7 +47,6 @@ export function redirectionWritesBlockDevice(
   const writes =
     WRITE_OPERATORS.has(operator) ||
     (operator === ">&" &&
-      !/^\d/.test(redirection.operator) &&
       redirection.target !== "-" &&
       !/^\d+$/.test(redirection.target));
   return writes && isBlockDeviceTarget(redirection.target);

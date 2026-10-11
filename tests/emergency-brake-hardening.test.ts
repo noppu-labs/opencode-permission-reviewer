@@ -335,3 +335,31 @@ describe("device option scans stop where the tool stops reading options", () => 
     ).toBeUndefined();
   });
 });
+
+describe("output duplication onto a block device is a write whatever the descriptor digit", () => {
+  test.each([
+    "echo x 1>& /dev/sda",
+    "echo x 1>&/dev/sda",
+    "echo x 2>& /dev/sda",
+    "sh -c 'echo x 1>& /dev/sda'",
+    "bash -c 'echo x 3>& /dev/sdb'",
+    "sudo sh -c 'echo x 1>& /dev/nvme0n1'",
+  ])("blocks output duplication onto a block device, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
+
+  test.each([
+    "echo x 1>&2",
+    "echo x 2>&1",
+    "echo x 1>&-",
+    "sh -c 'echo x 2>&1'",
+    "echo x 1>& /dev/null",
+    "echo x 1>& out.log",
+  ])("keeps descriptor duplication allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
