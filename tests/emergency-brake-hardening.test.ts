@@ -493,3 +493,35 @@ describe("a blank command metadata is reviewed through the patterns", () => {
     },
   );
 });
+
+describe("find exec commands are read after their wrappers", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "find / -exec sudo rm -rf {} +",
+    "find / -exec env rm -rf {} +",
+    "find / -exec doas rm -rf {} +",
+    "find / -exec nice rm -rf {} +",
+    "find / -exec command rm -rf {} +",
+    "find / -exec busybox rm -rf {} +",
+    "find / -ok sudo rm -r {} \\;",
+    "find / -exec sudo -u root rm -r {} \\;",
+    "find / -execdir nice -n 5 rm -rf {} +",
+  ])("blocks a recursive rm run on a root search, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
+  });
+
+  test.each([
+    "find /tmp -exec sudo rm -rf {} +",
+    "find / -name '*.log' -exec sudo ls -l {} +",
+    "find / -exec env grep x {} +",
+    "find / -exec sudo rm {} \\;",
+  ])("keeps a legitimate find exec command allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});
