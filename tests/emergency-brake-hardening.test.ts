@@ -413,3 +413,38 @@ describe("redirections of a segment are checked at every level, with or without 
     ).toBeUndefined();
   });
 });
+
+describe("watch runs its command through a shell", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+
+  test.each([
+    "watch 'rm -rf /'",
+    'watch "rm -rf /*"',
+    "watch -n 5 'rm -rf /'",
+    "watch 'echo x > /dev/sda'",
+    "watch rm -rf '/'",
+    "sudo watch 'mkfs.ext4 /dev/sdb'",
+    "watch 'true; rm -rf /'",
+    "watch -s /tmp/shots 'rm -rf /'",
+    "watch --int 5 'rm -rf /'",
+    "watch -dn 'rm -rf /'",
+  ])("blocks destruction run through watch, case %#", (command) => {
+    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
+      blocked,
+    );
+  });
+
+  test.each([
+    "watch 'ls -la'",
+    "watch -n 5 'df -h'",
+    "watch -x ls -la",
+    "watch -x 'rm -rf /'",
+    "watch --exec 'rm -rf /'",
+    "watch 'echo rm -rf /'",
+  ])("keeps a watched read-only command allowed, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+});

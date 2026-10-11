@@ -3,7 +3,11 @@ import {
   analyzeEffectiveCommands,
   effectiveCommands,
 } from "../src/shell-effective-commands.ts";
-import { commandSegments, shellBasename } from "../src/shell-lexer.ts";
+import {
+  commandSegments,
+  newAnalysisBudget,
+  shellBasename,
+} from "../src/shell-lexer.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
 import {
   type ShellSegment,
@@ -444,4 +448,76 @@ describe("shell lexer", () => {
       firstOf(analysis.commands, "first command").map((t) => t.value),
     ).toEqual(["true"]);
   }, 30_000);
+});
+
+describe("watch runs its joined operands as a shell command string", () => {
+  test.each([
+    ["watch 'ls -la'", [["ls", "-la"]]],
+    ["watch -n 5 'df -h; uptime'", [["df", "-h"], ["uptime"]]],
+    ["watch -- 'ls -la'", [["ls", "-la"]]],
+    [
+      "watch ls '-la | wc -l'",
+      [
+        ["ls", "-la"],
+        ["wc", "-l"],
+      ],
+    ],
+    ["watch FOO=1 'ls -la'", [["ls", "-la"]]],
+    ["watch -s /tmp/shots 'ls -la'", [["ls", "-la"]]],
+    ["watch --shotsdir /tmp/shots 'ls -la'", [["ls", "-la"]]],
+    ["watch --int 5 'ls -la'", [["ls", "-la"]]],
+    ["watch --equ 2 'ls -la'", [["ls", "-la"]]],
+    ["watch -dn 'ls -la'", [["ls", "-la"]]],
+    ["watch --differences 'ls -la'", [["ls", "-la"]]],
+    ["watch -nx 'ls -la'", [["ls", "-la"]]],
+    ["watch --e 'ls -la'", [["ls", "-la"]]],
+    ["watch --exec=yes 'ls -la'", [["ls", "-la"]]],
+  ])(
+    "resolves the command string watch hands to sh, case %#",
+    (command, expected) => {
+      expect(firstExecutables(command)).toEqual(expected);
+    },
+  );
+
+  test.each([
+    ["watch -x ls -la", [["ls", "-la"]]],
+    ["watch -x 'ls -la'", [["ls -la"]]],
+    ["watch --exec 'ls -la'", [["ls -la"]]],
+    ["watch --ex 'ls -la'", [["ls -la"]]],
+    ["watch -xn 5 'ls -la'", [["ls -la"]]],
+    ["watch -n 1 -x -- 'ls -la'", [["ls -la"]]],
+    ["watch -x FOO=1 ls", [["ls"]]],
+    ["watch", []],
+    ["watch -n 5", []],
+  ])("peels the argv watch execs with -x, case %#", (command, expected) => {
+    expect(firstExecutables(command)).toEqual(expected);
+  });
+
+  test("charges the joined text like an sh -c of the same text", () => {
+    const watched = newAnalysisBudget();
+    analyzeEffectiveCommands(
+      firstOf(lexSegments("watch -n 5 ls -la '/tmp'"), "watch segment"),
+      watched,
+    );
+    const shell = newAnalysisBudget();
+    analyzeEffectiveCommands(
+      firstOf(lexSegments("sh -c 'ls -la /tmp'"), "shell segment"),
+      shell,
+    );
+    expect(watched).toEqual(shell);
+  });
+
+  test("nested watch commands share the command-string depth limit", () => {
+    const within = analyzeEffectiveCommands(
+      firstOf(lexSegments(`${"watch ".repeat(32)}rm -rf /`), "segment"),
+    );
+    expect(within.commands.map(values)).toEqual([["rm", "-rf", "/"]]);
+    expect(within.truncated).toBe(false);
+
+    const over = analyzeEffectiveCommands(
+      firstOf(lexSegments(`${"watch ".repeat(33)}rm -rf /`), "segment"),
+    );
+    expect(over.commands).toEqual([]);
+    expect(over.truncated).toBe(true);
+  });
 });

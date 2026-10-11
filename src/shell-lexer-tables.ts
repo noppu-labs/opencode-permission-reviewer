@@ -19,7 +19,6 @@ export const TRANSPARENT_WRAPPERS = new Set([
   "systemd-run",
   "strace",
   "ltrace",
-  "watch",
   "xargs",
   "timeout",
   "exec",
@@ -139,9 +138,6 @@ export const VALUE_OPTIONS: Record<string, Set<string>> = {
   // after the PID is consumed.
   strace: new Set(["-o", "-e", "-s", "-a", "-b", "-p", "-u"]),
   ltrace: new Set(["-o", "-e", "-s", "-a", "-l", "-u"]),
-  // watch's interval and equexit flags consume separate values; its pure flags
-  // (-d, -g, -t, -b, -c, -e, …) stay absent like the other wrappers above.
-  watch: new Set(["-n", "--interval", "-q", "--equexit"]),
   // xargs value-taking options with a separate argument: without these the
   // generic peel would mistake the option's argument for the command. Pure
   // flags (-0, -r, -t, …) stay absent, as do options with optional arguments

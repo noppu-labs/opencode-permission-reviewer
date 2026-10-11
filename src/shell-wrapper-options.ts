@@ -16,6 +16,12 @@ export function commandStart(words: ShellToken[]): number {
     SHELL_KEYWORDS.has(elementAt(words, i, "tokens").value)
   )
     i += 1;
+  return skipAssignments(words, i);
+}
+
+/** Skip the env-style VAR=value words starting at `start`. */
+export function skipAssignments(words: ShellToken[], start: number): number {
+  let i = start;
   while (
     i < words.length &&
     ASSIGNMENT.test(elementAt(words, i, "tokens").value)

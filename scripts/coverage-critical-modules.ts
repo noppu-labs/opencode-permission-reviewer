@@ -27,4 +27,5 @@ export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
   "src/opencode/event-normalizer.ts",
   "src/opencode/reply-transport.ts",
   "src/redact.ts",
+  "src/watch-command.ts",
 ]);

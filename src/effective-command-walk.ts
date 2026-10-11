@@ -23,11 +23,12 @@ import {
   timeoutCommandIndex,
 } from "./shell-wrapper-options.ts";
 import { sshRemoteCommand } from "./ssh-remote-command.ts";
+import { peelWatch } from "./watch-command.ts";
 
-/** Ceiling on command-string re-entry (`sh -c`, `env -S`, ssh, busybox,
- *  chroot). Deeper nesting than this is not a legitimate review shape; the
- *  walk stops descending and the unanalyzed remainder stays the model
- *  reviewer's job, keeping unbounded input from exhausting the stack. */
+/** Ceiling on command-string re-entry (`sh -c`, `env -S`, watch, ssh,
+ *  busybox, chroot). Deeper nesting than this is not a legitimate review
+ *  shape; the walk stops descending and the unanalyzed remainder stays the
+ *  model reviewer's job, keeping unbounded input from exhausting the stack. */
 const MAX_WALK_DEPTH = 32;
 
 /** Where every level of one walk collects its effective commands, and the
@@ -91,6 +92,8 @@ function peel(
     walkTail(words, timeoutCommandIndex(words, i), level);
     return undefined;
   }
+  if (base === "watch")
+    return peelWatch(words, i, (text) => reanalyze(text, level));
   if (TRANSPARENT_WRAPPERS.has(base))
     return skipWrapperArguments(words, i, base);
   peelCommand(words, i, base, level);

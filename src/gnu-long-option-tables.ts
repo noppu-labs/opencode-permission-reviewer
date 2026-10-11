@@ -161,3 +161,24 @@ export const MKFS_LONG_OPTIONS: readonly LongOption[] = [
   none("version"),
   none("help"),
 ];
+
+/** procps-ng watch (src/watch.c `longopts`). */
+export const WATCH_LONG_OPTIONS: readonly LongOption[] = [
+  none("color"),
+  none("no-color"),
+  optional("differences"),
+  none("help"),
+  required("interval"),
+  none("beep"),
+  none("errexit"),
+  none("follow"),
+  none("chgexit"),
+  required("equexit"),
+  none("exec"),
+  none("precise"),
+  none("no-rerun"),
+  required("shotsdir"),
+  none("no-title"),
+  none("no-wrap"),
+  none("version"),
+];
