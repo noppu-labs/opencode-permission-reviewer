@@ -1,18 +1,12 @@
+import { fstatSync, openSync } from "node:fs";
 import {
-  closeSync,
-  constants as fsConstants,
-  fstatSync,
-  openSync,
-  readSync,
-} from "node:fs";
+  closeQuietly,
+  O_NOFOLLOW,
+  O_NONBLOCK,
+  O_RDONLY,
+  readFully,
+} from "../descriptor-io.ts";
 import { parseJsoncStrict } from "./jsonc.ts";
-
-const O_RDONLY: number =
-  typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0;
-const O_NOFOLLOW: number =
-  typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0;
-const O_NONBLOCK: number =
-  typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0;
 
 /** Cap on a single config file read: the project layer is repository-controlled
  *  and read at startup, so an unbounded read lets a committed symlink to an
@@ -119,22 +113,8 @@ function readOpenLayer(fd: number, path: string): LayerText {
 
 function readBytes(fd: number, length: number): string {
   const buffer = Buffer.alloc(length);
-  let read = 0;
-  while (read < length) {
-    const count = readSync(fd, buffer, read, length - read, read);
-    if (count === 0) break;
-    read += count;
-  }
+  const read = readFully(fd, buffer, length, 0);
   // A concurrent shrink can end the read early; decode only the bytes
   // actually read so no zero-padding leaks into the parser.
   return (read < length ? buffer.subarray(0, read) : buffer).toString("utf8");
-}
-
-function closeQuietly(fd: number | undefined): void {
-  if (fd === undefined) return;
-  try {
-    closeSync(fd);
-  } catch {
-    // Best effort; the read already succeeded or failed on its own.
-  }
 }

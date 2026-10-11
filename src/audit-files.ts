@@ -1,27 +1,16 @@
 // The audit file's descriptor-level IO: the bounded tail read behind the
 // summary, and the hardened append behind the writer.
+import { fchmodSync, fstatSync, openSync, readSync, writeSync } from "node:fs";
 import {
-  closeSync,
-  fchmodSync,
-  constants as fsConstants,
-  fstatSync,
-  openSync,
-  readSync,
-  writeSync,
-} from "node:fs";
-
-const O_RDONLY: number =
-  typeof fsConstants.O_RDONLY === "number" ? fsConstants.O_RDONLY : 0;
-const O_WRONLY: number =
-  typeof fsConstants.O_WRONLY === "number" ? fsConstants.O_WRONLY : 0;
-const O_CREAT: number =
-  typeof fsConstants.O_CREAT === "number" ? fsConstants.O_CREAT : 0;
-const O_APPEND: number =
-  typeof fsConstants.O_APPEND === "number" ? fsConstants.O_APPEND : 0;
-const O_NOFOLLOW: number =
-  typeof fsConstants.O_NOFOLLOW === "number" ? fsConstants.O_NOFOLLOW : 0;
-const O_NONBLOCK: number =
-  typeof fsConstants.O_NONBLOCK === "number" ? fsConstants.O_NONBLOCK : 0;
+  closeQuietly,
+  O_APPEND,
+  O_CREAT,
+  O_NOFOLLOW,
+  O_NONBLOCK,
+  O_RDONLY,
+  O_WRONLY,
+  readFully,
+} from "./descriptor-io.ts";
 
 /** Cap on how much of an audit file the summary reader will pull into memory:
  *  the file is append-only and grows without bound, and the report only needs
@@ -51,7 +40,7 @@ export function readTail(path: string): AuditTail | undefined {
   } catch {
     return undefined;
   } finally {
-    if (fd !== undefined) closeSyncSafe(fd);
+    closeQuietly(fd);
   }
 }
 
@@ -85,29 +74,6 @@ function startsAtLineBoundary(fd: number, offset: number): boolean {
     return seen === 1 && probe[0] === 0x0a;
   } catch {
     return false;
-  }
-}
-
-function readFully(
-  fd: number,
-  buffer: Buffer,
-  length: number,
-  offset: number,
-): number {
-  let read = 0;
-  while (read < length) {
-    const count = readSync(fd, buffer, read, length - read, offset + read);
-    if (count === 0) break;
-    read += count;
-  }
-  return read;
-}
-
-function closeSyncSafe(fd: number): void {
-  try {
-    closeSync(fd);
-  } catch {
-    // Best effort; the read already succeeded or failed on its own.
   }
 }
 
@@ -150,6 +116,6 @@ export function appendAuditLine(path: string, line: string): void {
       written += count;
     }
   } finally {
-    if (fd !== undefined) closeSyncSafe(fd);
+    closeQuietly(fd);
   }
 }

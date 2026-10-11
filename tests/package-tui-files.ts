@@ -28,6 +28,7 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/config/risk-policy-clamp.ts",
   "dist/tui/config/trusted-degradation.ts",
   "dist/tui/config/jsonc.ts",
+  "dist/tui/descriptor-io.ts",
   "dist/tui/ui-protocol.ts",
   "dist/tui/ui-status-parse.ts",
   "dist/tui/ui-state.ts",
