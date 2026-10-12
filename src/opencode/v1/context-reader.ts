@@ -11,8 +11,8 @@ type CreatedTime = { created?: unknown } | undefined;
 
 /** The session's numeric creation time, when its metadata reports one. */
 function sessionCreatedAt(metadata: unknown): number | undefined {
-  const time = asObjectLike(metadata)?.time as CreatedTime;
-  return typeof time?.created === "number" ? time.created : undefined;
+  const created = asObjectLike(asObjectLike(metadata)?.time)?.created;
+  return typeof created === "number" ? created : undefined;
 }
 
 /** Keep messages without a numeric time, and those created since `createdAt`. */

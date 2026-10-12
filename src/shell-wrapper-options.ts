@@ -22,12 +22,7 @@ export function commandStart(words: ShellToken[]): number {
     SHELL_KEYWORDS.has(elementAt(words, i, "tokens").value)
   )
     i += 1;
-  while (
-    i < words.length &&
-    ASSIGNMENT.test(elementAt(words, i, "tokens").value)
-  )
-    i += 1;
-  return i;
+  return skipAssignments(words, i);
 }
 
 function valueOptionsOf(wrapper: string): ReadonlySet<string> {
@@ -86,8 +81,8 @@ function skipAssignments(words: ShellToken[], start: number): number {
   return i;
 }
 
-/** The index after a `--` at `dashIndex`. A wrapper that reads a lone `-` as
- *  an option ending its options also does so directly after the `--`. */
+/** A wrapper that reads a lone `-` as an option ending its options also does
+ *  so directly after the `--`. */
 function afterDoubleDash(
   words: ShellToken[],
   dashIndex: number,

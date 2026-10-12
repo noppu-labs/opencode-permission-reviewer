@@ -1,13 +1,12 @@
 // Heredocs inside a command substitution's body: their operators, and the body lines that cannot close it.
 
+import type { PendingStart } from "./capability/heredoc-body-records.ts";
 import { collectBody } from "./capability/heredoc-body-text.ts";
 import { parseDelimiterWord } from "./capability/heredoc-delimiter.ts";
 
-export interface PendingHeredoc {
-  delimiter: string;
+export type PendingHeredoc = Pick<PendingStart, "delimiter" | "resolved"> & {
   tabStripped: boolean;
-  resolved: boolean;
-}
+};
 
 /** The `<<` operator at `index`: the heredoc it opens (none for a `<<<`
  *  here-string) and the index just past its delimiter word. */

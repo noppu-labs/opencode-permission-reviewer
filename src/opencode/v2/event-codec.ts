@@ -6,14 +6,13 @@ import {
 } from "../../context/ask-decisions.ts";
 import { isRecord } from "../../is-record.ts";
 import {
-  type FormCreated as Created,
+  type KeptForm as Created,
+  type KeptField as Field,
   formCreated,
   formSettled,
-  MAX_KEPT_FIELDS,
   type FormSettled as Settled,
 } from "./form-event-shape.ts";
 
-type Field = Created["fields"][number];
 type Answer = Extract<
   OpenCodeEvent,
   { type: "form.replied" }
@@ -70,22 +69,17 @@ export class V2AskDecisions implements AskDecisionSource {
 
   private created(form: Created, now: number): void {
     if (!form.sessionID.startsWith("ses_") || this.pending.has(form.id)) return;
-    if (JSON.stringify(form).length > 64_000) return;
     if (this.pending.size >= 128) {
       const oldest = this.pending.keys().next();
       if (!oldest.done) this.pending.delete(oldest.value);
     }
-    const bounded: Created = {
-      ...form,
-      fields: [form.fields[0], ...form.fields.slice(1, MAX_KEPT_FIELDS)],
-    };
-    this.pending.set(form.id, { form: bounded, at: now });
+    this.pending.set(form.id, { form, at: now });
     this.registry.observe({
       type: "question.asked",
       properties: {
         id: form.id,
         sessionID: form.sessionID,
-        questions: bounded.fields.map((field) => ({
+        questions: form.fields.map((field) => ({
           question: `${form.title}: ${field.title ?? field.key}`,
         })),
       },
