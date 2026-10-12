@@ -28,7 +28,8 @@ export function redirectionWritesPath(redirection: Redirection): boolean {
  *  neither `../../outside` nor `/worktree/../etc` can masquerade as a
  *  workspace path through a prefix it only appears to have. Lexical
  *  normalization cannot resolve symlinked directory components — the class
- *  always describes the stated path, not a filesystem-verified destination. */
+ *  always describes the stated path, not a filesystem-verified destination.
+ *  A drive-letter target that leaves its drive counts as external. */
 export function classifyPath(
   target: string,
   directory: string,
@@ -38,8 +39,8 @@ export function classifyPath(
     return { temporary: false, workspace: false, external: false };
   const absolute = absoluteTarget(target, directory);
   if (!absolute.startsWith("/") && !WINDOWS_ABSOLUTE.test(absolute)) {
-    // A path that still has no absolute form cannot be classified.
-    return { temporary: false, workspace: false, external: false };
+    // A drive-letter target that normalizes to a relative path is external.
+    return { temporary: false, workspace: false, external: true };
   }
   const workspace =
     isWithin(absolute, directory) || isWithin(absolute, worktree);

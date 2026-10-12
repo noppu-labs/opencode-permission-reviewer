@@ -183,3 +183,14 @@ describe("analyzer hardening batch 7", () => {
     );
   });
 });
+
+describe("analyzer hardening batch 8", () => {
+  test.each(["echo hi > C:/x", "echo hi > C:/../x", "echo hi > C:/a/../../x"])(
+    "%s",
+    (command) => {
+      expect(capabilityProfile(command)).toBe(
+        "external-write/high | external-write | writeEffects.externalWrite",
+      );
+    },
+  );
+});
