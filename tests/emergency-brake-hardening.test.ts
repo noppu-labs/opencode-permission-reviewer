@@ -557,3 +557,24 @@ describe("hardening batch 21", () => {
     limited,
   );
 });
+
+describe("hardening batch 22", () => {
+  blocks("blocks each command, case %#", [
+    "sgdisk -vZ /dev/sda",
+    "sgdisk -pZ /dev/sda",
+    "sgdisk -Zv /dev/sda",
+    "sgdisk -gz /dev/sda",
+    "sgdisk -zg /dev/sda",
+    "timeout 5 sgdisk -vZ /dev/sda",
+    "sgdisk -Z /dev/sda",
+    "sgdisk -z /dev/sda",
+    "sgdisk --zap-all /dev/sda",
+    "sgdisk --zap /dev/sda",
+  ]);
+
+  allows("allows each command, case %#", [
+    "sgdisk -tZ /dev/sda",
+    "sgdisk -vZ disk.img",
+    "sgdisk -v /dev/sda",
+  ]);
+});
