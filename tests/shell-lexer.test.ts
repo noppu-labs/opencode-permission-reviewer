@@ -576,3 +576,11 @@ describe("analyzer hardening batch 10", () => {
     ]);
   });
 });
+
+describe("analyzer hardening batch 15", () => {
+  test("keeps each segment", () => {
+    const command = `${'"$('.repeat(1000)} ; ssh h 'x'`;
+    const segments = commandSegments(command);
+    expect(segments.some((segment) => segment.tokens[0] === "ssh")).toBe(true);
+  });
+});

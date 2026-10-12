@@ -15,9 +15,10 @@ export interface CommandSegment {
 }
 
 export function commandSegments(command: string): CommandSegment[] {
-  const segments = lexSegments(command).filter(
-    (segment) => segment.substitution !== true,
-  );
+  const segments = lexSegments(command, {
+    tokensRemaining: Number.POSITIVE_INFINITY,
+    substitutions: false,
+  });
   return segments.map((segment) => {
     const normalized = normalizeShellRedirections(segment.tokens);
     return {

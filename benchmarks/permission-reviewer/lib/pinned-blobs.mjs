@@ -89,7 +89,8 @@ export const PINNED_BLOBS = {
   "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/ssh-remote-command.ts": "3b286efa96c402c2628ad4399c4b6e09341c2764",
-  "src/shell-lexer.ts": "fe0473cca73ccf6640d4a7778d23054c09af5370",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/shell-lexer.ts": "4e91892b9ecb72ba711962d5b7435c348940d2cb",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/shell-lexer-tables.ts": "d962f14223b70f233fcc11c637f1c0f817d3757d",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -99,12 +100,10 @@ export const PINNED_BLOBS = {
   "src/shell-redirection-operators.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "579703335deab3052f2b1f8b39d34cea10266ba2",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-lex-state.ts": "5c63390b394b84a962217eba5170194726249209",
+  "src/shell-lex-state.ts": "929dfa56762064f3241afdbcfbc007c39906e22c",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-quote-scan.ts": "30acc8301b6b44bc45b742bfcfe7ae536958e0da",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-scanner.ts": "c724106c916ed2a5ed29423d453b4537c15eb85d",
+  "src/shell-scanner.ts": "1ac92cf5631bf11585f41cba39011404c83f5450",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-substitution.ts": "cad24b6a081ac303e3e550596eb084207f047443",
   "src/shell-substitution-end.ts": "42a3dbfbc0c8936aba579a6b25a1f5ac702024cc",

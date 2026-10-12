@@ -10,6 +10,9 @@ export interface LexBudget {
    *  substitutions included; `MAX_SUBSTITUTION_CHARS` when unset. Past zero
    *  the scan stops as if out of tokens. */
   substitutionCharsRemaining?: number;
+  /** `false` leaves command substitutions unlexed: no body segments and no
+   *  substitution budget is charged. */
+  substitutions?: boolean;
 }
 
 /** Ceiling on the substitution text one scan re-lexes when the caller sets

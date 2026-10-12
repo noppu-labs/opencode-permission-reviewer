@@ -176,7 +176,7 @@ export function lexSegments(
     outOfTokens: false,
   };
   while (lex.index < command.length) {
-    if (!lex.inSingle) lexSubstitution(lex);
+    if (!lex.inSingle && state.substitutions !== false) lexSubstitution(lex);
     if (lex.outOfTokens) break;
     const c = command.charAt(lex.index);
     if (lex.inSingle) lexSingleQuoted(lex, c);
