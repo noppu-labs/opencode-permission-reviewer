@@ -80,7 +80,9 @@ function recordSshOptions(
   }
 }
 
-/** Records a value-taking option and returns how many tokens it spans. */
+/** Records a value-taking option and returns how many tokens it spans. As in
+ *  OpenSSH, the first value obtained for a setting wins, whichever spelling
+ *  set it. */
 function consumeSshOption(
   token: string,
   next: string | undefined,
@@ -89,13 +91,25 @@ function consumeSshOption(
   const valued = sshValueOption(token);
   if (valued === undefined) return 1;
   const value = valued.attached ?? next;
-  if (valued.option === "-i") options.identityFile = value;
-  if (valued.option === "-p") options.port = value;
-  if (valued.option === "-o" && value) {
-    const match = /^StrictHostKeyChecking=(.+)$/i.exec(value);
-    if (match) options.strictHostKeyChecking = match[1];
-  }
+  if (valued.option === "-i") options.identityFile ??= value;
+  if (valued.option === "-p") options.port ??= value;
+  if (valued.option === "-o" && value) recordConfigOption(value, options);
   return valued.attached === undefined ? 2 : 1;
+}
+
+const CONFIG_OPTION_FIELDS: ReadonlyMap<string, keyof SshOptions> = new Map([
+  ["port", "port"],
+  ["identityfile", "identityFile"],
+  ["stricthostkeychecking", "strictHostKeyChecking"],
+]);
+
+/** An `-o` value is an ssh_config line: a case-insensitive keyword, then
+ *  whitespace or an `=`. */
+function recordConfigOption(line: string, options: SshOptions): void {
+  const match = /^\s*([A-Za-z]+)(?:\s*=\s*|\s+)(\S.*)$/.exec(line);
+  if (!match) return;
+  const field = CONFIG_OPTION_FIELDS.get(match[1]?.toLowerCase() ?? "");
+  if (field) options[field] ??= match[2]?.trimEnd();
 }
 
 /** The remote tokens joined, without trailing redirection-looking tokens. */

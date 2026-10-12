@@ -28,7 +28,9 @@ function optionLabel(field: Field, value: unknown): string | undefined {
 }
 
 function fieldAnswers(field: Field, answer: Answer): string[] {
-  const value = answer[field.key];
+  const value = Object.hasOwn(answer, field.key)
+    ? answer[field.key]
+    : undefined;
   if (value === undefined) return [];
   const values = Array.isArray(value) ? value : [value];
   return values.map((value) => optionLabel(field, value) ?? String(value));

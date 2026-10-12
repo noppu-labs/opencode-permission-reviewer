@@ -269,3 +269,21 @@ describe("host hardening batch 13", () => {
     ]);
   });
 });
+
+describe("host hardening batch 16", () => {
+  test("native form replies keep a field with no reply unanswered", () => {
+    const form = forms();
+    form.created("form_own", [
+      field("constructor"),
+      field("toString"),
+      field("ok"),
+    ]);
+    form.replied("form_own", { ok: "yes" });
+    expect(form.answers()).toEqual([
+      {
+        question: "Scope: constructor | Scope: toString | Scope: ok",
+        answer: "Unanswered | Unanswered | yes",
+      },
+    ]);
+  });
+});
