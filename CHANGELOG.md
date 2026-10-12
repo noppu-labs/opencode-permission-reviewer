@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Development: Biome replaces ESLint and Prettier for linting and formatting.
+  FTA, knip, gitleaks, the pre-commit hooks and the Python tooling now run
+  locally and in CI. The limits are cognitive complexity 12 (tests 14), 600
+  lines per file (tests 800) and an FTA cap of 55 (tests not measured); see
+  `docs/DEVELOPMENT.md`.
 - Changes made in this fork are now licensed under the MIT License. Code from
   the upstream project remains under the Apache License 2.0, which now ships as
   `LICENSE-APACHE` alongside `NOTICE`. The package `license` field is
@@ -23,6 +28,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Split the README into a short overview and reference pages under `docs/`
   (configuration, reviewer models, how it works, safety, supply chain,
   compatibility, development).
+
+### Removed
+
+- **Breaking:** The `./tui` entry no longer re-exports `DEFAULT_CONFIG`,
+  `decodeUiStatus` and `ReviewUiState`; it exports only the TUI plugin.
+  Import `decodeUiStatus` and `ReviewUiState` from the main entry, and use
+  `resolveConfig({})` for the default configuration. This needs the next
+  major version.
+
+### Security
+
+- The emergency brake recognises more forms of unmistakably destructive
+  commands, and the capability analyzer classifies more wrapped commands.
+  Tracked privately per SECURITY.md.
 
 ## [2.4.2] - 2026-10-09
 

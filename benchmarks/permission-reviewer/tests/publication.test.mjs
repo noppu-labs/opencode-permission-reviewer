@@ -1,18 +1,22 @@
-import test from "node:test"
-import assert from "node:assert/strict"
-import { mkdtemp, mkdir, chmod, stat, rm } from "node:fs/promises"
-import { join } from "node:path"
-import { tmpdir } from "node:os"
-import { publicReport } from "../lib/publication.mjs"
-import { privateDir } from "../lib/util.mjs"
+import assert from "node:assert/strict";
+import { chmod, mkdir, mkdtemp, rm, stat } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import test from "node:test";
+import { publicReport } from "../lib/publication.mjs";
+import { privateDir } from "../lib/util.mjs";
 
-const privateText = "SYNTHETIC_PRIVATE_MARKER"
+const privateText = "SYNTHETIC_PRIVATE_MARKER";
 const document = () => ({
   run: {
     fingerprint: "run-hash",
     datasetHash: "corpus-hash",
     harnessSha256: "harness-hash",
-    source: { match: true, pinnedCommit: "commit-hash", sourceSha256: "source-hash" },
+    source: {
+      match: true,
+      pinnedCommit: "commit-hash",
+      sourceSha256: "source-hash",
+    },
     models: [
       {
         id: "candidate",
@@ -70,47 +74,47 @@ const document = () => ({
       attempts: [{ rawText: privateText }],
     },
   ],
-})
+});
 
 test("public export is an allowlist, not a redacted copy of raw records", () => {
-  const report = publicReport(document())
-  assert.equal(report.results[0].modelOutcome, "deny")
-  assert.equal(report.metrics.candidate.model.primaryScore, 70)
-  assert(!JSON.stringify(report).includes(privateText))
-  assert(!("attempts" in report.results[0]))
-})
+  const report = publicReport(document());
+  assert.equal(report.results[0].modelOutcome, "deny");
+  assert.equal(report.metrics.candidate.model.primaryScore, 70);
+  assert(!JSON.stringify(report).includes(privateText));
+  assert(!("attempts" in report.results[0]));
+});
 
 test("public export rejects private, incomplete, and drifted runs", () => {
-  const privateRun = document()
-  privateRun.results[0].origin = "non-synthetic"
-  assert.throws(() => publicReport(privateRun), /synthetic/)
-  const incomplete = document()
-  incomplete.summary.complete = false
-  assert.throws(() => publicReport(incomplete), /complete/)
-  const drifted = document()
-  drifted.run.source.match = false
-  assert.throws(() => publicReport(drifted), /pinned/)
-  const systemOne = document()
-  systemOne.run.models[0].transport = "system-one"
-  systemOne.run.models[0].format = "system_one"
-  assert.throws(() => publicReport(systemOne), /private/)
-  const derived = document()
-  derived.run.options.difficultSubset = { kind: "system-one-difficult" }
-  assert.throws(() => publicReport(derived), /private/)
-})
+  const privateRun = document();
+  privateRun.results[0].origin = "non-synthetic";
+  assert.throws(() => publicReport(privateRun), /synthetic/);
+  const incomplete = document();
+  incomplete.summary.complete = false;
+  assert.throws(() => publicReport(incomplete), /complete/);
+  const drifted = document();
+  drifted.run.source.match = false;
+  assert.throws(() => publicReport(drifted), /pinned/);
+  const systemOne = document();
+  systemOne.run.models[0].transport = "system-one";
+  systemOne.run.models[0].format = "system_one";
+  assert.throws(() => publicReport(systemOne), /private/);
+  const derived = document();
+  derived.run.options.difficultSubset = { kind: "system-one-difficult" };
+  assert.throws(() => publicReport(derived), /private/);
+});
 
 test("private output handling does not chmod an existing public directory", async () => {
-  const root = await mkdtemp(join(tmpdir(), "prb-output-"))
+  const root = await mkdtemp(join(tmpdir(), "prb-output-"));
   try {
-    const publicPath = join(root, "public")
-    await mkdir(publicPath)
-    await chmod(publicPath, 0o755)
-    await assert.rejects(privateDir(publicPath), /not private/)
-    assert.equal((await stat(publicPath)).mode & 0o777, 0o755)
-    const newPath = join(root, "private")
-    await privateDir(newPath)
-    assert.equal((await stat(newPath)).mode & 0o777, 0o700)
+    const publicPath = join(root, "public");
+    await mkdir(publicPath);
+    await chmod(publicPath, 0o755);
+    await assert.rejects(privateDir(publicPath), /not private/);
+    assert.equal((await stat(publicPath)).mode & 0o777, 0o755);
+    const newPath = join(root, "private");
+    await privateDir(newPath);
+    assert.equal((await stat(newPath)).mode & 0o777, 0o700);
   } finally {
-    await rm(root, { recursive: true, force: true })
+    await rm(root, { recursive: true, force: true });
   }
-})
+});

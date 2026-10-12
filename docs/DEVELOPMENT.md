@@ -1,7 +1,7 @@
 # Development
 
-Guide for developing and maintaining the plugin: how `dist/` is built, the live end-to-end tests
-against real OpenCode hosts, and the synthetic model benchmark. Setup, the `check` scripts, and
+Guide for developing and maintaining the plugin: how `dist/` is built, the quality gates, the live
+end-to-end tests against real OpenCode hosts, and the synthetic model benchmark. Setup, the `check` scripts, and
 pull request rules are in [CONTRIBUTING](../CONTRIBUTING.md#before-opening-a-pull-request).
 
 ## Build output (`dist/`)
@@ -26,6 +26,147 @@ scripts (the package declares none), so never rely on `bun install` producing `d
 commit build output. `tests/package-smoke.test.ts` builds, packs, and verifies that the tarball
 ships exactly the expected set, including the raw TUI files and the absence of a prebundled TUI.
 See [Supply chain](./SUPPLY-CHAIN.md) for what that test enforces on dependencies.
+
+## Quality gates
+
+`pre-commit` is the single runner. `bun run check` is the local equivalent of CI: it builds and
+type-checks, runs every hook on every file and the whole-tree gitleaks scan, then runs `bun test`.
+The CI `quality` job runs the same hooks once; the `check` job repeats build, typecheck and tests
+on the minimum and the pinned Bun versions. The release workflow runs the same hooks in its own
+read-only `quality` job, which the artifact-building job needs, so that job only runs steps pinned
+by `bun.lock`. That job runs `bun-audit` too, so a new advisory blocks a release; the known ones
+are ignored by ID (see "Ignored audit advisories").
+
+| Tool | What it checks | Settings |
+| --- | --- | --- |
+| pre-commit-hooks | File hygiene: YAML, TOML and JSON syntax, merge markers, case conflicts, large files, shebangs, end of file, whitespace, line endings | `.pre-commit-config.yaml` |
+| gitleaks | Secrets in the staged diff at commit time. CI has no staged diff, so it also runs a second, manual-stage hook (`gitleaks-tree`) that scans the whole working tree. | `.gitleaks.toml` (allows the synthetic fixtures CONTRIBUTING requires, scoped by path) |
+| yamllint (`--strict`) | YAML style | `.yamllint.yaml` |
+| markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
+| codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
+| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` and `noExcessiveLinesPerFile`; limits per directory are in "Test files" | `biome.jsonc` |
+| `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
+| FTA | Maintainability score per file, for everything except the test directories; cap in "Test files" | `fta.json` |
+| knip | Unused files, exports and dependencies | `knip.jsonc` |
+| `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
+| ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml` |
+
+`tests/live-fixture` holds deliberate attack fixtures the live harness runs. Every tool excludes it
+(Biome, ruff, bandit, complexipy, vulture, pyrefly, pylint, codespell, knip); keep it out of any
+tool you add.
+
+`.editorconfig` carries the editor basics. Biome formats TypeScript, JavaScript and JSON and
+organizes imports, so `biome check` fails on unformatted code. The commits that reformatted the tree
+are listed in `.git-blame-ignore-revs`; run `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+once per clone so `git blame` skips them (GitHub's blame view reads the file by itself).
+
+### Where the pins live
+
+Each tool has one pin. Biome (`@biomejs/biome`), FTA (`fta-cli`), knip and TypeScript are exact
+devDependencies in `package.json`, locked in `bun.lock`. pre-commit, ruff, pyrefly, pylint and
+pytest are in the `dev` group of `pyproject.toml`, locked in `uv.lock`. The remaining hooks
+(pre-commit-hooks, gitleaks, yamllint, markdownlint-cli2, codespell, ruff-pre-commit, bandit,
+complexipy, vulture) are pinned by `rev` in `.pre-commit-config.yaml`. The ruff `rev` must match
+the ruff version in `uv.lock`. The hooks that use the lockfile pins run through `bun run` and
+`uv run --frozen`, never `bunx`, which could fetch an unrelated package of the same name when
+`bun install` has not run. CI installs the same lockfiles with `bun install --frozen-lockfile`
+and `uv sync --locked`.
+
+### FTA
+
+`fta.json` sets `score_cap` to 55. `fta .` scans the whole repository, minus `.gitignore`d paths
+and the `exclude_directories` in `fta.json`, and `extensions` adds `.mjs` to the TypeScript and
+JavaScript files it reads by default. Two behaviors of the tool matter when you edit it:
+
+- A file fails only when its score is strictly greater than the cap.
+- An `exclude_directories` entry with one segment, like `tests`, matches a directory of that name
+  at any depth. An entry with several segments, like `benchmarks/permission-reviewer/tests`,
+  matches from the repository root. No `tests` directory exists under `src`, `scripts` or
+  `benchmarks/permission-reviewer/lib`, and a new one would be exempt too.
+
+An invalid or wrong-typed `score_cap` is silently ignored (the default of 1000 applies), so keep
+it an integer. A syntax error in `fta.json` is caught by `check-json`.
+
+### Test files
+
+The two test directories, `tests` and `benchmarks/permission-reviewer/tests`, have their own limits:
+one `overrides` entry in `biome.jsonc` and the `exclude_directories` in `fta.json`. Everything else
+keeps the defaults.
+
+| Rule | Test directories | Everything else |
+| --- | --- | --- |
+| `noExcessiveLinesPerFile` | 800 lines | 600 lines |
+| `noExcessiveCognitiveComplexity` | 14 | 12 |
+| `noAwaitInLoops` | off | on |
+| `noSecrets` | off | on |
+| FTA | not measured | cap 55 |
+
+- Lines: test files hold long tables and fixtures, and splitting a well-set-up file costs more
+  clarity than it buys.
+- Complexity: a test body walks setup, a few branches and assertions, so it runs a little higher
+  than production code.
+- `noAwaitInLoops`: sequential awaits are the norm in tests, where each step runs against the state
+  the last one left. A test that can run its steps at once should still use `Promise.all`. A loop
+  with a `// Sequential:` comment giving an ordering reason stays sequential.
+- `noSecrets`: synthetic credentials are deliberate fixtures. gitleaks scans them with its
+  path-scoped allowlist (`.gitleaks.toml`), on the staged diff and on the whole tree in CI, so it
+  stays the secret check.
+- FTA: in test files the score mostly tracks a cyclomatic cliff (two or more branch constructs put
+  a file at about 55-75 whatever its size), so the cap rewarded loop rewrites rather than simpler tests.
+
+The override leaves `tests/live-fixture` excluded and changes no other rule. Source, scripts and the
+benchmark library (`benchmarks/permission-reviewer/lib`) keep all four rules at the defaults.
+
+### Suppressions
+
+Every accepted finding carries its reason where it applies:
+
+- Biome: a line-level `// biome-ignore lint/<group>/<rule>: <reason>`. No `biome-ignore-all` and no
+  `biome-ignore-start`/`-end` ranges.
+  Instead of a non-null assertion (`!`), use `invariant()` (`src/invariant.ts`) in `src` and
+  `defined()` (`tests/helpers.ts`) in tests.
+- Python: `# noqa: <code>` with a reason, `# nosec <id> # <reason>`, or
+  `# complexipy: ignore (<reason>)` on the def line. Two `pyproject.toml` per-file ruff ignores
+  are permanent and say why there: `ARG` for `tests/**`, and `E501` for the dataset modules whose
+  case strings are verbatim benchmark input.
+- gitleaks: an allowlist entry in `.gitleaks.toml`, scoped by path and exact token.
+- FTA: no per-file suppression. Only the test directories are excluded (`exclude_directories`, see
+  "Test files"); fix a finding anywhere else.
+
+Sequential `await` in a loop is flagged by `noAwaitInLoops` outside the test directories. Keep it,
+with a suppression saying why order matters, where the order is the point (spawning processes in
+turn, retries, ordered transport replies); otherwise use `Promise.all`. Tests need no suppression
+(see "Test files").
+
+### File length
+
+TypeScript and JavaScript files stay under 600 lines (Biome) and under the FTA cap. Test files get
+800 lines and no FTA check (see "Test files"). Python modules stay under 600 lines (pylint). When
+a test file is too long, first merge near-identical tests into a table-driven one, move repeated
+setup into helpers and combine tests that assert the same behavior, without dropping an assertion
+or a covered case. If that is not enough, don't restructure the file; ask.
+
+### Exemptions (the ratchet)
+
+The ratchet is empty: no per-file exemption exists in `biome.jsonc` or `fta.json` (the test
+directories are covered as a whole, see "Test files"). Don't add one to get a change through: fix
+the finding, or suppress it on the line with a reason.
+
+### Ignored audit advisories
+
+`bun audit` currently reports three advisories that the `audit` script ignores by ID, so the hook
+still fails on anything new:
+
+- `GHSA-p6vx-979v-rg4c` and `GHSA-jp82-f5mq-hwhp`: `seroval`, reached through `solid-js`, which is
+  exact-pinned together with the `@opentui` peer set.
+- `GHSA-ch52-4w7c-c8xp`: `http-cache-semantics`, reached through the dev dependency
+  `@opencode/plugin`.
+
+Resolving them is a dependency decision; remove the matching `--ignore` flag when it is made.
+`bun audit` needs network access. As a hook it runs only when `bun.lock` or `package.json`
+changes, but `pre-commit run --all-files` (and so `bun run check` and the CI `quality` job) always
+runs it, so a new advisory fails the next push. The release workflow's `quality` job runs it as
+well, so an advisory that is not on the ignore list blocks a release.
 
 ## Live testing
 
@@ -66,9 +207,10 @@ falls back to `opencode` on `PATH`. It authenticates with `REVIEWER_LIVE_PASSWOR
 ### 3. Compatibility matrix
 
 The dual-host matrix is in [`tests/compatibility`](../tests/compatibility/README.md). Set the
-pinned binary paths documented there, then run `python -m pytest tests/compatibility -q`. Each
-host uses an isolated home, configuration, provider, and audit file, and no personal OpenCode
-installation is changed. V1 and V2 have independent pytest modules.
+pinned binary paths documented there, then run `uv run pytest tests/compatibility -q` (`uv sync`
+installs the pinned pytest). Each host uses an isolated home, configuration, provider, and audit
+file, and no personal OpenCode installation is changed. V1 and V2 have independent pytest
+modules.
 
 Pass the matrix a direct OpenCode executable, not a profile launcher or wrapper that exports its
 own `HOME`, `XDG_*`, or `OPENCODE_CONFIG*` values. Such a launcher can intentionally replace the

@@ -12,121 +12,120 @@
  *
  * Run via `bun run test:coverage`.
  */
-import { readFileSync, existsSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs";
+import { CRITICAL_MODULES } from "./coverage-critical-modules.ts";
 
-const LCOV_PATH = "coverage/lcov.info"
-const MIN_GLOBAL_LINE_PCT = 90
-
-// Modules whose coverage is a safety invariant: a line drop here is a likely
-// behavioral regression, not a cosmetic gap.
-const CRITICAL_MODULES: ReadonlySet<string> = new Set([
-  "src/decision.ts",
-  "src/escalation.ts",
-  "src/policy.ts",
-  "src/policy/policy-engine.ts",
-  "src/emergency-brake.ts",
-  "src/opencode/event-normalizer.ts",
-  "src/opencode/reply-transport.ts",
-  "src/redact.ts",
-])
+const LCOV_PATH = "coverage/lcov.info";
+const MIN_GLOBAL_LINE_PCT = 90;
 
 interface FileCoverage {
-  path: string
-  linesFound: number
-  linesHit: number
+  path: string;
+  linesFound: number;
+  linesHit: number;
 }
 
 function parseLcov(path: string): FileCoverage[] {
   if (!existsSync(path)) {
-    console.error(`coverage: lcov report not found at ${path}`)
-    console.error("run `bun run test:coverage` first.")
-    process.exit(1)
+    console.error(`coverage: lcov report not found at ${path}`);
+    console.error("run `bun run test:coverage` first.");
+    process.exit(1);
   }
-  const text = readFileSync(path, "utf8")
-  const files: FileCoverage[] = []
-  let current: FileCoverage | null = null
-  for (const line of text.split("\n")) {
+  const files: FileCoverage[] = [];
+  let current: FileCoverage | null = null;
+  for (const line of readFileSync(path, "utf8").split("\n")) {
     if (line.startsWith("SF:")) {
-      current = { path: line.slice(3), linesFound: 0, linesHit: 0 }
-    } else if (line.startsWith("LF:") && current) {
-      const n = Number(line.slice(3))
-      // Reject non-integer / negative values so a malformed report cannot
-      // produce NaN totals that silently pass the threshold.
-      if (!Number.isInteger(n) || n < 0) continue
-      current.linesFound += n
-    } else if (line.startsWith("LH:") && current) {
-      const n = Number(line.slice(3))
-      if (!Number.isInteger(n) || n < 0) continue
-      current.linesHit += n
-    } else if (line === "end_of_record" && current) {
-      files.push(current)
-      current = null
+      current = { path: line.slice(3), linesFound: 0, linesHit: 0 };
+    } else if (current && applyRecordLine(current, line)) {
+      files.push(current);
+      current = null;
     }
   }
-  return files
+  return files;
+}
+
+// Applies one line inside an SF record; returns true when the record ends.
+function applyRecordLine(current: FileCoverage, line: string): boolean {
+  if (line === "end_of_record") return true;
+  const n = Number(line.slice(3));
+  // Reject non-integer / negative values so a malformed report cannot
+  // produce NaN totals that silently pass the threshold.
+  if (!Number.isInteger(n) || n < 0) return false;
+  if (line.startsWith("LF:")) current.linesFound += n;
+  else if (line.startsWith("LH:")) current.linesHit += n;
+  return false;
 }
 
 function pct(hit: number, found: number): number {
-  return found > 0 ? (hit / found) * 100 : 100
+  return found > 0 ? (hit / found) * 100 : 100;
 }
 
-function main(): void {
-  const files = parseLcov(LCOV_PATH)
-  const failures: string[] = []
+function filePct(f: FileCoverage): number {
+  return pct(f.linesHit, f.linesFound);
+}
 
-  // Global line coverage.
-  const totalFound = files.reduce((n, f) => n + f.linesFound, 0)
-  const totalHit = files.reduce((n, f) => n + f.linesHit, 0)
+function checkGlobal(files: FileCoverage[], failures: string[]): void {
+  const totalFound = files.reduce((n, f) => n + f.linesFound, 0);
+  const totalHit = files.reduce((n, f) => n + f.linesHit, 0);
   if (totalFound === 0) {
     // An empty or malformed lcov report must not false-pass as 100%.
-    failures.push("lcov report contains no line coverage data (LF total is 0)")
+    failures.push("lcov report contains no line coverage data (LF total is 0)");
   }
-  const globalPct = pct(totalHit, totalFound)
-  console.log(`coverage: global lines ${totalHit}/${totalFound} (${globalPct.toFixed(1)}%)`)
+  const globalPct = pct(totalHit, totalFound);
+  const shown = globalPct.toFixed(1);
+  console.log(`coverage: global lines ${totalHit}/${totalFound} (${shown}%)`);
   if (globalPct < MIN_GLOBAL_LINE_PCT) {
-    failures.push(`global line coverage ${globalPct.toFixed(1)}% < ${MIN_GLOBAL_LINE_PCT}%`)
+    failures.push(`global line coverage ${shown}% < ${MIN_GLOBAL_LINE_PCT}%`);
   }
+}
 
-  // Per-file listing, sorted by lowest coverage first (excludes 100%).
+// Per-file listing, sorted by lowest coverage first (excludes 100%).
+function printGaps(files: FileCoverage[]): void {
   const gaps = files
-    .filter((f) => f.linesFound > 0 && pct(f.linesHit, f.linesFound) < 100)
-    .sort((a, b) => pct(a.linesHit, a.linesFound) - pct(b.linesHit, b.linesFound))
-  if (gaps.length > 0) {
-    console.log("\n  files under 100% line coverage:")
-    for (const f of gaps) {
-      const p = pct(f.linesHit, f.linesFound)
-      console.log(`    ${p.toFixed(1).padStart(5)}%  ${f.linesHit}/${f.linesFound}  ${f.path}`)
-    }
+    .filter((f) => f.linesFound > 0 && filePct(f) < 100)
+    .sort((a, b) => filePct(a) - filePct(b));
+  if (gaps.length === 0) return;
+  console.log("\n  files under 100% line coverage:");
+  for (const f of gaps) {
+    const p = filePct(f).toFixed(1).padStart(5);
+    console.log(`    ${p}%  ${f.linesHit}/${f.linesFound}  ${f.path}`);
   }
+}
 
-  // Safety-critical modules must be fully covered.
-  console.log("\n  safety-critical modules (require 100%):")
+// Safety-critical modules must be fully covered.
+function checkCritical(files: FileCoverage[], failures: string[]): void {
+  console.log("\n  safety-critical modules (require 100%):");
   for (const f of files) {
-    if (!CRITICAL_MODULES.has(f.path)) continue
-    const p = pct(f.linesHit, f.linesFound)
-    const mark = p === 100 ? "ok" : "FAIL"
-    console.log(`    [${mark}] ${p.toFixed(1)}%  ${f.path}`)
-    if (p < 100) {
-      failures.push(`${f.path}: ${p.toFixed(1)}% (requires 100%)`)
-    }
+    if (!CRITICAL_MODULES.has(f.path)) continue;
+    const p = filePct(f);
+    const mark = p === 100 ? "ok" : "FAIL";
+    console.log(`    [${mark}] ${p.toFixed(1)}%  ${f.path}`);
+    if (p < 100) failures.push(`${f.path}: ${p.toFixed(1)}% (requires 100%)`);
   }
 
   // Report any critical module that produced no coverage record at all
   // (e.g. renamed or not exercised by any test).
-  const covered = new Set(files.map((f) => f.path))
+  const covered = new Set(files.map((f) => f.path));
   for (const m of CRITICAL_MODULES) {
     if (!covered.has(m)) {
-      failures.push(`${m}: no coverage record (not exercised by tests)`)
-      console.log(`    [FAIL] missing  ${m}`)
+      failures.push(`${m}: no coverage record (not exercised by tests)`);
+      console.log(`    [FAIL] missing  ${m}`);
     }
   }
-
-  if (failures.length > 0) {
-    console.error(`\ncoverage: ${failures.length} gate failure(s):`)
-    for (const f of failures) console.error(`  - ${f}`)
-    process.exit(1)
-  }
-  console.log("\ncoverage: all gates passed.")
 }
 
-main()
+function main(): void {
+  const files = parseLcov(LCOV_PATH);
+  const failures: string[] = [];
+  checkGlobal(files, failures);
+  printGaps(files);
+  checkCritical(files, failures);
+
+  if (failures.length > 0) {
+    console.error(`\ncoverage: ${failures.length} gate failure(s):`);
+    for (const f of failures) console.error(`  - ${f}`);
+    process.exit(1);
+  }
+  console.log("\ncoverage: all gates passed.");
+}
+
+main();

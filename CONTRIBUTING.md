@@ -7,44 +7,59 @@ most of the rest supports OpenCode V1 and V2 hosts, the TUI overlay, and the CLI
 ## Prerequisites
 
 - [Bun](https://bun.sh) >= 1.3.0
+- [uv](https://docs.astral.sh/uv/). It installs the Python tooling that runs the pre-commit hooks
+  and `pytest` for the real-host compatibility matrix in `tests/compatibility`.
 - `git`
-- Python with `pytest`, needed only for the real-host compatibility matrix in
-  `tests/compatibility`
 
 ```sh
 git clone https://github.com/noppu-labs/opencode-permission-reviewer.git
 cd opencode-permission-reviewer
-git switch dev
+git switch develop
 bun install
+uv sync
+uv run pre-commit install
 bun run check
 ```
 
+`uv run pre-commit install` makes the same hooks run on every commit.
+
 ## Branches
 
-Branch from `dev` and open your pull request against `dev`. GitHub defaults to `main`, so pick
-`dev` as the base explicitly. Maintainers promote validated changes from `dev` to `main` in a
-separate pull request, and releases are cut from `main`.
+Branch from `develop` and open your pull request against `develop`. GitHub defaults to `main`, so
+pick `develop` as the base explicitly. Maintainers promote validated changes from `develop` to
+`main` in a separate pull request, and releases are cut from `main`.
 
 ## Before opening a pull request
 
-Run the Bun checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-host matrix and
+Run the checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-host matrix and
 the benchmark, which the [development guide](docs/DEVELOPMENT.md) covers.
 
 ```sh
-bun run check           # prettier, eslint, build, tsc, and the full bun test suite
+bun run check           # build, typecheck, every hook on every file, gitleaks-tree, bun test
 bun run test:coverage   # test suite with the coverage threshold check
 ```
 
-`bun run format` fixes formatting. `bun run test:stress` and `bun run test:package` rerun only
-the stress suite or the npm pack ship-set test. Don't disable or skip tests to get `check`
-passing.
+The Biome hook runs with `--write`, so `check` can rewrite files; look at `git diff` afterwards,
+because CI fails when a hook changes the tree. `bun run lint:fix` applies Biome's fixes on its
+own, and `bun run format` runs only the formatter. `bun run test:stress` and
+`bun run test:package` rerun only the stress suite or the npm pack ship-set test. Don't disable
+or skip tests to get `check` passing.
+
+Every accepted lint finding carries its reason on the line, as a line-level
+`// biome-ignore lint/<group>/<rule>: <reason>` comment. Don't add file-wide or ranged ignores
+(`biome-ignore-all`, `biome-ignore-start`). The [development guide](docs/DEVELOPMENT.md#quality-gates)
+covers the other tools' conventions.
 
 Your pull request should also meet these rules:
 
 - No secrets or personal data in code or tests. Use obviously synthetic fixtures: tokens like
   `sk-syntheticcredential...`, documentation IP ranges (`192.0.2.x`, `198.51.100.x`,
   `203.0.113.x`), and `*.invalid` hostnames. Never commit real tokens, keys, personal filesystem
-  paths, or internal codenames.
+  paths, or internal codenames. Put new secret-shaped test values in
+  `tests/fixtures/synthetic-secrets.ts`, which `.gitleaks.toml` allowlists by path and exact
+  value. Build a value that has a recognised scanner prefix by concatenation
+  (`"ghp_" + "synthetic…"`), so no continuous literal in source matches a secret scanner; the
+  assertions still see the full value.
 - Behavior stays backward compatible unless you are intentionally changing a version pin or an
   enforcement invariant. If you are, say so in the pull request.
 - User-facing strings are in English. The policy and reviewer prompts are English, and runtime
@@ -53,10 +68,19 @@ Your pull request should also meet these rules:
 
 ## Areas that need care
 
-- `src/decision.ts`, `src/policy.ts`, `src/emergency-brake.ts`, `src/policy/policy-engine.ts`,
-  the trust boundary in `src/config/loader.ts`, and the runtime enforcement path encode the safety
-  invariants. A change to them needs tests that demonstrate the invariant (for example, that
-  critical risk can never be approved) and the reasoning stated in the pull request.
+- These modules encode the safety invariants. A change to them needs tests that demonstrate the
+  invariant (for example, that critical risk can never be approved) and the reasoning stated in the
+  pull request.
+  - Decisions: `src/decision.ts`, `src/decision-gates.ts`, `src/decision-schema.ts` and
+    `src/policy.ts`.
+  - The brake: `src/emergency-brake.ts` and the `src/brake-*.ts` detectors it calls.
+  - The policy engine: `src/policy/policy-engine.ts`, `src/policy/policy-conditions.ts` and
+    `src/policy/profile-templates.ts`.
+  - The config trust boundary in `src/config/`: `loader.ts`, `layer-read.ts`, `trust-boundary.ts`,
+    the key lists in `trust-boundary-keys.ts`, `risk-policy-clamp.ts` and `trusted-degradation.ts`.
+  - The runtime enforcement path in `src/core/`: `review-engine.ts` with `review-result-gates.ts`,
+    and `review-coordinator.ts` with the `review-pipeline.ts`, `review-disposition.ts`,
+    `review-reply.ts`, `reply-events.ts` and `coordinator-state.ts` modules it delegates to.
 - The V1 adapter and isolated reply transport (`src/opencode/v1-adapter.ts`,
   `src/opencode/reply-transport.ts`) reach into OpenCode's authenticated SDK transport. Changes
   there must keep the "refusing unsafe partial startup" behavior.

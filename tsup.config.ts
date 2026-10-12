@@ -1,4 +1,4 @@
-import { defineConfig } from "tsup"
+import { defineConfig } from "tsup";
 
 // dist/ is the ship set for the server and CLI. The TUI entry is copied as raw
 // TSX by scripts/copy-tui.ts so OpenCode's host can compile it with its own
@@ -37,4 +37,4 @@ export default defineConfig({
     "effect",
     /^effect\//,
   ],
-})
+});

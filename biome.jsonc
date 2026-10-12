@@ -1,0 +1,113 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    // `!!` keeps build output away from the scanner entirely; `!` excludes from lint and format
+    // only. tests/live-fixture: see docs/DEVELOPMENT.md, "Quality gates".
+    "includes": [
+      "**",
+      "!!**/dist",
+      "!!**/coverage",
+      "!tests/live-fixture",
+      "!benchmarks/permission-reviewer/runs",
+      "!benchmarks/permission-reviewer/reviews",
+      "!benchmarks/permission-reviewer/models.local.json"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "linter": {
+    "rules": {
+      "preset": "recommended",
+      "nursery": {
+        "useExplicitType": "error"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "options": {
+            "maxAllowedComplexity": 12
+          },
+          "level": "error"
+        }
+      },
+      "performance": {
+        "noAwaitInLoops": "error",
+        "noReExportAll": "error",
+        "noBarrelFile": "error"
+      },
+      "security": {
+        "noSecrets": {
+          "options": {
+            "entropyThreshold": 45
+          },
+          "level": "error"
+        }
+      },
+      "style": {
+        "noEnum": "error",
+        "noExportedImports": "error",
+        "noExcessiveLinesPerFile": {
+          "level": "error",
+          "options": {
+            "maxLines": 600
+          }
+        }
+      },
+      "suspicious": {
+        "noForIn": "error",
+        "noNestedPromises": "error"
+      }
+    }
+  },
+  "overrides": [
+    // Test directories only: see docs/DEVELOPMENT.md, "Test files".
+    {
+      "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": {
+              "level": "error",
+              "options": {
+                "maxAllowedComplexity": 14
+              }
+            }
+          },
+          "performance": {
+            "noAwaitInLoops": "off"
+          },
+          "security": {
+            "noSecrets": "off"
+          },
+          "style": {
+            "noExcessiveLinesPerFile": {
+              "level": "error",
+              "options": {
+                "maxLines": 800
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "semicolons": "always"
+    }
+  },
+  "assist": {
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

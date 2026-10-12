@@ -1,5 +1,5 @@
 <!-- Thanks for the PR. Keep the description focused on the technical change. -->
-<!-- Contribution PRs target dev. Maintainer promotion PRs target main from dev. -->
+<!-- Contribution PRs target develop. Maintainer promotion PRs target main from develop. -->
 
 ## Summary
 
@@ -7,7 +7,8 @@
 
 ## Safety impact
 
-<!-- If this touches decision.ts, policy.ts, emergency-brake.ts, the reply
+<!-- If this touches decision.ts, policy.ts, emergency-brake.ts (or the
+     decision-*, brake-* and policy/ modules split from them), the reply
      transport, or the config trust boundary, explain why the safety invariants
      are preserved (critical risk never approved, project config cannot weaken
      global, reviewer failure → manual, etc.). If it does not touch safety
@@ -15,8 +16,8 @@
 
 ## Checklist
 
-- [ ] Contribution targets `dev` (or this is a maintainer promotion from `dev` to `main`)
-- [ ] `bun run check` is green (format + lint + typecheck + tests + build)
+- [ ] Contribution targets `develop` (or this is a maintainer promotion from `develop` to `main`)
+- [ ] `bun run check` is green (pre-commit hooks + build + tests)
 - [ ] No personal data, secrets, or absolute personal paths in the diff
 - [ ] Safety changes include regression tests that demonstrate the invariant
 - [ ] User-facing strings are in English
