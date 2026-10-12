@@ -637,3 +637,13 @@ describe("hardening batch 24", () => {
     "parted -s disk.img mktable gpt",
   ]);
 });
+
+describe("hardening batch 25", () => {
+  blocks("blocks each command, case %#", [
+    "watch -x rm -rf /",
+    "watch -x env FOO=1 rm -rf /",
+    "watch 'FOO=1 rm -rf /'",
+  ]);
+
+  allows("allows each command, case %#", ["watch -x FOO=1 rm -rf /"]);
+});

@@ -486,7 +486,7 @@ describe("watch runs its joined operands as a shell command string", () => {
     ["watch --ex 'ls -la'", [["ls -la"]]],
     ["watch -xn 5 'ls -la'", [["ls -la"]]],
     ["watch -n 1 -x -- 'ls -la'", [["ls -la"]]],
-    ["watch -x FOO=1 ls", [["ls"]]],
+    ["watch -x FOO=1 ls", [["FOO=1", "ls"]]],
     ["watch", []],
     ["watch -n 5", []],
   ])("peels the argv watch execs with -x, case %#", (command, expected) => {

@@ -5,7 +5,6 @@ import { elementAt } from "./element-at.ts";
 import { WATCH_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
 import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
-import { skipAssignments } from "./shell-wrapper-options.ts";
 
 /** The letters of watch's optstring `+bCcefd::ghq:n:prs:twvx` that take a
  *  value: a required one in the rest of the cluster or the next token, and
@@ -37,7 +36,7 @@ export function peelWatch(
   reanalyze: (text: string) => void,
 ): number | undefined {
   const { operandIndex, exec } = watchCommand(words, i);
-  if (exec) return skipAssignments(words, operandIndex);
+  if (exec) return operandIndex;
   if (operandIndex < words.length)
     reanalyze(watchCommandString(words, operandIndex));
   return undefined;

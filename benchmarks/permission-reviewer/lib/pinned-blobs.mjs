@@ -84,7 +84,7 @@ export const PINNED_BLOBS = {
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/effective-command-walk.ts": "acde5b4f3c2f842d7dc5f1579cbb277734231636",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-wrapper-options.ts": "c80088a37200ee270db4a7582667520cfde895d4",
+  "src/shell-wrapper-options.ts": "485e789ca42726abe0b5c89b2c16ed5e67ddf619",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-command-strings.ts": "0794d8de3dc08ebc7ac275f7a16f85806aad1751",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
@@ -108,7 +108,7 @@ export const PINNED_BLOBS = {
   "src/shell-scanner.ts": "f95ccb4dfbe52845197d51ca531e2751fa0372cf",
   "src/ssh-value-options.ts": "79b1030f4e03d09415238c06cdb0acffdbda2bee",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/watch-command.ts": "4f8b02235d656931c059f84292a6083a8eb81d7a",
+  "src/watch-command.ts": "210ff953301e44aed8810ac67471f4491760b272",
   "src/capability/heredoc-extractor.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
