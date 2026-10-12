@@ -20,6 +20,7 @@ import {
   type LexBudget,
   type LexState,
   MAX_SUBSTITUTION_CHARS,
+  type SubstitutionBudget,
 } from "./shell-lex-state.ts";
 import {
   lexDoubleQuoted,
@@ -118,7 +119,7 @@ function lexUnquoted(lex: LexState, c: string): void {
 /** Lex the body of a substitution that opens at the current character
  *  into segments of its own, under the same budget. The character itself is
  *  still scanned as part of the enclosing word. */
-function lexSubstitution(lex: LexState): void {
+function lexSubstitution(lex: LexState, budget: SubstitutionBudget): void {
   if (lex.index < lex.substitutionEnd) return;
   const body = substitutionAt(
     lex.command,
@@ -127,19 +128,16 @@ function lexSubstitution(lex: LexState): void {
     lex.index < lex.arithmeticEnd,
   );
   if (body === undefined) return;
-  if (body.text === undefined) {
+  if (body.kind === "arithmetic") {
     lex.arithmeticEnd = body.end;
     return;
   }
   lex.substitutionEnd = body.end;
-  const { budget } = lex;
-  budget.substitutionCharsRemaining =
-    (budget.substitutionCharsRemaining ?? MAX_SUBSTITUTION_CHARS) -
-    body.text.length;
+  budget.substitutionCharsRemaining -= body.text.length;
   if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
   else {
     for (const segment of lexSegments(body.text, budget))
-      lex.substitutions.push({ ...segment, substitution: true });
+      lex.substitutions.push(segment);
   }
   if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
 }
@@ -147,16 +145,18 @@ function lexSubstitution(lex: LexState): void {
 /**
  * Tokenize `command` into logical segments (one per sub-command separated by
  * `;`, `|`, `&`, or newline) with quote-aware, comment-aware grouping.
- * `state` is the scan budget (uncapped by default): `tokensRemaining` is
- * decremented per token and stops the scan at zero: callers that must not
+ * `state` is the scan budget, with no token cap by default. Running out of
+ * tokens or substitution characters stops the scan; callers that must not
  * miss tail content use `lexSegmentsBounded` and treat the stop as a
- * truncation fact. Substitution bodies are charged to
- * `substitutionCharsRemaining`, and spending it past zero stops the scan the
- * same way; `substitutions: false` skips substitution analysis.
+ * truncation fact.
  */
 export function lexSegments(
   command: string,
-  state: LexBudget = { tokensRemaining: Number.POSITIVE_INFINITY },
+  state: LexBudget = {
+    tokensRemaining: Number.POSITIVE_INFINITY,
+    substitutions: "lex",
+    substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
+  },
 ): ShellSegment[] {
   const lex: LexState = {
     command,
@@ -177,7 +177,8 @@ export function lexSegments(
     outOfTokens: false,
   };
   while (lex.index < command.length) {
-    if (!lex.inSingle && state.substitutions !== false) lexSubstitution(lex);
+    if (!lex.inSingle && state.substitutions === "lex")
+      lexSubstitution(lex, state);
     if (lex.outOfTokens) break;
     const c = command.charAt(lex.index);
     if (lex.inSingle) lexSingleQuoted(lex, c);

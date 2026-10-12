@@ -1,6 +1,9 @@
 // Lexing entry points: per-request analysis budgets, the bounded lexing pass, and token-value segments for evidence consumers.
 
-import { MAX_SUBSTITUTION_CHARS } from "./shell-lex-state.ts";
+import {
+  MAX_SUBSTITUTION_CHARS,
+  type SubstitutionBudget,
+} from "./shell-lex-state.ts";
 import { normalizeShellRedirections } from "./shell-redirections.ts";
 import { lexSegments } from "./shell-scanner.ts";
 import type { ShellSegment } from "./shell-token.ts";
@@ -17,7 +20,7 @@ export interface CommandSegment {
 export function commandSegments(command: string): CommandSegment[] {
   const segments = lexSegments(command, {
     tokensRemaining: Number.POSITIVE_INFINITY,
-    substitutions: false,
+    substitutions: "skip",
   });
   return segments.map((segment) => {
     const normalized = normalizeShellRedirections(segment.tokens);
@@ -77,8 +80,9 @@ export interface LexAnalysis {
 export function lexSegmentsBounded(command: string): LexAnalysis {
   if (command.length > MAX_ANALYSIS_INPUT_CHARS)
     return { segments: [], truncated: true };
-  const state = {
+  const state: SubstitutionBudget = {
     tokensRemaining: MAX_LEX_TOKENS,
+    substitutions: "lex",
     substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
   };
   const segments = lexSegments(command, state);

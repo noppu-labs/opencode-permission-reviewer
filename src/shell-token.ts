@@ -27,10 +27,6 @@ export interface ShellSegment {
    *  `)` and then `|`, and `precededBy` reports `|`. Absent for the first
    *  segment. */
   precededBy?: string;
-  /** Set on the segments of a command substitution whose text stays inside
-   *  a word of the enclosing segment (a backtick form, or `$(` inside double
-   *  quotes). They follow that segment, and the word keeps its text. */
-  substitution?: true;
 }
 
 /** Whether the character at `index` of `token.value` lies in a quoted or

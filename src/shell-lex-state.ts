@@ -4,19 +4,26 @@ import type { ShellSegment, ShellToken } from "./shell-token.ts";
 
 type ShellSpan = NonNullable<ShellToken["spans"]>[number];
 
-export interface LexBudget {
+interface TokenBudget {
   tokensRemaining: number;
-  /** Command-substitution text the scan may still lex a second time, nested
-   *  substitutions included; `MAX_SUBSTITUTION_CHARS` when unset. Past zero
-   *  the scan stops as if out of tokens. */
-  substitutionCharsRemaining?: number;
-  /** `false` leaves command substitutions unlexed: no body segments and no
-   *  substitution budget is charged. */
-  substitutions?: boolean;
 }
 
-/** Ceiling on the substitution text one scan re-lexes when the caller sets
- *  none: nested substitutions re-lex their body once per level. */
+/** A budget that lexes command substitutions into segments of their own. */
+export interface SubstitutionBudget extends TokenBudget {
+  substitutions: "lex";
+  /** Command-substitution text the scan may still lex a second time, nested
+   *  substitutions included. Past zero the scan stops as if out of tokens. */
+  substitutionCharsRemaining: number;
+}
+
+/** `skip` leaves command substitutions unlexed: no body segments and no
+ *  substitution budget is charged. */
+export type LexBudget =
+  | (TokenBudget & { substitutions: "skip" })
+  | SubstitutionBudget;
+
+/** Ceiling on the substitution text one scan re-lexes by default: nested
+ *  substitutions re-lex their body once per level. */
 export const MAX_SUBSTITUTION_CHARS = 262_144;
 
 /** Mutable scan state shared by the character handlers in shell-scanner.ts

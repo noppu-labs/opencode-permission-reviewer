@@ -4,6 +4,7 @@ import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
 import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
+import type { SubstitutionBudget } from "./shell-lex-state.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
@@ -143,8 +144,9 @@ function reanalyze(text: string, level: WalkLevel): void {
     sink.truncated = true;
     return;
   }
-  const lexBudget = {
+  const lexBudget: SubstitutionBudget = {
     tokensRemaining: Number.POSITIVE_INFINITY,
+    substitutions: "lex",
     substitutionCharsRemaining: sink.budget.remainingReanalysisChars,
   };
   const segments = lexSegments(text, lexBudget);

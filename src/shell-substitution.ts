@@ -4,20 +4,16 @@ import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { substitutionBodyEnd } from "./shell-substitution-end.ts";
 
 /** The command text a substitution runs, and the index just past its
- *  closing `)` or backtick. Without `text`, the `$((` there opens arithmetic
- *  that ends at `end`. */
-export interface SubstitutionBody {
-  text?: string;
-  end: number;
-}
+ *  closing `)` or backtick. */
+export type SubstitutionBody =
+  | { kind: "command"; text: string; end: number }
+  | { kind: "arithmetic"; end: number };
 
 /**
- * The substitution that opens at `index` of `command`, or `undefined` when
- * none does there. An unquoted `$(` is not one: the scanner already splits
- * at its parentheses. `$((…))` is arithmetic, not a command, and inside
- * arithmetic (`inArithmetic`) a nested `$((` is taken as arithmetic too.
- * Heredoc bodies inside double quotes reach no earlier heredoc pass, so they
- * are replaced here, the same way, before the text is lexed.
+ * An unquoted `$(` is not a substitution here: the scanner already splits at
+ * its parentheses. `$((…))` is arithmetic, not a command. Heredoc bodies
+ * inside double quotes reach no earlier heredoc pass, so they are replaced
+ * here, the same way, before the text is lexed.
  */
 export function substitutionAt(
   command: string,
@@ -43,6 +39,7 @@ function backtickBody(
   const escaped = inDouble ? /\\([$`\\"])/g : /\\([$`\\])/g;
   const text = command.slice(start, close).replace(escaped, "$1");
   return {
+    kind: "command",
     text: inDouble ? extractHeredocs(text).sanitizedCommand : text,
     end: close + 1,
   };
@@ -54,8 +51,9 @@ function dollarParenBody(command: string, start: number): SubstitutionBody {
     command[start] === "(" &&
     substitutionBodyEnd(command, start + 1, "command") === close - 1
   )
-    return { end: close + 1 };
+    return { kind: "arithmetic", end: close + 1 };
   return {
+    kind: "command",
     text: extractHeredocs(command.slice(start, close)).sanitizedCommand,
     end: close + 1,
   };

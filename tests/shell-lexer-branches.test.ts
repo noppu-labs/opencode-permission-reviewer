@@ -1,4 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import {
+  type LexBudget,
+  MAX_SUBSTITUTION_CHARS,
+} from "../src/shell-lex-state.ts";
 import { lexSegmentsBounded } from "../src/shell-lexer.ts";
 import {
   normalizeShellRedirections,
@@ -6,6 +10,12 @@ import {
 } from "../src/shell-redirections.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
 import type { ShellToken } from "../src/shell-token.ts";
+
+const budget = (tokensRemaining: number): LexBudget => ({
+  tokensRemaining,
+  substitutions: "lex",
+  substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
+});
 
 function plain(text: string): ShellToken {
   return { raw: text, value: text, spans: [{ text, quoted: false }] };
@@ -32,19 +42,19 @@ function redirectionsOf(command: string): {
 
 describe("shell lexer token budget", () => {
   test("the token that spends the budget is consumed but its open segment is dropped", () => {
-    const state = { tokensRemaining: 3 };
+    const state = budget(3);
     expect(lexSegments("a b; c d", state)).toEqual([
       { tokens: [plain("a"), plain("b")], endedBy: ";" },
     ]);
     expect(state.tokensRemaining).toBe(0);
 
-    const flat = { tokensRemaining: 1 };
+    const flat = budget(1);
     expect(lexSegments("a b", flat)).toEqual([]);
     expect(flat.tokensRemaining).toBe(0);
   });
 
   test("a separator that spends the budget still emits its segment", () => {
-    const state = { tokensRemaining: 1 };
+    const state = budget(1);
     expect(lexSegments("a; b", state)).toEqual([
       { tokens: [plain("a")], endedBy: ";" },
     ]);
@@ -52,7 +62,7 @@ describe("shell lexer token budget", () => {
   });
 
   test("the budget is only checked after a flush, so a final flush can overdraw it", () => {
-    const state = { tokensRemaining: 0 };
+    const state = budget(0);
     expect(lexSegments("a", state)).toEqual([{ tokens: [plain("a")] }]);
     expect(state.tokensRemaining).toBe(-1);
   });
