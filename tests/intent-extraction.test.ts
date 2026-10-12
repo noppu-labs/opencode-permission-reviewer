@@ -201,3 +201,21 @@ describe("context hardening batch 12", () => {
     expect(result.latestExplicitAuthorization?.text).toBe(value);
   });
 });
+
+describe("context hardening batch 16", () => {
+  test("user text that begins with the host compaction prefix is treated as host-authored", async () => {
+    const { reader } = fakeReader({}, {});
+    const message = user(
+      "u1",
+      [text("magic compact: a note the user typed")],
+      10,
+    );
+    const result = await resolve(
+      reader,
+      [message],
+      lineage("human-root", [{ sessionID: CURRENT }]),
+    );
+    expect(result.directUserIntent).toStrictEqual([]);
+    expect(result.latestExplicitAuthorization).toBeUndefined();
+  });
+});

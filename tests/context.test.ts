@@ -194,3 +194,25 @@ describe("context hardening batch 12", () => {
     expect(buildTranscript(messages, DEFAULT_CONFIG)).toContain(value);
   });
 });
+
+describe("context hardening batch 16", () => {
+  test("user text that begins with the host compaction prefix is treated as host-authored", () => {
+    const value = "magic compact: a note the user typed";
+    const messages = normalizeMessages([
+      {
+        info: { id: "u_0", role: "user", time: { created: 1 } },
+        parts: [
+          { type: "text", text: "Keep this line" },
+          { type: "text", text: value },
+        ],
+      },
+    ]);
+    for (const section of [
+      buildIntentHistory(messages, DEFAULT_CONFIG),
+      buildTranscript(messages, DEFAULT_CONFIG),
+    ]) {
+      expect(section).toContain("Keep this line");
+      expect(section).not.toContain(value);
+    }
+  });
+});
