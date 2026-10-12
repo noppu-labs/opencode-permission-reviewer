@@ -42,7 +42,8 @@ export interface AuditTally {
 
 type AuditLine = Record<string, unknown>;
 
-/** A counts map whose keys are all plain entries, whatever their spelling. */
+/** Prototype-less, so every tallied name is an own key and none resolves to an
+ *  inherited member. */
 export function emptyCounts(): Record<string, number> {
   return Object.create(null) as Record<string, number>;
 }

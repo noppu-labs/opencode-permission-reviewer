@@ -44,8 +44,6 @@ function classifySegmentHead(
   }
 }
 
-/** Index of the command `head` wraps, as the effective-command walk peels
- *  it, or undefined when `head` wraps none. */
 function wrappedCommandIndex(
   tokens: ShellToken[],
   k: number,

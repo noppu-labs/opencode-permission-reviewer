@@ -48,7 +48,7 @@ export interface SshOperand {
 
 /** The destination among ssh's arguments from `start`: the first operand
  *  after the options, or the token after a `--` that ends them (OpenSSH
- *  `ssh.c`). `index` is `values.length` when there is none. */
+ *  `ssh.c`). */
 export function sshDestinationIndex(
   values: readonly string[],
   start: number,

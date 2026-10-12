@@ -135,8 +135,8 @@ function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
 }
 
 /** Re-lex a command string and walk each of its segments one level deeper.
- *  Its length is charged to the re-analysis budget first, and the bodies of
- *  the substitutions it holds as they are lexed. */
+ *  Its length is charged to the re-analysis budget first, then each
+ *  substitution body as it is lexed. */
 function reanalyze(text: string, level: WalkLevel): void {
   const { sink } = level;
   sink.budget.remainingReanalysisChars -= text.length;

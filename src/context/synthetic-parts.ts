@@ -3,11 +3,9 @@
 const SYNTHETIC_TEXT =
   /^\s*(?:Magic Compact:|You have \d+ weighted tokens left)/i;
 
-/** A text part the host injected into a user-role message, never human text.
- *  The part's own `synthetic`/`ignored` flags decide first; otherwise the text
- *  counts as host-authored when it starts, after leading whitespace, with
- *  `Magic Compact:` or `You have <n> weighted tokens left` in any letter case.
- *  Parts that are not text are never synthetic. */
+/** Host-authored text in a user-role message is never human authorization.
+ *  The part's `synthetic`/`ignored` flags decide first; the text patterns are
+ *  a fallback for hosts that do not set them. */
 export function isSyntheticPart(part: Record<string, unknown>): boolean {
   if (part.type !== "text" || typeof part.text !== "string") return false;
   if (part.synthetic === true || part.ignored === true) return true;

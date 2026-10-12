@@ -39,7 +39,8 @@ export function classifyPath(
     return { temporary: false, workspace: false, external: false };
   const absolute = absoluteTarget(target, directory);
   if (!absolute.startsWith("/") && !WINDOWS_ABSOLUTE.test(absolute)) {
-    // A drive-letter target that normalizes to a relative path is external.
+    // Only a drive-letter target whose `..` climbs above the drive normalizes
+    // to a relative path; where it lands is unknown.
     return { temporary: false, workspace: false, external: true };
   }
   const workspace =

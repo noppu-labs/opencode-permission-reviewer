@@ -76,9 +76,8 @@ function unlocatedEvidence(
   };
 }
 
-/**
- * `rootDirectory` is the approved evidence root; it defaults to `directory`.
- */
+/** `rootDirectory` is the approved evidence root, which can sit above
+ *  `directory` (package-script expansion passes the session directory). */
 export async function enrichLocalScriptEvidence(
   request: PermissionRequest,
   directory: string,

@@ -20,7 +20,8 @@ const REMOTE_VERBS_WITH_NAME = new Set([
 
 /** First positional operand of a network subcommand, skipping options and
  *  their separate values, plus push's `--repo` override when one is set.
- *  Both are destinations: git uses the positional when both are given. */
+ *  Both are reported as candidates; when both are given, git pushes to the
+ *  positional. */
 function networkOperand(
   tokens: string[],
   index: number,
