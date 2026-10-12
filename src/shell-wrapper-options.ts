@@ -1,7 +1,11 @@
 // Command-head and wrapper-option skipping for the effective-command walk: keywords, VAR=value assignments, value-taking options and getopt clusters.
 
 import { elementAt } from "./element-at.ts";
-import { SHELL_KEYWORDS, VALUE_OPTIONS } from "./shell-lexer-tables.ts";
+import {
+  LONE_DASH_OPTION_WRAPPERS,
+  SHELL_KEYWORDS,
+  VALUE_OPTIONS,
+} from "./shell-lexer-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
@@ -60,6 +64,17 @@ function skipOptions(
   return j;
 }
 
+/** Skip the VAR=value arguments from `start` and return the next index. */
+function skipAssignments(words: ShellToken[], start: number): number {
+  let i = start;
+  while (
+    i < words.length &&
+    ASSIGNMENT.test(elementAt(words, i, "tokens").value)
+  )
+    i += 1;
+  return i;
+}
+
 /** Skip the options of the transparent `wrapper` at `index` and the
  *  env-style VAR=value arguments that may follow it (e.g. `env FOO=bar …`),
  *  and return the index of the wrapped command. */
@@ -73,6 +88,8 @@ export function skipWrapperArguments(
   while (i < words.length) {
     const opt = elementAt(words, i, "tokens").value;
     if (opt === "--") return i + 1;
+    if (opt === "-" && LONE_DASH_OPTION_WRAPPERS.has(wrapper))
+      return skipAssignments(words, i + 1);
     if (ASSIGNMENT.test(opt)) i += 1;
     else if (opt.startsWith("-") && opt.length > 1)
       i = skipWrapperOption(opt, i, valueOpts);

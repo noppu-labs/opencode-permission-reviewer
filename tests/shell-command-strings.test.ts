@@ -34,7 +34,7 @@ describe("effective-command walk: env split string", () => {
     expect(commandsOf("env -S")).toEqual([]);
     expect(commandsOf("env -iu")).toEqual([]);
     expect(commandsOf("env -iuS x")).toEqual([["x"]]);
-    expect(commandsOf("env -PS x")).toEqual([]);
+    expect(commandsOf("env -PS x")).toEqual([["x"]]);
     expect(commandsOf("env -SP x")).toEqual([["P", "x"]]);
   });
 
@@ -42,8 +42,7 @@ describe("effective-command walk: env split string", () => {
     expect(commandsOf("env -S '' rm -rf /")).toEqual([["rm", "-rf", "/"]]);
     expect(commandsOf("env -- rm -rf /")).toEqual([["rm", "-rf", "/"]]);
     expect(commandsOf("env FOO=bar rm")).toEqual([["rm"]]);
-    // `env - rm` resolves to the effective command `- rm`.
-    expect(commandsOf("env - rm")).toEqual([["-", "rm"]]);
+    expect(commandsOf("env - rm")).toEqual([["rm"]]);
   });
 });
 
@@ -95,5 +94,17 @@ describe("effective-command walk: -c command strings", () => {
     expect(commandsOf("bash -x -c")).toEqual([["bash", "-x", "-c"]]);
     expect(commandsOf("bash -- -c 'rm'")).toEqual([["bash", "--", "-c", "rm"]]);
     expect(commandsOf("sh -x")).toEqual([["sh", "-x"]]);
+  });
+});
+
+describe("analyzer hardening batch 3", () => {
+  test("resolves each command", () => {
+    expect(commandsOf("env - FOO=1 rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -")).toEqual([]);
+    expect(commandsOf("env -P /bin rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -i rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -u FOO rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -C /tmp rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -- rm")).toEqual([["rm"]]);
   });
 });

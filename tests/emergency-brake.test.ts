@@ -26,6 +26,8 @@ describe("deterministic emergency brake", () => {
     "sudo -C 5 -p pass rm -rf /",
     "env rm -rf /",
     "env VAR=1 rm -rf /",
+    "env - rm -rf /",
+    "env -P /bin rm -rf /",
     "doas rm -rf /",
     "command rm -rf /",
     "nice -n 5 rm -rf /",
