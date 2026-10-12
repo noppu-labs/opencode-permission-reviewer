@@ -147,11 +147,12 @@ function lexSubstitution(lex: LexState): void {
 /**
  * Tokenize `command` into logical segments (one per sub-command separated by
  * `;`, `|`, `&`, or newline) with quote-aware, comment-aware grouping.
- * `state.tokensRemaining` (when given) is decremented per token and stops
- * the scan at zero: callers that must not miss tail content use
- * `lexSegmentsBounded` and treat the stop as a truncation fact. Substitution
- * bodies are charged to `state.substitutionCharsRemaining`, and spending it
- * past zero stops the scan the same way.
+ * `state` is the scan budget (uncapped by default): `tokensRemaining` is
+ * decremented per token and stops the scan at zero: callers that must not
+ * miss tail content use `lexSegmentsBounded` and treat the stop as a
+ * truncation fact. Substitution bodies are charged to
+ * `substitutionCharsRemaining`, and spending it past zero stops the scan the
+ * same way; `substitutions: false` skips substitution analysis.
  */
 export function lexSegments(
   command: string,

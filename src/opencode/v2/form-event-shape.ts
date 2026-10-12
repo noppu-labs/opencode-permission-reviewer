@@ -10,7 +10,7 @@ export type FormSettled = Extract<
   { type: "form.replied" } | { type: "form.cancelled" }
 >;
 
-const MAX_KEPT_FIELDS = 32;
+export const MAX_KEPT_FIELDS = 32;
 
 function isOptional(
   value: unknown,

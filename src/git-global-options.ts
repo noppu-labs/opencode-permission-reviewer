@@ -3,7 +3,7 @@
 import { elementAt } from "./element-at.ts";
 
 /** Global options git reads with a separate value (`git.c` `handle_options`).
- *  `--super-prefix` was removed in Git 2.42 but older releases accept it.
+ *  `--super-prefix` is accepted by older Git releases.
  *  `--exec-path` takes a value only as `--exec-path=…`. */
 const SEPARATE_VALUE_OPTIONS: ReadonlySet<string> = new Set([
   "-C",

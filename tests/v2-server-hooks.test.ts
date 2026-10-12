@@ -229,7 +229,7 @@ describe("host hardening batch 13", () => {
     { id: "form_a", sessionID: "ses_main", title: "Scope", fields: [] },
     { id: "form_b", sessionID: 7, title: "Scope", fields: [{ key: "one" }] },
     { id: "form_c", sessionID: "ses_main", title: "Scope", fields: [null] },
-  ])("keeps the event stream healthy after a malformed event", async (form) => {
+  ])("reviews the next ask: %p", async (form) => {
     const errors = quietErrors();
     const harness = await start({ config: { askDecisions: true } });
     harness.send({

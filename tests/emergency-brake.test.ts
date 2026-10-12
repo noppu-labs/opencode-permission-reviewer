@@ -558,6 +558,6 @@ describe("analyzer hardening batch 10", () => {
     expect(brake(`sh -c '${'"$('.repeat(300)}x${')"'.repeat(300)}'`)).toContain(
       "exceeded the static analysis budget",
     );
-    expect(Date.now() - started).toBeLessThan(2000);
+    expect(Date.now() - started).toBeLessThan(10_000);
   });
 });

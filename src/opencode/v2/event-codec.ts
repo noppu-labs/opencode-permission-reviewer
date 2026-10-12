@@ -9,6 +9,7 @@ import {
   type FormCreated as Created,
   formCreated,
   formSettled,
+  MAX_KEPT_FIELDS,
   type FormSettled as Settled,
 } from "./form-event-shape.ts";
 
@@ -74,7 +75,7 @@ export class V2AskDecisions implements AskDecisionSource {
     }
     const bounded: Created = {
       ...form,
-      fields: [form.fields[0], ...form.fields.slice(1, 32)],
+      fields: [form.fields[0], ...form.fields.slice(1, MAX_KEPT_FIELDS)],
     };
     this.pending.set(form.id, { form: bounded, at: now });
     this.registry.observe({

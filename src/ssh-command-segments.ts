@@ -66,7 +66,7 @@ function scanSshArguments(
   return { destination: tokens[destination.index], index: remote, options };
 }
 
-/** Records the value options in `tokens[start..end)`; a `--` there ends them. */
+/** Records the value options in `tokens[start..end)`; a `--` closing the range is skipped. */
 function recordSshOptions(
   tokens: ReadonlyArray<string>,
   start: number,
