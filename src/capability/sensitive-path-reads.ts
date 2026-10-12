@@ -2,7 +2,7 @@
 
 import { elementAt } from "../element-at.ts";
 import { shellBasename } from "../shell-lexer.ts";
-import type { ShellToken } from "../shell-token.ts";
+import { type ShellToken, tokenCharIsQuoted } from "../shell-token.ts";
 import { CREDENTIAL_READERS } from "./bash-command-tables.ts";
 import { isLiteralPathValue } from "./bash-mutation.ts";
 import type { CapabilityFacts } from "./capability-facts.ts";
@@ -36,7 +36,7 @@ function classifyCredentialCommand(
   }
   if (!CREDENTIAL_READERS.has(base)) return;
   for (let i = 1; i < cmd.length; i += 1) {
-    const previous = elementAt(cmd, i - 1, "cmd").value;
+    const previous = elementAt(cmd, i - 1, "cmd");
     if (operandReadsCredential(previous, elementAt(cmd, i, "cmd").value))
       facts.credentialRead = true;
   }
@@ -50,10 +50,13 @@ function inputRedirectReadsCredential(r: Redirection): boolean {
   );
 }
 
-/** A token following a redirect operator is that redirect's target, not a
- *  path operand: `cat > .env` writes the file, it does not read it. */
-function operandReadsCredential(previous: string, value: string): boolean {
-  if (/^[0-9]*[<>]/.test(previous)) return false;
+/** A token following an UNQUOTED redirect operator is that redirect's
+ *  target, not a path operand: `cat > .env` writes the file. A quoted or
+ *  escaped operator word is a literal argument and skips nothing. */
+function operandReadsCredential(previous: ShellToken, value: string): boolean {
+  const operator = /^[0-9]*[<>]/.exec(previous.value);
+  if (operator && !tokenCharIsQuoted(previous, operator[0].length - 1))
+    return false;
   if (value === "--") return false;
   if (value.startsWith("-") && value.length > 1) return false;
   if (value.startsWith("<") || value.startsWith(">")) return false;

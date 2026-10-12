@@ -91,17 +91,18 @@ describe("analyzeCapability effective commands", () => {
 });
 
 describe("analyzeCapability credential operands", () => {
-  // Each row asserts the credential facts reported for a cat operand list.
   test.each([
     ["cat -n ~/.ssh/id_rsa", "credentialRead"],
     ["cat -- .env", "credentialRead"],
     ["cat - .env", "credentialRead"],
-    ["cat '>' ~/.ssh/id_rsa", ""],
-    ["cat '2>' ~/.ssh/id_rsa", ""],
-    ["cat '<' .env", ""],
-    ["cat '<<' .env", ""],
-    ["cat x '>>' .env", ""],
-    ["cat '<x' .env", ""],
+    ["cat '>' ~/.ssh/id_rsa", "credentialRead"],
+    ["cat '2>' ~/.ssh/id_rsa", "credentialRead"],
+    ["cat '<' .env", "credentialRead"],
+    ["cat '<<' .env", "credentialRead"],
+    ["cat x '>>' .env", "credentialRead"],
+    ["cat '<x' .env", "credentialRead"],
+    ["cat \\> .env", "credentialRead"],
+    ["cat '>' notes.txt", ""],
   ])("%s", (command, expected) => {
     expect(capabilityProfile(command)).toBe(
       `read-only/medium | read-only | ${expected}`,
@@ -156,5 +157,13 @@ describe("analyzer hardening batch 6", () => {
   test("adds no remote facts", () => {
     expect(capabilityProfile("nice make")).not.toContain("remote.");
     expect(capabilityProfile("sudo -u ssh ls")).not.toContain("remote.");
+  });
+});
+
+describe("analyzer hardening batch 7", () => {
+  test("writes the target", () => {
+    expect(capabilityProfile("cat x > .env")).toBe(
+      "workspace-write/medium | workspace-write | writeEffects.workspaceWrite",
+    );
   });
 });

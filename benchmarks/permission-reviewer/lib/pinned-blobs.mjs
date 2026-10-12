@@ -131,7 +131,7 @@ export const PINNED_BLOBS = {
   "src/capability/segment-heads.ts": "0b5cb93df6cd202e3901a057f5cbd63163642ff5",
   "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
   "src/capability/sensitive-path-reads.ts":
-    "e0db1d3fcb8d89ceee3a4f6ff533417c97b15dff",
+    "abfae5e5adccfe21f419a9d4fe3ca077d7fa1573",
   "src/capability/effective-command-classifiers.ts":
     "ab58f309f3c719e607a77687ee2a4aec4ebc51a7",
   "src/capability/executable-recognition.ts":
