@@ -1,8 +1,8 @@
-import { describe, expect, test } from "bun:test"
-import { emergencyBrakeReason } from "../src/emergency-brake.ts"
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts"
-import { parseCommand } from "../src/capability/command-parser.ts"
-import { request } from "./helpers.ts"
+import { describe, expect, test } from "bun:test";
+import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/capability/command-parser.ts";
+import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { request } from "./helpers.ts";
 
 describe("deterministic emergency brake", () => {
   test.each([
@@ -26,6 +26,9 @@ describe("deterministic emergency brake", () => {
     "sudo -C 5 -p pass rm -rf /",
     "env rm -rf /",
     "env VAR=1 rm -rf /",
+    "env - rm -rf /",
+    "env -P /bin rm -rf /",
+    "env -- - rm -rf /",
     "doas rm -rf /",
     "command rm -rf /",
     "nice -n 5 rm -rf /",
@@ -70,12 +73,15 @@ describe("deterministic emergency brake", () => {
     "ssh host rm -rf /",
     "ssh -i /key user@host rm -rf /",
     "ssh -vp 2222 user@host rm -rf /",
+    "ssh -- host rm -rf /",
     "ssh host 'sudo rm -rf /'",
     "busybox rm -rf /",
     "/bin/busybox rm -rf /",
     "chroot /rootdir rm -rf /",
     "chroot --userspec=1000:1000 /rootdir rm -rf /",
     "chroot -- /rootdir rm -rf /",
+    "chroot --userspec 1000:1000 /rootdir rm -rf /",
+    "chroot --groups wheel /rootdir rm -rf /",
     "env -S 'rm -rf /'",
     "env -S rm -rf /",
     // Multiple segments and shell keywords.
@@ -103,6 +109,8 @@ describe("deterministic emergency brake", () => {
     "find / -exec rm -rf {} +",
     "find / -exec rm -rf {} \\;",
     "find / -execdir rm -rf {} +",
+    // Bare `{` / `}` words after -exec are skipped to reach the executable.
+    "find / -exec { } rm -rf {} \\;",
     "sudo find / -delete",
     "sudo find / -exec rm -rf {} +",
     // Block-device destruction beyond the original mkfs/dd regexes.
@@ -152,9 +160,27 @@ describe("deterministic emergency brake", () => {
     "env -u FOO -S 'rm -rf /'",
     "env --split-string='rm -rf /'",
     'script -c"rm -rf /" /dev/null',
-  ])("rejects unmistakable critical command: %s", (command) => {
-    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBeString()
-  })
+    "ls `rm -rf /`",
+    'echo "`rm -rf /`"',
+    'echo "$(rm -rf /)"',
+    "a=`rm -rf /`",
+    "sh -c 'ls `rm -rf /`'",
+    'echo "x$(rm -rf /)y"',
+    'a="$(rm -rf /)"',
+    "ls `echo a` `rm -rf /`",
+    'echo "$(dd if=/dev/zero of=/dev/sda)"',
+    'echo "$(echo x > /dev/sda)"',
+    'echo "`dd if=/dev/zero of=/dev/sda`"',
+    'echo "$(echo "$(rm -rf /)")"',
+    'echo "$(( $(rm -rf /) + 1 ))"',
+    'echo "$( (rm -rf /) )"',
+    "ls `rm -rf /",
+    'echo "$(rm -rf /',
+  ])("rejects unmistakable critical command %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeString();
+  });
 
   test.each([
     "rm -rf /tmp/project-build",
@@ -196,6 +222,9 @@ describe("deterministic emergency brake", () => {
     "find . -name '*.tmp' -delete",
     "find /var/log -name '*.log' -delete",
     "find /home -exec rm -rf {} +",
+    // -exec followed only by bare braces, or by a non-rm executable.
+    "find / -exec {",
+    "find / -exec { } echo {} +",
     // Destructive tool mentioned but not executed (argument of echo/printf).
     'echo "mkfs.ext4 /dev/sda"',
     "printf 'dd if=/dev/zero of=/dev/nvme0n1'",
@@ -234,15 +263,46 @@ describe("deterministic emergency brake", () => {
     "timeout 5 make",
     "timeout 10s echo done",
     "echo https://example.com/health | xargs curl",
-  ])("does not overreach on non-critical command: %s", (command) => {
-    expect(emergencyBrakeReason(request({ metadata: { command } }))).toBeUndefined()
-  })
+    "echo '`rm -rf /`'",
+    "echo \\`rm -rf /\\`",
+    "echo '$(rm -rf /)'",
+    'echo "\\$(rm -rf /)"',
+    'echo "\\`rm -rf /\\`"',
+    'echo "$((1 + 2))"',
+  ])("does not overreach on non-critical command %#", (command) => {
+    expect(
+      emergencyBrakeReason(request({ metadata: { command } })),
+    ).toBeUndefined();
+  });
+
+  test("long rm flags do not set recursive or force by their spelling", () => {
+    const blocked =
+      "Emergency brake: command contains unmistakable broad system destruction.";
+    // `--one-file-system` holds an f and `--no-preserve-root` an r; neither may set force or recursive.
+    for (const command of [
+      "rm --one-file-system --no-preserve-root /",
+      "rm -r --one-file-system /",
+      "rm -f --no-preserve-root /",
+    ]) {
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeUndefined();
+    }
+    // Control: with both effects explicit, the same long flags still block.
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command: "rm -rf --no-preserve-root /" } }),
+      ),
+    ).toBe(blocked);
+  });
 
   test("does not apply bash heuristics to other permission types", () => {
     expect(
-      emergencyBrakeReason(request({ permission: "edit", metadata: { command: "rm -rf /" } })),
-    ).toBeUndefined()
-  })
+      emergencyBrakeReason(
+        request({ permission: "edit", metadata: { command: "rm -rf /" } }),
+      ),
+    ).toBeUndefined();
+  });
 
   test("wrapper nesting beyond the lexer budget is rejected by the brake as a limit", () => {
     // The lexer's hard depth budget means this destructively-wrapped command
@@ -250,24 +310,28 @@ describe("deterministic emergency brake", () => {
     // resource-limit reason (distinct from detected destruction), while the
     // capability analyzer reports partial coverage so the review engine can
     // block auto-approval before any model call.
-    const command = `${"env -S ".repeat(33)}rm -rf /`
-    const brakeReason = emergencyBrakeReason(request({ metadata: { command } }))
-    expect(brakeReason).toBeString()
-    expect(brakeReason).toContain("exceeded the static analysis budget")
-    expect(brakeReason).not.toContain("unmistakable broad system destruction")
+    const command = `${"env -S ".repeat(33)}rm -rf /`;
+    const brakeReason = emergencyBrakeReason(
+      request({ metadata: { command } }),
+    );
+    expect(brakeReason).toBeString();
+    expect(brakeReason).toContain("exceeded the static analysis budget");
+    expect(brakeReason).not.toContain("unmistakable broad system destruction");
     const capability = analyzeCapability(
       parseCommand(command),
       "/home/user/project",
       "/home/user/project",
-    )
-    expect(capability.parserCompleteness).toBe("partial")
+    );
+    expect(capability.parserCompleteness).toBe("partial");
     expect(
       capability.analysisWarnings.some((warning) =>
-        warning.includes("exceeded the static analysis depth or expansion budget"),
+        warning.includes(
+          "exceeded the static analysis depth or expansion budget",
+        ),
       ),
-    ).toBe(true)
-    expect(parseCommand(command).analysisTruncated).toBe(true)
-  })
+    ).toBe(true);
+    expect(parseCommand(command).analysisTruncated).toBe(true);
+  });
 
   test("execution tracers and systemd-run are peeled as wrappers", () => {
     for (const command of [
@@ -280,25 +344,33 @@ describe("deterministic emergency brake", () => {
     ]) {
       expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
         "Emergency brake: command contains unmistakable broad system destruction.",
-      )
+      );
     }
     // Tracing without a wrapped command attaches to a PID: nothing to peel,
     // nothing to trip on.
     expect(
-      emergencyBrakeReason(request({ metadata: { command: "strace -p 1234" } })),
-    ).toBeUndefined()
-  })
+      emergencyBrakeReason(
+        request({ metadata: { command: "strace -p 1234" } }),
+      ),
+    ).toBeUndefined();
+  });
 
   test("script -c executes its command string", () => {
     expect(
-      emergencyBrakeReason(request({ metadata: { command: 'script -c "rm -rf /" /dev/null' } })),
-    ).toBe("Emergency brake: command contains unmistakable broad system destruction.")
+      emergencyBrakeReason(
+        request({ metadata: { command: 'script -c "rm -rf /" /dev/null' } }),
+      ),
+    ).toBe(
+      "Emergency brake: command contains unmistakable broad system destruction.",
+    );
     expect(
       emergencyBrakeReason(
-        request({ metadata: { command: "script -q /dev/null typescript.log" } }),
+        request({
+          metadata: { command: "script -q /dev/null typescript.log" },
+        }),
       ),
-    ).toBeUndefined()
-  })
+    ).toBeUndefined();
+  });
 
   test("clustered value-taking wrapper options do not hide the command", () => {
     for (const command of [
@@ -308,32 +380,48 @@ describe("deterministic emergency brake", () => {
     ]) {
       expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
         "Emergency brake: command contains unmistakable broad system destruction.",
-      )
+      );
     }
     expect(
-      emergencyBrakeReason(request({ metadata: { command: "sudo -u deploy ls" } })),
-    ).toBeUndefined()
-  })
+      emergencyBrakeReason(
+        request({ metadata: { command: "sudo -u deploy ls" } }),
+      ),
+    ).toBeUndefined();
+  });
 
   test("a live root glob is root destruction, a quoted star is not", () => {
-    expect(emergencyBrakeReason(request({ metadata: { command: "rm -rf /*" } }))).toBe(
+    expect(
+      emergencyBrakeReason(request({ metadata: { command: "rm -rf /*" } })),
+    ).toBe(
       "Emergency brake: command contains unmistakable broad system destruction.",
-    )
-    expect(emergencyBrakeReason(request({ metadata: { command: "find /* -delete" } }))).toBe(
+    );
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command: "find /* -delete" } }),
+      ),
+    ).toBe(
       "Emergency brake: command contains unmistakable broad system destruction.",
-    )
+    );
     // Parent traversal that still lands on the root keeps the glob live.
-    expect(emergencyBrakeReason(request({ metadata: { command: "rm -rf /../*" } }))).toBe(
+    expect(
+      emergencyBrakeReason(request({ metadata: { command: "rm -rf /../*" } })),
+    ).toBe(
       "Emergency brake: command contains unmistakable broad system destruction.",
-    )
-    expect(emergencyBrakeReason(request({ metadata: { command: "rm -rf /tmp/../../*" } }))).toBe(
+    );
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command: "rm -rf /tmp/../../*" } }),
+      ),
+    ).toBe(
       "Emergency brake: command contains unmistakable broad system destruction.",
-    )
+    );
     // Quoted or escaped stars name a literal file and stay with the reviewer.
-    expect(emergencyBrakeReason(request({ metadata: { command: 'rm -rf "/*"' } }))).toBeUndefined()
+    expect(
+      emergencyBrakeReason(request({ metadata: { command: 'rm -rf "/*"' } })),
+    ).toBeUndefined();
     expect(
       emergencyBrakeReason(request({ metadata: { command: "rm -rf /bin/*" } })),
-    ).toBeUndefined()
+    ).toBeUndefined();
     // Relative globs clear one directory, not the system root.
     for (const command of [
       "rm -rf *",
@@ -344,9 +432,11 @@ describe("deterministic emergency brake", () => {
       'find ./* -name "*.tmp" -delete',
       "rm -rf ./dist",
     ]) {
-      expect(emergencyBrakeReason(request({ metadata: { command } }))).toBeUndefined()
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeUndefined();
     }
-  })
+  });
 
   test("shell redirection onto a real block device is destruction", () => {
     for (const command of [
@@ -369,43 +459,105 @@ describe("deterministic emergency brake", () => {
     ]) {
       expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
         "Emergency brake: command contains unmistakable broad system destruction.",
-      )
+      );
     }
     // Quoted mentions are data, pseudo-devices stay whitelisted, and reading
     // a device through a pipe is not writing to it.
     expect(
-      emergencyBrakeReason(request({ metadata: { command: 'echo "x > /dev/sda"' } })),
-    ).toBeUndefined()
+      emergencyBrakeReason(
+        request({ metadata: { command: 'echo "x > /dev/sda"' } }),
+      ),
+    ).toBeUndefined();
     expect(
-      emergencyBrakeReason(request({ metadata: { command: "tee /tmp/out.txt" } })),
-    ).toBeUndefined()
+      emergencyBrakeReason(
+        request({ metadata: { command: "tee /tmp/out.txt" } }),
+      ),
+    ).toBeUndefined();
     expect(
-      emergencyBrakeReason(request({ metadata: { command: "echo hi > /dev/null" } })),
-    ).toBeUndefined()
+      emergencyBrakeReason(
+        request({ metadata: { command: "echo hi > /dev/null" } }),
+      ),
+    ).toBeUndefined();
     expect(
-      emergencyBrakeReason(request({ metadata: { command: "echo x | grep /dev/sda" } })),
-    ).toBeUndefined()
+      emergencyBrakeReason(
+        request({ metadata: { command: "echo x | grep /dev/sda" } }),
+      ),
+    ).toBeUndefined();
     expect(
-      emergencyBrakeReason(request({ metadata: { command: "grep pattern>out.txt" } })),
-    ).toBeUndefined()
-  })
+      emergencyBrakeReason(
+        request({ metadata: { command: "grep pattern>out.txt" } }),
+      ),
+    ).toBeUndefined();
+  });
 
   test("heredoc payload text is data rather than an executed command", () => {
-    for (const command of ["cat <<'EOF'\nrm -rf /\nEOF", "cat <<'EOF'\n:(){ :|:& };:\nEOF"]) {
-      expect(emergencyBrakeReason(request({ metadata: { command } }))).toBeUndefined()
+    for (const command of [
+      "cat <<'EOF'\nrm -rf /\nEOF",
+      "cat <<'EOF'\n:(){ :|:& };:\nEOF",
+    ]) {
+      expect(
+        emergencyBrakeReason(request({ metadata: { command } })),
+      ).toBeUndefined();
     }
     expect(
       emergencyBrakeReason(
-        request({ metadata: { command: "cat <<'EOF'\nsafe text\nEOF\nrm -rf /" } }),
+        request({
+          metadata: { command: "cat <<'EOF'\nsafe text\nEOF\nrm -rf /" },
+        }),
       ),
-    ).toBeString()
-  })
+    ).toBeString();
+  });
 
   test("clustered env -S still exposes its command string", () => {
     for (const command of ["env -S rm -rf /", "env -iS rm -rf /"]) {
       expect(emergencyBrakeReason(request({ metadata: { command } }))).toBe(
         "Emergency brake: command contains unmistakable broad system destruction.",
-      )
+      );
     }
-  })
-})
+  });
+});
+
+describe("analyzer hardening batch 10", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+  const brake = (command: string): string | undefined =>
+    emergencyBrakeReason(request({ metadata: { command } }));
+
+  test.each([
+    "git commit -m \"$(cat <<'EOF'\nrm -rf /\nEOF\n)\"",
+    "git commit -m \"$(cat <<'EOF'\nDon't (a) b)\nrm -rf /\nEOF\n)\"",
+    'git commit -m "$(cat <<-EOF\n\trm -rf /\n\tEOF\n)"',
+  ])("keeps each command %#", (command) => {
+    expect(brake(command)).toBeUndefined();
+  });
+
+  test.each([
+    'git commit -m "$(cat <<\'EOF\'\nDon\'t (a) b)\nEOF\n)" && echo "$(rm -rf /)"',
+    'echo "$(case x in x) rm -rf / ;; esac)"',
+    'echo "$(echo a # )\nrm -rf /\n)"',
+    "echo \"$(echo ')' ; rm -rf /)\"",
+  ])("blocks each command %#", (command) => {
+    expect(brake(command)).toBe(blocked);
+  });
+
+  test("finishes deep and wide inputs within the budget", () => {
+    const nested = (depth: number): string =>
+      `${'echo "$('.repeat(depth)}rm -rf /${')"'.repeat(depth)}`;
+    const started = Date.now();
+    expect(brake(nested(20))).toBe(blocked);
+    expect(brake(nested(2000))).toContain(
+      "exceeded the static analysis budget",
+    );
+    expect(brake(`echo ${'"$(true)" '.repeat(4000)}"$(rm -rf /)"`)).toBe(
+      blocked,
+    );
+    expect(brake(`echo ${"`true` ".repeat(4000)}\`rm -rf /\``)).toBe(blocked);
+    expect(
+      brake(`echo "${"$((".repeat(20000)}1${"))".repeat(20000)}"`),
+    ).toBeUndefined();
+    expect(brake(`sh -c '${'"$('.repeat(300)}x${')"'.repeat(300)}'`)).toContain(
+      "exceeded the static analysis budget",
+    );
+    expect(Date.now() - started).toBeLessThan(10_000);
+  });
+});

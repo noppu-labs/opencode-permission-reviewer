@@ -3,7 +3,9 @@
 
 # Safety-critical paths require explicit review attention (no auto-merge).
 /src/decision.ts      @cris005
+/src/decision-*.ts    @cris005
 /src/policy.ts        @cris005
 /src/emergency-brake.ts @cris005
+/src/brake-*.ts       @cris005
 /src/policy/          @cris005
 /src/opencode/        @cris005

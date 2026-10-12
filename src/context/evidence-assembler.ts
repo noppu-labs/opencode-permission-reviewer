@@ -1,41 +1,40 @@
-import type { PermissionRequest, ReviewEnvelope, ReviewerConfig } from "../types.ts"
+import type { ContextReader } from "../core/ports.ts";
+import { GitEvidenceProvider } from "../evidence/git-provider.ts";
+import { LocalScriptEvidenceProvider } from "../evidence/local-script-provider.ts";
+import { PackageScriptEvidenceProvider } from "../evidence/package-script-provider.ts";
+import type { EvidenceProvider } from "../evidence/provider.ts";
+import { SshEvidenceProvider } from "../evidence/ssh-provider.ts";
+import { withTimeout } from "../opencode/transport.ts";
+import type { OpenCodeClientLike } from "../opencode/types.ts";
+import type {
+  PermissionRequest,
+  ReviewEnvelope,
+  ReviewerConfig,
+} from "../types.ts";
+import { parseVerifiedSshScriptCommand } from "../verified-ssh-command.ts";
+import type { ScriptAnalysisRegistry } from "../verified-ssh-script.ts";
+import { resolveActorContext } from "./actor-resolver.ts";
+import type { AskDecisionSource } from "./ask-decisions.ts";
 import {
-  buildIntentHistory,
-  buildTranscript,
-  normalizeMessages,
-  pendingPermissionSection,
-} from "../context.ts"
-import type { AskDecisionSource } from "./ask-decisions.ts"
-import type { OpenCodeClientLike } from "../opencode/types.ts"
-import type { ContextReader } from "../core/ports.ts"
-import { createV1ContextReader } from "../opencode/v1/context-reader.ts"
-import { withTimeout } from "../opencode/transport.ts"
-import { resolveActorContext } from "./actor-resolver.ts"
-import { resolveActionPurpose } from "./action-purpose.ts"
-import { parseCommand } from "../capability/command-parser.ts"
-import { analyzeCapability } from "../capability/bash-analyzer.ts"
-import type { EvidenceProvider } from "../evidence/provider.ts"
-import type { SshAuditSummary } from "../ssh-evidence.ts"
-import { SshEvidenceProvider } from "../evidence/ssh-provider.ts"
-import { LocalScriptEvidenceProvider } from "../evidence/local-script-provider.ts"
-import { GitEvidenceProvider } from "../evidence/git-provider.ts"
-import { PackageScriptEvidenceProvider } from "../evidence/package-script-provider.ts"
+  analyzeBashCommand,
+  collectVerifiedScript,
+} from "./command-evidence.ts";
+import { envelopeFrom } from "./evidence-envelope.ts";
 import {
-  collectVerifiedSshScript,
-  configFingerprint,
-  parseVerifiedSshScriptCommand,
-  ScriptAnalysisRegistry,
-} from "../verified-ssh-script.ts"
-import { REVIEWER_PROMPT_VERSION } from "../policy.ts"
+  collectFragments,
+  contextReader,
+  readTranscripts,
+  transcriptMessages,
+} from "./evidence-sources.ts";
 
 export interface EvidenceAssemblyContext {
-  client: OpenCodeClientLike | ContextReader
-  directory: string
-  worktree: string
-  config: ReviewerConfig
+  client: OpenCodeClientLike | ContextReader;
+  directory: string;
+  worktree: string;
+  config: ReviewerConfig;
   /** Live ask-decision capture, when enabled. Enrichment-only. */
-  askDecisions?: AskDecisionSource
-  scriptRegistry?: ScriptAnalysisRegistry
+  askDecisions?: AskDecisionSource;
+  scriptRegistry?: ScriptAnalysisRegistry;
 }
 
 /**
@@ -49,23 +48,15 @@ export async function assembleEvidence(
   providers: EvidenceProvider[],
   ctx: EvidenceAssemblyContext,
 ): Promise<ReviewEnvelope> {
-  const contextStart = performance.now()
-  const reader = "messages" in ctx.client ? ctx.client : createV1ContextReader(ctx.client)
+  const contextStart = performance.now();
+  const reader = contextReader(ctx.client);
   // A transcript fetch that never settles would leave the review pending
   // forever; bound it well above any realistic fetch time.
-  const [response, intentResponse] = await withTimeout(
-    Promise.all([
-      reader.messages(
-        request.sessionID,
-        ctx.directory,
-        Math.max(ctx.config.historyMessages, ctx.config.transcriptMessages * 2, 20),
-      ),
-      reader.intentMessages?.(request.sessionID, ctx.directory, ctx.config.intentMessages),
-    ]),
+  const responses = await withTimeout(
+    readTranscripts(reader, request, ctx),
     Math.min(ctx.config.timeoutMs, 15_000),
-  )
-  const messages = normalizeMessages(response)
-  const intentMessages = intentResponse === undefined ? messages : normalizeMessages(intentResponse)
+  );
+  const { messages, intentMessages } = transcriptMessages(responses);
 
   // Resolve actor/lineage/intent. The resolver is resilient — it never throws,
   // degrading to "unknown" — so this cannot block a review.
@@ -76,143 +67,38 @@ export async function assembleEvidence(
     ctx.directory,
     ctx.config,
     intentMessages,
-  )
-  const verifiedCommand = parseVerifiedSshScriptCommand(request)
+  );
+  const verifiedCommand = parseVerifiedSshScriptCommand(request);
   const verifiedScript = verifiedCommand
-    ? await collectVerifiedSshScript(
-        verifiedCommand,
-        ctx.directory,
-        ctx.worktree,
-        actor.lineage.origin === "unknown" ? request.sessionID : actor.lineage.rootSessionID,
-        configFingerprint({ config: ctx.config, prompt: REVIEWER_PROMPT_VERSION }),
-        ctx.scriptRegistry ?? new ScriptAnalysisRegistry(),
-      )
-    : undefined
+    ? await collectVerifiedScript(verifiedCommand, request, actor, ctx)
+    : undefined;
+  const { parsed, capability } = analyzeBashCommand(request, ctx);
 
-  // Parse the bash command and derive capability facts. Only computed for bash
-  // requests; non-bash permissions have no command surface to analyze. Wrapped in
-  // try/catch so a parser bug can never block a review (capability degrades to
-  // absent, never throws).
-  let parsed
-  let capability
-  if (request.permission === "bash") {
-    const command =
-      typeof request.metadata.command === "string"
-        ? request.metadata.command
-        : request.patterns.filter((p) => typeof p === "string").join("\n")
-    if (command.trim()) {
-      try {
-        parsed = parseCommand(command)
-        capability = analyzeCapability(parsed, ctx.directory, ctx.worktree)
-      } catch {
-        // Static analysis is best-effort; absence is non-fatal.
-      }
-    }
-  }
+  const contextMs = performance.now() - contextStart;
 
-  const contextMs = performance.now() - contextStart
-
-  const enrichmentStart = performance.now()
+  const enrichmentStart = performance.now();
   // The provider phase has per-call bounds (git timeouts, bounded reads) but
   // no global one of its own; a provider that hangs despite them (e.g. a
   // blocking filesystem edge case) must not leave the review pending forever.
   // On timeout the whole assembly fails into the fail-safe escalation path.
   const fragments = await withTimeout(
-    Promise.all(
-      providers
-        .filter((provider) => !(verifiedScript && provider.id === "ssh"))
-        .map((provider) =>
-          provider.collect({
-            request,
-            directory: ctx.directory,
-            worktree: ctx.worktree,
-            maxChars: ctx.config.maxEnrichmentChars,
-          }),
-        ),
-    ),
+    collectFragments(request, providers, verifiedScript, ctx),
     Math.min(ctx.config.timeoutMs, 20_000),
-  )
-  const enrichmentMs = performance.now() - enrichmentStart
+  );
+  const enrichmentMs = performance.now() - enrichmentStart;
 
-  const enrichment = fragments
-    .map((fragment) => fragment.text)
-    .filter(Boolean)
-    .join("\n\n")
-
-  const sshFragment = fragments.find((fragment) => fragment.kind === "ssh")
-  const sshAudit: SshAuditSummary[] = verifiedScript
-    ? [
-        {
-          destination: verifiedScript.destination,
-          ...(verifiedScript.port === undefined ? {} : { port: String(verifiedScript.port) }),
-          stdinStatus: verifiedScript.status,
-        },
-      ]
-    : (sshFragment?.audit ?? [])
-  const preflightDenial = fragments.find(
-    (fragment) => fragment.preflightDenial !== undefined,
-  )?.preflightDenial
-
-  const actionPurpose = resolveActionPurpose(request, actor.intent, messages)
-
-  // Ask decisions are visible only along the resolved ancestry: the
-  // requesting session plus sessions the lineage walker actually reached.
-  // Sibling and unrelated sessions are never in scope.
-  const askDecisions =
-    ctx.config.askDecisions && ctx.askDecisions !== undefined
-      ? ctx.askDecisions.recentFor([
-          request.sessionID,
-          ...(actor.lineage?.nodes.map((node) => node.sessionID) ?? []),
-        ])
-      : undefined
-
-  const purposeOk = actionPurpose.source !== "unavailable"
-  const completenessReasons = [...actor.completeness.reasons]
-  if (!purposeOk) completenessReasons.push("action purpose unavailable")
-
-  // Whether the action under review reached the rendered evidence in full
-  // (no elided command middle, no truncated PENDING_PERMISSION section). The
-  // coordinator blocks automatic approval when this is false.
-  const { actionEvidenceComplete } = pendingPermissionSection(request, ctx.config)
-  if (!actionEvidenceComplete)
-    completenessReasons.push("pending action was elided or truncated in the evidence")
-  if (verifiedScript?.status === "unavailable")
-    completenessReasons.push("verified script content was unavailable or did not match its hash")
-
-  return {
+  return envelopeFrom({
     request,
-    directory: ctx.directory,
-    worktree: ctx.worktree,
+    ctx,
+    messages,
+    intentMessages,
+    actor,
+    verifiedScript,
+    parsed,
+    capability,
+    fragments,
     timings: { contextMs, enrichmentMs },
-    transcript: buildTranscript(messages, ctx.config, {
-      omitUserMessages:
-        actor.lineage.origin === "human-root" && actor.intent.directUserIntent.length > 0,
-      ...(request.tool === undefined ? {} : { pendingTool: request.tool }),
-    }),
-    intentHistory: buildIntentHistory(intentMessages, ctx.config, {
-      delegatedSession: actor.lineage.origin !== "human-root",
-    }),
-    enrichment,
-    ...(verifiedScript === undefined ? {} : { verifiedScript }),
-    sshAudit,
-    ...(preflightDenial === undefined ? {} : { preflightDenial }),
-    actor: actor.actor,
-    lineage: actor.lineage,
-    intent: actor.intent,
-    actionPurpose,
-    actionEvidenceComplete: actionEvidenceComplete && verifiedScript?.status !== "unavailable",
-    evidenceCompleteness: {
-      ...actor.completeness,
-      purpose: purposeOk,
-      // Capability is computed here (not in the resolver), so reflect whether
-      // the analyzer produced facts for this request.
-      capability: capability !== undefined,
-      reasons: completenessReasons,
-    },
-    ...(parsed === undefined ? {} : { parsedCommand: parsed }),
-    ...(capability === undefined ? {} : { capability }),
-    ...(askDecisions === undefined || askDecisions.length === 0 ? {} : { askDecisions }),
-  }
+  });
 }
 
 /** The default evidence bundle used when callers do not inject their own. */
@@ -222,5 +108,5 @@ export function defaultEvidenceProviders(): EvidenceProvider[] {
     new LocalScriptEvidenceProvider(),
     new PackageScriptEvidenceProvider(),
     new GitEvidenceProvider(),
-  ]
+  ];
 }

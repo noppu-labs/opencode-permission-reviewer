@@ -1,47 +1,52 @@
-import type { ClientResponse } from "./types.ts"
+import type { ClientResponse } from "./types.ts";
 
 export function responseData<T>(response: ClientResponse<T>, label: string): T {
   if (response.error !== undefined)
-    throw new Error(`${label} failed: ${JSON.stringify(response.error)}`)
-  if (response.data === undefined) throw new Error(`${label} returned no data`)
-  return response.data
+    throw new Error(`${label} failed: ${JSON.stringify(response.error)}`);
+  if (response.data === undefined) throw new Error(`${label} returned no data`);
+  return response.data;
 }
 
 export function extractStructured(response: Record<string, unknown>): unknown {
-  const info = response.info
-  if (typeof info !== "object" || info === null) return
-  return (info as Record<string, unknown>).structured
+  const info = response.info;
+  if (typeof info !== "object" || info === null) return;
+  return (info as Record<string, unknown>).structured;
 }
 
 /** Collect the plain-text output parts from a text-format reviewer response. */
-export function extractText(response: Record<string, unknown>): string | undefined {
-  const parts = response.parts
-  if (!Array.isArray(parts)) return
-  const chunks: string[] = []
+export function extractText(
+  response: Record<string, unknown>,
+): string | undefined {
+  const parts = response.parts;
+  if (!Array.isArray(parts)) return;
+  const chunks: string[] = [];
   for (const part of parts) {
-    if (typeof part !== "object" || part === null) continue
-    const record = part as Record<string, unknown>
-    if (record.type !== "text") continue
-    if (typeof record.text !== "string") continue
-    chunks.push(record.text)
+    if (typeof part !== "object" || part === null) continue;
+    const record = part as Record<string, unknown>;
+    if (record.type !== "text") continue;
+    if (typeof record.text !== "string") continue;
+    chunks.push(record.text);
   }
-  if (chunks.length === 0) return
-  return chunks.join("\n")
+  if (chunks.length === 0) return;
+  return chunks.join("\n");
 }
 
-export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined
+export function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   return Promise.race([
     promise,
     new Promise<T>((_resolve, reject) => {
       timer = setTimeout(
         () => reject(new Error(`Reviewer timed out after ${timeoutMs}ms`)),
         timeoutMs,
-      )
+      );
     }),
   ]).finally(() => {
-    if (timer !== undefined) clearTimeout(timer)
-  })
+    if (timer !== undefined) clearTimeout(timer);
+  });
 }
 
 /**
@@ -51,15 +56,16 @@ export function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<
  * code, an error code, or a human-readable message.
  */
 export function isAlreadyResolvedError(error: unknown): boolean {
-  if (error == null || typeof error !== "object") return false
-  const record = error as Record<string, unknown>
-  const status = record.status
-  if (status === 404 || status === "404") return true
-  const code = typeof record.code === "string" ? record.code : ""
-  if (/PermissionNotFound|not_found|notfound|already_resolved/i.test(code)) return true
-  const message = typeof record.message === "string" ? record.message : ""
+  if (error == null || typeof error !== "object") return false;
+  const record = error as Record<string, unknown>;
+  const status = record.status;
+  if (status === 404 || status === "404") return true;
+  const code = typeof record.code === "string" ? record.code : "";
+  if (/PermissionNotFound|not_found|notfound|already_resolved/i.test(code))
+    return true;
+  const message = typeof record.message === "string" ? record.message : "";
   // No `\b` so camelCase "PermissionNotFoundError" and "notfound" still match.
   return /PermissionNotFound|not\s*found|no\s+longer\s+(?:pending|exist)s?|already\s+(?:been\s+)?(?:resolved|answered|replied|closed)/i.test(
     message,
-  )
+  );
 }

@@ -1,0 +1,12 @@
+{
+  "score_cap": 55,
+  "extensions": [".mjs"],
+  "exclude_directories": [
+    "tests/live-fixture",
+    "tests/live-v2-fixture",
+    "tests",
+    "benchmarks/permission-reviewer/tests",
+    "coverage",
+    "node_modules"
+  ]
+}

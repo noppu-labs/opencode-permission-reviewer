@@ -6,11 +6,14 @@ export const ReviewerRpc = {
       input: { type: "object", additionalProperties: false },
       output: { type: "string" },
     },
-    status: { input: { type: "object", additionalProperties: false }, output: { type: "object" } },
+    status: {
+      input: { type: "object", additionalProperties: false },
+      output: { type: "object" },
+    },
     snapshot: {
       input: { type: "object", additionalProperties: false },
       output: { type: "object" },
     },
   },
   events: { "review.updated": { schema: { type: "object" } } },
-} as const
+} as const;

@@ -1,12 +1,8 @@
-import { createHash } from "node:crypto"
-import type {
-  ActorContext,
-  CapabilityAssessment,
-  PolicyCondition,
-  PolicyRule,
-  PolicyTrace,
-  ReviewerConfig,
-} from "../types.ts"
+import { createHash } from "node:crypto";
+import type { ActorContext } from "../actor-context-types.ts";
+import type { CapabilityAssessment } from "../capability/capability-types.ts";
+import type { PolicyRule, PolicyTrace, ReviewerConfig } from "../types.ts";
+import { conditionMatches } from "./policy-conditions.ts";
 
 /*
  * Declarative policy engine (Layer B).
@@ -32,9 +28,9 @@ const EFFECT_SEVERITY: Record<PolicyRule["effect"], number> = {
   manual: 2,
   review: 1,
   allow: 0,
-}
+};
 
-const EMPTY_TRACE_ROUTE = "review" as const
+const EMPTY_TRACE_ROUTE = "review" as const;
 
 /**
  * Evaluate the declarative policy against capability and actor facts.
@@ -46,94 +42,52 @@ export function evaluatePolicy(
   config: ReviewerConfig,
   rules: PolicyRule[] = [],
 ): PolicyTrace {
-  const effectiveRules = filterProjectAllowRules(rules)
-  const effectivePolicyHash = hashEffectivePolicy(effectiveRules, config)
-  const matched: PolicyTrace["matchedRules"] = []
+  const effectiveRules = filterProjectAllowRules(rules);
+  const effectivePolicyHash = hashEffectivePolicy(effectiveRules, config);
+  const matched: PolicyTrace["matchedRules"] = [];
 
   for (const rule of effectiveRules) {
-    if (matches(rule.when, capability, actor, config)) {
+    if (conditionMatches(rule.when, capability, actor, config)) {
       matched.push({
         id: rule.id,
         source: rule.source,
         effect: rule.effect,
         reason: rule.reason,
-      })
+      });
     }
-  }
-
-  // Most-restrictive resolution: deny > manual > review > allow. Seed from the
-  // first match so a lone allow rule is not silently overridden by the review
-  // default.
-  let finalRoute: PolicyTrace["finalRoute"] = EMPTY_TRACE_ROUTE
-  if (matched.length > 0) {
-    let bestEffect = matched[0]!.effect as PolicyTrace["finalRoute"]
-    let bestSev = EFFECT_SEVERITY[matched[0]!.effect as PolicyRule["effect"]] ?? 1
-    for (let i = 1; i < matched.length; i += 1) {
-      const sev = EFFECT_SEVERITY[matched[i]!.effect as PolicyRule["effect"]] ?? 1
-      if (sev > bestSev) {
-        bestEffect = matched[i]!.effect as PolicyTrace["finalRoute"]
-        bestSev = sev
-      }
-    }
-    finalRoute = bestEffect
   }
 
   return {
     effectivePolicyHash,
     matchedRules: matched,
-    finalRoute,
+    finalRoute: mostRestrictiveRoute(matched),
     mode: config.enforcementMode,
-  }
+  };
 }
 
 /** Project-sourced allow rules are rejected: project config cannot relax safety. */
 export function filterProjectAllowRules(rules: PolicyRule[]): PolicyRule[] {
-  return rules.filter((r) => !(r.source === "project" && r.effect === "allow"))
+  return rules.filter((r) => !(r.source === "project" && r.effect === "allow"));
 }
 
-/** Whether every field of a condition matches the observed facts. A missing
- *  condition (or `{ always: true }`) is a universal rule: it matches any
- *  request, which is why the loader only accepts that shape explicitly. */
-function matches(
-  cond: PolicyCondition | undefined,
-  cap: CapabilityAssessment | undefined,
-  actor: ActorContext | undefined,
-  config: ReviewerConfig,
-): boolean {
-  if (cond === undefined || cond.always === true) return true
-  if (cond.actionClass !== undefined) {
-    if (!Array.isArray(cond.actionClass) || cap === undefined) return false
-    if (!cond.actionClass.includes(cap.actionClass.value)) return false
+/** Most-restrictive resolution: deny > manual > review > allow. Seed from the
+ *  first match so a lone allow rule is not silently overridden by the review
+ *  default. */
+function mostRestrictiveRoute(
+  matched: PolicyTrace["matchedRules"],
+): PolicyTrace["finalRoute"] {
+  const [first, ...rest] = matched;
+  if (first === undefined) return EMPTY_TRACE_ROUTE;
+  let bestEffect = first.effect as PolicyTrace["finalRoute"];
+  let bestSev = EFFECT_SEVERITY[first.effect as PolicyRule["effect"]] ?? 1;
+  for (const rule of rest) {
+    const sev = EFFECT_SEVERITY[rule.effect as PolicyRule["effect"]] ?? 1;
+    if (sev > bestSev) {
+      bestEffect = rule.effect as PolicyTrace["finalRoute"];
+      bestSev = sev;
+    }
   }
-  if (cond.actorProfile !== undefined) {
-    if (!Array.isArray(cond.actorProfile) || actor === undefined) return false
-    if (!cond.actorProfile.includes(actor.profile.value)) return false
-  }
-  if (cond.writesWorkspace === true && cap?.writeEffects.workspaceWrite.value !== true) return false
-  if (cond.writesExternal === true && cap?.writeEffects.externalWrite.value !== true) return false
-  if (cond.writesTemporary === true && cap?.writeEffects.temporaryWrite.value !== true) return false
-  if (cond.deletion === true && cap?.writeEffects.deletion.value !== true) return false
-  if (cond.executesCode === true && cap?.executesCode.value !== true) return false
-  if (cond.createsAdHocCode === true && cap?.createsAdHocCode.value !== true) return false
-  // Capability facts, not the dominant action class, decide package-management
-  // matches: a command can execute code AND drive a package lifecycle at once
-  // (e.g. `bun install`), and requiring the single dominant class to be
-  // "package-management" would make the condition unmatchable for exactly the
-  // most dangerous variants.
-  if (cond.packageManagement === true && cap?.invokesPackageLifecycleScripts.value !== true)
-    return false
-  if (cond.gitMutation === true && cap?.git.possible.value !== true) return false
-  if (cond.networkObserved === true && cap?.network.observed.value !== true) return false
-  if (cond.credentialRead === true && cap?.credentialRead.value !== true) return false
-  if (cond.privilegeEscalation === true && cap?.process.privilegeEscalation.value !== true)
-    return false
-  if (cond.remoteEnabled === true && cap?.remote.enabled.value !== true) return false
-  if (cond.persistence === true && cap?.process.persistence.value !== true) return false
-  if (cond.repositoryTrust !== undefined) {
-    if (!Array.isArray(cond.repositoryTrust)) return false
-    if (!cond.repositoryTrust.includes(config.repositoryTrust)) return false
-  }
-  return true
+  return bestEffect;
 }
 
 /** Hash of everything that deterministically shapes a policy outcome: the
@@ -141,11 +95,14 @@ function matches(
  *  matrix and failure knobs, repository trust, enforcement/escalation modes,
  *  config degradation). Two runs that would enforce different thresholds or
  *  failure dispositions must not share the same "effective policy" identity. */
-export function hashEffectivePolicy(rules: PolicyRule[], config: ReviewerConfig): string {
+export function hashEffectivePolicy(
+  rules: PolicyRule[],
+  config: ReviewerConfig,
+): string {
   const rulesCanonical = rules
     .map((r) => `${r.id}:${r.effect}:${JSON.stringify(r.when ?? null)}`)
     .sort()
-    .join("|")
+    .join("|");
   const decisionConfig = JSON.stringify({
     confidenceThreshold: config.confidenceThreshold,
     minimumConfidence: config.riskPolicy.minimumConfidence,
@@ -156,52 +113,9 @@ export function hashEffectivePolicy(rules: PolicyRule[], config: ReviewerConfig)
     enforcementMode: config.enforcementMode,
     escalationMode: config.escalationMode,
     configDegraded: config.configDegraded?.length ?? 0,
-  })
+  });
   return createHash("sha256")
     .update(`${rulesCanonical}#${decisionConfig}`)
     .digest("hex")
-    .slice(0, 16)
+    .slice(0, 16);
 }
-
-/**
- * The conservative profile routing templates. These are NOT active by default
- * (observe mode ships with an empty rule set). They are documented here so the
- * engine can be tested against them and so enforce-mode users can opt into them.
- */
-export const PROFILE_TEMPLATES: PolicyRule[] = [
-  {
-    id: "read-only-workspace-write",
-    source: "builtin",
-    when: { actorProfile: ["read-only"], writesWorkspace: true },
-    effect: "manual",
-    reason: "read-only actor attempting workspace write",
-  },
-  {
-    id: "read-only-code-execution",
-    source: "builtin",
-    when: { actorProfile: ["read-only"], executesCode: true },
-    effect: "manual",
-    reason: "read-only actor attempting code execution",
-  },
-  {
-    id: "any-actor-package-untrusted",
-    source: "builtin",
-    when: { packageManagement: true, repositoryTrust: ["untrusted", "unknown"] },
-    effect: "manual",
-    reason: "package management in an untrusted or unknown repository",
-  },
-  {
-    id: "unknown-actor-remote-mutation",
-    source: "builtin",
-    when: { actorProfile: ["unknown"], remoteEnabled: true },
-    effect: "manual",
-    reason: "unknown actor attempting remote operation",
-  },
-  {
-    id: "unknown-actor-external-write",
-    source: "builtin",
-    when: { actorProfile: ["unknown"], writesExternal: true },
-    effect: "manual",
-    reason: "unknown actor attempting external write",
-  },
-]

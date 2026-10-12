@@ -21,7 +21,7 @@ System One runs are private and the harness refuses to export them.
 
 ## Validate without model calls
 
-From this directory, with Node 22+ and Bun 1.3+ installed:
+From this directory, with Node 22.18+ and Bun 1.3+ installed:
 
 ```sh
 node cli.mjs validate
