@@ -127,8 +127,7 @@ export const PINNED_BLOBS = {
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
     "91e3d8b4ef18becfd7d0bb66dd2b76b80368d343",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/capability/segment-heads.ts": "0b5cb93df6cd202e3901a057f5cbd63163642ff5",
+  "src/capability/segment-heads.ts": "c3ff33f0c995091bf9c32da79e259bc5c3e84929",
   "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
   "src/capability/sensitive-path-reads.ts":
     "abfae5e5adccfe21f419a9d4fe3ca077d7fa1573",

@@ -5,6 +5,7 @@ import { shellBasename } from "../shell-lexer.ts";
 import { TRANSPARENT_WRAPPERS } from "../shell-lexer-tables.ts";
 import type { ShellSegment, ShellToken } from "../shell-token.ts";
 import {
+  chrootCommandIndex,
   commandStart,
   skipWrapperArguments,
   timeoutCommandIndex,
@@ -20,7 +21,8 @@ import type { CapabilityFacts } from "./capability-facts.ts";
 
 /** Wrappers the lexer peels (sudo, nohup, ssh, …) must be detected on the
  *  original segment heads, because `effective` starts at the real executable
- *  after peeling. The heads are found with the walk's own wrapper skipping. */
+ *  after peeling. Wrapped commands are located with the walk's own option
+ *  skipping. */
 export function classifySegmentHeads(
   segments: ShellSegment[],
   facts: CapabilityFacts,
@@ -28,23 +30,39 @@ export function classifySegmentHeads(
   for (const segment of segments) classifySegmentHead(segment.tokens, facts);
 }
 
-/** Classify every head from the command start through the transparent
- *  wrappers the walk peels, so `sudo ssh …` and `nice ssh …` reach the
- *  remote-tool check. */
+/** Classify the head at the command start and each command it wraps, so
+ *  `sudo ssh …`, `busybox ssh …` and `chroot /r ssh …` reach the checks. */
 function classifySegmentHead(
   tokens: ShellToken[],
   facts: CapabilityFacts,
 ): void {
-  let k = commandStart(tokens);
-  while (k < tokens.length) {
+  let k: number | undefined = commandStart(tokens);
+  while (k !== undefined && k < tokens.length) {
     const head = shellBasename(elementAt(tokens, k, "tokens").value);
     classifyHead(tokens, k, head, facts);
-    if (!TRANSPARENT_WRAPPERS.has(head)) return;
-    k =
-      head === "timeout"
-        ? timeoutCommandIndex(tokens, k)
-        : skipWrapperArguments(tokens, k, head);
+    k = wrappedCommandIndex(tokens, k, head);
   }
+}
+
+/** Index of the command `head` wraps, as the effective-command walk peels
+ *  it, or undefined when `head` wraps none. */
+function wrappedCommandIndex(
+  tokens: ShellToken[],
+  k: number,
+  head: string,
+): number | undefined {
+  if (head === "timeout")
+    return tailStart(tokens, timeoutCommandIndex(tokens, k));
+  if (head === "busybox") return tailStart(tokens, k + 1);
+  if (head === "chroot")
+    return tailStart(tokens, chrootCommandIndex(tokens, k));
+  if (TRANSPARENT_WRAPPERS.has(head))
+    return skipWrapperArguments(tokens, k, head);
+  return undefined;
+}
+
+function tailStart(tokens: ShellToken[], start: number): number {
+  return start + commandStart(tokens.slice(start));
 }
 
 function classifyHead(

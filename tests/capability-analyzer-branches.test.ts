@@ -148,10 +148,26 @@ describe("analyzer hardening batch 6", () => {
     "sudo mosh host 'rm -rf /'",
     "sudo ssh host 'rm -rf /'",
     "env FOO=1 autossh host 'git push'",
+    "busybox ssh host 'rm -rf /'",
+    "chroot /r ssh host 'rm -rf /'",
+    "nice busybox ssh host 'rm -rf /'",
+    "sudo chroot /r ssh host 'rm -rf /'",
+    "busybox FOO=1 ssh host 'rm -rf /'",
   ])("%s", (command) => {
     const facts = capabilityProfile(command).split(" | ")[2] ?? "";
     expect(facts).toContain("remote.enabled");
     expect(facts).toContain("remote.mutationHint");
+  });
+
+  test.each([
+    ["busybox sudo ls", "process.privilegeEscalation"],
+    ["chroot /r sudo ls", "process.privilegeEscalation"],
+    ["nice sudo ls", "process.privilegeEscalation"],
+    ["busybox nohup ls", "process.persistence"],
+    ["env nohup ls", "process.persistence"],
+  ])("%s carries its wrapper fact", (command, fact) => {
+    const facts = capabilityProfile(command).split(" | ")[2] ?? "";
+    expect(facts).toContain(fact);
   });
 
   test("adds no remote facts", () => {
