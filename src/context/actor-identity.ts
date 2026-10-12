@@ -62,7 +62,10 @@ function resolveProfile(
   agentName: string | undefined,
   config: ReviewerConfig,
 ): Provenanced<ActorProfile> {
-  if (agentName !== undefined) {
+  if (
+    agentName !== undefined &&
+    Object.hasOwn(config.actorProfiles, agentName)
+  ) {
     const mapped = config.actorProfiles[agentName];
     if (mapped !== undefined) {
       return prov<ActorProfile>(mapped, "global-config", "confirmed");

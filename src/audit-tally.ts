@@ -42,6 +42,11 @@ export interface AuditTally {
 
 type AuditLine = Record<string, unknown>;
 
+/** A counts map whose keys are all plain entries, whatever their spelling. */
+export function emptyCounts(): Record<string, number> {
+  return Object.create(null) as Record<string, number>;
+}
+
 function bump(map: Record<string, number>, key: string): void {
   map[key] = (map[key] ?? 0) + 1;
 }

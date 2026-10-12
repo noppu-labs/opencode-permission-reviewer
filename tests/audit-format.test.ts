@@ -157,6 +157,43 @@ describe("audit summary counts", () => {
   });
 });
 
+describe("context hardening batch 11", () => {
+  test("counts each record", () => {
+    const file = join(directory, "audit.jsonl");
+    const lines = [
+      { ...identity, timestamp: "2026-01-01T00:00:00.000Z" },
+      {
+        ...identity,
+        timestamp: "2026-01-02T00:00:00.000Z",
+        permission: "constructor",
+        outcome: "__proto__",
+        riskLevel: "toString",
+      },
+      {
+        ...identity,
+        timestamp: "2026-01-03T00:00:00.000Z",
+        permission: "constructor",
+        outcome: "__proto__",
+      },
+    ].map((line) => JSON.stringify(line));
+    writeFileSync(file, `${lines.join("\n")}\n`);
+    const summary = readAuditSummary(file);
+    expect(Object.entries(summary.byOutcome)).toEqual([
+      ["allow", 1],
+      ["__proto__", 2],
+    ]);
+    expect(JSON.stringify(summary.byOutcome)).toBe('{"allow":1,"__proto__":2}');
+    expect(Object.entries(summary.byPermission)).toEqual([
+      ["bash", 1],
+      ["constructor", 2],
+    ]);
+    expect(Object.entries(summary.byRiskLevel)).toEqual([
+      ["(none)", 2],
+      ["toString", 1],
+    ]);
+  });
+});
+
 describe("audit path", () => {
   test("resolves the configured path, or the default one", () => {
     expect(

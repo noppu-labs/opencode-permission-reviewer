@@ -3,12 +3,15 @@ import type { Provenanced } from "../src/actor-context-types.ts";
 import { DEFAULT_CONFIG } from "../src/config.ts";
 import { resolveActorContext } from "../src/context/actor-resolver.ts";
 import type { ContextReader } from "../src/core/ports.ts";
+import { evaluatePolicy } from "../src/policy/policy-engine.ts";
 import type {
   MessageWithParts,
   PermissionRequest,
+  PolicyRule,
   ReviewerConfig,
 } from "../src/types.ts";
 import { request } from "./helpers.ts";
+import { capability } from "./policy-fixtures.ts";
 
 const CURRENT = "ses_current";
 const UNKNOWN: Provenanced<string | undefined> = {
@@ -354,4 +357,34 @@ describe("resolveActorContext actor identity", () => {
     );
     expect(calls).toEqual([]);
   });
+});
+
+describe("context hardening batch 11", () => {
+  const rules: PolicyRule[] = [
+    {
+      id: "unmapped",
+      source: "global",
+      when: { actorProfile: ["unknown"] },
+      effect: "manual",
+      reason: "unmapped",
+    },
+  ];
+
+  test.each(["build", "constructor", "toString", "valueOf", "__proto__"])(
+    "routes each agent: %s",
+    async (agent) => {
+      const { reader } = sessionReader(childAndParent);
+      const mapped = agent === "build";
+      const result = await resolveActorContext(
+        pending(TOOL),
+        [toolMessage({ agent, mode: "primary" }, [CALL])],
+        reader,
+        "/repo",
+        config,
+      );
+      const trace = evaluatePolicy(capability(), result.actor, config, rules);
+      expect(result.actor.profile.value).toBe(mapped ? "workspace" : "unknown");
+      expect(trace.finalRoute).toBe(mapped ? "review" : "manual");
+    },
+  );
 });
