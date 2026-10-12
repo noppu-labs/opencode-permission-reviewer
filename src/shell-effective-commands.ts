@@ -53,9 +53,7 @@ export function analyzeEffectiveCommands(
 /** The effective-command analysis plus the redirections that the segment and
  *  every segment of its command strings carry themselves, whether or not
  *  those segments yield an effective command (`exec > file` yields none). */
-interface SegmentRedirectionsAnalysis extends EffectiveCommandsAnalysis {
-  segmentRedirections: ShellRedirection[];
-}
+export type SegmentRedirectionsAnalysis = Omit<WalkSink, "budget">;
 
 /** `analyzeEffectiveCommands` from the same single walk and budget, with
  *  `segmentRedirections` as well. */

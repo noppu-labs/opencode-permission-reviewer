@@ -2,7 +2,6 @@ import { commandName, isOptionWord } from "./brake-arguments.ts";
 import {
   analyzeExecCommands,
   type ExecCommands,
-  execRemovesRoot,
   expressionDeletes,
 } from "./brake-find-exec.ts";
 import { targetsRoot } from "./brake-root-target.ts";
@@ -43,12 +42,10 @@ export function analyzeFind(
  * find expression rather than through a literal `rm` operand, so the rm lexer
  * does not see them. Detect them directly: when any search path resolves
  * to `/` and the expression deletes its results, the destruction is unmistakable.
- * An rm that an exec action runs is also judged like a top-level rm.
  */
 export function isRootFind({ paths, expression, exec }: FindCommand): boolean {
   return (
-    (paths.some(targetsRoot) && expressionDeletes(expression, exec.commands)) ||
-    execRemovesRoot(exec.commands)
+    paths.some(targetsRoot) && expressionDeletes(expression, exec.commands)
   );
 }
 

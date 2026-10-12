@@ -3,6 +3,7 @@ import {
   redirectTargetsBlockDevice,
 } from "./brake-block-device.ts";
 import { commandDestroysDevice } from "./brake-device-tools.ts";
+import { joinExecCommands } from "./brake-find-exec.ts";
 import {
   analyzeFind,
   type FindCommand,
@@ -13,28 +14,26 @@ import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
-import { analyzeSegmentRedirections } from "./shell-effective-commands.ts";
+import {
+  analyzeSegmentRedirections,
+  type SegmentRedirectionsAnalysis,
+} from "./shell-effective-commands.ts";
 import {
   type AnalysisBudget,
   lexSegmentsBounded,
   MAX_ANALYSIS_INPUT_CHARS,
   newAnalysisBudget,
 } from "./shell-lexer.ts";
-import type { ShellRedirection } from "./shell-redirections.ts";
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
 import type { PermissionRequest } from "./types.ts";
 
 /** One segment with its resolved effective commands, computed once per
  *  request and shared by every detector. */
-interface AnalyzedSegment {
+interface AnalyzedSegment
+  extends Pick<SegmentRedirectionsAnalysis, "segmentRedirections"> {
   segment: ShellSegment;
   effective: ShellToken[][];
   redirections: Redirection[][];
-  /** Redirections the segment and the segments of its command strings
-   *  carry, including those of a segment without a command. */
-  segmentRedirections: ShellRedirection[];
-  /** The segment's find commands, including those that exec actions run,
-   *  with the commands their exec actions run. */
   finds: FindCommand[];
 }
 
@@ -122,7 +121,9 @@ function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
 }
 
 /** Resolves one segment and the exec actions of its find commands, or
- *  returns `undefined` when any of those walks hits a limit. */
+ *  returns `undefined` when any of those walks hits a limit. The commands
+ *  the exec actions run join the segment's effective commands, so every
+ *  detector judges them like the segment's own. */
 function analyzeSegment(
   segment: ShellSegment,
   budget: AnalysisBudget,
@@ -131,11 +132,12 @@ function analyzeSegment(
   if (analysis.truncated) return undefined;
   const finds = analyzeFinds(analysis.commands, budget);
   if (finds === undefined) return undefined;
+  const all = joinExecCommands([analysis, ...finds.map(({ exec }) => exec)]);
   return {
     segment,
-    effective: analysis.commands,
-    redirections: analysis.redirections,
-    segmentRedirections: analysis.segmentRedirections,
+    effective: all.commands,
+    redirections: all.redirections,
+    segmentRedirections: all.segmentRedirections,
     finds,
   };
 }

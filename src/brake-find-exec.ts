@@ -1,7 +1,9 @@
 import { commandName } from "./brake-arguments.ts";
 import { hasRmFlags } from "./brake-rm-flags.ts";
-import { isRootRm } from "./brake-root-rm.ts";
-import { analyzeEffectiveCommands } from "./shell-effective-commands.ts";
+import {
+  analyzeSegmentRedirections,
+  type SegmentRedirectionsAnalysis,
+} from "./shell-effective-commands.ts";
 import type { AnalysisBudget } from "./shell-lexer.ts";
 import type { ShellToken } from "./shell-token.ts";
 
@@ -10,10 +12,7 @@ const EXEC_ACTIONS = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
 /** The commands a find expression's exec actions run, with their wrappers
  *  peeled like those of any shell command. `truncated` is true when a walk
  *  hit a limit of the request's analysis budget. */
-export interface ExecCommands {
-  commands: ShellToken[][];
-  truncated: boolean;
-}
+export type ExecCommands = SegmentRedirectionsAnalysis;
 
 export function expressionDeletes(
   expression: readonly ShellToken[],
@@ -23,12 +22,6 @@ export function expressionDeletes(
     expression.some((token) => token.value === "-delete") ||
     exec.some(isRecursiveRm)
   );
-}
-
-/** Whether an exec action runs an rm that the rm root rule blocks, whatever
- *  paths find searches. */
-export function execRemovesRoot(exec: readonly ShellToken[][]): boolean {
-  return exec.some(isRootRm);
 }
 
 /** Walks every exec action's argv under the shared `budget`. When `charged`,
@@ -43,8 +36,15 @@ export function analyzeExecCommands(
       ? [actionCommands(expression.slice(index + 1), budget, charged)]
       : [],
   );
+  return joinExecCommands(runs);
+}
+
+/** The walks of `runs` as one, in order. */
+export function joinExecCommands(runs: readonly ExecCommands[]): ExecCommands {
   return {
     commands: runs.flatMap((run) => run.commands),
+    redirections: runs.flatMap((run) => run.redirections),
+    segmentRedirections: runs.flatMap((run) => run.segmentRedirections),
     truncated: runs.some((run) => run.truncated),
   };
 }
@@ -59,11 +59,10 @@ function actionCommands(
   const start = words.findIndex(
     (word) => word.value !== "{" && word.value !== "}",
   );
-  if (start === -1) return { commands: [], truncated: false };
+  if (start === -1) return noCommands(false);
   const argv = execArgv(words, start);
-  if (charged && !chargeArgv(argv, budget))
-    return { commands: [], truncated: true };
-  return analyzeEffectiveCommands({ tokens: [...argv] }, budget);
+  if (charged && !chargeArgv(argv, budget)) return noCommands(true);
+  return analyzeSegmentRedirections({ tokens: [...argv] }, budget);
 }
 
 /** Charges one command per argv token, at least one, and reports whether
@@ -74,6 +73,10 @@ function chargeArgv(
 ): boolean {
   budget.remainingCommands -= Math.max(1, argv.length);
   return budget.remainingCommands > 0;
+}
+
+function noCommands(truncated: boolean): ExecCommands {
+  return { commands: [], redirections: [], segmentRedirections: [], truncated };
 }
 
 /** An `rm` that find runs is destructive when it is recursive: find hands it
