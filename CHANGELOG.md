@@ -9,8 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Development: the FTA maintainability cap is now 55 and the Biome
-  cognitive-complexity limit for non-test code is 12.
+- Development: Biome replaces ESLint and Prettier for linting and formatting.
+  FTA, knip, gitleaks, the pre-commit hooks and the Python tooling now run
+  locally and in CI. The limits are cognitive complexity 12 (tests 14), 600
+  lines per file (tests 800) and an FTA cap of 55 (tests not measured); see
+  `docs/DEVELOPMENT.md`.
 - Changes made in this fork are now licensed under the MIT License. Code from
   the upstream project remains under the Apache License 2.0, which now ships as
   `LICENSE-APACHE` alongside `NOTICE`. The package `license` field is
