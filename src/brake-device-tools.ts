@@ -1,4 +1,4 @@
-import { commandName } from "./brake-arguments.ts";
+import { commandName, isShortCluster } from "./brake-arguments.ts";
 import {
   isBlockDeviceTarget,
   redirectionWritesBlockDevice,
@@ -112,8 +112,4 @@ function ddWritesBlockDevice(tool: DeviceCommand): boolean {
   return tool.args.some(
     (t) => t.value.startsWith("of=") && isBlockDeviceTarget(t.value.slice(3)),
   );
-}
-
-function isShortCluster(value: string): boolean {
-  return value.startsWith("-") && !value.startsWith("--");
 }

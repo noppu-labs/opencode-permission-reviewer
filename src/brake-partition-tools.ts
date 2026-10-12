@@ -1,3 +1,4 @@
+import { isShortCluster } from "./brake-arguments.ts";
 import { SFDISK_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
 import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
@@ -59,10 +60,6 @@ function sgdiskDestroysPartitions(args: readonly ShellToken[]): boolean {
   );
   const deleteShort = args.some(({ value }) => endsWithDeleteLetter(value));
   return destructive || (deleteShort && args.some((t) => isAllDigits(t.value)));
-}
-
-function isShortCluster(value: string): boolean {
-  return value.startsWith("-") && !value.startsWith("--") && value.length > 1;
 }
 
 function endsWithDeleteLetter(value: string): boolean {

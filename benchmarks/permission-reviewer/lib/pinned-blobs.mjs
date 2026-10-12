@@ -47,7 +47,7 @@ export const PINNED_BLOBS = {
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
   "src/emergency-brake.ts": "30f14fc975622a1cc46107c39a511ae76913c214",
   "src/reviewed-command.ts": "61a7fdb0db48adcd05ef1f9a86f89700b41ed594",
-  "src/brake-arguments.ts": "4f9e33b37e7a631f058ab9f1663c513151de1593",
+  "src/brake-arguments.ts": "9e67d27ca7194e5dca9023a4e2265931263ed328",
   "src/brake-rm-flags.ts": "f01b8f6cce63f423cd457fe44ad37057073daa66",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-root-target.ts": "82548f17b0fc651c65cf30decb1e0d848d097a10",
@@ -59,14 +59,15 @@ export const PINNED_BLOBS = {
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-block-device.ts": "30299a9ed68dc2338159d6639022103d45754a0b",
   "src/brake-device-copy.ts": "86361409b3f260f93fd800b176819120ab3e1e6f",
-  "src/brake-partition-tools.ts": "b903bc7e9df06de35101faf5d10af4e334c0ccae",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/brake-partition-tools.ts": "9b72fd70b8ec77a1ab224bfafef1633310d01086",
   "src/brake-formatter-options.ts": "69339dc5d5e7f16bb99aaa94dee1704d38931914",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-format-tools.ts": "daf7a46a83231837f38a0c6f0b61e2bc62656991",
-  "src/brake-device-tools.ts": "d937ace3fa5e8aa7e8e6a55a618e3c7149b18677",
+  "src/brake-device-tools.ts": "000cc9528ad2b5dbf6e803182069fb519ebb66ad",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/brake-network-export.ts": "f44ec03d976cce0833d3e232b56a2924408c0888",
-  "src/gnu-long-options.ts": "a361e90071f964d4cddc3d2d3caadb7869d35419",
+  "src/gnu-long-options.ts": "9c16e9008f6350258900e887276139ef5e31ea25",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/gnu-long-option-tables.ts": "9f95312e02bc8952f7624d7a2c3d934f0b0b4626",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",

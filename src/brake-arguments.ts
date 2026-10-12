@@ -12,6 +12,11 @@ export function isOptionWord(value: string): boolean {
   return value.startsWith("-") && value.length > 1;
 }
 
+/** A short option word: one `-`, then at least one letter. */
+export function isShortCluster(value: string): boolean {
+  return isOptionWord(value) && !value.startsWith("--");
+}
+
 /** The words after a command's name, split at the first `--` (end of
  *  options): option words before it are options, every other word is an
  *  operand, and that `--` itself is neither. */

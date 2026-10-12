@@ -9,11 +9,9 @@ export interface LongOption {
   readonly id?: string;
 }
 
-interface ResolvedLongOption {
-  readonly name: string;
-  readonly argument: LongOptionArgument;
+type ResolvedLongOption = Pick<LongOption, "name" | "argument"> & {
   readonly inlineValue: boolean;
-}
+};
 
 /**
  * Resolves a `--name[=value]` token the way glibc's getopt_long does: an exact
