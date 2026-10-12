@@ -28,6 +28,7 @@ describe("deterministic emergency brake", () => {
     "env VAR=1 rm -rf /",
     "env - rm -rf /",
     "env -P /bin rm -rf /",
+    "env -- - rm -rf /",
     "doas rm -rf /",
     "command rm -rf /",
     "nice -n 5 rm -rf /",

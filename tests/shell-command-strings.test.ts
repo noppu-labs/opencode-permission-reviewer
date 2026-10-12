@@ -106,5 +106,11 @@ describe("analyzer hardening batch 3", () => {
     expect(commandsOf("env -u FOO rm")).toEqual([["rm"]]);
     expect(commandsOf("env -C /tmp rm")).toEqual([["rm"]]);
     expect(commandsOf("env -- rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -- - rm")).toEqual([["rm"]]);
+    expect(commandsOf("env -- - FOO=1 rm")).toEqual([["rm"]]);
+    expect(commandsOf("env - - rm")).toEqual([["-", "rm"]]);
+    expect(commandsOf("env -😀S 'rm -rf /' x")).toEqual(
+      commandsOf("env -S 'rm -rf /' x"),
+    );
   });
 });

@@ -85,10 +85,10 @@ export const PINNED_BLOBS = {
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/effective-command-walk.ts": "acde5b4f3c2f842d7dc5f1579cbb277734231636",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-wrapper-options.ts": "cc2731d01b315362deac64cfc76db6be97a86155",
+  "src/shell-wrapper-options.ts": "f325db8c81d62277a56248460f45b4eba343c19a",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-command-strings.ts": "0794d8de3dc08ebc7ac275f7a16f85806aad1751",
-  "src/env-split-string.ts": "4cdec13b5fe57399b1ad4289bd9c845f761d794c",
+  "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/ssh-remote-command.ts": "64cd51b44423ff524b709f619e90e5650200cc67",
   "src/shell-lexer.ts": "d62563cfdd2eb71dfaffd70c624fd0de1d05a301",

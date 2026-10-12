@@ -86,6 +86,19 @@ function skipAssignments(words: ShellToken[], start: number): number {
   return i;
 }
 
+/** The index after a `--` at `dashIndex`. A wrapper that reads a lone `-` as
+ *  an option ending its options also does so directly after the `--`. */
+function afterDoubleDash(
+  words: ShellToken[],
+  dashIndex: number,
+  wrapper: string,
+): number {
+  const next = words[dashIndex + 1];
+  if (next?.value === "-" && LONE_DASH_OPTION_WRAPPERS.has(wrapper))
+    return skipAssignments(words, dashIndex + 2);
+  return dashIndex + 1;
+}
+
 /** Skip the options of the transparent `wrapper` at `index` and the
  *  env-style VAR=value arguments that may follow it (e.g. `env FOO=bar …`),
  *  and return the index of the wrapped command. */
@@ -98,7 +111,7 @@ export function skipWrapperArguments(
   let i = index + 1;
   while (i < words.length) {
     const opt = elementAt(words, i, "tokens").value;
-    if (opt === "--") return i + 1;
+    if (opt === "--") return afterDoubleDash(words, i, wrapper);
     if (opt === "-" && LONE_DASH_OPTION_WRAPPERS.has(wrapper))
       return skipAssignments(words, i + 1);
     if (ASSIGNMENT.test(opt)) i += 1;

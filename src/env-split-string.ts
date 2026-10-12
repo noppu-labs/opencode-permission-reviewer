@@ -76,9 +76,9 @@ function envClusterStep(
   i: number,
   letters: string,
 ): EnvOptionStep {
-  const position = [...letters].findIndex((letter) =>
-    ENV_VALUE_OPTIONS.has(`-${letter}`),
-  );
+  const position = letters
+    .split("")
+    .findIndex((letter) => ENV_VALUE_OPTIONS.has(`-${letter}`));
   if (position === -1) return i + 1;
   const last = position === letters.length - 1;
   if (letters.charAt(position) === "S")
