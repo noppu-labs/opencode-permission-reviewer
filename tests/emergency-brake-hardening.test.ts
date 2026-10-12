@@ -536,3 +536,24 @@ describe("hardening batch 20", () => {
     "find . -exec sh -c 'cat x > out.log' \\;",
   ]);
 });
+
+describe("hardening batch 21", () => {
+  blocks("blocks each command, case %#", [
+    "find / -exec echo {} \\; -delete",
+    "find / -exec echo {} + -exec rm -r {} +",
+    "find / -ok ls {} \\; -exec rm -r {} \\;",
+  ]);
+
+  allows("allows each command, case %#", [
+    "find / -exec echo -exec rm -r {} \\;",
+    "find / -name x -exec grep -delete {} \\;",
+    "find / -name x -exec grep foo {} \\;",
+    `find .${" -exec x".repeat(7000)}`,
+  ]);
+
+  blocks(
+    "rejects each command, case %#",
+    [`find .${" -exec find".repeat(7000)}`],
+    limited,
+  );
+});

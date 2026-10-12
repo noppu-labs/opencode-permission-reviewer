@@ -1,8 +1,8 @@
 import { commandName, isOptionWord } from "./brake-arguments.ts";
 import {
-  analyzeExecCommands,
-  type ExecCommands,
+  analyzeFindExpression,
   expressionDeletes,
+  type FindActions,
 } from "./brake-find-exec.ts";
 import { targetsRoot } from "./brake-root-target.ts";
 import { elementAt } from "./element-at.ts";
@@ -19,8 +19,8 @@ const EXPRESSION_STARTS = new Set(["!", "("]);
 
 /** A find command split into its search paths and its expression, with the
  *  commands its exec actions run. */
-export interface FindCommand extends FindParts {
-  exec: ExecCommands;
+export interface FindCommand extends FindActions {
+  paths: readonly ShellToken[];
 }
 
 /** Splits a find command and walks its exec actions under the shared
@@ -33,8 +33,7 @@ export function analyzeFind(
 ): FindCommand | undefined {
   if (commandName(command) !== "find") return undefined;
   const { paths, expression } = splitFind(command);
-  const exec = analyzeExecCommands(expression, budget, nested);
-  return { paths, expression, exec };
+  return { paths, ...analyzeFindExpression(expression, budget, nested) };
 }
 
 /**
@@ -43,10 +42,8 @@ export function analyzeFind(
  * does not see them. Detect them directly: when any search path resolves
  * to `/` and the expression deletes its results, the destruction is unmistakable.
  */
-export function isRootFind({ paths, expression, exec }: FindCommand): boolean {
-  return (
-    paths.some(targetsRoot) && expressionDeletes(expression, exec.commands)
-  );
+export function isRootFind(find: FindCommand): boolean {
+  return find.paths.some(targetsRoot) && expressionDeletes(find);
 }
 
 interface FindParts {
