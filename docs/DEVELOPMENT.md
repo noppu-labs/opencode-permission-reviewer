@@ -44,9 +44,9 @@ are ignored by ID (see "Ignored audit advisories").
 | yamllint (`--strict`) | YAML style | `.yamllint.yaml` |
 | markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
-| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (12) and `noExcessiveLinesPerFile` (600); the test directories get their own limits, see "Test files" | `biome.jsonc` |
+| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` and `noExcessiveLinesPerFile`; limits per directory are in "Test files" | `biome.jsonc` |
 | `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
-| FTA | Maintainability score per file, cap 55, for everything except the test directories | `fta.json` |
+| FTA | Maintainability score per file, for everything except the test directories; cap in "Test files" | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
 | `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
 | ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml` |
@@ -112,7 +112,7 @@ keeps the defaults.
   path-scoped allowlist (`.gitleaks.toml`), on the staged diff and on the whole tree in CI, so it
   stays the secret check.
 - FTA: in test files the score mostly tracks a cyclomatic cliff (two or more branch constructs put
-  a file at 55-75 whatever its size), so the cap rewarded loop rewrites rather than simpler tests.
+  a file at about 55-75 whatever its size), so the cap rewarded loop rewrites rather than simpler tests.
 
 The override leaves `tests/live-fixture` excluded and changes no other rule. Source, scripts and the
 benchmark library (`benchmarks/permission-reviewer/lib`) keep all four rules at the defaults.
