@@ -73,6 +73,7 @@ describe("deterministic emergency brake", () => {
     "ssh host rm -rf /",
     "ssh -i /key user@host rm -rf /",
     "ssh -vp 2222 user@host rm -rf /",
+    "ssh -- host rm -rf /",
     "ssh host 'sudo rm -rf /'",
     "busybox rm -rf /",
     "/bin/busybox rm -rf /",

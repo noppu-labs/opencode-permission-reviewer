@@ -3,7 +3,11 @@
 import { basename } from "node:path";
 import { elementAt } from "./element-at.ts";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
-import { sshValueOption } from "./ssh-value-options.ts";
+import {
+  sshDestinationIndex,
+  sshRemoteCommandIndex,
+  sshValueOption,
+} from "./ssh-value-options.ts";
 
 export function findSshIndex(tokens: ReadonlyArray<string>): number {
   return tokens.findIndex((token) => basename(token) === "ssh");
@@ -19,7 +23,7 @@ export interface SshInvocation {
   remoteCommand: string;
 }
 
-/** The value options scanned before the destination; a value can be missing. */
+/** The value options scanned around the destination; a value can be missing. */
 type SshOptions = {
   [K in "port" | "identityFile" | "strictHostKeyChecking"]?:
     | SshInvocation[K]
@@ -47,23 +51,33 @@ export function parseSsh(
   };
 }
 
-/** Options up to the destination, the destination, and the index where the
- *  remote command starts. Without a destination the tokens ran out. */
+/** The options on either side of the destination, the destination, and the
+ *  index where the remote command starts. Without a destination the tokens
+ *  ran out. */
 function scanSshArguments(
   tokens: ReadonlyArray<string>,
   sshIndex: number,
 ): { destination: string | undefined; index: number; options: SshOptions } {
   const options: SshOptions = {};
-  let index = sshIndex + 1;
-  while (index < tokens.length) {
+  const destination = sshDestinationIndex(tokens, sshIndex + 1);
+  const remote = sshRemoteCommandIndex(tokens, destination);
+  recordSshOptions(tokens, sshIndex + 1, destination.index, options);
+  recordSshOptions(tokens, destination.index + 1, remote, options);
+  return { destination: tokens[destination.index], index: remote, options };
+}
+
+/** Records the value options in `tokens[start..end)`; a `--` there ends them. */
+function recordSshOptions(
+  tokens: ReadonlyArray<string>,
+  start: number,
+  end: number,
+  options: SshOptions,
+): void {
+  for (let index = start; index < end; ) {
     const token = elementAt(tokens, index, "tokens");
-    if (token === "--")
-      return { destination: tokens[index + 1], index: index + 2, options };
-    if (!token.startsWith("-") || token === "-")
-      return { destination: token, index: index + 1, options };
-    index += consumeSshOption(token, tokens[index + 1], options);
+    index +=
+      token === "--" ? 1 : consumeSshOption(token, tokens[index + 1], options);
   }
-  return { destination: undefined, index, options };
 }
 
 /** Records a value-taking option and returns how many tokens it spans. */

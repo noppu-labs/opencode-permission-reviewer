@@ -178,3 +178,66 @@ describe("cat stdin source", () => {
     expect(catSource(tokens)).toBe(expected);
   });
 });
+
+const SSH_BATCH_5_CASES: ReadonlyArray<
+  [string[], ReturnType<typeof parseSsh>]
+> = [
+  [
+    ["ssh", "host", "-p", "2222", "ls"],
+    { destination: "host", host: "host", port: "2222", remoteCommand: "ls" },
+  ],
+  [
+    ["ssh", "host", "-i", "k", "-o", "StrictHostKeyChecking=no", "ls"],
+    {
+      destination: "host",
+      host: "host",
+      identityFile: "k",
+      strictHostKeyChecking: "no",
+      remoteCommand: "ls",
+    },
+  ],
+  [
+    ["ssh", "u@h", "-p2222", "-t", "ls", "-p", "1"],
+    {
+      destination: "u@h",
+      host: "h",
+      user: "u",
+      port: "2222",
+      remoteCommand: "ls -p 1",
+    },
+  ],
+  [
+    ["ssh", "--", "host", "-p", "2222", "ls"],
+    { destination: "host", host: "host", remoteCommand: "-p 2222 ls" },
+  ],
+  [
+    ["ssh", "host", "--", "-p", "2222"],
+    { destination: "host", host: "host", remoteCommand: "-p 2222" },
+  ],
+  [
+    ["ssh", "host", "-p", "2222", "--", "-t", "ls"],
+    { destination: "host", host: "host", port: "2222", remoteCommand: "-t ls" },
+  ],
+  [
+    ["ssh", "--", "host", "--", "ls"],
+    { destination: "host", host: "host", remoteCommand: "-- ls" },
+  ],
+  [
+    ["ssh", "-p", "22", "--", "host", "ls"],
+    { destination: "host", host: "host", port: "22", remoteCommand: "ls" },
+  ],
+  [
+    ["ssh", "host", "-v"],
+    { destination: "host", host: "host", remoteCommand: "" },
+  ],
+  [
+    ["ssh", "host", "-", "ls"],
+    { destination: "host", host: "host", remoteCommand: "- ls" },
+  ],
+];
+
+describe("evidence hardening batch 5", () => {
+  test.each(SSH_BATCH_5_CASES)("records each case %p", (tokens, expected) => {
+    expect(parseSsh(tokens, findSshIndex(tokens))).toStrictEqual(expected);
+  });
+});
