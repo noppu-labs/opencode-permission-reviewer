@@ -1,4 +1,4 @@
-import { afterEach, expect, spyOn, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { OpenCodeEvent } from "@opencode/client";
 import { V2AskDecisions } from "../src/opencode/v2/event-codec.ts";
 import { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
@@ -201,4 +201,89 @@ test("V2 permissions carry the host agent only as a hint and never trust a suppl
   expect(Object.keys(hinted.request.metadata)).toEqual(["path", "hostAgent"]);
   expect(hinted.request.metadata.hostAgent).toBe("build");
   expect(input.metadata.hostAgent).toBe("plan");
+});
+
+describe("host hardening batch 13", () => {
+  const valid = { id: "form_bad", sessionID: "ses_main", title: "Scope" };
+  const malformed: Array<[string, unknown]> = [
+    ["empty fields", { ...valid, fields: [] }],
+    ["non-object field", { ...valid, fields: ["one"] }],
+    ["null field", { ...valid, fields: [null] }],
+    ["non-array fields", { ...valid, fields: "one" }],
+    ["missing fields", valid],
+    ["non-string session", { ...valid, sessionID: 7, fields: [field("one")] }],
+    ["non-string id", { ...valid, id: 7, fields: [field("one")] }],
+    ["non-string title", { ...valid, title: 7, fields: [field("one")] }],
+    ["non-string key", { ...valid, fields: [{ key: 7 }] }],
+    [
+      "non-string field title",
+      { ...valid, fields: [{ key: "one", title: 7 }] },
+    ],
+    ["non-array options", { ...valid, fields: [{ key: "one", options: 1 }] }],
+    ["null option", { ...valid, fields: [{ key: "one", options: [null] }] }],
+    ["array form", [valid]],
+    ["no form", undefined],
+  ];
+
+  test.each(malformed)("drops each event: %s", (_name, form) => {
+    const registry = forms();
+    registry.send({
+      type: "form.created",
+      data: form === undefined ? {} : { form },
+      location: { directory: WORKSPACE },
+    });
+    registry.replied("form_bad", { one: "no" });
+    registry.created("form_ok", [field("one")]);
+    registry.replied("form_ok", { one: "yes" });
+    expect(registry.answers()).toEqual([
+      { question: "Scope: one", answer: "yes" },
+    ]);
+  });
+
+  test.each([
+    ["no data", {}],
+    ["null data", { data: null }],
+    ["array data", { data: [] }],
+    ["non-string id", { data: { id: 7, sessionID: "ses_main", answer: {} } }],
+    [
+      "non-string session",
+      { data: { id: "form_ok", sessionID: 7, answer: {} } },
+    ],
+    [
+      "array answer",
+      { data: { id: "form_ok", sessionID: "ses_main", answer: [] } },
+    ],
+    ["missing answer", { data: { id: "form_ok", sessionID: "ses_main" } }],
+  ])("drops each settle event: %s", (_name, extra) => {
+    const registry = forms();
+    registry.created("form_ok", [field("one")]);
+    registry.send({
+      type: "form.replied",
+      ...extra,
+      location: { directory: WORKSPACE },
+    });
+    expect(registry.answers()).toEqual([]);
+    registry.replied("form_ok", { one: "yes" });
+    expect(registry.answers()).toEqual([
+      { question: "Scope: one", answer: "yes" },
+    ]);
+  });
+});
+
+describe("host hardening batch 16", () => {
+  test("native form replies keep a field with no reply unanswered", () => {
+    const form = forms();
+    form.created("form_own", [
+      field("constructor"),
+      field("toString"),
+      field("ok"),
+    ]);
+    form.replied("form_own", { ok: "yes" });
+    expect(form.answers()).toEqual([
+      {
+        question: "Scope: constructor | Scope: toString | Scope: ok",
+        answer: "Unanswered | Unanswered | yes",
+      },
+    ]);
+  });
 });

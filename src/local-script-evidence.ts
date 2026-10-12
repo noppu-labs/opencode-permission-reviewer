@@ -76,11 +76,14 @@ function unlocatedEvidence(
   };
 }
 
+/** `rootDirectory` is the approved evidence root, which can sit above
+ *  `directory` (package-script expansion passes the session directory). */
 export async function enrichLocalScriptEvidence(
   request: PermissionRequest,
   directory: string,
   worktree: string,
   maxChars: number,
+  rootDirectory: string = directory,
 ): Promise<LocalScriptEnrichmentResult> {
   if (request.permission !== "bash") return { text: "" };
   const segments = shellCommandSegmentsWithDirectory(
@@ -102,7 +105,7 @@ export async function enrichLocalScriptEvidence(
         await includeEvidenceFile(
           script.path,
           segment.directory ?? directory,
-          directory,
+          rootDirectory,
           worktree,
           maxChars,
         );

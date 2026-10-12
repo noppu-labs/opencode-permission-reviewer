@@ -2,7 +2,7 @@
 
 import type { MessageWithParts, PermissionToolSource } from "../types.ts";
 import { stableJson, truncate } from "./prompt-budget.ts";
-import { isSyntheticPromptPart } from "./synthetic-parts.ts";
+import { isSyntheticPart } from "./synthetic-parts.ts";
 
 /** Part kinds that carry no reviewable content. */
 const SILENT_PART_TYPES = new Set(["step-start", "step-finish", "snapshot"]);
@@ -50,7 +50,7 @@ export function messageSummary(
   const id = typeof message.info.id === "string" ? message.info.id : "unknown";
   const parts = message.parts
     .map((part) => {
-      if (role === "user" && isSyntheticPromptPart(part)) return undefined;
+      if (role === "user" && isSyntheticPart(part)) return undefined;
       return partSummary(part, maxPartChars);
     })
     .filter((part): part is string => Boolean(part));

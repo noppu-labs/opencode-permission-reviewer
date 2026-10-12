@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { analyzeBashCommand } from "../src/context/command-evidence.ts";
+import { sourceCommand } from "../src/evidence/source-command.ts";
 import { reviewedCommand } from "../src/reviewed-command.ts";
 import { request } from "./helpers.ts";
 
@@ -45,6 +46,12 @@ describe("the reviewed command text", () => {
     expect(
       reviewedCommand(withMetadata(undefined, ["echo a", 7, null, "echo b"])),
     ).toBe("echo a\necho b");
+  });
+
+  test("the evidence text skips patterns that are not strings", () => {
+    expect(
+      sourceCommand(withMetadata(undefined, ["echo a", 7, null, "echo b"])),
+    ).toBe("echo a ; echo b");
   });
 
   test("no patterns give an empty string", () => {

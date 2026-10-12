@@ -1,7 +1,13 @@
 // Command-head and wrapper-option skipping for the effective-command walk: keywords, VAR=value assignments, value-taking options and getopt clusters.
 
 import { elementAt } from "./element-at.ts";
-import { SHELL_KEYWORDS, VALUE_OPTIONS } from "./shell-lexer-tables.ts";
+import { CHROOT_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
+import { resolveGnuLongOption } from "./gnu-long-options.ts";
+import {
+  LONE_DASH_OPTION_WRAPPERS,
+  SHELL_KEYWORDS,
+  VALUE_OPTIONS,
+} from "./shell-lexer-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
@@ -16,12 +22,7 @@ export function commandStart(words: ShellToken[]): number {
     SHELL_KEYWORDS.has(elementAt(words, i, "tokens").value)
   )
     i += 1;
-  while (
-    i < words.length &&
-    ASSIGNMENT.test(elementAt(words, i, "tokens").value)
-  )
-    i += 1;
-  return i;
+  return skipAssignments(words, i);
 }
 
 function valueOptionsOf(wrapper: string): ReadonlySet<string> {
@@ -37,10 +38,19 @@ export function timeoutCommandIndex(words: ShellToken[], i: number): number {
   return skipOptions(words, i + 1, valueOptionsOf("timeout")) + 1;
 }
 
-/** chroot [OPTION]... NEWROOT [COMMAND [ARG]...]: skip options, then the
- *  NEWROOT token, and return the index of the real command tail. */
+/** chroot [OPTION]... NEWROOT [COMMAND [ARG]...]: skip options (long only,
+ *  getopt_long rules), then the NEWROOT token, and return the index of the
+ *  real command tail. */
 export function chrootCommandIndex(words: ShellToken[], i: number): number {
-  return skipOptions(words, i + 1, NO_VALUE_OPTIONS) + 1;
+  let j = i + 1;
+  while (j < words.length) {
+    const opt = elementAt(words, j, "tokens").value;
+    if (opt === "--") return j + 2;
+    if (!opt.startsWith("-") || opt.length <= 1) return j + 1;
+    const long = resolveGnuLongOption(opt, CHROOT_LONG_OPTIONS);
+    j += long?.argument === "required" && !long.inlineValue ? 2 : 1;
+  }
+  return j + 1;
 }
 
 /** Skip options up to the first operand, or past a `--`, and return its
@@ -60,6 +70,30 @@ function skipOptions(
   return j;
 }
 
+/** Skip the VAR=value arguments from `start` and return the next index. */
+function skipAssignments(words: ShellToken[], start: number): number {
+  let i = start;
+  while (
+    i < words.length &&
+    ASSIGNMENT.test(elementAt(words, i, "tokens").value)
+  )
+    i += 1;
+  return i;
+}
+
+/** A wrapper that reads a lone `-` as an option ending its options also does
+ *  so directly after the `--`. */
+function afterDoubleDash(
+  words: ShellToken[],
+  dashIndex: number,
+  wrapper: string,
+): number {
+  const next = words[dashIndex + 1];
+  if (next?.value === "-" && LONE_DASH_OPTION_WRAPPERS.has(wrapper))
+    return skipAssignments(words, dashIndex + 2);
+  return dashIndex + 1;
+}
+
 /** Skip the options of the transparent `wrapper` at `index` and the
  *  env-style VAR=value arguments that may follow it (e.g. `env FOO=bar …`),
  *  and return the index of the wrapped command. */
@@ -72,7 +106,9 @@ export function skipWrapperArguments(
   let i = index + 1;
   while (i < words.length) {
     const opt = elementAt(words, i, "tokens").value;
-    if (opt === "--") return i + 1;
+    if (opt === "--") return afterDoubleDash(words, i, wrapper);
+    if (opt === "-" && LONE_DASH_OPTION_WRAPPERS.has(wrapper))
+      return skipAssignments(words, i + 1);
     if (ASSIGNMENT.test(opt)) i += 1;
     else if (opt.startsWith("-") && opt.length > 1)
       i = skipWrapperOption(opt, i, valueOpts);

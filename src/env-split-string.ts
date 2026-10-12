@@ -69,14 +69,16 @@ function longEnvOptionStep(
   return ENV_VALUE_OPTIONS.has(value) ? i + 2 : i + 1;
 }
 
-/** The first S, u, C or P letter decides the cluster; other letters are
- *  flags. */
+/** The first letter that `ENV_VALUE_OPTIONS` lists decides the cluster;
+ *  other letters are flags. */
 function envClusterStep(
   tokens: ShellToken[],
   i: number,
   letters: string,
 ): EnvOptionStep {
-  const position = letters.search(/[SuCP]/);
+  const position = letters
+    .split("")
+    .findIndex((letter) => ENV_VALUE_OPTIONS.has(`-${letter}`));
   if (position === -1) return i + 1;
   const last = position === letters.length - 1;
   if (letters.charAt(position) === "S")

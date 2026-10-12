@@ -365,15 +365,24 @@ console.log((await enrichGitEvidence(${JSON.stringify(input)}, process.cwd(), 80
     }
   }, 30_000);
 
-  test("a --repo override is the push destination, not the named remote", async () => {
+  test("records each destination", async () => {
     const directory = await repository();
     await addRemote(
       directory,
       "origin",
       "https://example.invalid/upstream.git",
     );
-    for (const command of [
+    const both = await enrich(
+      directory,
       "git push --repo https://override.example.invalid/x.git origin main",
+      24_000,
+    );
+    expect(both.text).toContain(
+      '"input": "https://override.example.invalid/x.git"',
+    );
+    expect(both.text).toContain('"input": "origin"');
+    expect(both.text).toContain('"kind": "configured-remote"');
+    for (const command of [
       "git push --repo=https://override.example.invalid/x.git main",
       "git push main --repo=https://override.example.invalid/x.git",
     ]) {

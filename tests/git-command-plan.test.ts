@@ -194,6 +194,39 @@ const PLANS: Array<[string, Partial<PlannedGitActions> | undefined]> = [
     },
   ],
   [
+    "git --namespace ns push https://example.invalid/x.git main",
+    {
+      commands: ["push"],
+      remoteCandidates: ["https://example.invalid/x.git"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
+    "git --attr-source HEAD push origin",
+    {
+      commands: ["push"],
+      remoteCandidates: ["origin"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
+    "git --config-env k=ENV push origin",
+    {
+      commands: ["push"],
+      remoteCandidates: ["origin"],
+      directoryReason:
+        "Git repository or configuration overrides are unresolved",
+    },
+  ],
+  [
+    "git --exec-path push origin",
+    {
+      commands: ["push"],
+      remoteCandidates: ["origin"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
     "git -c remote.origin.url=https://x push origin",
     {
       commands: ["push"],
@@ -279,7 +312,7 @@ const PLANS: Array<[string, Partial<PlannedGitActions> | undefined]> = [
     "git push --repo upstream origin",
     {
       commands: ["push"],
-      remoteCandidates: ["upstream"],
+      remoteCandidates: ["upstream", "origin"],
       executionDirectory: "/work/repo",
     },
   ],
@@ -287,6 +320,22 @@ const PLANS: Array<[string, Partial<PlannedGitActions> | undefined]> = [
     "git push --repo=upstream origin",
     {
       commands: ["push"],
+      remoteCandidates: ["upstream", "origin"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
+    "git push --repo=upstream",
+    {
+      commands: ["push"],
+      remoteCandidates: ["upstream"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
+    "git fetch --repo upstream origin",
+    {
+      commands: ["fetch"],
       remoteCandidates: ["upstream"],
       executionDirectory: "/work/repo",
     },

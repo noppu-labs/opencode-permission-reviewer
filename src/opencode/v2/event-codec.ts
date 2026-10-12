@@ -4,13 +4,15 @@ import {
   AskDecisionRegistry,
   type AskDecisionSource,
 } from "../../context/ask-decisions.ts";
+import { isRecord } from "../../is-record.ts";
+import {
+  type KeptForm as Created,
+  type KeptField as Field,
+  formCreated,
+  formSettled,
+  type FormSettled as Settled,
+} from "./form-event-shape.ts";
 
-type Created = Extract<OpenCodeEvent, { type: "form.created" }>["data"]["form"];
-type Field = Created["fields"][number];
-type Settled = Extract<
-  OpenCodeEvent,
-  { type: "form.replied" } | { type: "form.cancelled" }
->;
 type Answer = Extract<
   OpenCodeEvent,
   { type: "form.replied" }
@@ -25,7 +27,9 @@ function optionLabel(field: Field, value: unknown): string | undefined {
 }
 
 function fieldAnswers(field: Field, answer: Answer): string[] {
-  const value = answer[field.key];
+  const value = Object.hasOwn(answer, field.key)
+    ? answer[field.key]
+    : undefined;
   if (value === undefined) return [];
   const values = Array.isArray(value) ? value : [value];
   return values.map((value) => optionLabel(field, value) ?? String(value));
@@ -41,9 +45,17 @@ export class V2AskDecisions implements AskDecisionSource {
       return;
     const now = Date.now();
     this.expirePending(now);
-    if (event.type === "form.created") this.created(event.data.form, now);
-    else if (event.type === "form.replied" || event.type === "form.cancelled")
-      this.settled(event);
+    if (event.type === "form.created") {
+      const data: unknown = event.data;
+      const form = formCreated(isRecord(data) ? data.form : undefined);
+      if (form) this.created(form, now);
+    } else if (
+      event.type === "form.replied" ||
+      event.type === "form.cancelled"
+    ) {
+      const settled = formSettled(event);
+      if (settled) this.settled(settled);
+    }
   }
 
   recentFor(sessionIDs: string[], limit?: number): AskDecision[] {
@@ -57,22 +69,17 @@ export class V2AskDecisions implements AskDecisionSource {
 
   private created(form: Created, now: number): void {
     if (!form.sessionID.startsWith("ses_") || this.pending.has(form.id)) return;
-    if (JSON.stringify(form).length > 64_000) return;
     if (this.pending.size >= 128) {
       const oldest = this.pending.keys().next();
       if (!oldest.done) this.pending.delete(oldest.value);
     }
-    const bounded: Created = {
-      ...form,
-      fields: [form.fields[0], ...form.fields.slice(1, 32)],
-    };
-    this.pending.set(form.id, { form: bounded, at: now });
+    this.pending.set(form.id, { form, at: now });
     this.registry.observe({
       type: "question.asked",
       properties: {
         id: form.id,
         sessionID: form.sessionID,
-        questions: bounded.fields.map((field) => ({
+        questions: form.fields.map((field) => ({
           question: `${form.title}: ${field.title ?? field.key}`,
         })),
       },

@@ -31,7 +31,12 @@ export const ENV_VALUE_OPTIONS = new Set([
   "--split-string",
   "-C",
   "--chdir",
+  "-P",
 ]);
+
+/** Wrappers that read a lone `-` as an option ending their options: env's
+ *  `-` means `-i`, and the command (after any assignments) follows it. */
+export const LONE_DASH_OPTION_WRAPPERS: ReadonlySet<string> = new Set(["env"]);
 
 /**
  * Wrapper short options that consume the next token as their value. Only flags

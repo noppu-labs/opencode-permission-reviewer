@@ -42,6 +42,12 @@ export interface AuditTally {
 
 type AuditLine = Record<string, unknown>;
 
+/** Prototype-less, so every tallied name is an own key and none resolves to an
+ *  inherited member. */
+export function emptyCounts(): Record<string, number> {
+  return Object.create(null) as Record<string, number>;
+}
+
 function bump(map: Record<string, number>, key: string): void {
   map[key] = (map[key] ?? 0) + 1;
 }

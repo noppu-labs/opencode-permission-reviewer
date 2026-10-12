@@ -1,6 +1,6 @@
 // The git subcommand of a command and whether that invocation is one of the subcommand's mutating forms.
 
-import { elementAt } from "../element-at.ts";
+import { gitSubcommandIndex } from "../git-global-options.ts";
 import type { ShellToken } from "../shell-token.ts";
 import {
   BRANCH_LIST_OPTIONS,
@@ -9,35 +9,19 @@ import {
   TAG_LIST_OPTIONS,
 } from "./bash-command-tables.ts";
 
-/** Resolve a git subcommand from the token stream, skipping global git flags
- *  (`-C <path>`, `-c <cfg>`, `--git-dir`, …) so `git -C /repo push` still
- *  detects the `push` mutation. */
+/** Resolve a git subcommand from the token stream, skipping global git
+ *  options and their separate values (see `src/git-global-options.ts`), so
+ *  `git -C /repo push` still detects the `push` mutation. */
 export function gitSubcommandOf(cmd: ShellToken[]): {
   sub?: string;
   index?: number;
 } {
-  let index = 1;
-  while (index < cmd.length) {
-    const value = elementAt(cmd, index, "cmd").value;
-    if (
-      value === "-C" ||
-      value === "-c" ||
-      value === "--git-dir" ||
-      value === "--work-tree" ||
-      value === "--namespace" ||
-      value === "--exec-path" ||
-      value === "--super-prefix"
-    ) {
-      index += 2;
-      continue;
-    }
-    if (value.startsWith("-") && value.length > 1) {
-      index += 1;
-      continue;
-    }
-    return { sub: value, index };
-  }
-  return {};
+  const index = gitSubcommandIndex(
+    cmd.map((token) => token.value),
+    0,
+  );
+  const sub = cmd[index]?.value;
+  return sub === undefined ? {} : { sub, index };
 }
 
 /** Distinguish the common read-only forms of Git subcommands that also have

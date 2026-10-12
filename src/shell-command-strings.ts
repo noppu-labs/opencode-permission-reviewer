@@ -1,5 +1,6 @@
 // `-c`/`--command` command-string search: shells take the script after the option cluster, su and script take a getopt value.
 
+import { isShortCluster } from "./brake-arguments.ts";
 import { elementAt } from "./element-at.ts";
 import { SHELL_BINARIES, SU_BINARIES } from "./shell-lexer-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
@@ -74,10 +75,6 @@ function longCommandValue(
   if (t === "--command") return next;
   if (t.startsWith("--command=")) return t.slice("--command=".length);
   return undefined;
-}
-
-function isShortCluster(t: string): boolean {
-  return t.startsWith("-") && !t.startsWith("--") && t.length > 1;
 }
 
 /** Shells treat every letter in -ce/-xec as a flag: the script is the first

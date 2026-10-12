@@ -8,6 +8,9 @@
  * It deliberately does NOT expand variables, globs, command substitutions,
  * heredocs, or arithmetic. Those remain the model reviewer's job; the brake
  * is only a last line of defense for *unmistakable* literal destruction.
+ * The command a substitution runs is still lexed: an unquoted `$(` splits at
+ * its parentheses, and a backtick form or a `$(` inside double quotes adds
+ * the segments of its body after the segment holding it.
  */
 
 import {
@@ -16,12 +19,15 @@ import {
   flushToken,
   type LexBudget,
   type LexState,
+  MAX_SUBSTITUTION_CHARS,
+  type SubstitutionBudget,
 } from "./shell-lex-state.ts";
 import {
   lexDoubleQuoted,
   lexSingleQuoted,
   openQuote,
 } from "./shell-quote-scan.ts";
+import { substitutionAt } from "./shell-substitution.ts";
 import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
 
 const SEPARATORS = new Set([";", "|", "&", "\n", "\r", "(", ")"]);
@@ -110,22 +116,56 @@ function lexUnquoted(lex: LexState, c: string): void {
   appendUnquoted(lex, c);
 }
 
+/** Lex the body of a substitution that opens at the current character
+ *  into segments of its own, under the same budget. The character itself is
+ *  still scanned as part of the enclosing word. */
+function lexSubstitution(lex: LexState, budget: SubstitutionBudget): void {
+  if (lex.index < lex.substitutionEnd) return;
+  const body = substitutionAt(
+    lex.command,
+    lex.index,
+    lex.inDouble,
+    lex.index < lex.arithmeticEnd,
+  );
+  if (body === undefined) return;
+  if (body.kind === "arithmetic") {
+    lex.arithmeticEnd = body.end;
+    return;
+  }
+  lex.substitutionEnd = body.end;
+  budget.substitutionCharsRemaining -= body.text.length;
+  if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
+  else {
+    for (const segment of lexSegments(body.text, budget))
+      lex.substitutions.push(segment);
+  }
+  if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
+}
+
 /**
  * Tokenize `command` into logical segments (one per sub-command separated by
  * `;`, `|`, `&`, or newline) with quote-aware, comment-aware grouping.
- * `state.tokensRemaining` (when given) is decremented per token and stops
- * the scan at zero: callers that must not miss tail content use
- * `lexSegmentsBounded` and treat the stop as a truncation fact.
+ * `state` is the scan budget, with no token cap by default. Running out of
+ * tokens or substitution characters stops the scan; callers that must not
+ * miss tail content use `lexSegmentsBounded` and treat the stop as a
+ * truncation fact.
  */
 export function lexSegments(
   command: string,
-  state?: LexBudget,
+  state: LexBudget = {
+    tokensRemaining: Number.POSITIVE_INFINITY,
+    substitutions: "lex",
+    substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
+  },
 ): ShellSegment[] {
   const lex: LexState = {
     command,
     budget: state,
     index: 0,
     segments: [],
+    substitutions: [],
+    substitutionEnd: 0,
+    arithmeticEnd: 0,
     tokens: [],
     value: "",
     raw: "",
@@ -137,6 +177,8 @@ export function lexSegments(
     outOfTokens: false,
   };
   while (lex.index < command.length) {
+    if (!lex.inSingle && state.substitutions === "lex")
+      lexSubstitution(lex, state);
     if (lex.outOfTokens) break;
     const c = command.charAt(lex.index);
     if (lex.inSingle) lexSingleQuoted(lex, c);

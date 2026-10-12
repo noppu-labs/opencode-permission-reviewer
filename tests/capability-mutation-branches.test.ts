@@ -100,8 +100,18 @@ describe("classifyPath", () => {
       "/w",
       { temporary: false, workspace: false, external: true },
     ],
-    // `C:/../x` has no path class.
-    ["C:/../x", "/w", "/w", none],
+    [
+      "C:/../x",
+      "/w",
+      "/w",
+      { temporary: false, workspace: false, external: true },
+    ],
+    [
+      "C:/a/../../x",
+      "/w",
+      "/w",
+      { temporary: false, workspace: false, external: true },
+    ],
     [
       "/w/other",
       "/w/sub",
@@ -114,7 +124,7 @@ describe("classifyPath", () => {
       "/tmp/w",
       { temporary: true, workspace: true, external: false },
     ],
-  ])("%p in %p (worktree %p)", (target, directory, worktree, expected) => {
+  ])("case %#", (target, directory, worktree, expected) => {
     expect(classifyPath(target, directory, worktree)).toEqual(expected);
   });
 });

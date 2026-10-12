@@ -3,7 +3,11 @@
 import { basename } from "node:path";
 import { elementAt } from "./element-at.ts";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
-import { sshValueOption } from "./ssh-value-options.ts";
+import {
+  sshDestinationIndex,
+  sshRemoteCommandIndex,
+  sshValueOption,
+} from "./ssh-value-options.ts";
 
 export function findSshIndex(tokens: ReadonlyArray<string>): number {
   return tokens.findIndex((token) => basename(token) === "ssh");
@@ -19,7 +23,7 @@ export interface SshInvocation {
   remoteCommand: string;
 }
 
-/** The value options scanned before the destination; a value can be missing. */
+/** The value options scanned around the destination; a value can be missing. */
 type SshOptions = {
   [K in "port" | "identityFile" | "strictHostKeyChecking"]?:
     | SshInvocation[K]
@@ -47,26 +51,38 @@ export function parseSsh(
   };
 }
 
-/** Options up to the destination, the destination, and the index where the
- *  remote command starts. Without a destination the tokens ran out. */
+/** The options on either side of the destination, the destination, and the
+ *  index where the remote command starts. Without a destination the tokens
+ *  ran out. */
 function scanSshArguments(
   tokens: ReadonlyArray<string>,
   sshIndex: number,
 ): { destination: string | undefined; index: number; options: SshOptions } {
   const options: SshOptions = {};
-  let index = sshIndex + 1;
-  while (index < tokens.length) {
-    const token = elementAt(tokens, index, "tokens");
-    if (token === "--")
-      return { destination: tokens[index + 1], index: index + 2, options };
-    if (!token.startsWith("-") || token === "-")
-      return { destination: token, index: index + 1, options };
-    index += consumeSshOption(token, tokens[index + 1], options);
-  }
-  return { destination: undefined, index, options };
+  const destination = sshDestinationIndex(tokens, sshIndex + 1);
+  const remote = sshRemoteCommandIndex(tokens, destination);
+  recordSshOptions(tokens, sshIndex + 1, destination.index, options);
+  recordSshOptions(tokens, destination.index + 1, remote, options);
+  return { destination: tokens[destination.index], index: remote, options };
 }
 
-/** Records a value-taking option and returns how many tokens it spans. */
+/** Records the value options in `tokens[start..end)`; a `--` closing the range is skipped. */
+function recordSshOptions(
+  tokens: ReadonlyArray<string>,
+  start: number,
+  end: number,
+  options: SshOptions,
+): void {
+  for (let index = start; index < end; ) {
+    const token = elementAt(tokens, index, "tokens");
+    index +=
+      token === "--" ? 1 : consumeSshOption(token, tokens[index + 1], options);
+  }
+}
+
+/** Records a value-taking option and returns how many tokens it spans. As in
+ *  OpenSSH, the first value obtained for a setting wins, whichever spelling
+ *  set it. */
 function consumeSshOption(
   token: string,
   next: string | undefined,
@@ -75,13 +91,25 @@ function consumeSshOption(
   const valued = sshValueOption(token);
   if (valued === undefined) return 1;
   const value = valued.attached ?? next;
-  if (valued.option === "-i") options.identityFile = value;
-  if (valued.option === "-p") options.port = value;
-  if (valued.option === "-o" && value) {
-    const match = /^StrictHostKeyChecking=(.+)$/i.exec(value);
-    if (match) options.strictHostKeyChecking = match[1];
-  }
+  if (valued.option === "-i") options.identityFile ??= value;
+  if (valued.option === "-p") options.port ??= value;
+  if (valued.option === "-o" && value) recordConfigOption(value, options);
   return valued.attached === undefined ? 2 : 1;
+}
+
+const CONFIG_OPTION_FIELDS: ReadonlyMap<string, keyof SshOptions> = new Map([
+  ["port", "port"],
+  ["identityfile", "identityFile"],
+  ["stricthostkeychecking", "strictHostKeyChecking"],
+]);
+
+/** An `-o` value is an ssh_config line: a case-insensitive keyword, then
+ *  whitespace or an `=`. */
+function recordConfigOption(line: string, options: SshOptions): void {
+  const match = /^\s*([A-Za-z]+)(?:\s*=\s*|\s+)(\S.*)$/.exec(line);
+  if (!match) return;
+  const field = CONFIG_OPTION_FIELDS.get(match[1]?.toLowerCase() ?? "");
+  if (field) options[field] ??= match[2]?.trimEnd();
 }
 
 /** The remote tokens joined, without trailing redirection-looking tokens. */

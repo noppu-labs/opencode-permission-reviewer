@@ -1,5 +1,6 @@
 import type { PermissionEvaluation } from "@opencode/plugin/promise/permission";
 import type { NormalizedReviewRequest } from "../../core/contracts.ts";
+import { isRecord } from "../../is-record.ts";
 
 type PermissionInput = Pick<
   PermissionEvaluation,
@@ -15,11 +16,7 @@ const REVIEW_PERMISSIONS = new Map([
 function exactActionInput(
   actionInput: unknown,
 ): Record<string, unknown> | undefined {
-  return typeof actionInput === "object" &&
-    actionInput !== null &&
-    !Array.isArray(actionInput)
-    ? (structuredClone(actionInput) as Record<string, unknown>)
-    : undefined;
+  return isRecord(actionInput) ? structuredClone(actionInput) : undefined;
 }
 
 /** The request metadata and the cloned exact action input it carries. */

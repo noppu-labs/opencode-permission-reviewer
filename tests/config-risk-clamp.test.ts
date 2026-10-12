@@ -50,6 +50,15 @@ describe("a project riskPolicy only tightens the trusted matrix", () => {
     expect(clamped({ allow: "low" }).allow).toEqual({ ...trusted, high: [] });
   });
 
+  test("an array project allow clamps every cell to nothing", () => {
+    expect(clamped({ allow: ["low"] }).allow).toEqual({
+      low: [],
+      medium: [],
+      high: [],
+      critical: [],
+    });
+  });
+
   test("a non-array trusted cell clamps to nothing", () => {
     const global = { allow: { low: "high" } };
     expect(clamped({ allow: { low: ["high"] } }, global).allow.low).toEqual([]);

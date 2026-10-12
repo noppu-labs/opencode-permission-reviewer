@@ -1,7 +1,7 @@
 // The audit report's summary of an audit file's tail: line and record counts,
 // the per-record tallies, and the unknown actors.
 import type { AuditTail } from "./audit-files.ts";
-import { type AuditTally, tallyRecord } from "./audit-tally.ts";
+import { type AuditTally, emptyCounts, tallyRecord } from "./audit-tally.ts";
 
 export interface AuditSummary extends AuditTally {
   path: string;
@@ -91,13 +91,13 @@ export function summarizeAuditTail(
     totalLines: 0,
     validRecords: 0,
     invalidLines: 0,
-    bySchemaVersion: {},
-    byHostGeneration: {},
-    byApplication: {},
-    byOutcome: {},
-    byRiskLevel: {},
-    byDecisionSource: {},
-    byPermission: {},
+    bySchemaVersion: emptyCounts(),
+    byHostGeneration: emptyCounts(),
+    byApplication: emptyCounts(),
+    byOutcome: emptyCounts(),
+    byRiskLevel: emptyCounts(),
+    byDecisionSource: emptyCounts(),
+    byPermission: emptyCounts(),
     unknownActorNames: [],
     missingRequiredFields: [],
   };

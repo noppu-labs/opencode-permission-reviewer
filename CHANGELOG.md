@@ -42,6 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The emergency brake recognises more forms of unmistakably destructive
   commands, and the capability analyzer classifies more wrapped commands.
   Tracked privately per SECURITY.md.
+- The command analysis that feeds the reviewer and the emergency brake reads
+  more command shapes correctly, and script evidence that follows package
+  scripts stays inside the session's approved roots. Host events,
+  configuration lookups and audit tallies are handled more strictly. Tracked
+  privately per SECURITY.md.
 
 ## [2.4.2] - 2026-10-09
 

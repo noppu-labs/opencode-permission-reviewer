@@ -26,6 +26,9 @@ describe("deterministic emergency brake", () => {
     "sudo -C 5 -p pass rm -rf /",
     "env rm -rf /",
     "env VAR=1 rm -rf /",
+    "env - rm -rf /",
+    "env -P /bin rm -rf /",
+    "env -- - rm -rf /",
     "doas rm -rf /",
     "command rm -rf /",
     "nice -n 5 rm -rf /",
@@ -70,12 +73,15 @@ describe("deterministic emergency brake", () => {
     "ssh host rm -rf /",
     "ssh -i /key user@host rm -rf /",
     "ssh -vp 2222 user@host rm -rf /",
+    "ssh -- host rm -rf /",
     "ssh host 'sudo rm -rf /'",
     "busybox rm -rf /",
     "/bin/busybox rm -rf /",
     "chroot /rootdir rm -rf /",
     "chroot --userspec=1000:1000 /rootdir rm -rf /",
     "chroot -- /rootdir rm -rf /",
+    "chroot --userspec 1000:1000 /rootdir rm -rf /",
+    "chroot --groups wheel /rootdir rm -rf /",
     "env -S 'rm -rf /'",
     "env -S rm -rf /",
     // Multiple segments and shell keywords.
@@ -154,7 +160,23 @@ describe("deterministic emergency brake", () => {
     "env -u FOO -S 'rm -rf /'",
     "env --split-string='rm -rf /'",
     'script -c"rm -rf /" /dev/null',
-  ])("rejects unmistakable critical command: %s", (command) => {
+    "ls `rm -rf /`",
+    'echo "`rm -rf /`"',
+    'echo "$(rm -rf /)"',
+    "a=`rm -rf /`",
+    "sh -c 'ls `rm -rf /`'",
+    'echo "x$(rm -rf /)y"',
+    'a="$(rm -rf /)"',
+    "ls `echo a` `rm -rf /`",
+    'echo "$(dd if=/dev/zero of=/dev/sda)"',
+    'echo "$(echo x > /dev/sda)"',
+    'echo "`dd if=/dev/zero of=/dev/sda`"',
+    'echo "$(echo "$(rm -rf /)")"',
+    'echo "$(( $(rm -rf /) + 1 ))"',
+    'echo "$( (rm -rf /) )"',
+    "ls `rm -rf /",
+    'echo "$(rm -rf /',
+  ])("rejects unmistakable critical command %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
     ).toBeString();
@@ -241,7 +263,13 @@ describe("deterministic emergency brake", () => {
     "timeout 5 make",
     "timeout 10s echo done",
     "echo https://example.com/health | xargs curl",
-  ])("does not overreach on non-critical command: %s", (command) => {
+    "echo '`rm -rf /`'",
+    "echo \\`rm -rf /\\`",
+    "echo '$(rm -rf /)'",
+    'echo "\\$(rm -rf /)"',
+    'echo "\\`rm -rf /\\`"',
+    'echo "$((1 + 2))"',
+  ])("does not overreach on non-critical command %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
     ).toBeUndefined();
@@ -486,5 +514,50 @@ describe("deterministic emergency brake", () => {
         "Emergency brake: command contains unmistakable broad system destruction.",
       );
     }
+  });
+});
+
+describe("analyzer hardening batch 10", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+  const brake = (command: string): string | undefined =>
+    emergencyBrakeReason(request({ metadata: { command } }));
+
+  test.each([
+    "git commit -m \"$(cat <<'EOF'\nrm -rf /\nEOF\n)\"",
+    "git commit -m \"$(cat <<'EOF'\nDon't (a) b)\nrm -rf /\nEOF\n)\"",
+    'git commit -m "$(cat <<-EOF\n\trm -rf /\n\tEOF\n)"',
+  ])("keeps each command %#", (command) => {
+    expect(brake(command)).toBeUndefined();
+  });
+
+  test.each([
+    'git commit -m "$(cat <<\'EOF\'\nDon\'t (a) b)\nEOF\n)" && echo "$(rm -rf /)"',
+    'echo "$(case x in x) rm -rf / ;; esac)"',
+    'echo "$(echo a # )\nrm -rf /\n)"',
+    "echo \"$(echo ')' ; rm -rf /)\"",
+  ])("blocks each command %#", (command) => {
+    expect(brake(command)).toBe(blocked);
+  });
+
+  test("finishes deep and wide inputs within the budget", () => {
+    const nested = (depth: number): string =>
+      `${'echo "$('.repeat(depth)}rm -rf /${')"'.repeat(depth)}`;
+    const started = Date.now();
+    expect(brake(nested(20))).toBe(blocked);
+    expect(brake(nested(2000))).toContain(
+      "exceeded the static analysis budget",
+    );
+    expect(brake(`echo ${'"$(true)" '.repeat(4000)}"$(rm -rf /)"`)).toBe(
+      blocked,
+    );
+    expect(brake(`echo ${"`true` ".repeat(4000)}\`rm -rf /\``)).toBe(blocked);
+    expect(
+      brake(`echo "${"$((".repeat(20000)}1${"))".repeat(20000)}"`),
+    ).toBeUndefined();
+    expect(brake(`sh -c '${'"$('.repeat(300)}x${')"'.repeat(300)}'`)).toContain(
+      "exceeded the static analysis budget",
+    );
+    expect(Date.now() - started).toBeLessThan(10_000);
   });
 });

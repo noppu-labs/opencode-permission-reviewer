@@ -68,17 +68,13 @@ describe("effective-command walk: ssh, chroot and timeout operands", () => {
   test("ssh skips options on either side of the host", () => {
     expect(commandsOf("ssh -p22 host rm")).toEqual([["rm"]]);
     expect(commandsOf("ssh host -t rm")).toEqual([["rm"]]);
-    // With `--` before the host, the effective command starts at the host operand.
-    expect(commandsOf("ssh -- host rm -rf /")).toEqual([
-      ["host", "rm", "-rf", "/"],
-    ]);
+    expect(commandsOf("ssh -- host rm -rf /")).toEqual([["rm", "-rf", "/"]]);
   });
 
   test("chroot and timeout skip options before their operand", () => {
     expect(commandsOf("chroot -- /r rm")).toEqual([["rm"]]);
     expect(commandsOf("chroot --userspec=u /r rm")).toEqual([["rm"]]);
-    // The walk resolves this form to the effective command `/r rm`.
-    expect(commandsOf("chroot --userspec u /r rm")).toEqual([["/r", "rm"]]);
+    expect(commandsOf("chroot --userspec u /r rm")).toEqual([["rm"]]);
     expect(commandsOf("timeout -- 5 rm")).toEqual([["rm"]]);
   });
 
@@ -149,4 +145,36 @@ describe("effective-command walk: budgets", () => {
       });
     },
   );
+});
+
+describe("analyzer hardening batch 4", () => {
+  test("resolves each command", () => {
+    expect(commandsOf("chroot --groups g /r rm")).toEqual([["rm"]]);
+    expect(commandsOf("chroot --user u /r rm")).toEqual([["rm"]]);
+    expect(commandsOf("chroot --skip-chdir /r rm")).toEqual([["rm"]]);
+    expect(commandsOf("chroot --userspec=u:g /r rm")).toEqual([["rm"]]);
+  });
+});
+
+describe("analyzer hardening batch 5", () => {
+  test("resolves each command", () => {
+    expect(commandsOf("ssh -p 22 -- host rm")).toEqual([["rm"]]);
+    expect(commandsOf("ssh host -- rm")).toEqual([["rm"]]);
+    expect(commandsOf("ssh -o -- host rm")).toEqual([["rm"]]);
+  });
+});
+
+describe("analyzer hardening batch 10", () => {
+  test("charges each re-lexed substitution body", () => {
+    expect(spend("sh -c 'ls `rm`'", 5, 9)).toEqual({
+      commands: [["ls", "`rm`"], ["rm"]],
+      truncated: false,
+      left: [3, 0],
+    });
+    expect(spend("sh -c 'ls `rm`'", 5, 8)).toEqual({
+      commands: [],
+      truncated: true,
+      left: [5, -1],
+    });
+  });
 });
