@@ -77,8 +77,7 @@ describe("effective-command walk: ssh, chroot and timeout operands", () => {
   test("chroot and timeout skip options before their operand", () => {
     expect(commandsOf("chroot -- /r rm")).toEqual([["rm"]]);
     expect(commandsOf("chroot --userspec=u /r rm")).toEqual([["rm"]]);
-    // The walk resolves this form to the effective command `/r rm`.
-    expect(commandsOf("chroot --userspec u /r rm")).toEqual([["/r", "rm"]]);
+    expect(commandsOf("chroot --userspec u /r rm")).toEqual([["rm"]]);
     expect(commandsOf("timeout -- 5 rm")).toEqual([["rm"]]);
   });
 
@@ -149,4 +148,13 @@ describe("effective-command walk: budgets", () => {
       });
     },
   );
+});
+
+describe("analyzer hardening batch 4", () => {
+  test("resolves each command", () => {
+    expect(commandsOf("chroot --groups g /r rm")).toEqual([["rm"]]);
+    expect(commandsOf("chroot --user u /r rm")).toEqual([["rm"]]);
+    expect(commandsOf("chroot --skip-chdir /r rm")).toEqual([["rm"]]);
+    expect(commandsOf("chroot --userspec=u:g /r rm")).toEqual([["rm"]]);
+  });
 });

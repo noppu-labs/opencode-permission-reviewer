@@ -1,6 +1,8 @@
 // Command-head and wrapper-option skipping for the effective-command walk: keywords, VAR=value assignments, value-taking options and getopt clusters.
 
 import { elementAt } from "./element-at.ts";
+import { CHROOT_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
+import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import {
   LONE_DASH_OPTION_WRAPPERS,
   SHELL_KEYWORDS,
@@ -41,10 +43,19 @@ export function timeoutCommandIndex(words: ShellToken[], i: number): number {
   return skipOptions(words, i + 1, valueOptionsOf("timeout")) + 1;
 }
 
-/** chroot [OPTION]... NEWROOT [COMMAND [ARG]...]: skip options, then the
- *  NEWROOT token, and return the index of the real command tail. */
+/** chroot [OPTION]... NEWROOT [COMMAND [ARG]...]: skip options (long only,
+ *  getopt_long rules), then the NEWROOT token, and return the index of the
+ *  real command tail. */
 export function chrootCommandIndex(words: ShellToken[], i: number): number {
-  return skipOptions(words, i + 1, NO_VALUE_OPTIONS) + 1;
+  let j = i + 1;
+  while (j < words.length) {
+    const opt = elementAt(words, j, "tokens").value;
+    if (opt === "--") return j + 2;
+    if (!opt.startsWith("-") || opt.length <= 1) return j + 1;
+    const long = resolveGnuLongOption(opt, CHROOT_LONG_OPTIONS);
+    j += long?.argument === "required" && !long.inlineValue ? 2 : 1;
+  }
+  return j + 1;
 }
 
 /** Skip options up to the first operand, or past a `--`, and return its

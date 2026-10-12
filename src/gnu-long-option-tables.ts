@@ -221,3 +221,12 @@ export const WATCH_LONG_OPTIONS: readonly LongOption[] = [
   none("no-wrap"),
   none("version"),
 ];
+
+/** coreutils `src/chroot.c` `long_opts`. */
+export const CHROOT_LONG_OPTIONS: readonly LongOption[] = [
+  required("groups"),
+  required("userspec"),
+  none("skip-chdir"),
+  none("help"),
+  none("version"),
+];

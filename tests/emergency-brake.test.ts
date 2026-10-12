@@ -78,6 +78,8 @@ describe("deterministic emergency brake", () => {
     "chroot /rootdir rm -rf /",
     "chroot --userspec=1000:1000 /rootdir rm -rf /",
     "chroot -- /rootdir rm -rf /",
+    "chroot --userspec 1000:1000 /rootdir rm -rf /",
+    "chroot --groups wheel /rootdir rm -rf /",
     "env -S 'rm -rf /'",
     "env -S rm -rf /",
     // Multiple segments and shell keywords.
