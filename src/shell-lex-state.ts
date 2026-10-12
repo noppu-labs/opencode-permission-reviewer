@@ -6,16 +6,31 @@ type ShellSpan = NonNullable<ShellToken["spans"]>[number];
 
 export interface LexBudget {
   tokensRemaining: number;
+  /** Command-substitution text the scan may still lex a second time, nested
+   *  substitutions included; `MAX_SUBSTITUTION_CHARS` when unset. Past zero
+   *  the scan stops as if out of tokens. */
+  substitutionCharsRemaining?: number;
 }
+
+/** Ceiling on the substitution text one scan re-lexes when the caller sets
+ *  none: nested substitutions re-lex their body once per level. */
+export const MAX_SUBSTITUTION_CHARS = 262_144;
 
 /** Mutable scan state shared by the character handlers in shell-scanner.ts
  *  and shell-quote-scan.ts. `index` is the next character of `command` to
  *  read. */
 export interface LexState {
   command: string;
-  budget: LexBudget | undefined;
+  budget: LexBudget;
   index: number;
   segments: ShellSegment[];
+  /** Segments of the substitutions opened in the current segment, emitted
+   *  right after it. */
+  substitutions: ShellSegment[];
+  /** Index up to which the text belongs to a substitution already lexed. */
+  substitutionEnd: number;
+  /** Index up to which the text is inside double-quoted `$((…))`. */
+  arithmeticEnd: number;
   tokens: ShellToken[];
   value: string;
   raw: string;
@@ -46,10 +61,8 @@ export function flushToken(lex: LexState): void {
   lex.raw = "";
   lex.spans = [];
   lex.hasToken = false;
-  if (lex.budget !== undefined) {
-    lex.budget.tokensRemaining -= 1;
-    if (lex.budget.tokensRemaining <= 0) lex.outOfTokens = true;
-  }
+  lex.budget.tokensRemaining -= 1;
+  if (lex.budget.tokensRemaining <= 0) lex.outOfTokens = true;
 }
 
 export function flushSegment(lex: LexState, endedBy?: string): void {
@@ -68,4 +81,6 @@ export function flushSegment(lex: LexState, endedBy?: string): void {
     });
     lex.tokens = [];
   }
+  for (const segment of lex.substitutions) lex.segments.push(segment);
+  lex.substitutions = [];
 }

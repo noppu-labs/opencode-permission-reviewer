@@ -521,3 +521,58 @@ describe("watch runs its joined operands as a shell command string", () => {
     expect(over.truncated).toBe(true);
   });
 });
+
+describe("analyzer hardening batch 10", () => {
+  test.each([
+    [
+      "ls `rm -rf /`",
+      [
+        ["ls", "`rm", "-rf", "/`"],
+        ["rm", "-rf", "/"],
+      ],
+    ],
+    [
+      'echo "$(rm -rf /)"',
+      [
+        ["echo", "$(rm -rf /)"],
+        ["rm", "-rf", "/"],
+      ],
+    ],
+    [
+      'echo "x`rm -rf /`y"',
+      [
+        ["echo", "x`rm -rf /`y"],
+        ["rm", "-rf", "/"],
+      ],
+    ],
+    ['a="$(rm -rf /)" b', [["b"], ["rm", "-rf", "/"]]],
+    ["echo `a \\`b\\``", [["echo", "`a", "`b``"], ["a", "`b`"], ["b"]]],
+    [
+      'echo "$(cat <<EOF\n)\nEOF\n)"',
+      [
+        ["echo", "$(cat <<EOF\n)\nEOF\n)"],
+        ["cat", "<HEREDOC:sha256:fafba0527c39>"],
+      ],
+    ],
+    ["echo '`a`' \\`b\\` \"\\$(c)\"", [["echo", "`a`", "`b`", "$(c)"]]],
+    ['echo "$((1 + 2))"', [["echo", "$((1 + 2))"]]],
+    ['x="$(echo "a b")"', [["b)"], ["echo", "a b"]]],
+  ])("resolves each command: %s", (command, expected) => {
+    expect(firstExecutables(command)).toEqual(expected);
+  });
+
+  test("keeps the evidence segments", () => {
+    expect(commandSegments("ls `rm -rf /`")).toEqual([
+      { tokens: ["ls", "`rm", "-rf", "/`"] },
+    ]);
+    expect(commandSegments('cat "$(ls p.py)" | ssh h python3 -')).toEqual([
+      { tokens: ["cat", "$(ls p.py)"], endedBy: "|" },
+      { tokens: ["ssh", "h", "python3", "-"], preceding: "|" },
+    ]);
+    expect(commandSegments('cd x && echo "`pwd`" && cat y')).toEqual([
+      { tokens: ["cd", "x"], endedBy: "&&" },
+      { tokens: ["echo", "`pwd`"], preceding: "&&", endedBy: "&&" },
+      { tokens: ["cat", "y"], preceding: "&&" },
+    ]);
+  });
+});

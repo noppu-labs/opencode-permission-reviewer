@@ -160,6 +160,22 @@ describe("deterministic emergency brake", () => {
     "env -u FOO -S 'rm -rf /'",
     "env --split-string='rm -rf /'",
     'script -c"rm -rf /" /dev/null',
+    "ls `rm -rf /`",
+    'echo "`rm -rf /`"',
+    'echo "$(rm -rf /)"',
+    "a=`rm -rf /`",
+    "sh -c 'ls `rm -rf /`'",
+    'echo "x$(rm -rf /)y"',
+    'a="$(rm -rf /)"',
+    "ls `echo a` `rm -rf /`",
+    'echo "$(dd if=/dev/zero of=/dev/sda)"',
+    'echo "$(echo x > /dev/sda)"',
+    'echo "`dd if=/dev/zero of=/dev/sda`"',
+    'echo "$(echo "$(rm -rf /)")"',
+    'echo "$(( $(rm -rf /) + 1 ))"',
+    'echo "$( (rm -rf /) )"',
+    "ls `rm -rf /",
+    'echo "$(rm -rf /',
   ])("rejects unmistakable critical command: %s", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
@@ -247,6 +263,12 @@ describe("deterministic emergency brake", () => {
     "timeout 5 make",
     "timeout 10s echo done",
     "echo https://example.com/health | xargs curl",
+    "echo '`rm -rf /`'",
+    "echo \\`rm -rf /\\`",
+    "echo '$(rm -rf /)'",
+    'echo "\\$(rm -rf /)"',
+    'echo "\\`rm -rf /\\`"',
+    'echo "$((1 + 2))"',
   ])("does not overreach on non-critical command: %s", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
@@ -492,5 +514,50 @@ describe("deterministic emergency brake", () => {
         "Emergency brake: command contains unmistakable broad system destruction.",
       );
     }
+  });
+});
+
+describe("analyzer hardening batch 10", () => {
+  const blocked =
+    "Emergency brake: command contains unmistakable broad system destruction.";
+  const brake = (command: string): string | undefined =>
+    emergencyBrakeReason(request({ metadata: { command } }));
+
+  test.each([
+    "git commit -m \"$(cat <<'EOF'\nrm -rf /\nEOF\n)\"",
+    "git commit -m \"$(cat <<'EOF'\nDon't (a) b)\nrm -rf /\nEOF\n)\"",
+    'git commit -m "$(cat <<-EOF\n\trm -rf /\n\tEOF\n)"',
+  ])("keeps each command: %s", (command) => {
+    expect(brake(command)).toBeUndefined();
+  });
+
+  test.each([
+    'git commit -m "$(cat <<\'EOF\'\nDon\'t (a) b)\nEOF\n)" && echo "$(rm -rf /)"',
+    'echo "$(case x in x) rm -rf / ;; esac)"',
+    'echo "$(echo a # )\nrm -rf /\n)"',
+    "echo \"$(echo ')' ; rm -rf /)\"",
+  ])("blocks each command: %s", (command) => {
+    expect(brake(command)).toBe(blocked);
+  });
+
+  test("finishes deep and wide inputs within the budget", () => {
+    const nested = (depth: number): string =>
+      `${'echo "$('.repeat(depth)}rm -rf /${')"'.repeat(depth)}`;
+    const started = Date.now();
+    expect(brake(nested(20))).toBe(blocked);
+    expect(brake(nested(2000))).toContain(
+      "exceeded the static analysis budget",
+    );
+    expect(brake(`echo ${'"$(true)" '.repeat(4000)}"$(rm -rf /)"`)).toBe(
+      blocked,
+    );
+    expect(brake(`echo ${"`true` ".repeat(4000)}\`rm -rf /\``)).toBe(blocked);
+    expect(
+      brake(`echo "${"$((".repeat(20000)}1${"))".repeat(20000)}"`),
+    ).toBeUndefined();
+    expect(brake(`sh -c '${'"$('.repeat(300)}x${')"'.repeat(300)}'`)).toContain(
+      "exceeded the static analysis budget",
+    );
+    expect(Date.now() - started).toBeLessThan(2000);
   });
 });

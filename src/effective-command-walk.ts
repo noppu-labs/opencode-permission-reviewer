@@ -134,7 +134,8 @@ function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
 }
 
 /** Re-lex a command string and walk each of its segments one level deeper.
- *  Its length is charged to the re-analysis budget first. */
+ *  Its length is charged to the re-analysis budget first, and the bodies of
+ *  the substitutions it holds as they are lexed. */
 function reanalyze(text: string, level: WalkLevel): void {
   const { sink } = level;
   sink.budget.remainingReanalysisChars -= text.length;
@@ -142,7 +143,14 @@ function reanalyze(text: string, level: WalkLevel): void {
     sink.truncated = true;
     return;
   }
-  for (const sub of lexSegments(text))
+  const lexBudget = {
+    tokensRemaining: Number.POSITIVE_INFINITY,
+    substitutionCharsRemaining: sink.budget.remainingReanalysisChars,
+  };
+  const segments = lexSegments(text, lexBudget);
+  sink.budget.remainingReanalysisChars = lexBudget.substitutionCharsRemaining;
+  if (lexBudget.tokensRemaining <= 0) sink.truncated = true;
+  for (const sub of segments)
     walk(sub.tokens, sink, level.redirections, level.depth + 1);
 }
 

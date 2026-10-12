@@ -163,3 +163,18 @@ describe("analyzer hardening batch 5", () => {
     expect(commandsOf("ssh -o -- host rm")).toEqual([["rm"]]);
   });
 });
+
+describe("analyzer hardening batch 10", () => {
+  test("charges each re-lexed substitution body", () => {
+    expect(spend("sh -c 'ls `rm`'", 5, 9)).toEqual({
+      commands: [["ls", "`rm`"], ["rm"]],
+      truncated: false,
+      left: [3, 0],
+    });
+    expect(spend("sh -c 'ls `rm`'", 5, 8)).toEqual({
+      commands: [],
+      truncated: true,
+      left: [5, -1],
+    });
+  });
+});
