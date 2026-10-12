@@ -45,7 +45,7 @@ export const PINNED_BLOBS = {
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
   "src/emergency-brake.ts": "30f14fc975622a1cc46107c39a511ae76913c214",
-  "src/reviewed-command.ts": "ae5f1d2e20ff9f4c4928e40354e29af88c2ab390",
+  "src/reviewed-command.ts": "e5a52a74f979aa21da4a5ba9c257db633f2b8a5f",
   "src/brake-arguments.ts": "9e67d27ca7194e5dca9023a4e2265931263ed328",
   "src/brake-rm-flags.ts": "034adfcdccaf0c0f567c1c0f16ba7d1eff336a09",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

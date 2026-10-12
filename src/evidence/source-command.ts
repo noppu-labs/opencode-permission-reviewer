@@ -1,3 +1,4 @@
+import { commandText } from "../reviewed-command.ts";
 import type { PermissionRequest } from "../types.ts";
 
 /**
@@ -6,7 +7,5 @@ import type { PermissionRequest } from "../types.ts";
  * joined as separate commands so analyzers still see the tokens.
  */
 export function sourceCommand(request: PermissionRequest): string {
-  const command = request.metadata.command;
-  if (typeof command === "string" && command.trim()) return command;
-  return request.patterns.join(" ; ");
+  return commandText(request, " ; ");
 }
