@@ -1,5 +1,12 @@
-import { afterEach, expect, test } from "bun:test";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { afterEach, describe, expect, test } from "bun:test";
+import {
+  mkdir,
+  mkdtemp,
+  realpath,
+  rm,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
@@ -208,4 +215,35 @@ test("environment and timeout wrappers retain the same manifest definition", asy
       expect(await evidence(directory, command)).not.toContain("same-script");
     }),
   );
+});
+
+describe("evidence hardening batch 9", () => {
+  test("reads each case", async () => {
+    const directory = await realpath(await fixture({}));
+    const outside = await realpath(await fixture({}));
+    await writeFile(
+      join(directory, "linked.json"),
+      JSON.stringify({ scripts: { check: "node ./task.js" } }),
+    );
+    await rm(join(outside, "package.json"));
+    await symlink(
+      join(directory, "linked.json"),
+      join(outside, "package.json"),
+    );
+    await writeFile(join(outside, "task.js"), "OUTSIDE_PRIVATE_MARKER\n");
+    await symlink(outside, join(directory, "pkg"));
+    const text = await evidence(directory, "cd pkg && bun run check");
+    expect(text).toContain("node ./task.js");
+    expect(text).not.toContain("OUTSIDE_PRIVATE_MARKER");
+
+    await mkdir(join(directory, "inner"));
+    await writeFile(
+      join(directory, "inner", "package.json"),
+      JSON.stringify({ scripts: { check: "node ./task.js" } }),
+    );
+    await writeFile(join(directory, "inner", "task.js"), "INSIDE_MARKER\n");
+    expect(await evidence(directory, "cd inner && bun run check")).toContain(
+      "INSIDE_MARKER",
+    );
+  });
 });

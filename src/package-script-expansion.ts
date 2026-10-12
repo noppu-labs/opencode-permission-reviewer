@@ -119,6 +119,7 @@ export class ScriptExpansion {
       pkgDirectory,
       this.scope.worktree,
       Math.min(this.scope.maxChars, 8_000),
+      this.scope.directory,
     );
     if (local.text) record.referencedCode = local.text;
     for (const segment of shellCommandSegmentsWithDirectory(
