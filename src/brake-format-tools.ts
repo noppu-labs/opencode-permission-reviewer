@@ -1,108 +1,97 @@
-import { MKFS_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
-import { resolveGnuLongOption } from "./gnu-long-options.ts";
+import { isOptionWord } from "./brake-arguments.ts";
+import {
+  type FormatterOptions,
+  formatterOptions,
+} from "./brake-formatter-options.ts";
+import { elementAt } from "./element-at.ts";
+import { type LongOption, resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
 
-const EXT_FORMATTERS = new Set([
-  "mke2fs",
-  "mkfs.ext2",
-  "mkfs.ext3",
-  "mkfs.ext4",
-]);
-const EXT_FILESYSTEM_TYPES = new Set(["ext2", "ext3", "ext4"]);
+/** What one option word means for the dry-run scan. */
+interface OptionStep {
+  readonly dryRun: boolean;
+  readonly takesNext: boolean;
+}
 
-/** mkfs / mkfs.* / mke2fs / mkswap, unless the tool's own dry-run flag is
- *  given. `--dry-run` suppresses the verdict for every tool; `-n` only for the
- *  ext family and mkfs.ntfs, and `-N` only for mkfs.xfs. */
+const NOT_AN_OPTION: OptionStep = { dryRun: false, takesNext: false };
+
+/** Only a formatter's own dry-run flag spares it: other tools read `-n` as a
+ *  real option (mkfs.vfat's volume name, mkfs.xfs's naming options). */
 export function formatDestroysDevice(
   base: string,
   args: readonly ShellToken[],
 ): boolean {
-  const dryRunFlag = shortDryRunFlag(base, args);
-  return !args.some((t) => t.value === "--dry-run" || t.value === dryRunFlag);
+  return !runsDry(args, formatterOptions(base, args));
 }
 
-/** The short dry-run flag of a formatter, or undefined when it has none. */
-function shortDryRunFlag(
-  base: string,
+/** Scans argv as getopt does, up to `--`: a dry-run option counts only where
+ *  getopt reads an option, not as another option's value. Without a known
+ *  optstring, any option word may take the next word as its value. */
+function runsDry(
   args: readonly ShellToken[],
-): string | undefined {
-  if (base === "mkfs.xfs") return "-N";
-  if (base === "mkfs.ntfs") return "-n";
-  return isExtFormatter(base, args) ? "-n" : undefined;
-}
-
-/** mke2fs, mkfs.ext2/3/4, or plain mkfs that builds an ext filesystem. */
-function isExtFormatter(base: string, args: readonly ShellToken[]): boolean {
-  if (EXT_FORMATTERS.has(base)) return true;
-  return base === "mkfs" && mkfsBuildsExt(args);
-}
-
-/** Plain mkfs reads its own options (`-V`, `-t`, `-h` and the long options of
- *  its table) up to the first option it does not know or `--`; the last type
- *  there is the filesystem, none means the ext default. A type option past
- *  that point belongs to the filesystem tool, but a non-ext one still rules
- *  the ext default out. A type whose value cannot be read is non-ext. */
-function mkfsBuildsExt(allArgs: readonly ShellToken[]): boolean {
-  const end = allArgs.findIndex((t) => t.value === "--");
-  const args = end === -1 ? allArgs : allArgs.slice(0, end);
-  const stop = args.findIndex(isUnknownMkfsOption);
-  const split = stop === -1 ? args.length : stop;
-  const own = mkfsTypeValues(args, 0, split);
-  const rest = mkfsTypeValues(args, split, args.length);
-  return isExtType(own[own.length - 1]) && rest.every(isExtType);
-}
-
-function isExtType(type: string | undefined): boolean {
-  return type === undefined || EXT_FILESYSTEM_TYPES.has(type);
-}
-
-function mkfsTypeValues(
-  args: readonly ShellToken[],
-  from: number,
-  to: number,
-): string[] {
-  const values: string[] = [];
-  for (let index = from; index < to; index += 1) {
-    const value = mkfsTypeValue(args, index);
-    if (value !== undefined) values.push(value);
+  options: FormatterOptions | undefined,
+): boolean {
+  for (let index = 0; index < args.length; index += 1) {
+    const word = elementAt(args, index, "args").value;
+    if (word === "--") return false;
+    if (word === "--dry-run") return true;
+    const step = optionStep(word, options);
+    if (step.dryRun) return true;
+    if (step.takesNext) index += 1;
   }
-  return values;
+  return false;
 }
 
-/** An option word mkfs's own getopt does not recognise: a `--` name outside its
- *  table, or a short cluster with a letter other than `V` and `h` before any
- *  `t`. */
-function isUnknownMkfsOption(token: ShellToken): boolean {
-  const word = token.value;
-  if (!word.startsWith("-") || word === "-") return false;
-  if (word.startsWith("--"))
-    return resolveGnuLongOption(word, MKFS_LONG_OPTIONS) === undefined;
-  const letters = word.slice(1);
-  const type = letters.indexOf("t");
-  const own = type === -1 ? letters : letters.slice(0, type);
-  return ![...own].every((letter) => letter === "V" || letter === "h");
+function optionStep(
+  word: string,
+  options: FormatterOptions | undefined,
+): OptionStep {
+  if (!isOptionWord(word)) return NOT_AN_OPTION;
+  if (word.startsWith("--")) return longStep(word, options);
+  if (options === undefined) return { dryRun: false, takesNext: true };
+  return shortStep(word, options);
 }
 
-/** The value taken by the type option at `index`: `--type[=]`, any prefix of
- *  it, or a short cluster containing `t` (the rest of the cluster, else the
- *  next word). Undefined when the word is not a type option. */
-function mkfsTypeValue(
-  args: readonly ShellToken[],
-  index: number,
-): string | undefined {
-  const word = args[index]?.value ?? "";
-  const next = args[index + 1]?.value ?? "";
-  const long = resolveGnuLongOption(word, MKFS_LONG_OPTIONS);
-  if (long === undefined) return shortTypeValue(word, next);
-  if (long.name !== "type") return undefined;
-  return long.inlineValue ? word.slice(word.indexOf("=") + 1) : next;
+/** A long option the tool rejects makes it exit without formatting. */
+function longStep(
+  word: string,
+  options: FormatterOptions | undefined,
+): OptionStep {
+  const long = resolveGnuLongOption(word, options?.longOptions ?? []);
+  if (long === undefined)
+    return {
+      dryRun: false,
+      takesNext: options === undefined && !word.includes("="),
+    };
+  return {
+    dryRun: false,
+    takesNext: long.argument === "required" && !long.inlineValue,
+  };
 }
 
-/** The type value of a short cluster containing `t`: the rest of the cluster
- *  after the letter, else the next word. */
-function shortTypeValue(word: string, next: string): string | undefined {
-  if (!word.startsWith("-") || word.startsWith("--")) return undefined;
-  const letter = word.indexOf("t");
-  if (letter === -1) return undefined;
-  return letter + 1 < word.length ? word.slice(letter + 1) : next;
+/** A cluster's letters are flags up to the first one that takes a value,
+ *  which takes the rest of the cluster or, when it ends the cluster and its
+ *  value is required, the next word. */
+function shortStep(word: string, options: FormatterOptions): OptionStep {
+  for (let position = 1; position < word.length; position += 1) {
+    const letter = word.charAt(position);
+    if (letter === options.dryRunLetter)
+      return { dryRun: true, takesNext: false };
+    const argument = letterArgument(options.optstring, letter);
+    if (argument !== "none")
+      return {
+        dryRun: false,
+        takesNext: argument === "required" && position === word.length - 1,
+      };
+  }
+  return NOT_AN_OPTION;
+}
+
+function letterArgument(
+  optstring: string,
+  letter: string,
+): LongOption["argument"] {
+  const at = letter === ":" ? -1 : optstring.indexOf(letter);
+  if (at === -1 || optstring.charAt(at + 1) !== ":") return "none";
+  return optstring.charAt(at + 2) === ":" ? "optional" : "required";
 }

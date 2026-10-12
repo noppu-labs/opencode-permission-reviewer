@@ -161,6 +161,46 @@ export const MKFS_LONG_OPTIONS: readonly LongOption[] = [
   none("help"),
 ];
 
+/** xfsprogs mkfs.xfs (mkfs/xfs_mkfs.c `long_options`). */
+export const MKFS_XFS_LONG_OPTIONS: readonly LongOption[] = [
+  none("unsupported"),
+];
+
+/** ntfs-3g mkntfs (ntfsprogs/mkntfs.c `lopt`). */
+export const MKNTFS_LONG_OPTIONS: readonly LongOption[] = [
+  required("cluster-size"),
+  none("debug"),
+  none("enable-compression"),
+  none("fast"),
+  none("force"),
+  required("heads"),
+  none("help"),
+  required("label"),
+  none("license"),
+  required("mft-zone-multiplier"),
+  none("no-action"),
+  none("no-indexing"),
+  required("partition-start"),
+  none("quick"),
+  none("quiet"),
+  required("sector-size"),
+  required("sectors-per-track"),
+  none("with-uuid"),
+  none("verbose"),
+  none("version"),
+  none("zero-time"),
+];
+
+/** dosfstools mkfs.fat (src/mkfs.fat.c `long_options`). */
+export const MKFS_FAT_LONG_OPTIONS: readonly LongOption[] = [
+  required("codepage"),
+  none("invariant"),
+  optional("mbr"),
+  required("variant"),
+  required("offset"),
+  none("help"),
+];
+
 /** procps-ng watch (src/watch.c `longopts`). */
 export const WATCH_LONG_OPTIONS: readonly LongOption[] = [
   none("color"),

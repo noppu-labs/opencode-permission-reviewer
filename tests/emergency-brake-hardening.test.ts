@@ -578,3 +578,40 @@ describe("hardening batch 22", () => {
     "sgdisk -v /dev/sda",
   ]);
 });
+
+describe("hardening batch 23", () => {
+  blocks("blocks each command, case %#", [
+    "mke2fs -L -n /dev/sda",
+    "mkfs.ext4 -L --dry-run /dev/sdb",
+    "mkfs.ext4 -Ln /dev/sda",
+    "mkfs.ext4 -- -n /dev/sda",
+    "mkfs -t ext4 -L -n /dev/sdb",
+    "mkfs --type ext4 -L -n /dev/sdb",
+    "mkfs.xfs -L -N /dev/sdb",
+    "mkfs.xfs -LN /dev/sdb",
+    "mkfs.ntfs -L -n /dev/sdb",
+    "mkfs.ntfs --label -n /dev/sdb",
+    "mkfs.ntfs --lab --dry-run /dev/sdb",
+    "mkfs.vfat -n --dry-run /dev/sdb",
+    "mkfs.fat --codepage --dry-run /dev/sdb",
+    "mkfs.btrfs -L --dry-run /dev/sdb",
+    "mkfs.btrfs --label --dry-run /dev/sdb",
+    "mkfs.ext4 -F /dev/sda",
+    "mkfs.xfs -f /dev/sdb",
+  ]);
+
+  allows("allows each command, case %#", [
+    "mkfs.ext4 -Fn /dev/sda",
+    "mkfs.ext4 -F -n /dev/sda",
+    "mkfs.ext4 -L data -n /dev/sda",
+    "mkfs.ext4 -L data --dry-run /dev/sdb",
+    "mkfs.ext4 /dev/sda -n",
+    "mkfs -t ext4 -Fn /dev/sdb",
+    "mkfs.xfs -KN /dev/sdb",
+    "mkfs.xfs -L data -N /dev/sdb",
+    "mkfs.ntfs -Qn /dev/sdb",
+    "mkfs.ntfs --label data -n /dev/sdb",
+    "mkfs.vfat -n DATA --dry-run /dev/sdb",
+    "mkfs.btrfs --label=data --dry-run /dev/sdb",
+  ]);
+});
