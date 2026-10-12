@@ -154,7 +154,9 @@ export const PINNED_BLOBS = {
   "src/capability/read-only-tool-mutations.ts":
     "684c044741a3788a2c504a42a9250bbbafb9ed7a",
   "src/capability/git-subcommand-forms.ts":
-    "1f4206bf0cad0d17779c139fd95241ccb5b65b0b",
+    "7575566966af5a9bccac2a72dd336e9dadaa99e2",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/git-global-options.ts": "d7e4bb98e8946f79243400acf4c44c58a3632594",
   "src/capability/heredoc-delimiter.ts":
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "abae24b0e331469527d25e6c3719ceea81a8932e",

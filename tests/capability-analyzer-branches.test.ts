@@ -121,3 +121,14 @@ describe("analyzeCapability credential operands", () => {
     expect(capabilityProfile(parsed)).toBe("unknown/low | unknown | ");
   });
 });
+
+describe("analyzer hardening batch 1", () => {
+  test.each([
+    "git push https://example.invalid/x.git main",
+    "git --namespace ns push https://example.invalid/x.git main",
+    "git --config-env k=ENV push https://example.invalid/x.git main",
+    "git --attr-source HEAD push https://example.invalid/x.git main",
+  ])("%s", (command) => {
+    expect(capabilityProfile(command)).toStartWith("git-mutation/high |");
+  });
+});

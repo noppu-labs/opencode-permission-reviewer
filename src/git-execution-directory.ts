@@ -2,6 +2,7 @@
 
 import { resolve } from "node:path";
 import { elementAt } from "./element-at.ts";
+import { takesSeparateValue } from "./git-global-options.ts";
 
 export const UNRESOLVED_EXPANSION = /[$`*?{}<>]/;
 
@@ -82,7 +83,7 @@ function changeDirectoryTarget(
   if (token === "-C") return { target: tokens[index + 1], last: index + 1 };
   if (token.startsWith("-C") && token.length > 2)
     return { target: token.slice(2), last: index };
-  return { last: index };
+  return { last: takesSeparateValue(token) ? index + 1 : index };
 }
 
 /** Adds the directory one planned invocation runs in, or the reason it is

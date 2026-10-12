@@ -4,6 +4,7 @@ import { basename } from "node:path";
 import { elementAt } from "./element-at.ts";
 import { localExecutableCommand } from "./evidence/local-command.ts";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
+import { gitSubcommandIndex } from "./git-global-options.ts";
 
 /** Subcommands whose first positional names (or implies) a remote. */
 const GIT_REMOTE_COMMANDS = new Set([
@@ -18,25 +19,9 @@ function gitSubcommand(
   tokens: string[],
   gitIndex: number,
 ): { command?: string; index: number } {
-  let index = gitIndex + 1;
-  while (index < tokens.length) {
-    const token = elementAt(tokens, index, "tokens");
-    if (
-      token === "-C" ||
-      token === "-c" ||
-      token === "--git-dir" ||
-      token === "--work-tree"
-    ) {
-      index += 2;
-      continue;
-    }
-    if (token.startsWith("-")) {
-      index += 1;
-      continue;
-    }
-    return { command: token, index };
-  }
-  return { index };
+  const index = gitSubcommandIndex(tokens, gitIndex);
+  const command = tokens[index];
+  return command === undefined ? { index } : { command, index };
 }
 
 export function positionalAfter(tokens: string[], index: number): string[] {
