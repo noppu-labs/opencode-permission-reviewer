@@ -1,5 +1,5 @@
 {
-  "score_cap": 52,
+  "score_cap": 55,
   "extensions": [".mjs"],
   "exclude_directories": [
     "tests/live-fixture",

@@ -44,9 +44,9 @@ are ignored by ID (see "Ignored audit advisories").
 | yamllint (`--strict`) | YAML style | `.yamllint.yaml` |
 | markdownlint-cli2 | Markdown style | `.markdownlint-cli2.jsonc` |
 | codespell | Typos | `[tool.codespell]` in `pyproject.toml` |
-| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (10) and `noExcessiveLinesPerFile` (600); the test directories get their own limits, see "Test files" | `biome.jsonc` |
+| Biome | Format, import order, and lint, including `noExcessiveCognitiveComplexity` (12) and `noExcessiveLinesPerFile` (600); the test directories get their own limits, see "Test files" | `biome.jsonc` |
 | `tsc --noEmit` | Types | `tsconfig.json`; the hook uses `tsconfig.hook.json`, which leaves out the live harness that imports `dist/` |
-| FTA | Maintainability score per file, cap 52, for everything except the test directories | `fta.json` |
+| FTA | Maintainability score per file, cap 55, for everything except the test directories | `fta.json` |
 | knip | Unused files, exports and dependencies | `knip.jsonc` |
 | `bun audit` | Known advisories in `bun.lock` | the `audit` script in `package.json` |
 | ruff (check and format), bandit, vulture, pyrefly, pylint (module length only, 600 lines), complexipy (14) | The Python under `tests/compatibility` and `benchmarks/permission-reviewer/scripts` | `pyproject.toml` |
@@ -74,7 +74,7 @@ and `uv sync --locked`.
 
 ### FTA
 
-`fta.json` sets `score_cap` to 52. `fta .` scans the whole repository, minus `.gitignore`d paths
+`fta.json` sets `score_cap` to 55. `fta .` scans the whole repository, minus `.gitignore`d paths
 and the `exclude_directories` in `fta.json`, and `extensions` adds `.mjs` to the TypeScript and
 JavaScript files it reads by default. Two behaviors of the tool matter when you edit it:
 
@@ -96,10 +96,10 @@ keeps the defaults.
 | Rule | Test directories | Everything else |
 | --- | --- | --- |
 | `noExcessiveLinesPerFile` | 800 lines | 600 lines |
-| `noExcessiveCognitiveComplexity` | 14 | 10 |
+| `noExcessiveCognitiveComplexity` | 14 | 12 |
 | `noAwaitInLoops` | off | on |
 | `noSecrets` | off | on |
-| FTA | not measured | cap 52 |
+| FTA | not measured | cap 55 |
 
 - Lines: test files hold long tables and fixtures, and splitting a well-set-up file costs more
   clarity than it buys.
