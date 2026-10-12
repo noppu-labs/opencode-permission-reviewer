@@ -26,7 +26,6 @@ const files = [
   ["src/ui/v2.tsx", "ui/v2.tsx"],
   ["src/ui/rpc.ts", "ui/rpc.ts"],
   ["src/ui/review-feed.ts", "ui/review-feed.ts"],
-  ["src/ui/host-value.ts", "ui/host-value.ts"],
   ["src/ui/review-store.ts", "ui/review-store.ts"],
   ["src/ui/review-connection.ts", "ui/review-connection.ts"],
   ["src/ui/review-theme.ts", "ui/review-theme.ts"],

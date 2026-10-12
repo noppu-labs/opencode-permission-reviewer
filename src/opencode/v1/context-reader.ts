@@ -1,5 +1,6 @@
 import { normalizeMessages, selectIntentMessages } from "../../context.ts";
 import type { ContextReader } from "../../core/ports.ts";
+import { asObjectLike } from "../../is-record.ts";
 import type { MessageWithParts } from "../../types.ts";
 import { responseData, withTimeout } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";
@@ -10,11 +11,7 @@ type CreatedTime = { created?: unknown } | undefined;
 
 /** The session's numeric creation time, when its metadata reports one. */
 function sessionCreatedAt(metadata: unknown): number | undefined {
-  const session =
-    typeof metadata === "object" && metadata !== null
-      ? (metadata as Record<string, unknown>)
-      : undefined;
-  const time = session?.time as CreatedTime;
+  const time = asObjectLike(metadata)?.time as CreatedTime;
   return typeof time?.created === "number" ? time.created : undefined;
 }
 

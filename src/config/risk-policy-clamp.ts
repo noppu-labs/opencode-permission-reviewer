@@ -1,4 +1,5 @@
 import { DEFAULT_RISK_POLICY } from "../config-risk-policy.ts";
+import { asObjectLike } from "../is-record.ts";
 
 type FailureKnob = "onInvalidDecision" | "onReviewerFailure";
 
@@ -21,12 +22,6 @@ export function clampRiskPolicy(
   return out;
 }
 
-function asObject(value: unknown): Record<string, unknown> | undefined {
-  return typeof value === "object" && value !== null
-    ? (value as Record<string, unknown>)
-    : undefined;
-}
-
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? (value as unknown[]) : [];
 }
@@ -35,8 +30,8 @@ function clampAllowMatrix(
   projectValue: unknown,
   trustedValue: unknown,
 ): Record<string, unknown> {
-  const projectAllow = asObject(projectValue);
-  const trustedAllow = asObject(trustedValue) ?? {};
+  const projectAllow = asObjectLike(projectValue);
+  const trustedAllow = asObjectLike(trustedValue) ?? {};
   const clampedAllow: Record<string, unknown> = {};
   for (const risk of ["low", "medium", "high", "critical"] as const) {
     const trustedCell = asArray(trustedAllow[risk]);

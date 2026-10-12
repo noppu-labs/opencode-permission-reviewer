@@ -1,5 +1,6 @@
 // Question events from the host, normalized: asked payloads into question texts, replies into per-question answers, rejections into their target.
 
+import { isRecord } from "../is-record.ts";
 import { redactSecrets } from "../redact.ts";
 
 /** Word the host uses for sub-questions the user left unanswered. */
@@ -18,10 +19,6 @@ interface ReplyShape {
   requestID: string;
 }
 
-export function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
 function sanitizeText(value: unknown, max: number): string | undefined {
   if (typeof value !== "string") return undefined;
   const text = value.trim();
@@ -35,7 +32,7 @@ function sanitizeText(value: unknown, max: number): string | undefined {
 
 /** Normalize a `question.(v2.)asked` payload into question texts. */
 export function parseAsked(properties: unknown): QuestionShape | undefined {
-  if (!isObject(properties)) return;
+  if (!isRecord(properties)) return;
   if (
     typeof properties.id !== "string" ||
     typeof properties.sessionID !== "string"
@@ -44,7 +41,7 @@ export function parseAsked(properties: unknown): QuestionShape | undefined {
   if (!Array.isArray(properties.questions)) return;
   const questions: string[] = [];
   for (const raw of properties.questions) {
-    if (!isObject(raw)) continue;
+    if (!isRecord(raw)) continue;
     const text = sanitizeText(raw.question, QUESTION_MAX_CHARS);
     if (text !== undefined) questions.push(text);
   }
@@ -58,7 +55,7 @@ export function parseAsked(properties: unknown): QuestionShape | undefined {
 export function parseReply(
   properties: unknown,
 ): { requestID: string; answers: string[] } | undefined {
-  if (!isObject(properties)) return;
+  if (!isRecord(properties)) return;
   if (typeof properties.requestID !== "string") return;
   if (!Array.isArray(properties.answers)) return;
   const perQuestion: string[] = [];
@@ -78,7 +75,7 @@ export function parseReply(
 }
 
 export function parseReplyTarget(properties: unknown): ReplyShape | undefined {
-  if (!isObject(properties)) return;
+  if (!isRecord(properties)) return;
   return typeof properties.requestID === "string"
     ? { requestID: properties.requestID }
     : undefined;

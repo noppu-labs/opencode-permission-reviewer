@@ -1,10 +1,10 @@
 import type { ColorInput } from "@opentui/core";
+import { asObjectLike } from "../is-record.ts";
 import type { ReviewTheme } from "./components.tsx";
-import { object } from "./host-value.ts";
 
 const color = (value: unknown): ColorInput | undefined => {
   if (typeof value === "string") return value;
-  const candidate = object(value);
+  const candidate = asObjectLike(value);
   return candidate && "buffer" in candidate ? (value as ColorInput) : undefined;
 };
 const FALLBACK_THEME: Record<keyof ReviewTheme, string> = {
@@ -17,17 +17,17 @@ const FALLBACK_THEME: Record<keyof ReviewTheme, string> = {
 };
 
 export function resolveReviewTheme(value: unknown): ReviewTheme {
-  const host = object(value);
+  const host = asObjectLike(value);
   if (!host) return FALLBACK_THEME;
-  const background = object(host.background);
-  const surface = object(background?.surface);
-  const raised = object(background?.raised);
-  const text = object(host.text);
-  const status = object(text?.status);
-  const feedback = object(text?.feedback);
-  const infoFeedback = object(feedback?.info);
-  const successFeedback = object(feedback?.success);
-  const errorFeedback = object(feedback?.error);
+  const background = asObjectLike(host.background);
+  const surface = asObjectLike(background?.surface);
+  const raised = asObjectLike(background?.raised);
+  const text = asObjectLike(host.text);
+  const status = asObjectLike(text?.status);
+  const feedback = asObjectLike(text?.feedback);
+  const infoFeedback = asObjectLike(feedback?.info);
+  const successFeedback = asObjectLike(feedback?.success);
+  const errorFeedback = asObjectLike(feedback?.error);
   return {
     backgroundPanel:
       color(surface?.overlay) ??

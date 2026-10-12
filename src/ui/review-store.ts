@@ -1,10 +1,10 @@
+import { asObjectLike } from "../is-record.ts";
 import {
   decodeUiStatus,
   encodeUiStatus,
   type ReviewUiStatus,
 } from "../ui-protocol.ts";
 import { ReviewUiState } from "../ui-state.ts";
-import { object } from "./host-value.ts";
 
 interface ReviewSnapshot extends Record<string, unknown> {
   generation: string;
@@ -57,7 +57,7 @@ export class ReviewStore {
     value: unknown,
     directory: string | undefined,
   ): "ignored" | "foreign" | "applied" {
-    const event = object(value);
+    const event = asObjectLike(value);
     if (!event || event.directory !== directory) return "ignored";
     if (typeof event.generation !== "string") return "ignored";
     if (event.generation !== this.generation) return "foreign";

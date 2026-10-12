@@ -1,12 +1,7 @@
+import { asObjectLike } from "../is-record.ts";
 import type { PermissionRequest } from "../types.ts";
 
 type UnknownRecord = Record<string, unknown>;
-
-function asRecord(value: unknown): UnknownRecord | undefined {
-  return typeof value === "object" && value !== null
-    ? (value as UnknownRecord)
-    : undefined;
-}
 
 function strings(items: unknown[]): string[] {
   return items.filter((item): item is string => typeof item === "string");
@@ -14,13 +9,13 @@ function strings(items: unknown[]): string[] {
 
 /** The `properties` record of a `permission.asked` event, if it has one. */
 function askedProperties(event: unknown): UnknownRecord | undefined {
-  const record = asRecord(event);
+  const record = asObjectLike(event);
   if (record?.type !== "permission.asked") return;
-  return asRecord(record.properties);
+  return asObjectLike(record.properties);
 }
 
 function toolReference(value: unknown): PermissionRequest["tool"] {
-  const tool = asRecord(value);
+  const tool = asObjectLike(value);
   if (typeof tool?.messageID !== "string" || typeof tool.callID !== "string")
     return undefined;
   return { messageID: tool.messageID, callID: tool.callID };
@@ -48,7 +43,7 @@ export function extractPermissionRequest(
 
   const patterns = strings(request.patterns);
   if (patterns.length !== request.patterns.length) return;
-  const metadata = asRecord(request.metadata) ?? {};
+  const metadata = asObjectLike(request.metadata) ?? {};
   const always = Array.isArray(request.always) ? strings(request.always) : [];
   // `always` is parsed for forward compatibility (a future "persist this
   // approval" surface) but is not consumed by the reviewer yet.

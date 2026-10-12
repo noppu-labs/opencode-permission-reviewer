@@ -1,6 +1,6 @@
 import type { AskDecision } from "../actor-context-types.ts";
+import { isRecord } from "../is-record.ts";
 import {
-  isObject,
   parseAsked,
   parseReply,
   parseReplyTarget,
@@ -68,7 +68,7 @@ export class AskDecisionRegistry implements AskDecisionSource {
    * hook so registry mutations are visible to reviews started later.
    */
   observe(event: unknown): void {
-    if (!isObject(event)) return;
+    if (!isRecord(event)) return;
     switch (event.type) {
       case "question.asked":
       case "question.v2.asked":

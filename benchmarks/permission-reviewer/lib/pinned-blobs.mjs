@@ -30,8 +30,7 @@ export const PINNED_BLOBS = {
   "src/reviewer-model.ts": "e8b33fa484ff8de522060c5a4a1d6426d55f9845",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/decision.ts": "4d806acf86e01fec23c9b93d2d98e0b57aa7bb3a",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/is-record.ts": "35b95a114cf76583162098c99d66d72f9cb3b9dd",
+  "src/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/decision-gates.ts": "f54307ffb219fb625546db1a88652ee031c45621",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

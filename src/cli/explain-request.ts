@@ -1,4 +1,5 @@
 // Normalising `explain`'s input JSON into a permission request: a V2 native action or a legacy permission request.
+import { asObjectLike } from "../is-record.ts";
 import { normalizeV2Permission } from "../opencode/v2/permission-codec.ts";
 import type { PermissionRequest, PermissionToolSource } from "../types.ts";
 
@@ -76,7 +77,5 @@ function sessionOf(v: Record<string, unknown>): string {
 }
 
 function metadataOf(v: Record<string, unknown>): Record<string, unknown> {
-  return typeof v.metadata === "object" && v.metadata !== null
-    ? (v.metadata as Record<string, unknown>)
-    : {};
+  return asObjectLike(v.metadata) ?? {};
 }

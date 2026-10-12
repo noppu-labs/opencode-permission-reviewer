@@ -1,6 +1,6 @@
 import type { Plugin } from "@opencode/plugin/tui";
+import { asObjectLike } from "../is-record.ts";
 import type { ReviewUiState } from "../ui-state.ts";
-import { object } from "./host-value.ts";
 import { type Connection, receive, release } from "./review-connection.ts";
 import { isSnapshot, ReviewStore } from "./review-store.ts";
 import { ReviewerRpc } from "./rpc.ts";
@@ -58,7 +58,7 @@ export function createReviewFeed(
   };
   // Applies the snapshot; false when the connection was dropped meanwhile.
   const applySnapshot = (value: unknown, connection: Connection): boolean => {
-    const snapshot = object(value);
+    const snapshot = asObjectLike(value);
     if (!isSnapshot(snapshot, connection.directory))
       throw new Error("Invalid reviewer snapshot");
     if (connection.controller.signal.aborted) return false;

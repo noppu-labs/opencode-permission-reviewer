@@ -10,7 +10,6 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/ui/v2.tsx",
   "dist/tui/ui/rpc.ts",
   "dist/tui/ui/review-feed.ts",
-  "dist/tui/ui/host-value.ts",
   "dist/tui/ui/review-store.ts",
   "dist/tui/ui/review-connection.ts",
   "dist/tui/ui/review-theme.ts",

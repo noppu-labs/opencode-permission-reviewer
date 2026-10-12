@@ -467,3 +467,46 @@ describe("askDecisions config knob", () => {
     expect(resolveConfig({ askDecisions: "no" }).askDecisions).toBe(true);
   });
 });
+
+describe("host hardening batch 13", () => {
+  test.each([
+    ["an array event", [asked("que_1", "ses_main", ["Deploy?"])]],
+    [
+      "an array properties",
+      { type: "question.asked", properties: ["que_1", "ses_main"] },
+    ],
+  ])("ignores each shape: %s", (_label, event) => {
+    const registry = new AskDecisionRegistry();
+    registry.observe(event);
+    expect(registry.pendingCount()).toBe(0);
+    registry.observe(replied("que_1", [["Yes"]]));
+    expect(registry.recentFor(["ses_main"])).toEqual([]);
+  });
+
+  test("ignores an array question entry and keeps the others", () => {
+    const registry = new AskDecisionRegistry();
+    registry.observe({
+      type: "question.asked",
+      properties: {
+        id: "que_1",
+        sessionID: "ses_main",
+        questions: [["Skipped?"], { question: "Kept?" }],
+      },
+    });
+    registry.observe(replied("que_1", [["Yes"]]));
+    expect(
+      registry.recentFor(["ses_main"]).map(({ question }) => question),
+    ).toEqual(["Kept?"]);
+  });
+
+  test.each(["replied", "rejected"])(
+    "ignores an array %s properties",
+    (kind) => {
+      const registry = new AskDecisionRegistry();
+      registry.observe(asked("que_1", "ses_main", ["Deploy?"]));
+      registry.observe({ type: `question.${kind}`, properties: ["que_1"] });
+      expect(registry.pendingCount()).toBe(1);
+      expect(registry.recentFor(["ses_main"])).toEqual([]);
+    },
+  );
+});
