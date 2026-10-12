@@ -37,34 +37,28 @@ function allows(title: string, commands: string[]): void {
   });
 }
 
-describe("rm long options are resolved like GNU getopt_long", () => {
-  blocks(
-    "an abbreviated recursive or force option counts like its full spelling, case %#",
-    [
-      "rm --rec --forc --no-preserve-root /",
-      "rm --r --f /*",
-      "rm --recur --force /*",
-      "rm --recursive --forc /*",
-      "sudo rm --r --f /",
-      "bash -c 'rm --recur --fo /'",
-      "find / -exec rm --r --f {} +",
-    ],
-  );
+describe("hardening batch 1", () => {
+  blocks("blocks each command, case %#", [
+    "rm --rec --forc --no-preserve-root /",
+    "rm --r --f /*",
+    "rm --recur --force /*",
+    "rm --recursive --forc /*",
+    "sudo rm --r --f /",
+    "bash -c 'rm --recur --fo /'",
+    "find / -exec rm --r --f {} +",
+  ]);
 
-  allows(
-    "an option that is neither recursive nor force, or a word after --, sets neither, case %#",
-    [
-      "rm --v --f /",
-      "rm --interactive=never --f /",
-      "rm --one-file-system --no-preserve-root /",
-      "rm --recursive=yes --f /",
-      "rm -f -- --recursive /",
-      "rm -r -- --force /",
-    ],
-  );
+  allows("allows each command, case %#", [
+    "rm --v --f /",
+    "rm --interactive=never --f /",
+    "rm --one-file-system --no-preserve-root /",
+    "rm --recursive=yes --f /",
+    "rm -f -- --recursive /",
+    "rm -r -- --force /",
+  ]);
 });
 
-describe("rm records whether root protection is switched off", () => {
+describe("hardening batch 2", () => {
   const flagsOf = (command: string): boolean =>
     hasRmFlags(command.split(" ").map((word) => ({ raw: word, value: word })))
       .noPreserveRoot;
@@ -79,16 +73,13 @@ describe("rm records whether root protection is switched off", () => {
     ["rm -rf --no-preserve-root=yes /", false],
     ["rm -rf -- --no-preserve-root /", false],
     ["rm -rf /", false],
-  ])(
-    "the root-protection flag follows the last accepted spelling, case %#",
-    (command, expected) => {
-      expect(flagsOf(command)).toBe(expected);
-    },
-  );
+  ])("checks each case, case %#", (command, expected) => {
+    expect(flagsOf(command)).toBe(expected);
+  });
 });
 
-describe("recursive rm on a protected target needs no force", () => {
-  blocks("blocks recursive rm on a protected target without force, case %#", [
+describe("hardening batch 3", () => {
+  blocks("blocks each command, case %#", [
     "rm -r /*",
     "rm -R /*",
     "rm --recursive /*",
@@ -105,7 +96,7 @@ describe("recursive rm on a protected target needs no force", () => {
     "find / -exec rm {} \\; -exec rm -r {} +",
   ]);
 
-  allows("keeps a non-destructive neighbour allowed, case %#", [
+  allows("allows each command, case %#", [
     // Plain `/` needs force or --no-preserve-root: GNU and BSD rm refuse it.
     "rm -r /",
     "rm -r --one-file-system /",
@@ -127,8 +118,8 @@ describe("recursive rm on a protected target needs no force", () => {
   ]);
 });
 
-describe("find checks every search path", () => {
-  blocks("blocks when any search path is the root, case %#", [
+describe("hardening batch 4", () => {
+  blocks("blocks each command, case %#", [
     "find /tmp / -delete",
     "find /tmp /var / -delete",
     "find -L /tmp / -delete",
@@ -158,7 +149,7 @@ describe("find checks every search path", () => {
     "find -Lf/ -delete",
   ]);
 
-  allows("keeps a non-root search allowed, case %#", [
+  allows("allows each command, case %#", [
     "find /tmp /var -delete",
     // A word after the first expression word belongs to the expression.
     "find /tmp ! -name / -delete",
@@ -173,8 +164,8 @@ describe("find checks every search path", () => {
   ]);
 });
 
-describe("a root glob may end in a slash", () => {
-  blocks("blocks a live root glob with trailing slashes, case %#", [
+describe("hardening batch 5", () => {
+  blocks("blocks each command, case %#", [
     "rm -r /*/",
     "rm -rf /*/",
     "rm -r //*//",
@@ -182,7 +173,7 @@ describe("a root glob may end in a slash", () => {
     "find /*/ -delete",
   ]);
 
-  allows("keeps a deeper or literal path allowed, case %#", [
+  allows("allows each command, case %#", [
     "rm -r '/*/'",
     "rm -r /\\*/",
     "rm -r /*/tmp",
@@ -191,22 +182,19 @@ describe("a root glob may end in a slash", () => {
   ]);
 });
 
-describe("device and copy detectors resolve long-option prefixes", () => {
-  blocksSome(
-    "blocks a device or copy command with an abbreviated option, case %#",
-    [
-      "wipefs --a /dev/sda",
-      "wipefs --ty ext4 /dev/sda",
-      "sfdisk --del /dev/sda 1",
-      "cp src /dev/sda --suf x",
-      "install src /dev/sda --mo 0644",
-      "cp --context src /dev/sda",
-      "cp --backup src /dev/sda",
-      "install --backup src /dev/sda",
-    ],
-  );
+describe("hardening batch 6", () => {
+  blocksSome("blocks each command, case %#", [
+    "wipefs --a /dev/sda",
+    "wipefs --ty ext4 /dev/sda",
+    "sfdisk --del /dev/sda 1",
+    "cp src /dev/sda --suf x",
+    "install src /dev/sda --mo 0644",
+    "cp --context src /dev/sda",
+    "cp --backup src /dev/sda",
+    "install --backup src /dev/sda",
+  ]);
 
-  allows("keeps a non-destructive device or copy command allowed, case %#", [
+  allows("allows each command, case %#", [
     "wipefs --no-act /dev/sda",
     "wipefs --j /dev/sda",
     "sfdisk --du /dev/sda",
@@ -219,8 +207,8 @@ describe("device and copy detectors resolve long-option prefixes", () => {
   ]);
 });
 
-describe("device format and wipe options follow each tool", () => {
-  blocksSome("blocks a device format or wipe, case %#", [
+describe("hardening batch 7", () => {
+  blocksSome("blocks each command, case %#", [
     "mkfs.xfs -n size=8192 /dev/sdb",
     "mkfs.btrfs -n 65536 /dev/sdb",
     "mkfs.vfat -n DATA /dev/sdb",
@@ -238,7 +226,7 @@ describe("device format and wipe options follow each tool", () => {
     "sudo mkfs.xfs -n size=8192 /dev/sdb",
   ]);
 
-  allows("keeps a dry run or listing allowed, case %#", [
+  allows("allows each command, case %#", [
     "mkfs.ext4 -n /dev/sdb",
     "mke2fs -n /dev/sdb",
     "mkfs -n /dev/sdb",
@@ -254,8 +242,8 @@ describe("device format and wipe options follow each tool", () => {
   ]);
 });
 
-describe("device option clusters and long names are read in full", () => {
-  blocksSome("blocks a device format or wipe, case %#", [
+describe("hardening batch 8", () => {
+  blocksSome("blocks each command, case %#", [
     "mkfs --type xfs -n /dev/sdb",
     "mkfs --type=xfs -n /dev/sdb",
     "mkfs --ty=xfs -n /dev/sdb",
@@ -269,7 +257,7 @@ describe("device option clusters and long names are read in full", () => {
     "sgdisk -pd 1 /dev/sda",
   ]);
 
-  allows("keeps a dry run or listing allowed, case %#", [
+  allows("allows each command, case %#", [
     "mkfs --type ext4 -n /dev/sdb",
     "mkfs -Vt ext4 -n /dev/sdb",
     "mkfs --ty=ext3 -n /dev/sdb",
@@ -282,15 +270,15 @@ describe("device option clusters and long names are read in full", () => {
   ]);
 });
 
-describe("device option scans stop where the tool stops reading options", () => {
-  blocksSome("blocks a device format or wipe, case %#", [
+describe("hardening batch 9", () => {
+  blocksSome("blocks each command, case %#", [
     "mkfs -t vfat -n -text4 /dev/sdb",
     "mkfs -t xfs -n size=8192 -L -text4 /dev/sdb",
     "mkfs -n -t xfs /dev/sdb",
     "mkfs -t ext4 -n -t xfs /dev/sdb",
   ]);
 
-  allows("keeps a dry run or listing allowed, case %#", [
+  allows("allows each command, case %#", [
     "wipefs -Ooffset /dev/sda",
     "wipefs -Otype /dev/sda",
     "wipefs -fOoffset /dev/sda",
@@ -299,8 +287,8 @@ describe("device option scans stop where the tool stops reading options", () => 
   ]);
 });
 
-describe("output duplication onto a block device is a write whatever the descriptor digit", () => {
-  blocksSome("blocks output duplication onto a block device, case %#", [
+describe("hardening batch 10", () => {
+  blocksSome("blocks each command, case %#", [
     "echo x 1>& /dev/sda",
     "echo x 1>&/dev/sda",
     "echo x 2>& /dev/sda",
@@ -309,7 +297,7 @@ describe("output duplication onto a block device is a write whatever the descrip
     "sudo sh -c 'echo x 1>& /dev/nvme0n1'",
   ]);
 
-  allows("keeps descriptor duplication allowed, case %#", [
+  allows("allows each command, case %#", [
     "echo x 1>&2",
     "echo x 2>&1",
     "echo x 1>&-",
@@ -319,8 +307,8 @@ describe("output duplication onto a block device is a write whatever the descrip
   ]);
 });
 
-describe("redirections of a segment are checked at every level, with or without a command", () => {
-  blocks("blocks a device redirection in a command string, case %#", [
+describe("hardening batch 11", () => {
+  blocks("blocks each command, case %#", [
     "sh -c 'exec > /dev/sda'",
     "sh -c 'exec 3<> /dev/sda'",
     "bash -c 'exec >> /dev/sdb'",
@@ -332,20 +320,17 @@ describe("redirections of a segment are checked at every level, with or without 
     "env -S 'sh -c \"exec > /dev/sda\"'",
   ]);
 
-  blocks(
-    "blocks a device redirection in a segment without a command, case %#",
-    [
-      "exec >& /dev/sda",
-      "exec 1>& /dev/sda",
-      ">& /dev/sda",
-      "exec >&/dev/sda",
-      "exec 2>&/dev/sda",
-      "exec >| /dev/sda",
-      ">| /dev/sda",
-    ],
-  );
+  blocks("blocks each command of the second group, case %#", [
+    "exec >& /dev/sda",
+    "exec 1>& /dev/sda",
+    ">& /dev/sda",
+    "exec >&/dev/sda",
+    "exec 2>&/dev/sda",
+    "exec >| /dev/sda",
+    ">| /dev/sda",
+  ]);
 
-  allows("keeps a harmless redirection allowed, case %#", [
+  allows("allows each command, case %#", [
     "sh -c 'exec > /tmp/log'",
     "sh -c 'exec 2> /dev/null'",
     "sh -c 'exec < /dev/sda'",
@@ -354,8 +339,8 @@ describe("redirections of a segment are checked at every level, with or without 
   ]);
 });
 
-describe("watch runs its command through a shell", () => {
-  blocks("blocks destruction run through watch, case %#", [
+describe("hardening batch 12", () => {
+  blocks("blocks each command, case %#", [
     "watch 'rm -rf /'",
     'watch "rm -rf /*"',
     "watch -n 5 'rm -rf /'",
@@ -370,7 +355,7 @@ describe("watch runs its command through a shell", () => {
     "watch -n 5 rm -rf '/*'",
   ]);
 
-  allows("keeps a legitimate watch form allowed, case %#", [
+  allows("allows each command, case %#", [
     "watch 'ls -la'",
     "watch -n 5 'df -h'",
     "watch -x ls -la",
@@ -384,32 +369,26 @@ describe("watch runs its command through a shell", () => {
   ]);
 });
 
-describe("a blank command metadata is reviewed through the patterns", () => {
-  test.each(["", "   "])(
-    "a destructive pattern is blocked, case %#",
-    (command) => {
-      expect(
-        emergencyBrakeReason(
-          request({ metadata: { command }, patterns: ["rm -rf /"] }),
-        ),
-      ).toBe(blocked);
-    },
-  );
+describe("hardening batch 13", () => {
+  test.each(["", "   "])("blocks each case, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: ["rm -rf /"] }),
+      ),
+    ).toBe(blocked);
+  });
 
-  test.each(["", "   "])(
-    "harmless patterns stay allowed, case %#",
-    (command) => {
-      expect(
-        emergencyBrakeReason(
-          request({ metadata: { command }, patterns: ["ls -la", "echo ok"] }),
-        ),
-      ).toBeUndefined();
-    },
-  );
+  test.each(["", "   "])("allows each case, case %#", (command) => {
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: ["ls -la", "echo ok"] }),
+      ),
+    ).toBeUndefined();
+  });
 });
 
-describe("find exec commands are read after their wrappers", () => {
-  blocks("blocks a recursive rm run on a root search, case %#", [
+describe("hardening batch 14", () => {
+  blocks("blocks each command, case %#", [
     "find / -exec sudo rm -rf {} +",
     "find / -exec env rm -rf {} +",
     "find / -exec doas rm -rf {} +",
@@ -421,7 +400,7 @@ describe("find exec commands are read after their wrappers", () => {
     "find / -execdir nice -n 5 rm -rf {} +",
   ]);
 
-  allows("keeps a legitimate find exec command allowed, case %#", [
+  allows("allows each command, case %#", [
     "find /tmp -exec sudo rm -rf {} +",
     "find / -name '*.log' -exec sudo ls -l {} +",
     "find / -exec env grep x {} +",
@@ -429,15 +408,15 @@ describe("find exec commands are read after their wrappers", () => {
   ]);
 });
 
-describe("a find exec rm is judged by the rm root rule", () => {
-  blocks("blocks an rm of a protected target, case %#", [
+describe("hardening batch 15", () => {
+  blocks("blocks each command, case %#", [
     "find . -exec rm -rf /* \\;",
     "find /tmp -exec rm -r --no-preserve-root / \\;",
     "find . -exec rm -rf / \\;",
     "find . -name x -exec sudo rm -r /* +",
   ]);
 
-  allows("keeps a non-root rm allowed, case %#", [
+  allows("allows each command, case %#", [
     "find . -exec rm -rf ./build \\;",
     "find . -exec rm -r / \\;",
     "find /tmp -exec rm -rf {} +",
@@ -445,9 +424,9 @@ describe("a find exec rm is judged by the rm root rule", () => {
   ]);
 });
 
-describe("find exec commands share the analysis budget", () => {
+describe("hardening batch 16", () => {
   blocks(
-    "rejects a find exec command beyond the analysis budget, case %#",
+    "rejects each command, case %#",
     [
       `find / -exec ${"timeout 9 ".repeat(33)}rm -rf {} +`,
       `find / -exec ${"busybox ".repeat(33)}rm -rf {} +`,
@@ -459,32 +438,29 @@ describe("find exec commands share the analysis budget", () => {
     limited,
   );
 
-  allows(
-    "keeps a find exec command within the analysis budget allowed, case %#",
-    [
-      "find /tmp -exec sudo rm -rf {} +",
-      "find / -exec sudo ls -l {} +",
-      `find / -exec ${"timeout 9 ".repeat(32)}ls {} +`,
-    ],
-  );
+  allows("allows each command, case %#", [
+    "find /tmp -exec sudo rm -rf {} +",
+    "find / -exec sudo ls -l {} +",
+    `find / -exec ${"timeout 9 ".repeat(32)}ls {} +`,
+  ]);
 });
 
-describe("a find run by an exec action is judged like a top-level find", () => {
-  blocks("judges a find run by an exec action like a top-level find, case %#", [
+describe("hardening batch 17", () => {
+  blocks("blocks each command, case %#", [
     "find . -exec find / -delete \\;",
     "find /tmp -exec find / -exec rm -rf {} + \\;",
     "find . -exec sudo find / -delete \\;",
     "find . -ok find /tmp / -delete \\;",
   ]);
 
-  allows("keeps a find run by an exec action allowed, case %#", [
+  allows("allows each command, case %#", [
     "find . -exec find /tmp -delete \\;",
     "find / -exec find . -name x \\;",
     "find . -exec find {} -type f \\;",
   ]);
 
   blocks(
-    "rejects nested finds beyond the analysis budget, case %#",
+    "rejects each command, case %#",
     [
       `find . -exec sh -c 'find . -exec ${"timeout 9 ".repeat(33)}ls {} \\;' \\;`,
       `find . ${"-exec find . ".repeat(100)}`,
@@ -494,8 +470,8 @@ describe("a find run by an exec action is judged like a top-level find", () => {
   );
 });
 
-describe("partition tools read their short options", () => {
-  blocks("blocks a partition table rewrite, case %#", [
+describe("hardening batch 18", () => {
+  blocks("blocks each command, case %#", [
     "sfdisk -W always /dev/sda",
     "sfdisk -w always /dev/sda",
     "sfdisk -Walways /dev/sda",
@@ -504,7 +480,7 @@ describe("partition tools read their short options", () => {
     "sudo sfdisk -w always /dev/sda",
   ]);
 
-  allows("keeps a listing or a non-device target allowed, case %#", [
+  allows("allows each command, case %#", [
     "sfdisk -l /dev/sda",
     "sfdisk -d /dev/sda",
     "sfdisk -Ow /dev/sda",
@@ -513,8 +489,8 @@ describe("partition tools read their short options", () => {
   ]);
 });
 
-describe("sgdisk clears the partition table with its clear option", () => {
-  blocks("blocks a new empty partition table, case %#", [
+describe("hardening batch 19", () => {
+  blocks("blocks each command, case %#", [
     "sgdisk -o /dev/sda",
     "sgdisk --clear /dev/sda",
     "sgdisk -go /dev/sda",
@@ -522,7 +498,7 @@ describe("sgdisk clears the partition table with its clear option", () => {
     "sudo sgdisk -o /dev/nvme0n1",
   ]);
 
-  allows("keeps a listing or a non-device target allowed, case %#", [
+  allows("allows each command, case %#", [
     "sgdisk -p /dev/sda",
     "sgdisk --print /dev/sda",
     "sgdisk -O /dev/sda",
