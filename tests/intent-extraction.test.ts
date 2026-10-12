@@ -170,7 +170,7 @@ describe("context hardening batch 12", () => {
     "  MAGIC COMPACT: history compressed",
     "Magic Compact: anything at all",
     "you have 12 weighted tokens left",
-  ])("selects the human line, not the part %j", async (value) => {
+  ])("selects the human line, not part %#", async (value) => {
     const result = await lines([value, "Real human line"]);
     const human = block(
       CURRENT,
@@ -187,7 +187,7 @@ describe("context hardening batch 12", () => {
   test.each([
     "magic compact: compaction in progress...",
     "you have 12 weighted tokens left",
-  ])("yields no intent from the lone part %j", async (value) => {
+  ])("yields no intent from the lone part %#", async (value) => {
     const result = await lines([value]);
     expect(result.directUserIntent).toStrictEqual([]);
     expect(result.latestExplicitAuthorization).toBeUndefined();
@@ -196,7 +196,7 @@ describe("context hardening batch 12", () => {
   test.each([
     "Please explain what Magic Compact: means here",
     "Note that you have 5 weighted tokens left over",
-  ])("selects each message %j as human text", async (value) => {
+  ])("selects message %# as human text", async (value) => {
     const result = await lines([value]);
     expect(result.latestExplicitAuthorization?.text).toBe(value);
   });

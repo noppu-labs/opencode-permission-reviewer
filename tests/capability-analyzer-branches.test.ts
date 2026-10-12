@@ -103,7 +103,7 @@ describe("analyzeCapability credential operands", () => {
     ["cat '<x' .env", "credentialRead"],
     ["cat \\> .env", "credentialRead"],
     ["cat '>' notes.txt", ""],
-  ])("%s", (command, expected) => {
+  ])("case %#", (command, expected) => {
     expect(capabilityProfile(command)).toBe(
       `read-only/medium | read-only | ${expected}`,
     );
@@ -129,7 +129,7 @@ describe("analyzer hardening batch 1", () => {
     "git --namespace ns push https://example.invalid/x.git main",
     "git --config-env k=ENV push https://example.invalid/x.git main",
     "git --attr-source HEAD push https://example.invalid/x.git main",
-  ])("%s", (command) => {
+  ])("case %#", (command) => {
     expect(capabilityProfile(command)).toStartWith("git-mutation/high |");
   });
 });
@@ -153,7 +153,7 @@ describe("analyzer hardening batch 6", () => {
     "nice busybox ssh host 'rm -rf /'",
     "sudo chroot /r ssh host 'rm -rf /'",
     "busybox FOO=1 ssh host 'rm -rf /'",
-  ])("%s", (command) => {
+  ])("case %#", (command) => {
     const facts = capabilityProfile(command).split(" | ")[2] ?? "";
     expect(facts).toContain("remote.enabled");
     expect(facts).toContain("remote.mutationHint");
@@ -165,7 +165,7 @@ describe("analyzer hardening batch 6", () => {
     ["nice sudo ls", "process.privilegeEscalation"],
     ["busybox nohup ls", "process.persistence"],
     ["env nohup ls", "process.persistence"],
-  ])("%s carries its wrapper fact", (command, fact) => {
+  ])("case %# carries its wrapper fact", (command, fact) => {
     const facts = capabilityProfile(command).split(" | ")[2] ?? "";
     expect(facts).toContain(fact);
   });
@@ -211,7 +211,7 @@ describe("analyzer hardening batch 10", () => {
       "echo $(dd if=/dev/zero of=/dev/sda)",
     ],
     ['echo "$(echo x > /dev/sda)"', "echo $(echo x > /dev/sda)"],
-  ])("%s keeps the profile", (command, twin) => {
+  ])("case %# keeps the profile", (command, twin) => {
     expect(capabilityProfile(command)).toBe(capabilityProfile(twin));
   });
 
@@ -232,7 +232,7 @@ describe("analyzer hardening batch 10", () => {
     'echo "\\$(rm -rf /)"',
     'echo "\\`rm -rf /\\`"',
     'echo "$((1 + 2))"',
-  ])("%s", (command) => {
+  ])("case %#", (command) => {
     expect(capabilityProfile(command)).toBe("read-only/medium | read-only | ");
   });
 });

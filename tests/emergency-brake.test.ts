@@ -176,7 +176,7 @@ describe("deterministic emergency brake", () => {
     'echo "$( (rm -rf /) )"',
     "ls `rm -rf /",
     'echo "$(rm -rf /',
-  ])("rejects unmistakable critical command: %s", (command) => {
+  ])("rejects unmistakable critical command %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
     ).toBeString();
@@ -269,7 +269,7 @@ describe("deterministic emergency brake", () => {
     'echo "\\$(rm -rf /)"',
     'echo "\\`rm -rf /\\`"',
     'echo "$((1 + 2))"',
-  ])("does not overreach on non-critical command: %s", (command) => {
+  ])("does not overreach on non-critical command %#", (command) => {
     expect(
       emergencyBrakeReason(request({ metadata: { command } })),
     ).toBeUndefined();
@@ -527,7 +527,7 @@ describe("analyzer hardening batch 10", () => {
     "git commit -m \"$(cat <<'EOF'\nrm -rf /\nEOF\n)\"",
     "git commit -m \"$(cat <<'EOF'\nDon't (a) b)\nrm -rf /\nEOF\n)\"",
     'git commit -m "$(cat <<-EOF\n\trm -rf /\n\tEOF\n)"',
-  ])("keeps each command: %s", (command) => {
+  ])("keeps each command %#", (command) => {
     expect(brake(command)).toBeUndefined();
   });
 
@@ -536,7 +536,7 @@ describe("analyzer hardening batch 10", () => {
     'echo "$(case x in x) rm -rf / ;; esac)"',
     'echo "$(echo a # )\nrm -rf /\n)"',
     "echo \"$(echo ')' ; rm -rf /)\"",
-  ])("blocks each command: %s", (command) => {
+  ])("blocks each command %#", (command) => {
     expect(brake(command)).toBe(blocked);
   });
 

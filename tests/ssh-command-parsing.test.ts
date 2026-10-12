@@ -237,7 +237,7 @@ const SSH_BATCH_5_CASES: ReadonlyArray<
 ];
 
 describe("evidence hardening batch 5", () => {
-  test.each(SSH_BATCH_5_CASES)("records each case %p", (tokens, expected) => {
+  test.each(SSH_BATCH_5_CASES)("records case %#", (tokens, expected) => {
     expect(parseSsh(tokens, findSshIndex(tokens))).toStrictEqual(expected);
   });
 });

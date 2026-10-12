@@ -371,7 +371,7 @@ describe("context hardening batch 11", () => {
   ];
 
   test.each(["build", "constructor", "toString", "valueOf", "__proto__"])(
-    "routes each agent: %s",
+    "routes each agent %#",
     async (agent) => {
       const { reader } = sessionReader(childAndParent);
       const mapped = agent === "build";

@@ -174,7 +174,7 @@ describe("context hardening batch 12", () => {
     "  MAGIC COMPACT: history compressed",
     "Magic Compact: anything at all",
     "you have 12 weighted tokens left",
-  ])("omits the part %j from every section", (value) => {
+  ])("omits part %# from every section", (value) => {
     const messages = messagesOf("Keep this line", value);
     const intent = buildIntentHistory(messages, DEFAULT_CONFIG);
     const transcript = buildTranscript(messages, DEFAULT_CONFIG);
@@ -188,7 +188,7 @@ describe("context hardening batch 12", () => {
   test.each([
     "Please explain what Magic Compact: means here",
     "Note that you have 5 weighted tokens left over",
-  ])("keeps the text %j in every section", (value) => {
+  ])("keeps text %# in every section", (value) => {
     const messages = messagesOf(value);
     expect(buildIntentHistory(messages, DEFAULT_CONFIG)).toContain(value);
     expect(buildTranscript(messages, DEFAULT_CONFIG)).toContain(value);

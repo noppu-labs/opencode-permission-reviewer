@@ -557,7 +557,7 @@ describe("analyzer hardening batch 10", () => {
     ["echo '`a`' \\`b\\` \"\\$(c)\"", [["echo", "`a`", "`b`", "$(c)"]]],
     ['echo "$((1 + 2))"', [["echo", "$((1 + 2))"]]],
     ['x="$(echo "a b")"', [["b)"], ["echo", "a b"]]],
-  ])("resolves each command: %s", (command, expected) => {
+  ])("resolves each command %#", (command, expected) => {
     expect(firstExecutables(command)).toEqual(expected);
   });
 

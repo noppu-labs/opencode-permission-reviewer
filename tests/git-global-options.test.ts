@@ -23,7 +23,7 @@ describe("gitSubcommandIndex", () => {
     ["git -p --no-pager push", "push"],
     ["git", undefined],
     ["git -C", undefined],
-  ])("%p has subcommand %p", (command, expected) => {
+  ])("case %# has its subcommand", (command, expected) => {
     expect(subcommandOf(command)).toBe(expected);
   });
 });

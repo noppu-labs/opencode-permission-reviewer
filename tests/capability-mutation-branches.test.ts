@@ -124,7 +124,7 @@ describe("classifyPath", () => {
       "/tmp/w",
       { temporary: true, workspace: true, external: false },
     ],
-  ])("%p in %p (worktree %p)", (target, directory, worktree, expected) => {
+  ])("case %#", (target, directory, worktree, expected) => {
     expect(classifyPath(target, directory, worktree)).toEqual(expected);
   });
 });
