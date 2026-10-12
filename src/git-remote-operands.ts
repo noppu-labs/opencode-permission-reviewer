@@ -19,8 +19,8 @@ const REMOTE_VERBS_WITH_NAME = new Set([
 ]);
 
 /** First positional operand of a network subcommand, skipping options and
- *  their separate values. Returns the `--repo` override when one is set,
- *  otherwise the operand. */
+ *  their separate values, plus push's `--repo` override when one is set.
+ *  Both are destinations: git uses the positional when both are given. */
 function networkOperand(
   tokens: string[],
   index: number,
@@ -42,7 +42,7 @@ function networkOperand(
       operand ??= token;
     }
   }
-  return repoOverride === undefined ? { operand } : { repoOverride };
+  return { operand, repoOverride };
 }
 
 /** One option of a network subcommand at `cursor`: the index of its last
@@ -55,7 +55,7 @@ function networkOption(
   valueOpts: ReadonlySet<string>,
 ): { last: number; repoOverride?: string } {
   const token = elementAt(tokens, cursor, "tokens");
-  if (token === "--repo" && cursor + 1 < tokens.length)
+  if (subcommand === "push" && token === "--repo" && cursor + 1 < tokens.length)
     return {
       last: cursor + 1,
       repoOverride: elementAt(tokens, cursor + 1, "tokens"),

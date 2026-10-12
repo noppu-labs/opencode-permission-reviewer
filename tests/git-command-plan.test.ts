@@ -312,7 +312,7 @@ const PLANS: Array<[string, Partial<PlannedGitActions> | undefined]> = [
     "git push --repo upstream origin",
     {
       commands: ["push"],
-      remoteCandidates: ["upstream"],
+      remoteCandidates: ["upstream", "origin"],
       executionDirectory: "/work/repo",
     },
   ],
@@ -320,6 +320,22 @@ const PLANS: Array<[string, Partial<PlannedGitActions> | undefined]> = [
     "git push --repo=upstream origin",
     {
       commands: ["push"],
+      remoteCandidates: ["upstream", "origin"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
+    "git push --repo=upstream",
+    {
+      commands: ["push"],
+      remoteCandidates: ["upstream"],
+      executionDirectory: "/work/repo",
+    },
+  ],
+  [
+    "git fetch --repo upstream origin",
+    {
+      commands: ["fetch"],
       remoteCandidates: ["upstream"],
       executionDirectory: "/work/repo",
     },
