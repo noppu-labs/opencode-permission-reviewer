@@ -1,31 +1,15 @@
-// Host-authored text in user-role messages: one synthetic-part check for the prompt sections, one for intent resolution.
+// Host-authored text parts in user-role messages: one check shared by the prompt sections and intent resolution.
 
-function isSyntheticControlMessage(text: string): boolean {
-  const normalized = text.trim();
-  return (
-    /^Magic Compact:\s*Compaction in progress/i.test(normalized) ||
-    /^You have \d+ weighted tokens left/i.test(normalized)
-  );
-}
+const SYNTHETIC_TEXT =
+  /^\s*(?:Magic Compact:|You have \d+ weighted tokens left)/i;
 
-/** Host-authored text injected into a user-role message. Provenance comes from
- *  the part's own `synthetic`/`ignored` flags first; the text-pattern check is
- *  only a fallback for hosts that do not set the flags. */
-export function isSyntheticPromptPart(part: Record<string, unknown>): boolean {
+/** A text part the host injected into a user-role message, never human text.
+ *  The part's own `synthetic`/`ignored` flags decide first; otherwise the text
+ *  counts as host-authored when it starts, after leading whitespace, with
+ *  `Magic Compact:` or `You have <n> weighted tokens left` in any letter case.
+ *  Parts that are not text are never synthetic. */
+export function isSyntheticPart(part: Record<string, unknown>): boolean {
   if (part.type !== "text" || typeof part.text !== "string") return false;
   if (part.synthetic === true || part.ignored === true) return true;
-  return isSyntheticControlMessage(part.text);
-}
-
-/** Host-authored text injected into a user-role message is never human
- *  authorization. Provenance comes from the part's own `synthetic`/`ignored`
- *  flags first; the text-pattern check is only a fallback for hosts that do
- *  not set them. This is the intent-resolution check; `isSyntheticPromptPart`
- *  is the prompt-section one. */
-export function isSyntheticIntentPart(part: Record<string, unknown>): boolean {
-  if (part.type !== "text" || typeof part.text !== "string") return false;
-  if (part.synthetic === true || part.ignored === true) return true;
-  return /^\s*(Magic Compact:|You have \d+ weighted tokens left)/.test(
-    part.text,
-  );
+  return SYNTHETIC_TEXT.test(part.text);
 }

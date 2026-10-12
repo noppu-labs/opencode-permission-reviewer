@@ -2,12 +2,12 @@
 
 import type { MessageWithParts, ReviewerConfig } from "../types.ts";
 import { truncate } from "./prompt-budget.ts";
-import { isSyntheticPromptPart } from "./synthetic-parts.ts";
+import { isSyntheticPart } from "./synthetic-parts.ts";
 
 /** The trimmed, non-synthetic text parts of a message, one per line. */
 export function literalUserText(message: MessageWithParts): string {
   return message.parts
-    .filter((part) => part.type === "text" && !isSyntheticPromptPart(part))
+    .filter((part) => part.type === "text" && !isSyntheticPart(part))
     .map((part) => (typeof part.text === "string" ? part.text.trim() : ""))
     .filter(Boolean)
     .join("\n");
@@ -20,7 +20,7 @@ function userIntentSummary(
   if (message.info.role !== "user") return;
   const texts = message.parts.flatMap((part) => {
     if (part.type !== "text" || typeof part.text !== "string") return [];
-    if (isSyntheticPromptPart(part)) return [];
+    if (isSyntheticPart(part)) return [];
     const text = part.text.trim();
     if (!text) return [];
     return [truncate(text, config.maxPartChars)];

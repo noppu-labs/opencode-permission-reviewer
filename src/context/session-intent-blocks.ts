@@ -7,7 +7,7 @@ import type {
 } from "../actor-context-types.ts";
 import type { MessageWithParts, PermissionRequest } from "../types.ts";
 import { prov } from "./provenance.ts";
-import { isSyntheticIntentPart } from "./synthetic-parts.ts";
+import { isSyntheticPart } from "./synthetic-parts.ts";
 
 function messageCreatedAt(message: MessageWithParts): number | undefined {
   const time = message.info.time as Record<string, unknown> | undefined;
@@ -21,7 +21,7 @@ function messageCreatedAt(message: MessageWithParts): number | undefined {
 function userTextOf(message: MessageWithParts): string | undefined {
   if (message.info.role !== "user") return undefined;
   for (const part of message.parts as Array<Record<string, unknown>>) {
-    if (isSyntheticIntentPart(part)) continue;
+    if (isSyntheticPart(part)) continue;
     if (typeof part.text === "string" && part.text.trim()) {
       return part.text;
     }

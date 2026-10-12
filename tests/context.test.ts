@@ -7,6 +7,7 @@ import {
   normalizeMessages,
 } from "../src/context.ts";
 import { buildReviewerPrompt, REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
+import type { MessageWithParts } from "../src/types.ts";
 import { request } from "./helpers.ts";
 
 describe("review evidence", () => {
@@ -156,5 +157,40 @@ describe("review evidence", () => {
     });
     expect(intent).toContain("LATEST_REQUEST");
     expect(intent.length).toBeLessThanOrEqual(1_000);
+  });
+});
+
+describe("context hardening batch 12", () => {
+  const messagesOf = (...texts: string[]): MessageWithParts[] =>
+    normalizeMessages(
+      texts.map((value, index) => ({
+        info: { id: `u_${index}`, role: "user", time: { created: index + 1 } },
+        parts: [{ type: "text", text: value }],
+      })),
+    );
+
+  test.each([
+    "magic compact: compaction in progress...",
+    "  MAGIC COMPACT: history compressed",
+    "Magic Compact: anything at all",
+    "you have 12 weighted tokens left",
+  ])("omits the part %j from every section", (value) => {
+    const messages = messagesOf("Keep this line", value);
+    const intent = buildIntentHistory(messages, DEFAULT_CONFIG);
+    const transcript = buildTranscript(messages, DEFAULT_CONFIG);
+    expect(intent).toContain("Keep this line");
+    expect(transcript).toContain("Keep this line");
+    for (const section of [intent, transcript]) {
+      expect(section.toLowerCase()).not.toContain(value.trim().toLowerCase());
+    }
+  });
+
+  test.each([
+    "Please explain what Magic Compact: means here",
+    "Note that you have 5 weighted tokens left over",
+  ])("keeps the text %j in every section", (value) => {
+    const messages = messagesOf(value);
+    expect(buildIntentHistory(messages, DEFAULT_CONFIG)).toContain(value);
+    expect(buildTranscript(messages, DEFAULT_CONFIG)).toContain(value);
   });
 });

@@ -13,12 +13,12 @@ export const PINNED_BLOBS = {
     // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
     "f2b1e6b9a5937ff8ad421cef0dd869b028a83e68",
   "src/context/evidence-layout.ts": "35e438dbcdd4b59be5e8829da6293c1ae203799b",
+  "src/context/intent-history.ts": "c4cc97c882001967b0eb8e6c2c14bbbdf9fb6f3b",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/context/intent-history.ts": "4f8ef5419a5ccbbbd37a47d93ffe9e265006d85a",
-  "src/context/message-summary.ts": "80977fe2e1c286142247e71f7ce0875742451b62",
+  "src/context/message-summary.ts": "273812d5e4dd57f75d39cb155088283de941ea67",
   "src/context/pending-permission.ts":
     "97ba73673a05a5a9d118098b266b1f6177ea2ad0",
-  "src/context/synthetic-parts.ts": "e9da061fa189c9df4566cf0976e4d88607000603",
+  "src/context/synthetic-parts.ts": "1eaebbd7bff7cdf0636a43ae67dc6fdf94140c79",
   "src/config.ts": "de7f2cda9fea53bed690b0316ac929965b7ce8f5",
   "src/config-fields.ts": "ad5aa5bcee0d873c523a8b903bf43ed676fabe01",
   "src/config-knobs.ts": "e576c89b91d0eee6eec91998a4680728025792c4",

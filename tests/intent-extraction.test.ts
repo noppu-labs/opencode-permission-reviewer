@@ -147,3 +147,57 @@ describe("resolveIntent — the current session", () => {
     });
   });
 });
+
+describe("context hardening batch 12", () => {
+  const lines = async (
+    texts: string[],
+  ): Promise<Awaited<ReturnType<typeof resolve>>> => {
+    const { reader } = fakeReader({}, {});
+    const message = user(
+      "u1",
+      texts.map((value) => text(value)),
+      10,
+    );
+    return resolve(
+      reader,
+      [message],
+      lineage("human-root", [{ sessionID: CURRENT }]),
+    );
+  };
+
+  test.each([
+    "magic compact: compaction in progress...",
+    "  MAGIC COMPACT: history compressed",
+    "Magic Compact: anything at all",
+    "you have 12 weighted tokens left",
+  ])("selects the human line, not the part %j", async (value) => {
+    const result = await lines([value, "Real human line"]);
+    const human = block(
+      CURRENT,
+      "u1",
+      "user",
+      "Real human line",
+      "session-api",
+      10,
+    );
+    expect(result.directUserIntent).toStrictEqual([human]);
+    expect(result.latestExplicitAuthorization).toStrictEqual(human);
+  });
+
+  test.each([
+    "magic compact: compaction in progress...",
+    "you have 12 weighted tokens left",
+  ])("yields no intent from the lone part %j", async (value) => {
+    const result = await lines([value]);
+    expect(result.directUserIntent).toStrictEqual([]);
+    expect(result.latestExplicitAuthorization).toBeUndefined();
+  });
+
+  test.each([
+    "Please explain what Magic Compact: means here",
+    "Note that you have 5 weighted tokens left over",
+  ])("selects each message %j as human text", async (value) => {
+    const result = await lines([value]);
+    expect(result.latestExplicitAuthorization?.text).toBe(value);
+  });
+});
