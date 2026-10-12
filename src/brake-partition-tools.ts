@@ -39,8 +39,8 @@ const PARTED_COMMANDS: readonly (readonly string[])[] = [
   ["version"],
 ];
 
-/** Option checks for the partition-table tools. Each one is applied only when
- *  the command targets a real block device. */
+/** Each check runs only when the command targets a real block device:
+ *  `deviceToolCheck` adds that guard. */
 export const PARTITION_TOOL_CHECKS = new Map<string, PartitionCheck>([
   ["sgdisk", sgdiskDestroysPartitions],
   ["sfdisk", sfdiskDestroysPartitions],
@@ -66,7 +66,6 @@ function endsWithDeleteLetter(value: string): boolean {
   return isShortCluster(value) && value.endsWith("d");
 }
 
-/** A short cluster that ends in `d` followed by digits, e.g. `-d1`, `-pd12`. */
 function deleteLetterWithNumber(value: string): boolean {
   if (!isShortCluster(value)) return false;
   let digitsStart = value.length;
@@ -82,10 +81,8 @@ function isAllDigits(value: string): boolean {
   return value !== "" && [...value].every((c) => c >= "0" && c <= "9");
 }
 
-/** sfdisk: --delete (with partition list) and --wipe* (`-w`, `-W`) destroy
- *  data.
- *  NOTE: sfdisk's `-d` is `--dump` (read-only backup), NOT delete — do not
- *  share the sgdisk short-flag set. */
+/** sfdisk's `-d` is `--dump` (read-only), not delete: never share the sgdisk
+ *  letter sets. `--delete` and the wipe options (`-w`, `-W`) destroy data. */
 function sfdiskDestroysPartitions(args: readonly ShellToken[]): boolean {
   return args.some((t) => {
     const long = resolveGnuLongOption(t.value, SFDISK_LONG_OPTIONS)?.name;

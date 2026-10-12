@@ -1,4 +1,3 @@
-// tests/reviewed-command.test.ts
 import { describe, expect, test } from "bun:test";
 import { analyzeBashCommand } from "../src/context/command-evidence.ts";
 import { reviewedCommand } from "../src/reviewed-command.ts";

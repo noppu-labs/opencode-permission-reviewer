@@ -55,8 +55,6 @@ export function analyzeEffectiveCommands(
  *  those segments yield an effective command (`exec > file` yields none). */
 export type SegmentRedirectionsAnalysis = Omit<WalkSink, "budget">;
 
-/** `analyzeEffectiveCommands` from the same single walk and budget, with
- *  `segmentRedirections` as well. */
 export function analyzeSegmentRedirections(
   segment: ShellSegment,
   budget?: AnalysisBudget,

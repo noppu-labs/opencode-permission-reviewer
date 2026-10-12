@@ -104,9 +104,6 @@ function mkfsTypeValues(
   return values;
 }
 
-/** An option word mkfs's own getopt does not recognise: a `--` name outside its
- *  table, or a short cluster with a letter other than `V` and `h` before any
- *  `t`. */
 function isUnknownMkfsOption(token: ShellToken): boolean {
   const word = token.value;
   if (!word.startsWith("-") || word === "-") return false;
@@ -118,9 +115,6 @@ function isUnknownMkfsOption(token: ShellToken): boolean {
   return ![...own].every((letter) => letter === "V" || letter === "h");
 }
 
-/** The value taken by the type option at `index`: `--type[=]`, any prefix of
- *  it, or a short cluster containing `t` (the rest of the cluster, else the
- *  next word). Undefined when the word is not a type option. */
 function mkfsTypeValue(
   args: readonly ShellToken[],
   index: number,
@@ -133,8 +127,6 @@ function mkfsTypeValue(
   return long.inlineValue ? word.slice(word.indexOf("=") + 1) : next;
 }
 
-/** The type value of a short cluster containing `t`: the rest of the cluster
- *  after the letter, else the next word. */
 function shortTypeValue(word: string, next: string): string | undefined {
   if (!word.startsWith("-") || word.startsWith("--")) return undefined;
   const letter = word.indexOf("t");

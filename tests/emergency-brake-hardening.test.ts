@@ -1,4 +1,3 @@
-// tests/emergency-brake-hardening.test.ts
 import { describe, expect, test } from "bun:test";
 import { hasRmFlags } from "../src/brake-rm-flags.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
@@ -14,7 +13,6 @@ const limited =
 const verdict = (command: string): string | undefined =>
   emergencyBrakeReason(request({ metadata: { command } }));
 
-/** One test per command, each expecting exactly `reason`. */
 function blocks(
   title: string,
   commands: string[],
@@ -25,14 +23,12 @@ function blocks(
   });
 }
 
-/** One test per command, each expecting some block reason. */
 function blocksSome(title: string, commands: string[]): void {
   test.each(commands)(title, (command) => {
     expect(verdict(command)).toBeString();
   });
 }
 
-/** One test per command, each expecting no block reason. */
 function allows(title: string, commands: string[]): void {
   test.each(commands)(title, (command) => {
     expect(verdict(command)).toBeUndefined();
@@ -99,14 +95,16 @@ describe("hardening batch 3", () => {
   ]);
 
   allows("allows each command, case %#", [
-    // Plain `/` needs force or --no-preserve-root: GNU and BSD rm refuse it.
+    // Without force or --no-preserve-root the brake leaves plain `/` to rm's
+    // own refusal.
     "rm -r /",
     "rm -r --one-file-system /",
     // coreutils rejects an abbreviated --no-preserve-root and removes nothing.
     "rm -r --no-pres /",
     // The later option wins, as in coreutils.
     "rm -r --no-preserve-root --preserve-root /",
-    // Literal file names and non-root paths.
+    // Quoted or escaped globs, non-root paths, and removals that are not
+    // recursive.
     "rm -r '/*'",
     "rm -r /\\*",
     "rm -r /tmp/build",

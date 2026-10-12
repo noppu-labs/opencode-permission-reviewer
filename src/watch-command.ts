@@ -12,16 +12,12 @@ import type { ShellToken } from "./shell-token.ts";
 const REQUIRED_VALUE_LETTERS = new Set(["n", "q", "s"]);
 const OPTIONAL_VALUE_LETTERS = new Set(["d"]);
 
-/** How the operands from `operandIndex` run: execed as argv with `exec`,
- *  otherwise joined with single spaces into the string watch passes to
- *  sh -c. */
 interface WatchCommand {
   readonly operandIndex: number;
   readonly exec: boolean;
 }
 
-/** What one option token means: how many tokens it spans and whether it
- *  selects -x/--exec. */
+/** `width` counts tokens, a separate value included. */
 interface WatchOptionStep {
   readonly width: number;
   readonly exec: boolean;
@@ -60,8 +56,6 @@ function watchCommand(words: ShellToken[], i: number): WatchCommand {
   return { operandIndex: j, exec };
 }
 
-/** The command string watch runs through sh -c: its operands from `start`
- *  joined with single spaces. */
 function watchCommandString(words: ShellToken[], start: number): string {
   return words
     .slice(start)
@@ -77,9 +71,6 @@ function longStep(opt: string): WatchOptionStep {
   return { width: separateValue ? 2 : 1, exec: resolved.name === "exec" };
 }
 
-/** A short cluster: flags up to the first value-taking letter, which takes
- *  the rest of the cluster as its value, or the next token when it ends the
- *  cluster and its value is required. */
 function shortStep(opt: string): WatchOptionStep {
   let exec = false;
   for (let position = 1; position < opt.length; position += 1) {

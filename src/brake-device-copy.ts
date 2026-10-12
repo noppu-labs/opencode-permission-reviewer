@@ -61,10 +61,8 @@ function parseCopyArguments(
   return parsed;
 }
 
-/** Records a long option, resolved like getopt_long (an unambiguous prefix
- *  counts), and returns how many following words it consumes as its value:
- *  one for a required argument that is not glued on. An option that does not
- *  resolve consumes nothing. */
+/** Records a long option and returns how many following words it consumes
+ *  as its value. */
 function applyLongOption(
   parsed: CopyArguments,
   value: string,

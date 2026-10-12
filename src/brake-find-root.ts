@@ -14,18 +14,14 @@ import { type ShellToken, sliceToken } from "./shell-token.ts";
  *  `f`, which takes a path (`-D` and `-O<level>` are handled apart). */
 const LEADING_LETTERS = new Set(["E", "H", "L", "P", "X", "d", "s", "x"]);
 
-/** Non-option words that start the expression and end the paths. */
 const EXPRESSION_STARTS = new Set(["!", "("]);
 
-/** A find command split into its search paths and its expression, with the
- *  commands its exec actions run. */
 export interface FindCommand extends FindActions {
   paths: readonly ShellToken[];
 }
 
-/** Splits a find command and walks its exec actions under the shared
- *  `budget`, charged per argv token when the find is `nested` in another
- *  find's exec action; `undefined` for any other command. */
+/** `nested`: this find runs in another find's exec action, so its exec
+ *  walks are charged per argv token (see `analyzeFinds`). */
 export function analyzeFind(
   command: readonly ShellToken[],
   budget: AnalysisBudget,
@@ -68,12 +64,10 @@ interface LeadingCluster {
   glued: number;
 }
 
-/** Splits a find command line into its search paths and its expression. The
- *  paths are the `-f` values plus every word from the first operand up to the
- *  first word that starts the expression. When an expression primary such as
- *  `-maxdepth` comes first, find rejects the command line: only the first
- *  operand is still checked as a path, and the expression starts at that
- *  primary. */
+/** The paths are the `-f` values plus the words from the first operand up to
+ *  the first word that starts the expression. find rejects a primary such as
+ *  `-maxdepth` before the paths, so then only the first operand is still
+ *  checked as a path. */
 function splitFind(command: readonly ShellToken[]): FindParts {
   const { next, primary, paths } = skipLeadingOptions(command);
   const operands =
@@ -87,7 +81,6 @@ function splitFind(command: readonly ShellToken[]): FindParts {
   };
 }
 
-/** The words from `start` up to the first one that starts the expression. */
 function scanPaths(
   command: readonly ShellToken[],
   start: number,
@@ -101,7 +94,6 @@ function scanPaths(
   return command.slice(start, end);
 }
 
-/** Skips the options that precede the paths; `--` ends them. */
 function skipLeadingOptions(command: readonly ShellToken[]): LeadingOptions {
   const leading: LeadingOptions = { next: 1, primary: undefined, paths: [] };
   while (leading.next < command.length) {
@@ -116,8 +108,9 @@ function skipLeadingOptions(command: readonly ShellToken[]): LeadingOptions {
   return leading;
 }
 
-/** `-D` takes a value; a cluster ending in `f` takes a path, collected as
- *  long as no expression primary came first; any other option is a primary. */
+/** `-D` skips its value; an `f` cluster collects its path until a primary
+ *  is seen; a word that is neither a leading-letter cluster nor `-O<level>`
+ *  is the first primary. */
 function skipLeadingOption(
   command: readonly ShellToken[],
   leading: LeadingOptions,
@@ -132,8 +125,8 @@ function skipLeadingOption(
   leading.next += 1;
 }
 
-/** Collects a `-f` value: the rest of the word when glued, else the next
- *  word. The glued value keeps its quote spans for the root checks. */
+/** A glued value keeps its quote spans so the live-glob check still sees
+ *  which characters were quoted. */
 function collectFilePath(
   command: readonly ShellToken[],
   leading: LeadingOptions,

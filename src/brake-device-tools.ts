@@ -91,8 +91,8 @@ function wipefsWipesSignatures(tool: DeviceCommand): boolean {
   return tool.args.some(({ value }) => wipefsErasingOption(value));
 }
 
-/** `--all`, `--types`, `--offset` and short clusters that reach `a`, `t` or
- *  `o` erase signatures; `O` takes the rest of its cluster as a value. */
+/** `O` takes the rest of its cluster as its value, so letters after it are
+ *  not options. */
 function wipefsErasingOption(value: string): boolean {
   const long = resolveGnuLongOption(value, WIPEFS_LONG_OPTIONS)?.name;
   if (long === "all" || long === "types" || long === "offset") return true;

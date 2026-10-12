@@ -11,9 +11,8 @@ interface RmFlags {
   noPreserveRoot: boolean;
 }
 
-/** Whether an `rm` command's options make it recursive, forceful and
- *  root-unprotected, given alone, clustered (e.g. `-rf`) or as a long option
- *  or unambiguous abbreviation of one. Options after `--` are operands. */
+/** Long options resolve like getopt_long, abbreviations included; options
+ *  after `--` are operands (`splitArguments`). */
 export function hasRmFlags(command: readonly ShellToken[]): RmFlags {
   const flags: RmFlags = {
     recursive: false,

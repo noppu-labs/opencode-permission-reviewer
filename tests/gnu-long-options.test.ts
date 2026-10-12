@@ -1,4 +1,3 @@
-// tests/gnu-long-options.test.ts
 import { describe, expect, test } from "bun:test";
 import {
   CP_LONG_OPTIONS,
