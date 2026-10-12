@@ -4,13 +4,15 @@ import {
   AskDecisionRegistry,
   type AskDecisionSource,
 } from "../../context/ask-decisions.ts";
+import { isRecord } from "../../is-record.ts";
+import {
+  type FormCreated as Created,
+  formCreated,
+  formSettled,
+  type FormSettled as Settled,
+} from "./form-event-shape.ts";
 
-type Created = Extract<OpenCodeEvent, { type: "form.created" }>["data"]["form"];
 type Field = Created["fields"][number];
-type Settled = Extract<
-  OpenCodeEvent,
-  { type: "form.replied" } | { type: "form.cancelled" }
->;
 type Answer = Extract<
   OpenCodeEvent,
   { type: "form.replied" }
@@ -41,9 +43,17 @@ export class V2AskDecisions implements AskDecisionSource {
       return;
     const now = Date.now();
     this.expirePending(now);
-    if (event.type === "form.created") this.created(event.data.form, now);
-    else if (event.type === "form.replied" || event.type === "form.cancelled")
-      this.settled(event);
+    if (event.type === "form.created") {
+      const data: unknown = event.data;
+      const form = formCreated(isRecord(data) ? data.form : undefined);
+      if (form) this.created(form, now);
+    } else if (
+      event.type === "form.replied" ||
+      event.type === "form.cancelled"
+    ) {
+      const settled = formSettled(event);
+      if (settled) this.settled(settled);
+    }
   }
 
   recentFor(sessionIDs: string[], limit?: number): AskDecision[] {

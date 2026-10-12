@@ -1,4 +1,4 @@
-import { expect, test } from "bun:test";
+import { describe, expect, test } from "bun:test";
 import { holdOneSecondTimers } from "./held-timers.ts";
 import { until } from "./poll-until.ts";
 import {
@@ -222,4 +222,31 @@ test("v2 UI statuses stay bounded and notifications past capacity are omitted", 
     "[opencode-permission-reviewer] Review notification capacity exhausted; notification omitted",
     "",
   );
+});
+
+describe("host hardening batch 13", () => {
+  test.each([
+    { id: "form_a", sessionID: "ses_main", title: "Scope", fields: [] },
+    { id: "form_b", sessionID: 7, title: "Scope", fields: [{ key: "one" }] },
+    { id: "form_c", sessionID: "ses_main", title: "Scope", fields: [null] },
+  ])("keeps the event stream healthy after a malformed event", async (form) => {
+    const errors = quietErrors();
+    const harness = await start({ config: { askDecisions: true } });
+    harness.send({
+      type: "form.created",
+      data: { form },
+      location: { directory: harness.directory },
+    });
+    await until(
+      () => harness.queuedEvents() === 0,
+      "the server to take every host event",
+    );
+    expect(await harness.rpc.status()).toMatchObject({
+      eventConnection: "connected",
+    });
+    const input = harness.input();
+    await harness.evaluate(input);
+    expect(input.effect).toBe("allow");
+    expect(errors).not.toHaveBeenCalled();
+  });
 });
