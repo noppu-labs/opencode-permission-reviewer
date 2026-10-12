@@ -615,3 +615,25 @@ describe("hardening batch 23", () => {
     "mkfs.btrfs --label=data --dry-run /dev/sdb",
   ]);
 });
+
+describe("hardening batch 24", () => {
+  blocks("blocks each command, case %#", [
+    "parted -s /dev/sda mktable gpt",
+    "parted -s /dev/sda mkl gpt",
+    "parted -s /dev/sda mkt gpt",
+    "parted -s /dev/sda MKLABEL gpt",
+    "parted -s /dev/sda RM 1",
+    "parted -s /dev/sda Rm 1",
+    "sudo parted -s /dev/sda mktable msdos",
+  ]);
+
+  allows("allows each command, case %#", [
+    "parted -s /dev/sda print",
+    "parted -s /dev/sda p",
+    "parted -s /dev/sda mkpart primary ext4 1MiB 100%",
+    "parted -s /dev/sda unit s print",
+    "parted -s /dev/sda mk gpt",
+    "parted -s /dev/sda r 1",
+    "parted -s disk.img mktable gpt",
+  ]);
+});

@@ -14,6 +14,30 @@ const SGDISK_VALUE_LETTERS = new Set(
 /** The sfdisk short options that take a value (`o:O:N:u:X:Y:w:W:`). */
 const SFDISK_VALUE_LETTERS = new Set(["o", "O", "N", "u", "X", "Y", "w", "W"]);
 
+/** GNU parted's commands (parted/parted.c `_init_commands`), each with all of
+ *  its names. */
+const PARTED_COMMANDS: readonly (readonly string[])[] = [
+  ["align-check"],
+  ["help"],
+  ["mklabel", "mktable"],
+  ["mkpart"],
+  ["name"],
+  ["print"],
+  ["quit"],
+  ["rescue"],
+  ["resize"],
+  ["resizepart"],
+  ["rm"],
+  ["select"],
+  ["disk_set"],
+  ["disk_toggle"],
+  ["set"],
+  ["toggle"],
+  ["type"],
+  ["unit"],
+  ["version"],
+];
+
 /** Option checks for the partition-table tools. Each one is applied only when
  *  the command targets a real block device. */
 export const PARTITION_TOOL_CHECKS = new Map<string, PartitionCheck>([
@@ -94,5 +118,20 @@ function clusterReaches(
 /** parted: `mklabel` rewrites the partition table; `rm N` deletes a
  *  partition. */
 function partedDestroysPartitions(args: readonly ShellToken[]): boolean {
-  return args.some((t) => t.value === "mklabel" || t.value === "rm");
+  return args.some((t) => {
+    const command = partedCommand(t.value);
+    return command === "mklabel" || command === "rm";
+  });
+}
+
+/** Resolves a word as parted's `command_get` does: a case-insensitive exact
+ *  name first, else a prefix of one command's names only. */
+function partedCommand(word: string): string | undefined {
+  const lower = word.toLowerCase();
+  const exact = PARTED_COMMANDS.find((names) => names.includes(lower));
+  if (exact !== undefined) return exact[0];
+  const partial = PARTED_COMMANDS.filter((names) =>
+    names.some((name) => name.startsWith(lower)),
+  );
+  return partial.length === 1 ? partial[0]?.[0] : undefined;
 }
