@@ -132,3 +132,29 @@ describe("analyzer hardening batch 1", () => {
     expect(capabilityProfile(command)).toStartWith("git-mutation/high |");
   });
 });
+
+describe("analyzer hardening batch 6", () => {
+  test("keeps the profile", () => {
+    expect(capabilityProfile("nice ssh host 'rm -rf /'")).toBe(
+      capabilityProfile("ssh host 'rm -rf /'"),
+    );
+    expect(capabilityProfile("timeout 5 ssh host 'rm -rf /'")).toBe(
+      capabilityProfile("ssh host 'rm -rf /'"),
+    );
+  });
+
+  test.each([
+    "sudo mosh host 'rm -rf /'",
+    "sudo ssh host 'rm -rf /'",
+    "env FOO=1 autossh host 'git push'",
+  ])("%s", (command) => {
+    const facts = capabilityProfile(command).split(" | ")[2] ?? "";
+    expect(facts).toContain("remote.enabled");
+    expect(facts).toContain("remote.mutationHint");
+  });
+
+  test("adds no remote facts", () => {
+    expect(capabilityProfile("nice make")).not.toContain("remote.");
+    expect(capabilityProfile("sudo -u ssh ls")).not.toContain("remote.");
+  });
+});
