@@ -6,6 +6,7 @@ import { parseCommand } from "../capability/command-parser.ts";
 import { loadResolvedConfig } from "../config/loader.ts";
 import { resolveConfig } from "../config.ts";
 import { evaluatePolicy } from "../policy/policy-engine.ts";
+import { reviewedCommand } from "../reviewed-command.ts";
 import type { PermissionRequest, ReviewerConfig } from "../types.ts";
 import { type ExplainRequest, normalizeRequest } from "./explain-request.ts";
 
@@ -83,12 +84,9 @@ function commandOf(
   request: PermissionRequest,
   nativeResources: boolean,
 ): string {
-  if (typeof request.metadata?.command === "string")
-    return request.metadata.command;
-  if (nativeResources) return "";
-  return (request.patterns ?? [])
-    .filter((p) => typeof p === "string")
-    .join("\n");
+  if (!nativeResources) return reviewedCommand(request);
+  const { command } = request.metadata;
+  return typeof command === "string" ? command : "";
 }
 
 function analysis(

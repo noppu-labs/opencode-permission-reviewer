@@ -45,6 +45,26 @@ describe("explain CLI", () => {
     expect(parsed.policyTrace.finalRoute).toBe("review");
   });
 
+  test("a blank command falls back to the patterns, as the review does", async () => {
+    const proc = Bun.spawn({
+      cmd: ["bun", "run", "src/cli/explain.ts", "--defaults"],
+      cwd: `${import.meta.dir}/..`,
+      stdin: new TextEncoder().encode(
+        JSON.stringify({
+          permission: "bash",
+          metadata: { command: "  " },
+          patterns: ["rm -rf build"],
+        }),
+      ),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    expect(await proc.exited).toBe(0);
+    const parsed = JSON.parse(await new Response(proc.stdout).text());
+    expect(parsed.command).toBe("rm -rf build");
+    expect(parsed.capability).not.toBeNull();
+  });
+
   test("exits 2 on invalid JSON", async () => {
     const proc = Bun.spawn({
       cmd: ["bun", "run", "src/cli/explain.ts"],

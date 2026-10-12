@@ -146,7 +146,7 @@ describe("explain output", () => {
     });
     expect(code).toBe(0);
     const result = JSON.parse(stdout);
-    expect(result.command).toBe(" ");
+    expect(result.command).toBe("");
     expect(result.capability).toBeNull();
     expect(result.policyTrace.mode).toBe("observe");
   }, 15_000);
