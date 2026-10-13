@@ -607,6 +607,24 @@ describe("System One hand-off dispositions act on the final outcome", () => {
     expect(result.reason).toContain("reasoning reviewer failed");
   });
 
+  test("onInvalidDecision deny does not dispose a reasoning failure after invalid Jev output", async () => {
+    const { result, calls } = await evaluated(
+      routingConfig("reasoning-first", false, {
+        riskPolicy: { onInvalidDecision: "deny" },
+      }),
+      "invalid",
+      new Error("synthetic reasoning outage"),
+    );
+    expect(calls).toBe(1);
+    expect(result).toMatchObject({
+      kind: "escalate",
+      decisionSource: "failure-safe",
+      escalationDisposition: "manual",
+      resolution: "reasoning-unavailable",
+      reviewerEscalatedFrom: { trigger: "jev-invalid" },
+    });
+  });
+
   test("without a hand-off Jev's own invalid-output disposition still applies", async () => {
     const { result, calls } = await evaluated(
       routingConfig("standard", false, {
