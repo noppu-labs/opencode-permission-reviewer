@@ -35,6 +35,12 @@ export function shortModelName(model: string): string {
   return segments.at(-1) ?? "";
 }
 
+/** A model as the TUI names it: the last path segment, or the whole id when
+ *  that segment is empty. */
+export function modelLabel(model: string): string {
+  return shortModelName(model) || model;
+}
+
 const jevFailed = (kind: string | undefined): string =>
   kind === undefined ? "Jev failed" : `Jev failed (${kind})`;
 
@@ -90,10 +96,10 @@ export function handoffCause(handoff: HandoffInfo): string {
 }
 
 /** The progress strip's reviewer: the hand-off while the reasoning reviewer
- *  runs, else the model as configured. */
+ *  runs, else the model's label. */
 export function reviewerLabel(status: ReviewUiStatus): string {
-  if (status.handoff === undefined) return status.model;
-  return attributionText(status) ?? status.model;
+  if (status.handoff === undefined) return modelLabel(status.model);
+  return attributionText(status) ?? modelLabel(status.model);
 }
 
 /** Result strip line 2: "<attribution> — <reason>". The reason alone when no

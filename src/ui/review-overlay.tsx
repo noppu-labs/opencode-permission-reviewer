@@ -7,7 +7,7 @@ import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
 import { type ActionFitPart, fitAction } from "./action-fit.ts";
 import { ActionSpans, overlayActionColumns } from "./action-spans.tsx";
-import { handoffPhrase, shortModelName } from "./attribution.ts";
+import { handoffPhrase, modelLabel } from "./attribution.ts";
 import { type ReviewTheme, SPINNER } from "./components.tsx";
 
 export function ReviewOverlay(props: {
@@ -94,10 +94,8 @@ export function ReviewOverlay(props: {
         </box>
         <box paddingLeft={2} flexDirection="row" gap={1}>
           <text fg={theme().textMuted}>
-            {props.status.handoff
-              ? shortModelName(props.status.handoff.to)
-              : props.status.model}{" "}
-            · reasoning {props.status.variant}
+            {modelLabel(props.status.handoff?.to ?? props.status.model)} ·
+            reasoning {props.status.variant}
             <Show when={handoffPhrase(props.status)} keyed>
               {(phrase: string) => (
                 <span style={{ fg: theme().info }}> · {phrase}</span>
