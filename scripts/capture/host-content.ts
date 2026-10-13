@@ -21,7 +21,7 @@ const MANUAL_FALLBACK =
 const REASONING_MODEL = "openai/gpt-6-luna";
 const INERT_WARNING = `systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you`;
 const DENIAL_WARNING =
-  "systemOneDenialReview is inactive: the reviewer model is not Jev";
+  "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final";
 const DEGRADED = "global config file is malformed and was ignored";
 const HOST_FRAME = "OpenCode draws the frame";
 

@@ -148,6 +148,7 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
       "This permission needs your approval.",
       "No review time left for gpt-6-luna after Jev (Jev escalated).",
       "No review time left for gpt-6-luna after Jev",
+      "resolution budget-exhausted, as the V1 host shows it",
       "Manual review required",
       "OpenCode draws the frame",
     ],
