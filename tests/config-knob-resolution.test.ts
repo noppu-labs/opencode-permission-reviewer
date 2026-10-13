@@ -95,6 +95,33 @@ describe("resolveConfig flags, modes and text fields", () => {
     expect(resolved("repositoryTrust", "TRUSTED")).toBe("unknown");
   });
 
+  test("System One routing keys keep only exact valid values", () => {
+    expect(DEFAULT_CONFIG.systemOneEscalation).toBe("standard");
+    expect(DEFAULT_CONFIG.systemOneDenialReview).toBe(false);
+    const escalations = [
+      "standard",
+      "reasoning-first",
+      "Reasoning-First",
+      "",
+      1,
+      null,
+    ];
+    expect(
+      escalations.map((value) => resolved("systemOneEscalation", value)),
+    ).toEqual([
+      "standard",
+      "reasoning-first",
+      "standard",
+      "standard",
+      "standard",
+      "standard",
+    ]);
+    const denials = [true, false, "true", 1, null];
+    expect(
+      denials.map((value) => resolved("systemOneDenialReview", value)),
+    ).toEqual([true, false, false, false, false]);
+  });
+
   test.each(["policy", "auditPath"])(
     "%s is trimmed and omitted when blank",
     (key) => {

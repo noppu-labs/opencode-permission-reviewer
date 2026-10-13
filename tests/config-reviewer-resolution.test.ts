@@ -31,6 +31,8 @@ describe("resolveConfig structured fields", () => {
       "confidenceThreshold",
       "systemOneConfidenceThreshold",
       "systemOneReasoningThreshold",
+      "systemOneEscalation",
+      "systemOneDenialReview",
       "retainReviewSessions",
       "audit",
       "auditPath",

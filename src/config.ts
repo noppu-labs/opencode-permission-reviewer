@@ -5,6 +5,7 @@ import {
   resolveActorProfiles,
   resolveEscalationMode,
   resolveRepositoryTrust,
+  systemOneRoutingFields,
   trimmedText,
 } from "./config-fields.ts";
 import {
@@ -42,6 +43,8 @@ export const DEFAULT_CONFIG: ReviewerConfig = {
   confidenceThreshold: 0.7,
   systemOneConfidenceThreshold: 0.4,
   systemOneReasoningThreshold: 0.38,
+  systemOneEscalation: "standard",
+  systemOneDenialReview: false,
   retainReviewSessions: false,
   audit: true,
   debug: false,
@@ -87,6 +90,7 @@ export function resolveConfig(
     ...reviewBudgetKnob(source),
     ...integerKnobs(source, CONTEXT_BUDGETS, DEFAULT_CONFIG),
     ...numberKnobs(source, CONFIDENCE_FLOORS, DEFAULT_CONFIG),
+    ...systemOneRoutingFields(source),
     retainReviewSessions: flag(source, "retainReviewSessions"),
     audit: flag(source, "audit"),
     ...optional("auditPath", trimmedText(source.auditPath)),
