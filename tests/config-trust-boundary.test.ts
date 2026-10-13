@@ -159,6 +159,24 @@ describe("monotonic fields", () => {
     });
     expect(loaded.configWarnings).toBeUndefined();
   });
+
+  test.each([null, 1, "reasoning-firts"])(
+    "a trusted routing value survives project %p without a warning",
+    (bad) => {
+      const loaded = loadConfig({
+        global: {
+          model: "opencode/jev-1",
+          escalationReviewer: { model: "openai/gpt-6-luna" },
+          systemOneEscalation: "reasoning-first",
+          systemOneDenialReview: true,
+        },
+        project: { systemOneEscalation: bad, systemOneDenialReview: bad },
+      });
+      expect(loaded.systemOneEscalation).toBe("reasoning-first");
+      expect(loaded.systemOneDenialReview).toBe(true);
+      expect(loaded.configWarnings).toBeUndefined();
+    },
+  );
 });
 
 describe("project policy rules are added after the trusted rules", () => {
