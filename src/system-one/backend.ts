@@ -9,7 +9,12 @@ import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
 } from "./review.ts";
-import { handoffTrigger, type JevOutcome } from "./system-one-handoff.ts";
+import { budgetExhaustedResult } from "./system-one-budget.ts";
+import {
+  handoffBlock,
+  handoffTrigger,
+  type JevOutcome,
+} from "./system-one-handoff.ts";
 import {
   createSystemOneInvoker,
   type SystemOneInvoke,
@@ -121,6 +126,18 @@ export class SystemOneReviewerBackend {
     const model = this.escalationModel;
     if (trigger === undefined || !escalation || !model)
       return finalJevResult(own, this.config);
+    const block = handoffBlock(attempt);
+    // The engine replaces any result of an inactive attempt with the superseded
+    // outcome (review-engine.ts, review-pipeline.ts), so Jev's own result here
+    // is never applied; it is today's failure-safe result for a Jev failure.
+    if (block === "inactive") return finalJevResult(own, this.config);
+    if (block === "budget-exhausted")
+      return budgetExhaustedResult(
+        own,
+        trigger,
+        attempt.remainingMs(),
+        this.config,
+      );
     const handoff: ReasoningHandoff = {
       model,
       escalatedFrom: {

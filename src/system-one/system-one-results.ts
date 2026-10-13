@@ -24,7 +24,7 @@ export interface ReasoningHandoff {
 
 /** Jev's own result before any disposition, and the category that disposes
  *  it if it turns out to be final. */
-interface JevResult {
+export interface JevResult {
   result: ReviewExecutionResult;
   category: EscalationCategory;
 }
