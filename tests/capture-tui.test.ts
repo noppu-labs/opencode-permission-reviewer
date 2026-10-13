@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CapturedFrame, CapturedSpan } from "@opentui/core";
 import type { ScreenName } from "../scripts/capture/screens.ts";
@@ -20,6 +20,14 @@ const {
   SCREEN_NAMES,
 }: typeof import("../scripts/capture/screens.ts") = await import(
   "../scripts/capture/screens.ts"
+);
+const {
+  SCREEN_TITLES,
+  escapeXml,
+  titleElement,
+  withTitle,
+}: typeof import("../scripts/capture/titles.ts") = await import(
+  "../scripts/capture/titles.ts"
 );
 const {
   extractSource,
@@ -193,6 +201,45 @@ describe("capture: screens", () => {
       }),
     ).toThrow("does not decode");
   });
+});
+
+describe("capture: image titles", () => {
+  test("withTitle puts the title right after the opening svg tag", () => {
+    const svg =
+      '<?xml version="1.0"?>\n<svg width="1" height="2" xmlns="u">\n<rect/>\n</svg>\n';
+    expect(withTitle(svg, "A title")).toBe(
+      '<?xml version="1.0"?>\n<svg width="1" height="2" xmlns="u"><title>A title</title>\n<rect/>\n</svg>\n',
+    );
+  });
+
+  test("withTitle escapes XML in the title", () => {
+    expect(escapeXml(`a & b < c > "d" 'e'`)).toBe(
+      "a &amp; b &lt; c &gt; &quot;d&quot; &apos;e&apos;",
+    );
+    expect(withTitle("<svg>", "<b>&")).toBe(
+      "<svg><title>&lt;b&gt;&amp;</title>",
+    );
+  });
+
+  test("withTitle refuses a document without an svg element", () => {
+    expect(() => withTitle("<html/>", "x")).toThrow("no <svg> element");
+  });
+
+  test.each(SCREEN_NAMES)(
+    "%s has a title and its committed SVG starts with it",
+    (screen) => {
+      const title = SCREEN_TITLES[screen];
+      expect(title.trim().length).toBeGreaterThan(0);
+      const svg = readFileSync(
+        join(ROOT, "docs", "images", `${screen}.svg`),
+        "utf8",
+      );
+      const root = svg.match(/<svg\b[^>]*>/);
+      expect(root).not.toBeNull();
+      const afterRoot = svg.slice((root?.index ?? 0) + (root?.[0].length ?? 0));
+      expect(afterRoot.startsWith(titleElement(title))).toBe(true);
+    },
+  );
 });
 
 describe("capture: CLI", () => {

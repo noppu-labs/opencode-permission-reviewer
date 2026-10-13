@@ -3,9 +3,10 @@
  * --all, regenerates every docs/images/<screen>.svg through Charm's freeze.
  * See docs/DEVELOPMENT.md, "TUI screens".
  */
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { ensureSolidTransformPlugin } from "@opentui/solid/bun-plugin";
+import { SCREEN_TITLES, withTitle } from "./capture/titles.ts";
 
 // The Solid transform must be registered before any TUI module loads (see
 // tests/tui-loader.ts), so the capture modules are imported dynamically below.
@@ -73,6 +74,12 @@ function regenerate(): number {
       );
       return 1;
     }
+    // freeze writes no <title>; the committed SVGs need one (Biome a11y rule, screen readers).
+    const svg = join(ROOT, "docs", "images", `${screen}.svg`);
+    writeFileSync(
+      svg,
+      withTitle(readFileSync(svg, "utf8"), SCREEN_TITLES[screen]),
+    );
   }
   return 0;
 }
