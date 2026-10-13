@@ -318,6 +318,22 @@ describe("TUI state machine", () => {
     expect(state.get("per_1")?.emittedAt).toBe(1_000);
   });
 
+  test("a hand-off status as old as the result never replaces it", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_100 });
+    state.apply({
+      ...asked,
+      phase: "approved",
+      emittedAt: 2_000,
+      handoff: HANDOFF,
+    });
+    expect(state.apply({ ...asked, emittedAt: 2_000, handoff: HANDOFF })).toBe(
+      false,
+    );
+    expect(state.get("per_1")?.phase).toBe("approved");
+  });
+
   test("a result after a hand-off replaces it with its own time", () => {
     const state = new ReviewUiState(options);
     const asked = state.asked(request(), 1_000);

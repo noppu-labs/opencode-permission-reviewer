@@ -17,16 +17,15 @@ const RESULT_DISPLAY_MS = {
   denied: 5_000,
 } as const;
 
-/** What a newer status for a known request leaves stored: a "reviewing"
- *  status after another keeps the first start time, so elapsed time stays the
- *  total across a hand-off, and a plain one never replaces a hand-off;
- *  undefined when the newer status is stale. */
+/** A "reviewing" status after another keeps the first `emittedAt`, so elapsed
+ *  time is the total across a hand-off; a plain one after a hand-off, or any
+ *  "reviewing" status after a final one, is stale and dropped. */
 function successor(
   current: ReviewUiStatus,
   status: ReviewUiStatus,
 ): ReviewUiStatus | undefined {
-  if (current.phase !== "reviewing" || status.phase !== "reviewing")
-    return status;
+  if (status.phase !== "reviewing") return status;
+  if (current.phase !== "reviewing") return;
   if (current.handoff !== undefined && status.handoff === undefined) return;
   return { ...status, emittedAt: current.emittedAt };
 }
