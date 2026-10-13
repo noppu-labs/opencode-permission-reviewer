@@ -8,7 +8,7 @@ import {
   type OnHandoff,
   SystemOneReviewerBackend,
 } from "../../src/system-one/backend.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one/system-one-handoff.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one-routing.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../../src/types.ts";
 import { config } from "../helpers.ts";
 import {

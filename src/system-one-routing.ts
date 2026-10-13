@@ -1,6 +1,9 @@
 import { isSystemOneReviewerModel } from "./reviewer-model.ts";
 import type { ReviewerConfig } from "./types.ts";
 
+/** The least review time a hand-off needs; with less the request escalates. */
+export const HANDOFF_BUDGET_FLOOR_MS = 15_000;
+
 export interface SystemOneRouting {
   /** reasoning-first is configured AND active (Jev model + valid escalationReviewer). */
   reasoningFirst: boolean;
@@ -49,6 +52,17 @@ export function systemOneRoutingWarnings(config: ReviewerConfig): string[] {
   return warnings;
 }
 
+/** An explicit budget too short for a hand-off after Jev's own call. Standard
+ *  routing hands off too, so this does not depend on either routing key. */
+function budgetFloorWarnings(config: ReviewerConfig): string[] {
+  const budget = config.reviewBudgetMs;
+  if (budget === undefined || inertCause(config) !== undefined) return [];
+  if (budget - config.timeoutMs >= HANDOFF_BUDGET_FLOOR_MS) return [];
+  return [
+    `reviewBudgetMs ${budget} leaves less than ${HANDOFF_BUDGET_FLOOR_MS} ms after timeoutMs; hand-offs to the reasoning reviewer will escalate to you instead`,
+  ];
+}
+
 const PREVIEW_CHARS = 80;
 
 /** A warning names the value; it does not reproduce it. */
@@ -88,6 +102,7 @@ export function withSystemOneRoutingWarnings(
   const warnings = [
     ...invalidValueWarnings(config, source),
     ...systemOneRoutingWarnings(config),
+    ...budgetFloorWarnings(config),
   ];
   return warnings.length === 0
     ? config

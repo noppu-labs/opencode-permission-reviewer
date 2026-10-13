@@ -5,7 +5,7 @@ import { evaluateReview } from "../../src/core/review-engine.ts";
 import { DEFAULT_TENANT_POLICY } from "../../src/policy.ts";
 import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
 import type { SystemOneState } from "../../src/system-one/review.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one/system-one-handoff.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one-routing.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,

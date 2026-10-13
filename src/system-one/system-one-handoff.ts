@@ -1,13 +1,13 @@
 // Whether a Jev result goes to the reasoning reviewer, under which trigger,
 // and whether the attempt can still afford it.
 import type { ReviewAttempt } from "../core/review-attempt.ts";
-import type { SystemOneRouting } from "../system-one-routing.ts";
+import {
+  HANDOFF_BUDGET_FLOOR_MS,
+  type SystemOneRouting,
+} from "../system-one-routing.ts";
 import type { HandoffTrigger, ReviewExecutionResult } from "../types.ts";
 import type { SystemOneSignals } from "./system-one-types.ts";
 import type { ParsedSystemOneReview } from "./system-one-verdict.ts";
-
-/** The least review time a hand-off needs; with less the request escalates. */
-export const HANDOFF_BUDGET_FLOOR_MS = 15_000;
 
 /** What came back from Jev: a parsed and enforced verdict, an invalid
  *  answer, or a thrown error. */

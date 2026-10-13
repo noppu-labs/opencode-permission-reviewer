@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   toasts, config warnings and long commands. The README shows the hand-off and result screens. The
   images are rendered from the plugin's components; `bun run docs:screens` regenerates them
   (`docs/DEVELOPMENT.md`, "TUI screens").
+- A config warning when `model` is Jev, a valid `escalationReviewer` is configured and an explicit
+  `reviewBudgetMs` leaves less than 15000 ms after `timeoutMs`: hand-offs to the reasoning reviewer
+  would escalate to you instead. It applies in either routing mode, never degrades the config, and
+  the default budget never triggers it.
 
 ### Changed
 

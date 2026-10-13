@@ -5,12 +5,14 @@ import {
   parseSystemOneReview,
 } from "../../src/system-one/review.ts";
 import {
-  HANDOFF_BUDGET_FLOOR_MS,
   handoffBlock,
   handoffTrigger,
   type JevOutcome,
 } from "../../src/system-one/system-one-handoff.ts";
-import type { SystemOneRouting } from "../../src/system-one-routing.ts";
+import {
+  HANDOFF_BUDGET_FLOOR_MS,
+  type SystemOneRouting,
+} from "../../src/system-one-routing.ts";
 import type { HandoffTrigger } from "../../src/types.ts";
 import { defined } from "../helpers.ts";
 import {
