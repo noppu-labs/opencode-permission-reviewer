@@ -1,10 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { systemOneRoutingWarnings } from "../src/system-one-routing.ts";
 import {
   ConfigNotices,
   type ConfigToast,
   configToasts,
   sidebarLine,
 } from "../src/ui/config-notices.ts";
+import { config } from "./helpers.ts";
 
 const NO_REVIEWER =
   'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
@@ -49,6 +51,22 @@ describe("sidebar line", () => {
       tone: "error",
     });
   });
+
+  test.each(["openai/gpt-6-luna", "opencode/jev-1.13-free"])(
+    "every inert-setting warning for %p has a short label",
+    (model) => {
+      const warnings = systemOneRoutingWarnings(
+        config({
+          model,
+          systemOneEscalation: "reasoning-first",
+          systemOneDenialReview: true,
+        }),
+      );
+      expect(warnings).toHaveLength(2);
+      for (const warning of warnings)
+        expect(sidebarLine([warning], [])?.text).not.toContain(warning);
+    },
+  );
 
   test("a healthy config shows no line", () => {
     expect(sidebarLine([], [])).toBeUndefined();

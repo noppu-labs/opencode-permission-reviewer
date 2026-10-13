@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import { budgetExhaustedResult } from "../src/system-one/system-one-budget.ts";
+import type { HandoffTrigger } from "../src/types.ts";
 import { manualToast } from "../src/ui/manual-toast.ts";
 import { createUiStatus, type ReviewUiStatus } from "../src/ui-protocol.ts";
-import { request } from "./helpers.ts";
+import { config, request } from "./helpers.ts";
 
 const FALLBACK =
   "The reviewer could not decide. This permission now needs your approval.";
@@ -127,6 +129,48 @@ describe("manual-review toast", () => {
       "No review time left for gpt-6-luna after Jev (Jev escalated). 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.",
     );
   });
+
+  test.each<HandoffTrigger>([
+    "jev-escalate",
+    "jev-uncertain-allow",
+    "jev-gate",
+    "jev-invalid",
+    "jev-failure",
+    "jev-uncertain-deny",
+  ])(
+    "no review time left reshapes the engine's real reason after %s",
+    (trigger) => {
+      const result = budgetExhaustedResult(
+        {
+          result: {
+            kind: "escalate",
+            reason: "Jev's own reason: x.",
+            decisionSource: "system-one-reviewer",
+          },
+          category: "general",
+        },
+        trigger,
+        14_999,
+        config(),
+      );
+      const message = manualToast(
+        manual({
+          model: JEV,
+          resolution: "budget-exhausted",
+          reason: result.reason,
+        }),
+        FALLBACK,
+        LUNA,
+      ).message;
+      expect(message).toStartWith(
+        "No review time left for gpt-6-luna after Jev (",
+      );
+      expect(message).toEndWith(
+        "14s of the review budget remain and a hand-off needs 15s. Jev's own reason: x.",
+      );
+      expect(message).not.toContain("the reasoning reviewer");
+    },
+  );
 
   test("no review time left without the engine's reason shape", () => {
     expect(
