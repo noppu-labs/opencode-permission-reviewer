@@ -17,6 +17,8 @@ import type { SystemOneScores } from "./system-one-types.ts";
 /** The reasoning reviewer a Jev result was handed to. */
 export interface ReasoningHandoff {
   model: string;
+  /** Jev rated the uncertain denial it handed off critical risk. */
+  criticalDenial: boolean;
   escalatedFrom: Required<
     NonNullable<ReviewExecutionResult["reviewerEscalatedFrom"]>
   >;
@@ -109,23 +111,31 @@ export function finalJevResult(
   );
 }
 
-/** A reasoning allow stands only on sufficient evidence; otherwise it stays an
+/** The reason a reasoning approval of an uncertain Jev denial at critical risk
+ *  goes to the user; the wording of the critical-risk gate. */
+const CRITICAL_DENIAL_REASON =
+  "Reviewer returned a non-denial for critical risk; manual review required.";
+
+const INSUFFICIENT_EVIDENCE_REASON =
+  "The reasoning reviewer did not find sufficient evidence to override the System One escalation.";
+
+/** A reasoning allow stands only on sufficient evidence, and not on an
+ *  uncertain denial Jev rated critical risk; otherwise it stays an
  *  escalation. */
 function reconcileReasoningEscalation(
   result: ReviewExecutionResult,
+  criticalDenial: boolean,
 ): ReviewExecutionResult {
-  if (
-    result.kind !== "allow" ||
-    result.decision?.evidence_completeness === "sufficient"
-  ) {
-    return result;
-  }
+  if (result.kind !== "allow") return result;
+  const sufficient = result.decision?.evidence_completeness === "sufficient";
+  if (sufficient && !criticalDenial) return result;
   const reviewerOutcome = result.decision?.outcome ?? result.reviewerOutcome;
   return {
     ...result,
     kind: "escalate",
-    reason:
-      "The reasoning reviewer did not find sufficient evidence to override the System One escalation.",
+    reason: criticalDenial
+      ? CRITICAL_DENIAL_REASON
+      : INSUFFICIENT_EVIDENCE_REASON,
     ...(reviewerOutcome === undefined ? {} : { reviewerOutcome }),
   };
 }
@@ -138,7 +148,10 @@ export function reasoningResult(
   handoff: ReasoningHandoff,
   systemOne: SystemOneScores | undefined,
 ): ReviewExecutionResult {
-  const secondary = reconcileReasoningEscalation(result);
+  const secondary = reconcileReasoningEscalation(
+    result,
+    handoff.criticalDenial,
+  );
   return withResolution(
     {
       ...secondary,

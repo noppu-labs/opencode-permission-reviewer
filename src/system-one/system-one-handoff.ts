@@ -73,6 +73,19 @@ export function handoffTrigger(
   return escalationTrigger(jev.parsed, routing);
 }
 
+/** An uncertain denial that Jev rated critical risk: a reasoning approval of
+ *  it is not final. */
+export function isCriticalDenialReview(
+  jev: JevOutcome,
+  trigger: HandoffTrigger,
+): boolean {
+  return (
+    trigger === "jev-uncertain-deny" &&
+    jev.kind === "valid" &&
+    jev.parsed.decision.risk_level === "critical"
+  );
+}
+
 /** Why a due hand-off cannot run, or undefined when it can. */
 export function handoffBlock(
   attempt: ReviewAttempt,
