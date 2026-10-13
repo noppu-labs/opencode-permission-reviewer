@@ -79,6 +79,82 @@ describe("System One scores in V1 audit records", () => {
     });
   });
 
+  const LUNA: EscalationReviewerConfig = {
+    model: "openai/gpt-5.6-luna",
+    variant: "medium",
+    outputFormat: "json_schema",
+    timeoutMs: 5_000,
+  };
+
+  test("under reasoning-first a clear Jev escalation is reviewed and the record names the trigger", async () => {
+    const client = new MockClient();
+    client.nextStructured = decision("deny", { confidence: 0.9 });
+    const harness = runtime(client, {
+      model: "opencode/jev-1.13-free",
+      escalationReviewer: LUNA,
+      systemOneEscalation: "reasoning-first",
+    });
+    await withJevEndpoint(
+      response({ outcome: choice("escalate", ["allow", "deny", "escalate"]) }),
+      () => harness.runtime.process(request()),
+    );
+    const record = audits(harness)[0];
+    expect(record).toMatchObject({
+      outcome: "deny",
+      reviewerModel: "openai/gpt-5.6-luna",
+      reviewerEscalatedFrom: {
+        model: "opencode/jev-1.13-free",
+        trigger: "jev-escalate",
+      },
+    });
+    expect(record?.resolution).toBeUndefined();
+  });
+
+  test("under reasoning-first invalid Jev output is reviewed without Jev scores", async () => {
+    const client = new MockClient();
+    client.nextStructured = decision("deny", { confidence: 0.9 });
+    const harness = runtime(client, {
+      model: "opencode/jev-1.13-free",
+      escalationReviewer: LUNA,
+      systemOneEscalation: "reasoning-first",
+    });
+    await withJevEndpoint({ ...response(), model: "not-jev" }, () =>
+      harness.runtime.process(request()),
+    );
+    const record = audits(harness)[0];
+    expect(record).toMatchObject({
+      outcome: "deny",
+      reviewerModel: "openai/gpt-5.6-luna",
+      reviewerEscalatedFrom: {
+        reason:
+          "System One reviewer returned a missing, invalid, or ambiguous decision.",
+        trigger: "jev-invalid",
+      },
+    });
+    expect(record?.systemOne).toBeUndefined();
+  });
+
+  test("a Jev escalation kept for the user records the reviewer resolution and the config warnings", async () => {
+    const harness = runtime(new MockClient(), {
+      model: "opencode/jev-1.13-free",
+      configWarnings: [
+        "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final",
+      ],
+    });
+    await withJevEndpoint(
+      response({ outcome: choice("escalate", ["allow", "deny", "escalate"]) }),
+      () => harness.runtime.process(request()),
+    );
+    expect(audits(harness)[0]).toMatchObject({
+      outcome: "escalate",
+      escalationDisposition: "manual",
+      resolution: "reviewer",
+      configWarnings: [
+        "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final",
+      ],
+    });
+  });
+
   test("UI statuses name System One, then the reasoning reviewer with the base variant when it sets none", async () => {
     const client = new MockClient();
     client.nextStructured = decision("deny", { confidence: 0.9 });

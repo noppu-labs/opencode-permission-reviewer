@@ -73,6 +73,18 @@ function sanitizedSystemOne(record: ReviewAuditRecord): Sanitized<"systemOne"> {
   };
 }
 
+// Warnings can quote a raw config value, so they are bounded and redacted.
+function sanitizedConfigWarnings(
+  record: ReviewAuditRecord,
+): Sanitized<"configWarnings"> {
+  if (record.configWarnings === undefined) return {};
+  return {
+    configWarnings: record.configWarnings.map((warning) =>
+      redactSecrets(boundedReason(warning)),
+    ),
+  };
+}
+
 /** Redact the free-text fields (the reason carries transport error messages
  *  and provider responses that never passed through the evidence pipeline's
  *  redaction). Structural identifiers are left intact: running the redactor
@@ -93,5 +105,6 @@ export function sanitizeAuditRecord(
     ...sanitizedAskDecisions(record),
     ...sanitizedEscalatedFrom(record),
     ...sanitizedSystemOne(record),
+    ...sanitizedConfigWarnings(record),
   };
 }

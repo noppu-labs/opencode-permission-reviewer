@@ -1,8 +1,8 @@
 // The audit record's fields taken from the review result: the escalation
 // hand-off, System One's scores, the reviewer outcome and decision, and the
-// reviewer session.
+// reviewer session, and the config warnings.
 import type { ReviewAuditRecord } from "../audit-record.ts";
-import type { ReviewExecutionResult } from "../types.ts";
+import type { ReviewExecutionResult, ReviewerConfig } from "../types.ts";
 
 export function escalationFields(
   result: ReviewExecutionResult,
@@ -21,6 +21,7 @@ export function outcomeFields(
   ReviewAuditRecord,
   | "reviewerOutcome"
   | "escalationDisposition"
+  | "resolution"
   | "riskLevel"
   | "userAuthorization"
   | "scopeAlignment"
@@ -35,6 +36,9 @@ export function outcomeFields(
     ...(result.escalationDisposition === undefined
       ? {}
       : { escalationDisposition: result.escalationDisposition }),
+    ...(result.resolution === undefined
+      ? {}
+      : { resolution: result.resolution }),
     ...(decision === undefined
       ? {}
       : {
@@ -47,4 +51,14 @@ export function outcomeFields(
       ? {}
       : { reviewerSessionID: result.reviewSessionID }),
   };
+}
+
+/** The resolved config's warnings, only when there are any. */
+export function configWarningsField(
+  config: Pick<ReviewerConfig, "configWarnings">,
+): Pick<ReviewAuditRecord, "configWarnings"> {
+  const warnings = config.configWarnings;
+  return warnings === undefined || warnings.length === 0
+    ? {}
+    : { configWarnings: warnings };
 }
