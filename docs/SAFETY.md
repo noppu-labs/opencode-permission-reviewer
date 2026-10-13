@@ -51,10 +51,11 @@ To report a vulnerability, see [SECURITY.md](../SECURITY.md).
 - With `systemOneDenialReview`, the reasoning reviewer can overturn an uncertain Jev denial, meaning
   a Jev `deny` that fails at least one of Jev's consistency checks, for example an outcome
   confidence below `systemOneConfidenceThreshold`. Its approval passes every gate above, applied to
-  its own decision. Denials from the emergency brake and policy rules are never reviewed, and a Jev
+  its own decision, and when Jev rated the uncertain denial critical risk, the approval escalates to
+  you instead of allowing. Denials from the emergency brake and policy rules are never reviewed, and a Jev
   denial that reports a probable absolute policy violation or a material safety signal stays final.
 - A hand-off to the reasoning reviewer needs 15 seconds of review budget; with less, the request
-  escalates instead.
+  escalates to you instead, including an uncertain Jev denial, which Jev alone never finalizes.
 - A narrow deterministic emergency brake rejects unmistakable root destruction and direct
   credential-file export before any model call. See
   [Emergency brake](HOW-IT-WORKS.md#2-emergency-brake) for the forms it recognizes and its limits.

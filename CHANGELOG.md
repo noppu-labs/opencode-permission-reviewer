@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `systemOneEscalation: "reasoning-first"`: with a Jev `model` and an `escalationReviewer`, every
   escalation that starts at Jev, including an invalid answer or a failed call, goes to the
-  reasoning reviewer before it can reach you. The default, `"standard"`, keeps the existing
+  reasoning reviewer before it can reach you, unless less than 15 seconds of the review budget
+  remain. The default, `"standard"`, keeps the existing
   routing.
 - `systemOneDenialReview: true`: an uncertain Jev denial goes to the reasoning reviewer, which can
   confirm or overturn it. Denials with a strong policy or safety signal stay final.
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `timeoutMs` counts 120000.
 - A hand-off to the reasoning reviewer now needs 15 seconds of review budget left; with less, the
   request escalates (`resolution: "budget-exhausted"`). This applies in the default mode too.
-- With `reasoning-first`, `escalationMode: "deny"`, `riskPolicy.onInvalidDecision`, and
+- When the hand-off runs, `escalationMode: "deny"`, `riskPolicy.onInvalidDecision`, and
   `riskPolicy.onReviewerFailure` act on the reasoning reviewer's final outcome, not on Jev's.
 
 ## [3.0.0] - 2026-10-12

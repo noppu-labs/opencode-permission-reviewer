@@ -90,8 +90,9 @@ Jev receives trusted policy and untrusted evidence as typed System One state plu
 Its response is reconciled in code. Valid difficult decisions can be delegated to the optional
 reasoning reviewer; in the default mode provider failures never are. With
 `systemOneEscalation: "reasoning-first"`, every Jev escalation, invalid answer, and failure goes to
-the reasoning reviewer before it reaches you, and `systemOneDenialReview` lets that reviewer
-re-examine an uncertain Jev denial. A review hands off at most once.
+the reasoning reviewer before it reaches you (unless less than 15 seconds of the review budget
+remain), and `systemOneDenialReview` lets that reviewer re-examine an uncertain Jev denial. A review
+hands off at most once.
 [Reviewer models](REVIEWER-MODELS.md#how-jev-decisions-are-handled) covers both backends and the
 routing.
 

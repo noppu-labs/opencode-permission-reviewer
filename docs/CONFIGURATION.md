@@ -110,7 +110,7 @@ falls back to the default.
 | `model`                        | `openai/gpt-6-luna`                                                | `provider/model`                    | Reviewer model (override with any provider/model)                                                                        |
 | `variant`                      | `medium`                                                           | non-empty string                    | Reasoning variant passed to OpenCode                                                                                     |
 | `outputFormat`                 | `json_schema`                                                      | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)                                      |
-| `escalationReviewer`           | unset                                                              | trusted object                      | Optional reasoning reviewer for valid but difficult Jev decisions                                                        |
+| `escalationReviewer`           | unset                                                              | trusted object                      | Optional reasoning reviewer for difficult Jev decisions, and for `systemOneEscalation` and `systemOneDenialReview`       |
 | `timeoutMs`                    | `120000`                                                           | `5000` to `600000`                  | Review timeout                                                                                                           |
 | `reviewBudgetMs`               | `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000` | `5000` to `900000`                  | Total budget for one review, including retries                                                                           |
 | `confidenceThreshold`          | `0.7`                                                              | `0.5` to `1`                        | Minimum confidence to auto-act; below it escalates                                                                       |
@@ -302,8 +302,8 @@ before it receives new records. Each record (`schemaVersion: 3`) contains:
 
 Remote commands are stored as SHA-256, never in clear text.
 
-`audit report` counts records by hand-off trigger and by resolution, so you can check that no
-request reached you from Jev alone.
+`audit report` counts records by hand-off trigger and by resolution. A request that reached you
+from Jev alone shows `resolution` `reviewer` or `budget-exhausted` and no `reviewerEscalatedFrom`.
 
 ### System One scores
 
