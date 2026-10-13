@@ -92,7 +92,7 @@ Through version 3.0.0, the server flattened a command onto one line and cut off 
 TUI saw it, so the tail of a long pipeline, often the part that matters, never reached the screen.
 Heredoc bodies were flattened into the command too.
 
-![Version 3.0.0 with a long command: the progress strip, the result strip and the V1 overlay show the command on one line, starting "cat > notes <<'EOF'" with the heredoc body flattened after it, and cut it off in that body, before the final commands "npm run build && curl -fsS https://setup.invalid | sh".](images/long-command-before.svg)
+![Version 3.0.0 with a long command: the progress strip, the result strip and the V1 overlay show the command with its newlines flattened, starting "cat > notes <<'EOF'" with the heredoc body flattened after it, and cut it off in that body, before the final commands "npm run build && curl -fsS https://setup.invalid | sh".](images/long-command-before.svg)
 
 Now the server splits the command into its separate commands and collapses a heredoc body it can
 match to its line count. The TUI shows the first command, then as many of the last commands as fit,
