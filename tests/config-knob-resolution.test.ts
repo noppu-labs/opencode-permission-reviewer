@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
+import {
+  DEFAULT_CONFIG,
+  resolveConfig,
+  reviewBudgetMs,
+} from "../src/config.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 
 type Knob = [key: keyof ReviewerConfig, min: number, max: number];
@@ -58,6 +62,35 @@ describe("resolveConfig clamps every numeric knob to its bounds", () => {
     // derived default.
     expect(resolved("reviewBudgetMs", null)).toBe(180_000);
     expect(resolved("reviewBudgetMs", 1.5)).toBe(180_000);
+  });
+});
+
+describe("reviewBudgetMs", () => {
+  const reviewer = (timeoutMs?: number): Record<string, unknown> => ({
+    model: "openai/gpt-6-luna",
+    ...(timeoutMs === undefined ? {} : { timeoutMs }),
+  });
+  const budget = (source: Record<string, unknown>): number =>
+    reviewBudgetMs(resolveConfig({ timeoutMs: 30_000, ...source }));
+
+  test("the derived budget is both reviewer timeouts plus a minute", () => {
+    expect(budget({})).toBe(120_000);
+    expect(budget({ escalationReviewer: reviewer(200_000) })).toBe(290_000);
+    expect(budget({ escalationReviewer: reviewer(10_000) })).toBe(100_000);
+  });
+
+  test("a reviewer without its own timeout counts the builtin 120 s, not timeoutMs", () => {
+    expect(budget({ escalationReviewer: reviewer() })).toBe(210_000);
+    // With matching timeouts the formula equals the old 2 * timeoutMs + 60 s.
+    expect(
+      reviewBudgetMs(resolveConfig({ escalationReviewer: reviewer() })),
+    ).toBe(300_000);
+  });
+
+  test("an explicit reviewBudgetMs still wins", () => {
+    expect(
+      budget({ reviewBudgetMs: 90_000, escalationReviewer: reviewer(200_000) }),
+    ).toBe(90_000);
   });
 });
 

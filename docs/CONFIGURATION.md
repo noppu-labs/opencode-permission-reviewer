@@ -88,8 +88,10 @@ disabled.
 `retainReviewSessions: false` removes the auxiliary session after the review, and `true` keeps it
 for inspection on either host generation. Leave it `false` in normal use.
 
-`reviewBudgetMs` bounds the whole review. Its default is `2 * timeoutMs + 60000`, and retries
-consume this budget.
+`reviewBudgetMs` bounds the whole review, and retries consume it. Its default is
+`timeoutMs + escalationReviewer.timeoutMs + 60000`, which leaves room for a hand-off to the
+escalation reviewer. Without an `escalationReviewer` that is `2 * timeoutMs + 60000`. An
+`escalationReviewer` without its own `timeoutMs` counts its default, `120000`.
 
 ## Cost
 
@@ -110,7 +112,7 @@ falls back to the default.
 | `outputFormat`                 | `json_schema`                                             | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)           |
 | `escalationReviewer`           | unset                                                     | trusted object                      | Optional reasoning reviewer for valid but difficult Jev decisions                             |
 | `timeoutMs`                    | `120000`                                                  | `5000` to `600000`                  | Review timeout                                                                                |
-| `reviewBudgetMs`               | `2 * timeoutMs + 60000`                                   | `5000` to `900000`                  | Total budget for one review, including retries                                                |
+| `reviewBudgetMs`               | `timeoutMs + escalationReviewer.timeoutMs + 60000`        | `5000` to `900000`                  | Total budget for one review, including retries                                                |
 | `confidenceThreshold`          | `0.7`                                                     | `0.5` to `1`                        | Minimum confidence to auto-act; below it escalates                                            |
 | `systemOneConfidenceThreshold` | `0.4`                                                     | `0.3` to `1`                        | Calibrated Jev outcome-confidence floor; below it escalates                                   |
 | `systemOneReasoningThreshold`  | `0.38`                                                    | `0` to `1`                          | Combined `allow`/`deny` probability required to send an explicit Jev escalation to reasoning  |
