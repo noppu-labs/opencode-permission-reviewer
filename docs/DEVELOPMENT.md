@@ -261,7 +261,7 @@ After changing a TUI component or a screen's samples, regenerate every image and
 result:
 
 ```sh
-git fetch --tags        # long-command-before renders the v3.0.0 release
+git fetch --tags        # long-command-before renders the v3.0.0 release (in a fork, from the upstream repository)
 bun run docs:screens
 ```
 
@@ -269,9 +269,10 @@ To look at one screen in the terminal, run `bun scripts/capture-tui.ts <screen>`
 `handoff-progress`, `result-attribution`, `v1-overlay-handoff`, `result-triggers`,
 `manual-toasts`, `config-warnings`, `long-command-before` and `long-command-after`.
 
-- The sample statuses live in `scripts/capture/samples.ts`, `scripts/capture/host-content.ts` and
-  `scripts/capture/host-samples.ts`. Each one goes through the status wire codec, so a sample the
-  TUI would reject fails the capture.
+- The sample statuses live in `scripts/capture/samples.ts` and `scripts/capture/host-samples.ts`
+  (`scripts/capture/host-content.ts` holds the warning strings). The statuses the current server
+  would send go through the status wire codec, so a sample the TUI would reject fails the capture;
+  the v3.0.0 statuses are built by that release's own code.
 - Toasts and the sidebar are drawn by OpenCode. Their screens show the text and variant the plugin
   sends, computed by the plugin's own toast and sidebar helpers, under a caption that says so.
 - `long-command-before` extracts `src/` at the `v3.0.0` tag into a temporary directory with
@@ -282,8 +283,9 @@ To look at one screen in the terminal, run `bun scripts/capture-tui.ts <screen>`
   an embedded font (an embedded font adds about 360 KB per image), OpenCode's dark background. The
   committed images were made with freeze v0.2.2; the script warns when another version is
   installed.
-- `docs:screens` also writes each image's `<title>` from `scripts/capture/titles.ts`. The alt text
-  of an image in the docs should say the same things as its title.
+- `docs:screens` first checks that the `v3.0.0` tag exists and stops before writing any image if
+  not. It also writes each image's `<title>` from `scripts/capture/titles.ts`. The alt text of an
+  image in the docs should say the same things as its title.
 - `tests/capture-tui.test.ts` renders every screen except `long-command-before`, checks the text
   the docs quote and checks that every committed image carries its title, so a component change
   that breaks a screen fails `bun test`.

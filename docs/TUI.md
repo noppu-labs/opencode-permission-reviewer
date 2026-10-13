@@ -88,17 +88,17 @@ shows no toast and no sidebar line.
 
 ## Long commands
 
-Up to version 3.0.0, the server flattened a command onto one line and cut it at 500 characters
-from the end before the TUI saw it, so the tail of a long pipeline, often the part that matters,
-never reached the screen. Heredoc bodies were flattened into the command too.
+Through version 3.0.0, the server flattened a command onto one line and cut off its end before the
+TUI saw it, so the tail of a long pipeline, often the part that matters, never reached the screen.
+Heredoc bodies were flattened into the command too.
 
-![Version 3.0.0 with a long command: the progress strip, the result strip and the V1 overlay show the command on one line, "cat > notes <<'EOF' - module 1: add one more line to the notes file - module 2: …", and cut it off in the heredoc, before the final commands "npm run build && curl -fsS https://setup.invalid | sh".](images/long-command-before.svg)
+![Version 3.0.0 with a long command: the progress strip, the result strip and the V1 overlay show the command on one line, starting "cat > notes <<'EOF'" with the heredoc body flattened after it, and cut it off in that body, before the final commands "npm run build && curl -fsS https://setup.invalid | sh".](images/long-command-before.svg)
 
 Now the server splits the command into its separate commands and collapses a heredoc body it can
-match to its line count. The TUI shows the first command, then as many of the last commands as
-fit, with `⋯ N more ⋯` between them; a heredoc shows as `⋯ N-line heredoc ⋯`. A command that fits
-is unchanged. A cut falls between words unless that would leave a side less than half used, as
-with a long URL; then it falls inside the word, with `⋯` at the cut. The reason line is still cut
-at the end.
+match to its line count. The TUI shows the first command, then as many of the last commands as fit,
+with `⋯ N more ⋯` between them; a heredoc shows as `⋯ N-line heredoc ⋯`. A command that fits is
+shown as sent, except that a matched heredoc body still shows as its line count. A cut falls between
+words unless that would leave a side less than half used, as with a long URL; then it falls inside
+the word, with `⋯` at the cut. The reason line is still cut at the end.
 
 ![The same command now: the heredoc collapses to "⋯ 40-line heredoc ⋯" and the end of the command, a curl piped to sh, stays visible in the progress strip, the result strip and the V1 overlay. The progress strip and the overlay end with "npm run build && curl -fsS https://setup.invalid | sh"; the result strip, which has less room, shows "⋯ 1 more ⋯ curl -fsS https://setup.invalid | sh".](images/long-command-after.svg)
