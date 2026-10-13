@@ -47,7 +47,7 @@ function context(
 }
 
 /** One sidebar mounted once, so a test sees live updates on the same view. */
-export interface SidebarView {
+interface SidebarView {
   /** Waits until the sidebar text does (or, with `present` false, does not)
    *  include `text`. */
   sees(text: string, present?: boolean): Promise<void>;
