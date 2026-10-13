@@ -3,7 +3,7 @@ import type { ScreenName } from "./screens.ts";
 /** One sentence per screen image; Biome's SVG accessibility rule needs a title and readers get the gist. */
 export const SCREEN_TITLES: Record<ScreenName, string> = {
   "handoff-progress":
-    "Two progress strips for a git push: Jev (typesafe-ai/jev-1.13.0) reviewing at 2.1s, then gpt-6-luna reviewing after Jev's escalation at 7.3s.",
+    "Two progress strips for a git push: Jev (jev-1.13.0) reviewing at 2.1s, then gpt-6-luna reviewing after Jev's escalation at 7.3s.",
   "result-attribution":
     "Three result strips: an approval by Jev, an approval by gpt-6-luna after Jev's escalation, and a block by gpt-6-luna confirming Jev's denial.",
   "v1-overlay-handoff":

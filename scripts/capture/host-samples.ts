@@ -66,7 +66,7 @@ export function manualSamples(): Array<[string, ReviewUiStatus]> {
       }),
     ],
     [
-      "budget-exhausted, as the V1 host shows it",
+      "budget-exhausted",
       jevStatus({
         command: PUSH,
         phase: "manual",

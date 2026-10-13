@@ -15,7 +15,7 @@ gpt-6-luna — Narrowly scoped temp cleanup; matches user intent.
 
 While a review is running on V2, the optional TUI shows a compact two-line status strip at the
 bottom, in the same place as the result strip. It has an animated indicator, the text "Reviewing
-this permission", the reviewer model and reasoning variant, the elapsed time, and the action. A
+this permission", the reviewer model (the last segment of its ID) and reasoning variant, the elapsed time, and the action. A
 command too long for the terminal is shortened in the middle, not at the end: the strip keeps the
 first command and as many of the last ones as fit, with a muted `⋯ 3 more ⋯` for the commands in
 between, and a heredoc body the server can match shows as its line count instead of its contents.

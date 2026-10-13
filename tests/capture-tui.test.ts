@@ -12,8 +12,13 @@ const { RGBA, TextAttributes }: typeof import("@opentui/core") = await import(
 );
 const { frameToAnsi, textRow }: typeof import("../scripts/capture/ansi.ts") =
   await import("../scripts/capture/ansi.ts");
-const { handoffStatus }: typeof import("../scripts/capture/fixtures.ts") =
-  await import("../scripts/capture/fixtures.ts");
+const {
+  handoffStatus,
+  JEV,
+  LUNA,
+}: typeof import("../scripts/capture/fixtures.ts") = await import(
+  "../scripts/capture/fixtures.ts"
+);
 const {
   renderScreen,
   SCREEN_NAMES,
@@ -140,6 +145,7 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
   [
     "handoff-progress",
     [
+      "Reviewing this permission · jev-1.13.0 · system-one",
       "Reviewing this permission · gpt-6-luna after Jev's escalation · medium",
       "git push --force-with-lease origin release/2.4",
     ],
@@ -173,7 +179,14 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
       "Review blocked (fail-closed)",
     ],
   ],
-  ["long-command-after", ["https://setup.invalid | sh", "40-line heredoc"]],
+  [
+    "long-command-after",
+    [
+      "https://setup.invalid | sh",
+      "40-line heredoc",
+      "jev-1.13.0 · reasoning system-one",
+    ],
+  ],
   [
     "manual-toasts",
     [
@@ -183,7 +196,7 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
       "This permission needs your approval.",
       "No review time left for gpt-6-luna after Jev (Jev escalated).",
       "No review time left for gpt-6-luna after Jev",
-      "resolution budget-exhausted, as the V1 host shows it",
+      "toast, resolution budget-exhausted · OpenCode draws the frame",
       "Manual review required",
       "OpenCode draws the frame",
     ],
@@ -201,10 +214,12 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
 
 describe("capture: screens", () => {
   test.each(SCREEN_TEXT)(
-    "%s shows the text the docs quote",
+    "%s shows the text the docs quote and names models by their last segment",
     async (screen, expected) => {
       const text = plain((await renderScreen(screen)).join("\n"));
       for (const fragment of expected) expect(text).toContain(fragment);
+      expect(text).not.toContain(JEV);
+      expect(text).not.toContain(LUNA);
     },
     30_000,
   );
