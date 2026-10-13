@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createServerUiStatus } from "../src/ui-action-segments.ts";
 import {
   createUiStatus,
   decodeUiStatus,
@@ -6,6 +7,7 @@ import {
   type ReviewUiStatus,
 } from "../src/ui-protocol.ts";
 import { fitStatus, MAX_STATUS_BYTES } from "../src/ui-status-extras.ts";
+import { FIND_COMMAND } from "./action-fixtures.ts";
 import { decision, request } from "./helpers.ts";
 
 /** A character JSON escapes to six bytes. */
@@ -138,6 +140,28 @@ describe("whole-status size fit", () => {
     expect(analysis).toEndWith("…");
     expect(analysis.length).toBeGreaterThan(1);
     expect(analysis.slice(0, -1)).toBe(ESCAPED.repeat(analysis.length - 1));
+    expectFits(status);
+  });
+
+  test("full config lists, segments and long text: lists go first, segments whole, then the reason", () => {
+    const list = (tag: string): string[] =>
+      Array.from({ length: 5 }, (_, i) => `${tag}${i}${CJK.repeat(190)}`);
+    const status = createServerUiStatus(
+      request({ metadata: { command: FIND_COMMAND } }),
+      "denied",
+      {
+        ...options,
+        reason: CJK.repeat(2_000),
+        decision: decision("deny", { rationale: CJK.repeat(2_000) }),
+        configWarnings: list("w"),
+        configDegraded: list("d"),
+      },
+    );
+    expect(status.configWarnings).toBeUndefined();
+    expect(status.configDegraded).toBeUndefined();
+    expect("actionSegments" in status).toBe(false);
+    expect(status.reason).toEndWith("…");
+    expect(status.decision?.rationale).toBe(CJK.repeat(2_000));
     expectFits(status);
   });
 });

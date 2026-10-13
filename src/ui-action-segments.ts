@@ -90,13 +90,18 @@ function keepsSegments(plain: ReviewUiStatus, full: ReviewUiStatus): boolean {
     Buffer.byteLength(JSON.stringify(full), "utf8") <= MAX_STATUS_BYTES &&
     (full.configWarnings?.length ?? 0) ===
       (plain.configWarnings?.length ?? 0) &&
-    (full.configDegraded?.length ?? 0) === (plain.configDegraded?.length ?? 0)
+    (full.configDegraded?.length ?? 0) ===
+      (plain.configDegraded?.length ?? 0) &&
+    full.reason === plain.reason &&
+    full.decision?.rationale === plain.decision?.rationale &&
+    full.decision?.script_analysis === plain.decision?.script_analysis
   );
 }
 
 /** `createUiStatus` plus the request's action segments: how server code
  *  builds every status it publishes. The segments are left off when they
- *  would push the status past the cap or crowd out a config entry. */
+ *  would push the status past the cap, crowd out a config entry, or shorten
+ *  the reason, rationale or script analysis. */
 export function createServerUiStatus(
   request: PermissionRequest,
   phase: ReviewUiPhase,
