@@ -12,9 +12,13 @@ import { defined } from "../helpers.ts";
 import {
   choice,
   envelope,
+  JEV_ANSWERS,
+  type JevScript,
   PRIMARY_BASES,
   response,
   reviewOnce,
+  routedBackend,
+  routingConfig,
 } from "./system-one-fixtures.ts";
 
 function reasoningAllow(
@@ -64,12 +68,123 @@ function reviewWithIncompleteEvidence(
   return evaluateReview(pending.request, config, {
     collect: async () => ({ ...pending, actionEvidenceComplete: false }),
     review: (value: ReviewEnvelope) =>
-      backend.review(value, new ReviewAttempt("generation", 10_000)),
+      backend.review(value, new ReviewAttempt("generation", 60_000)),
     active: () => true,
     auxiliarySession: () => false,
     observe: () => {},
   });
 }
+
+/** What a test sees of one routed review. */
+interface Route {
+  kind: ReviewExecutionResult["kind"];
+  decisionSource: ReviewExecutionResult["decisionSource"];
+  reasoningCalls: number;
+  escalationDisposition?: ReviewExecutionResult["escalationDisposition"];
+}
+
+async function observedRoute(
+  config: ReviewerConfig,
+  jev: JevScript,
+): Promise<Route> {
+  const { backend, calls } = routedBackend(config, jev);
+  const result = await reviewOnce(backend);
+  return {
+    kind: result.kind,
+    decisionSource: result.decisionSource,
+    reasoningCalls: calls(),
+    ...(result.escalationDisposition === undefined
+      ? {}
+      : { escalationDisposition: result.escalationDisposition }),
+  };
+}
+
+const jevFinal = (kind: "allow" | "deny"): Route => ({
+  kind,
+  decisionSource: "system-one-reviewer",
+  reasoningCalls: 0,
+});
+const REASONED: Route = {
+  kind: "deny",
+  decisionSource: "llm-reviewer",
+  reasoningCalls: 1,
+};
+const JEV_ESCALATED: Route = {
+  kind: "escalate",
+  decisionSource: "system-one-reviewer",
+  reasoningCalls: 0,
+  escalationDisposition: "manual",
+};
+const JEV_FAILED: Route = {
+  kind: "escalate",
+  decisionSource: "failure-safe",
+  reasoningCalls: 0,
+  escalationDisposition: "manual",
+};
+
+interface RoutingRow {
+  title: string;
+  jev: JevScript;
+  standard: Route;
+}
+
+const ROUTING_TABLE: RoutingRow[] = [
+  {
+    title: "a clean allow",
+    jev: JEV_ANSWERS.cleanAllow,
+    standard: jevFinal("allow"),
+  },
+  {
+    title: "a clean deny",
+    jev: JEV_ANSWERS.cleanDeny,
+    standard: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain allow",
+    jev: JEV_ANSWERS.uncertainAllow,
+    standard: REASONED,
+  },
+  {
+    title: "an uncertain allow a gate also stops",
+    jev: JEV_ANSWERS.uncertainGatedAllow,
+    standard: REASONED,
+  },
+  {
+    title: "an escalation below the reasoning threshold",
+    jev: JEV_ANSWERS.clearEscalate,
+    standard: JEV_ESCALATED,
+  },
+  {
+    title: "an escalation at or above the reasoning threshold",
+    jev: JEV_ANSWERS.plausibleEscalate,
+    standard: REASONED,
+  },
+  {
+    title: "a consistent allow the critical-risk gate stops",
+    jev: JEV_ANSWERS.criticalGatedAllow,
+    standard: JEV_ESCALATED,
+  },
+  {
+    title: "a consistent allow the scope gate stops",
+    jev: JEV_ANSWERS.misalignedGatedAllow,
+    standard: JEV_ESCALATED,
+  },
+  { title: "invalid Jev output", jev: "invalid", standard: JEV_FAILED },
+  { title: "a Jev transport failure", jev: "failure", standard: JEV_FAILED },
+  {
+    title: "an uncertain deny without denial review",
+    jev: JEV_ANSWERS.uncertainDeny,
+    standard: jevFinal("deny"),
+  },
+];
+
+describe("System One routing table", () => {
+  test.each(ROUTING_TABLE)("$title", async ({ jev, standard }) => {
+    expect(await observedRoute(routingConfig("standard"), jev)).toEqual(
+      standard,
+    );
+  });
+});
 
 describe("System One reviewer", () => {
   test("routes a valid difficult decision to the configured reasoning reviewer", async () => {
