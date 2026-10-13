@@ -36,6 +36,7 @@ const files = [
   ["src/config-risk-policy.ts", "config-risk-policy.ts"],
   ["src/config-rule-condition.ts", "config-rule-condition.ts"],
   ["src/reviewer-model.ts", "reviewer-model.ts"],
+  ["src/system-one-routing.ts", "system-one-routing.ts"],
   ["src/config/loader.ts", "config/loader.ts"],
   ["src/config/layer-read.ts", "config/layer-read.ts"],
   ["src/config/trust-boundary.ts", "config/trust-boundary.ts"],

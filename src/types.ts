@@ -222,6 +222,9 @@ export interface ReviewerConfig {
    *  or rules dropped by validation). Degraded configs block automatic
    *  approval: restrictions may have been lost, so requests escalate instead. */
   configDegraded?: string[];
+  /** Non-empty when a setting was invalid and fell back to its default, or is
+   *  on but inert. Informational only: never affects a decision. */
+  configWarnings?: string[];
 }
 
 export interface ReviewEnvelope {

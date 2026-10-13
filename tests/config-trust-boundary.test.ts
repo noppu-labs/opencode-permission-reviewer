@@ -152,6 +152,13 @@ describe("monotonic fields", () => {
       ),
     ).toEqual([true, true, true]);
   });
+
+  test("a dropped project routing value is not reported as invalid", () => {
+    const loaded = loadConfig({
+      project: { systemOneEscalation: "bogus", systemOneDenialReview: "yes" },
+    });
+    expect(loaded.configWarnings).toBeUndefined();
+  });
 });
 
 describe("project policy rules are added after the trusted rules", () => {

@@ -26,6 +26,7 @@ import {
   isProviderModelId,
   resolveEscalationReviewer,
 } from "./reviewer-model.ts";
+import { withSystemOneRoutingWarnings } from "./system-one-routing.ts";
 import type { ReviewerConfig } from "./types.ts";
 
 export const DEFAULT_CONFIG: ReviewerConfig = {
@@ -76,7 +77,7 @@ export function resolveConfig(
 ): ReviewerConfig {
   const source = options ?? {};
   // Key order is part of the output: the server hashes the serialized config.
-  return {
+  const resolved: ReviewerConfig = {
     model: isProviderModelId(source.model)
       ? source.model
       : DEFAULT_CONFIG.model,
@@ -111,4 +112,5 @@ export function resolveConfig(
       ? { configDegraded: source.configDegraded }
       : {}),
   };
+  return withSystemOneRoutingWarnings(resolved, source);
 }
