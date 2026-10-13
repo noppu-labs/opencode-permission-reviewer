@@ -404,6 +404,8 @@ describe("tui config comes from the server's view", () => {
     try {
       const captured = await captureOverlay(DROPPED_INLINE);
       expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([]);
+      // A clean server status: the inline keys leave nothing behind to show.
+      fire(captured, "tui.command.execute", statusEvent("approved"));
       expect(captured.toasts).toEqual([]);
       expect(factoryAttempt(captured, "sidebar_content").rendered).toBe(false);
     } finally {
@@ -444,34 +446,55 @@ describe("tui config comes from the server's view", () => {
 
   test("the watchdog follows the timeout of the server status", async () => {
     pinGlobalConfig({ timeoutMs: 90_000 });
-    const captured = await captureOverlay(DROPPED_INLINE);
-    fire(captured, "permission.asked", {
-      type: "permission.asked",
-      properties: request(),
-    });
-    fire(captured, "tui.command.execute", {
-      properties: {
-        command: encodeUiStatus(
-          createUiStatus(request(), "reviewing", {
-            model: "test-model",
-            variant: "high",
-            timeoutMs: 10_000,
-          }),
-        ),
-      },
-    });
-    expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
+    // Capture the 250ms watchdog ticker so the test drives it by hand, and pin
+    // the clock, instead of waiting on real time.
+    let tick: (() => void) | undefined;
+    const interval = spyOn(globalThis, "setInterval").mockImplementation(((
+      fn: () => void,
+      ms?: number,
+    ) => {
+      if (ms === 250) tick = fn;
+      return 0;
+    }) as unknown as typeof setInterval);
     const realNow = Date.now.bind(Date);
+    const startedAt = realNow();
+    let offsetMs = 0;
     const clock = spyOn(Date, "now").mockImplementation(
-      () => realNow() + 20_000,
+      () => startedAt + offsetMs,
     );
     try {
-      // 10s of server budget plus the watchdog grace is long gone; the
-      // placeholder's 240s would not be.
-      await Bun.sleep(600);
+      const captured = await captureOverlay(DROPPED_INLINE);
+      const runTick = defined(tick, "watchdog ticker");
+      fire(captured, "permission.asked", {
+        type: "permission.asked",
+        properties: request(),
+      });
+      fire(captured, "tui.command.execute", {
+        properties: {
+          command: encodeUiStatus(
+            createUiStatus(request(), "reviewing", {
+              model: "test-model",
+              variant: "high",
+              timeoutMs: 30_000,
+              emittedAt: startedAt,
+            }),
+          ),
+        },
+      });
+      // Past the 15s start grace but before the server's 30s + 5s deadline: an
+      // unacknowledged review would be gone, so this also proves the server
+      // status was applied.
+      offsetMs = 20_000;
+      runTick();
+      expect(factoryAttempt(captured, "app").rendered).toBe(true);
+      expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
+      // Past the server deadline, far inside the placeholder's 240s.
+      offsetMs = 40_000;
+      runTick();
       expect(factoryAttempt(captured, "app_bottom").rendered).toBe(true);
     } finally {
       clock.mockRestore();
+      interval.mockRestore();
     }
   });
 });
