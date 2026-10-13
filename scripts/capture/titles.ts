@@ -11,9 +11,9 @@ export const SCREEN_TITLES: Record<ScreenName, string> = {
   "result-triggers":
     "Nine result strips showing who decided and why: Jev alone, or gpt-6-luna after each kind of hand-off, including a fail-closed block.",
   "long-command-before":
-    "Version 3.0.0 with a long command: the progress strip, result strip and V1 overlay show the start of the heredoc and cut the command before its last line.",
+    "Version 3.0.0 with a long command: the progress strip, result strip and V1 overlay show the start of the heredoc and cut the command before its final commands.",
   "long-command-after":
-    "The same long command now: the heredoc is collapsed to a 40-line marker and the trailing command stays visible in the progress strip, result strip and V1 overlay.",
+    "The same long command now: the heredoc is collapsed to a 40-line marker and the end of the command, a curl piped to sh, stays visible in the progress strip, result strip and V1 overlay.",
   "manual-toasts":
     "Four manual-review toasts: the reasoning reviewer escalated, unavailable, out of review time, and the no hand-off case.",
   "config-warnings":
