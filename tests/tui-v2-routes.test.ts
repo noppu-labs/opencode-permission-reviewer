@@ -200,4 +200,60 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
       "denial review inactive (model is not Jev)",
     );
   });
+
+  test("a new directory drops the old directory's notices even when its status call fails", async () => {
+    const warning =
+      "systemOneDenialReview is inactive: the reviewer model is not Jev";
+    const state = host({
+      status: (directory: string): unknown =>
+        directory === DIRECTORY
+          ? { configWarnings: [warning] }
+          : Promise.reject(new Error("status is not available")),
+      respond: [
+        () => snapshot([status("reviewing")]),
+        (directory: string) => snapshot([], { directory }),
+      ],
+    });
+    const running = await start(state);
+    const sidebar = await running.mountSidebar();
+    await sidebar.sees("denial review inactive");
+    moveTo(state, SECOND);
+    await running.until(
+      () => state.statusCalls.length === 2,
+      "second status call",
+    );
+    await sidebar.sees("reviewer:", false);
+  });
+
+  test("a status answer that arrives after the directory changed is ignored", async () => {
+    const stale = gate();
+    const state = host({
+      status: (directory: string): unknown =>
+        directory === DIRECTORY ? stale.promise : {},
+      respond: [
+        () => snapshot([status("reviewing")]),
+        (directory: string) => snapshot([], { directory }),
+      ],
+    });
+    const running = await start(state);
+    const sidebar = await running.mountSidebar();
+    await running.until(
+      () => state.statusCalls.length === 1,
+      "first status call",
+    );
+    moveTo(state, SECOND);
+    await running.until(
+      () => state.statusCalls.length === 2,
+      "second status call",
+    );
+    stale.resolve({
+      configWarnings: [
+        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+      ],
+      configDegraded: ["fs broken"],
+    });
+    await running.settle();
+    expect(state.toasts).toEqual([]);
+    expect(sidebar.frame()).not.toContain("reviewer:");
+  });
 });

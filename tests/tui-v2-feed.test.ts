@@ -5,7 +5,9 @@ import {
   gate,
   host,
   latest,
+  moveTo,
   push,
+  SECOND,
   snapshot,
   status,
   update,
@@ -296,5 +298,23 @@ describe("V2 TUI reviewer feed", () => {
     expect(await running.sidebarFrame()).toContain(
       "✕ reviewer: auto-approval disabled (fs broken)",
     );
+  });
+
+  test("the mounted sidebar follows the status answer and a directory change", async () => {
+    const pending = gate();
+    const running = await start(
+      host({
+        status: (directory: string): unknown =>
+          directory === DIRECTORY ? pending.promise : {},
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    const sidebar = await running.mountSidebar();
+    await running.sees("Reviewing this permission");
+    expect(sidebar.frame()).not.toContain("reviewer:");
+    pending.resolve({ configWarnings: [INERT] });
+    await sidebar.sees("reasoning-first inactive");
+    moveTo(running.state, SECOND);
+    await sidebar.sees("reviewer:", false);
   });
 });

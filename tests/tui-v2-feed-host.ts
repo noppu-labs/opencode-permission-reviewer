@@ -46,6 +46,14 @@ function context(
   return ctx as unknown as Context;
 }
 
+/** One sidebar mounted once, so a test sees live updates on the same view. */
+export interface SidebarView {
+  /** Waits until the sidebar text does (or, with `present` false, does not)
+   *  include `text`. */
+  sees(text: string, present?: boolean): Promise<void>;
+  frame(): string;
+}
+
 export interface Running {
   state: Host;
   frame(): string;
@@ -56,8 +64,10 @@ export interface Running {
   /** Lets the feed settle past its 250 ms sweep, then fires every pending
    *  1 s timer as if its second had passed. */
   settle(): Promise<void>;
-  /** Renders what the plugin put in the sidebar. */
+  /** Renders what the plugin put in the sidebar, afresh. */
   sidebarFrame(): Promise<string>;
+  /** Mounts the sidebar once and keeps it for live-update assertions. */
+  mountSidebar(): Promise<SidebarView>;
   dispose(): void;
 }
 
@@ -120,6 +130,19 @@ export async function start(state: Host): Promise<Running> {
     await sidebarView.flush();
     return sidebarView.captureCharFrame();
   };
+  const mountSidebar = async (): Promise<SidebarView> => {
+    const mounted = await testRender(() => sidebar.render() as Element, {
+      width: 80,
+      height: 2,
+    });
+    cleanups.push(() => mounted.renderer.destroy());
+    const sidebarText = (): string => mounted.captureCharFrame();
+    return {
+      frame: sidebarText,
+      sees: (text: string, present = true): Promise<void> =>
+        until(() => sidebarText().includes(text) === present, text),
+    };
+  };
   return {
     state,
     frame,
@@ -128,6 +151,7 @@ export async function start(state: Host): Promise<Running> {
     reconnect,
     settle,
     sidebarFrame,
+    mountSidebar,
     dispose: stop,
   };
 }
