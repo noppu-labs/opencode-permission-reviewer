@@ -30,7 +30,9 @@ const {
   "../scripts/capture/titles.ts"
 );
 const {
+  BEFORE_REF,
   extractSource,
+  missingRefMessage,
   removeSource,
 }: typeof import("../scripts/capture/before.ts") = await import(
   "../scripts/capture/before.ts"
@@ -272,6 +274,15 @@ describe("capture: the 3.0.0 source tree", () => {
     removeSource(dir);
     expect(existsSync(dir)).toBe(false);
     expect(existsSync(join(ROOT, "node_modules/@opentui/solid"))).toBe(true);
+  });
+
+  test("checks the ref before regenerating and names the fix", () => {
+    expect(missingRefMessage("HEAD")).toBeUndefined();
+    const message = missingRefMessage("v0.0.0-capture-missing");
+    expect(message).toContain("v0.0.0-capture-missing");
+    expect(message).toContain("git fetch --tags");
+    expect(message).toContain("upstream repository");
+    expect(BEFORE_REF).toBe("v3.0.0");
   });
 
   test("names the fix when the ref is missing", () => {

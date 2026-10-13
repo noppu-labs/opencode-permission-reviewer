@@ -15,8 +15,22 @@ import { type Block, renderSections } from "./render.ts";
 import { LONG_COMMAND } from "./samples.ts";
 
 /** The last release whose server cut long actions at the end. */
-const BEFORE_REF = "v3.0.0";
+export const BEFORE_REF = "v3.0.0";
 const ROOT = join(import.meta.dir, "..", "..");
+
+const FETCH_TAGS =
+  "run `git fetch --tags` (in a fork, fetch the tags from the upstream repository)";
+
+/** Why `ref` cannot be rendered from this checkout, or undefined when it exists. */
+export function missingRefMessage(ref: string): string | undefined {
+  const found = Bun.spawnSync(
+    ["git", "rev-parse", "--verify", "--quiet", `${ref}^{commit}`],
+    { cwd: ROOT },
+  );
+  return found.exitCode === 0
+    ? undefined
+    : `${ref} is not in this checkout, and long-command-before renders it: ${FETCH_TAGS}`;
+}
 
 /** Removes an extracted tree. The node_modules link goes first, so removal
  *  never walks into the repo's own node_modules. */
@@ -34,7 +48,7 @@ export function extractSource(ref: string): string {
   );
   if (archive.exitCode !== 0)
     throw new Error(
-      `git archive ${ref} failed (run \`git fetch --tags\`): ${archive.stderr.toString().trim()}`,
+      `git archive ${ref} failed (${FETCH_TAGS}): ${archive.stderr.toString().trim()}`,
     );
   const dir = mkdtempSync(join(tmpdir(), "capture-tui-"));
   symlinkSync(join(ROOT, "node_modules"), join(dir, "node_modules"), "dir");

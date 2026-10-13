@@ -37,6 +37,8 @@ const {
   isScreenName,
   renderScreen,
 }: typeof import("./capture/screens.ts") = await import("./capture/screens.ts");
+const { BEFORE_REF, missingRefMessage }: typeof import("./capture/before.ts") =
+  await import("./capture/before.ts");
 const { CAPTURE_NOW }: typeof import("./capture/fixtures.ts") = await import(
   "./capture/fixtures.ts"
 );
@@ -55,6 +57,12 @@ function regenerate(): number {
     console.warn(
       `expected freeze ${FREEZE_VERSION}, found "${version}"; the SVGs may change for that reason alone`,
     );
+  // Fail before writing any image, so a missing tag never leaves a half-regenerated set.
+  const missing = missingRefMessage(BEFORE_REF);
+  if (missing !== undefined) {
+    console.error(missing);
+    return 1;
+  }
   mkdirSync(join(ROOT, "docs", "images"), { recursive: true });
   for (const screen of SCREEN_NAMES) {
     const freeze = Bun.spawnSync(
