@@ -27,6 +27,19 @@ export interface LegacyUi {
   ReviewOverlay: Strip;
 }
 
+const LEGACY_EXPORTS = [
+  "createUiStatus",
+  "ReviewProgress",
+  "ReviewResult",
+  "ReviewOverlay",
+] as const;
+
+function isLegacyUi(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & LegacyUi {
+  return LEGACY_EXPORTS.every((name) => typeof value[name] === "function");
+}
+
 /** The v3.0.0 modules under `dir`, merged into one namespace. */
 export async function legacyUi(dir: string): Promise<LegacyUi> {
   const modules: Record<string, unknown>[] = await Promise.all(
@@ -38,5 +51,7 @@ export async function legacyUi(dir: string): Promise<LegacyUi> {
     ].map((path): Promise<Record<string, unknown>> => import(join(dir, path))),
   );
   const merged: Record<string, unknown> = Object.assign({}, ...modules);
-  return merged as unknown as LegacyUi;
+  if (!isLegacyUi(merged))
+    throw new Error(`${dir} does not export ${LEGACY_EXPORTS.join(", ")}`);
+  return merged;
 }
