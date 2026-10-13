@@ -161,6 +161,8 @@ The project layer cannot:
 - Grant `actorProfiles`.
 - Set `repositoryTrust: "trusted"`.
 - Set `enforcementMode` in either direction.
+- Turn on `systemOneEscalation: "reasoning-first"` or `systemOneDenialReview: true`. It may set
+  `"standard"` or `false`, which keeps more requests with you.
 - Relax a trusted `escalationMode: "deny"`, a failure-mode deny knob, `confidenceThreshold`,
   `systemOneConfidenceThreshold`, `systemOneReasoningThreshold`, or `riskPolicy`.
 

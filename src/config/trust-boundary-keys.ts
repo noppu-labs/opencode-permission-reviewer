@@ -19,6 +19,8 @@ export const TRUST_BOUNDARY_KEYS: ReadonlySet<string> = new Set([
   "enforcementMode",
   "riskPolicy",
   "escalationMode",
+  "systemOneEscalation",
+  "systemOneDenialReview",
   "policyRules",
   "variant",
   "outputFormat",

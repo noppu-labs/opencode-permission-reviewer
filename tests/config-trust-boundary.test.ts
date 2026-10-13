@@ -131,6 +131,27 @@ describe("monotonic fields", () => {
       ),
     ).toEqual(["deny", "deny", "deny"]);
   });
+
+  test("System One routing can be turned off but never on by the project", () => {
+    const on = {
+      systemOneEscalation: "reasoning-first",
+      systemOneDenialReview: true,
+    };
+    expect(field("systemOneEscalation", "reasoning-first")).toBe("standard");
+    expect(field("systemOneDenialReview", true)).toBe(false);
+    expect(field("systemOneEscalation", "standard", on)).toBe("standard");
+    expect(field("systemOneDenialReview", false, on)).toBe(false);
+    expect(
+      ["bogus", null, 1].map((value) =>
+        field("systemOneEscalation", value, on),
+      ),
+    ).toEqual(["reasoning-first", "reasoning-first", "reasoning-first"]);
+    expect(
+      ["true", null, 1].map((value) =>
+        field("systemOneDenialReview", value, on),
+      ),
+    ).toEqual([true, true, true]);
+  });
 });
 
 describe("project policy rules are added after the trusted rules", () => {

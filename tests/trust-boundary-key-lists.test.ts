@@ -12,6 +12,8 @@ const CLAMPED = [
   "enforcementMode",
   "riskPolicy",
   "escalationMode",
+  "systemOneEscalation",
+  "systemOneDenialReview",
   "policyRules",
 ];
 const trustedOnly: readonly string[] = TRUSTED_ONLY_KEYS;
