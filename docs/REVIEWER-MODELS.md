@@ -96,7 +96,50 @@ deterministic confidence and consistency checks.
   reviews, so you do not pay for another model that is unlikely to resolve them.
 - Without `escalationReviewer`, final escalations follow `escalationMode` and the failure
   settings.
-- Provider failures, timeouts, and invalid responses never invoke the second model.
+- In the default `systemOneEscalation: "standard"` mode, provider failures, timeouts, and invalid
+  responses never invoke the second model.
+
+#### `systemOneEscalation: "reasoning-first"`
+
+With a Jev `model` and an `escalationReviewer`, every escalation that starts at Jev goes to the
+reasoning reviewer before it can reach you. Jev never sends a request to you directly.
+
+| Jev result                                     | `standard`                             | `reasoning-first`                        |
+| ---------------------------------------------- | -------------------------------------- | ---------------------------------------- |
+| Clean allow or deny                            | final                                  | final                                    |
+| Allow with contradictions, gated or not        | reasoning reviewer                     | reasoning reviewer                       |
+| `escalate` below `systemOneReasoningThreshold` | you                                    | reasoning reviewer                       |
+| `escalate` at or above the threshold           | reasoning reviewer                     | reasoning reviewer                       |
+| Consistent allow stopped by a gate             | you                                    | reasoning reviewer                       |
+| Invalid or ambiguous answer                    | you, or a deny per `onInvalidDecision` | reasoning reviewer, without Jev's scores |
+| Timeout or transport error                     | you, or a deny per `onReviewerFailure` | reasoning reviewer                       |
+
+`systemOneReasoningThreshold` is ignored in this mode.
+
+#### `systemOneDenialReview: true`
+
+With the same model and reviewer, an uncertain Jev denial goes to the reasoning reviewer, which can
+confirm or overturn it. A denial is uncertain when it is a Jev `deny` that fails at least one of
+Jev's consistency checks, for example an outcome confidence below
+`systemOneConfidenceThreshold`. The denial stays final when Jev reports an absolute policy-deny
+signal of 0.7 or more, or a data-loss, sensitive-disclosure, credential-access, security-change, or
+external-mutation signal of 0.5 or more. Denials from the emergency brake and policy rules are
+never reviewed. The two settings are independent.
+
+#### After a hand-off
+
+- A reasoning `deny` is final.
+- A reasoning `allow` passes the normal gates, applied to the reasoning reviewer's own decision
+  (its own risk rating and evidence), and stands only with `sufficient` evidence; otherwise the
+  request escalates.
+- A reasoning `escalate`, an invalid answer, or a reasoning failure is a final escalation.
+  `escalationMode`, `riskPolicy.onInvalidDecision`, and `riskPolicy.onReviewerFailure` apply to
+  this final outcome, never to Jev's own answer.
+- A review hands off at most once; the two settings never chain.
+- A hand-off needs 15 seconds of the review budget (`reviewBudgetMs`) left, in either mode. With
+  less, the request escalates and the audit record has `resolution: "budget-exhausted"`.
+- Audit records name the hand-off in `reviewerEscalatedFrom.trigger` and how an escalation ended in
+  `resolution`; see [Audit log](CONFIGURATION.md#audit-log).
 
 ### System One thresholds
 
@@ -111,8 +154,9 @@ signals:
 This calibration is separate from the chat-reviewer `confidenceThreshold`.
 
 `systemOneReasoningThreshold` controls how much traffic explicit Jev escalations send to the
-secondary reviewer. Raising it sends fewer cases to the reasoning reviewer. Project configuration
-may raise this value but cannot lower a trusted threshold.
+secondary reviewer in `standard` mode. Raising it sends fewer cases to the reasoning reviewer.
+Project configuration may raise this value but cannot lower a trusted threshold. Under
+`reasoning-first` it is ignored: every Jev escalation goes to the reasoning reviewer.
 
 Audit records include Jev's own scores; see [System One scores](CONFIGURATION.md#system-one-scores).
 

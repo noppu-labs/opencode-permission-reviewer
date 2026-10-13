@@ -88,8 +88,12 @@ denies every tool, including MCP tools, except the reviewer's own structured-out
 
 Jev receives trusted policy and untrusted evidence as typed System One state plus fixed questions.
 Its response is reconciled in code. Valid difficult decisions can be delegated to the optional
-reasoning reviewer; provider failures never are. [Reviewer models](REVIEWER-MODELS.md) covers both
-backends.
+reasoning reviewer; in the default mode provider failures never are. With
+`systemOneEscalation: "reasoning-first"`, every Jev escalation, invalid answer, and failure goes to
+the reasoning reviewer before it reaches you, and `systemOneDenialReview` lets that reviewer
+re-examine an uncertain Jev denial. A review hands off at most once.
+[Reviewer models](REVIEWER-MODELS.md#how-jev-decisions-are-handled) covers both backends and the
+routing.
 
 ### 5. Enforcement
 
