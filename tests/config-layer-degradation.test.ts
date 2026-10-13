@@ -135,6 +135,24 @@ describe("config warnings reach stderr without degrading", () => {
     expect(warnings).toEqual([`permission-reviewer: ${NOT_JEV}`]);
   });
 
+  test("printConfigWarnings false keeps the warnings on the config and off stderr", () => {
+    const { config, warnings } = loadLayers({
+      global: { systemOneEscalation: "reasoning-first" },
+      printConfigWarnings: false,
+    });
+    expect(config.configWarnings).toEqual([NOT_JEV]);
+    expect(warnings).toEqual([]);
+  });
+
+  test("printConfigWarnings false still reports a malformed global file", () => {
+    const { warnings } = loadLayers({
+      global: "{not json",
+      printConfigWarnings: false,
+    });
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain("is malformed and was ignored");
+  });
+
   test("trusted inline values warn like the global file", () => {
     const { config, warnings } = loadLayers({
       inline: { systemOneDenialReview: "yes" },

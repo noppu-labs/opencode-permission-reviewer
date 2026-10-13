@@ -23,7 +23,12 @@ export const tui: TuiPlugin = async (
   api: TuiPluginApi,
   options: PluginOptions | undefined,
 ) => {
-  const config = loadResolvedConfig(options);
+  // The server's own view: it loads inline options as unknown origin, so the
+  // TUI budget and model match it, and routing warnings come from its statuses
+  // instead of a trusted-inline view the server does not use.
+  const config = loadResolvedConfig(options, undefined, "unknown", {
+    printConfigWarnings: false,
+  });
   const state = new ReviewUiState({
     model: config.model,
     variant: config.variant,

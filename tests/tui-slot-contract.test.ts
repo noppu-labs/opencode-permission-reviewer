@@ -1,6 +1,15 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { TuiPluginApi, TuiPluginMeta } from "@opencode-ai/plugin/tui";
-import { createUiStatus, encodeUiStatus } from "../src/ui-protocol.ts";
+import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
+import {
+  createUiStatus,
+  encodeUiStatus,
+  type ReviewUiStatus,
+} from "../src/ui-protocol.ts";
+import { ReviewUiState } from "../src/ui-state.ts";
 import { defined, request } from "./helpers.ts";
 import { tui } from "./tui-loader.ts";
 
@@ -25,9 +34,22 @@ import { tui } from "./tui-loader.ts";
  */
 
 const disposers: Array<() => void> = [];
+const tempDirs: string[] = [];
 afterEach(() => {
   for (const dispose of disposers.splice(0)) dispose();
+  setGlobalConfigPathForTests(undefined);
+  for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true });
 });
+
+/** Points the loader at a temp global config so a developer's own file never
+ *  reaches a test. An absent `contents` means no global file. */
+function pinGlobalConfig(contents?: Record<string, unknown>): void {
+  const dir = mkdtempSync(join(tmpdir(), "reviewer-tui-global-"));
+  tempDirs.push(dir);
+  const path = join(dir, "permission-reviewer.jsonc");
+  if (contents !== undefined) writeFileSync(path, JSON.stringify(contents));
+  setGlobalConfigPathForTests(path);
+}
 
 type EventHandler = (event: never) => void;
 
@@ -48,7 +70,9 @@ interface CapturedApi {
   dispose: () => void;
 }
 
-async function captureOverlay(): Promise<CapturedApi> {
+async function captureOverlay(
+  options: Record<string, unknown> = {},
+): Promise<CapturedApi> {
   const handlers = new Map<string, EventHandler[]>();
   const mode = { pushes: [] as string[], pops: 0 };
   const toasts: Array<{
@@ -113,7 +137,7 @@ async function captureOverlay(): Promise<CapturedApi> {
     },
   } as unknown as TuiPluginApi;
 
-  await tui(api, {}, {
+  await tui(api, options, {
     id: "opencode-permission-reviewer",
     source: "npm",
     spec: "opencode-permission-reviewer@1.2.4",
@@ -363,5 +387,91 @@ describe("tui overlay slot contract", () => {
     expect(attempt.threw).toBe(false);
     expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
     expect(captured.mode.pushes).toHaveLength(0);
+  });
+});
+
+/** The inline view the server never sees: it loads inline options as unknown
+ *  origin, so these routing keys and this escalationReviewer are dropped. */
+const DROPPED_INLINE = {
+  systemOneEscalation: "reasoning-first",
+  escalationReviewer: { model: "openai/gpt-6", timeoutMs: 600_000 },
+};
+
+describe("tui config comes from the server's view", () => {
+  test("inline routing keys neither warn nor toast nor leave a sidebar line", async () => {
+    pinGlobalConfig();
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const captured = await captureOverlay(DROPPED_INLINE);
+      expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([]);
+      expect(captured.toasts).toEqual([]);
+      expect(factoryAttempt(captured, "sidebar_content").rendered).toBe(false);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test("routing warnings of the global file reach the TUI only through server statuses", async () => {
+    pinGlobalConfig({ systemOneEscalation: "reasoning-first" });
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const captured = await captureOverlay();
+      expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([]);
+      expect(captured.toasts).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test("the placeholder budget ignores an inline escalationReviewer the server drops", async () => {
+    pinGlobalConfig({ timeoutMs: 90_000 });
+    const asked = spyOn(ReviewUiState.prototype, "asked");
+    try {
+      const captured = await captureOverlay(DROPPED_INLINE);
+      fire(captured, "permission.asked", {
+        type: "permission.asked",
+        properties: request(),
+      });
+      expect(
+        asked.mock.results.map(
+          (result) => (result.value as ReviewUiStatus).timeoutMs,
+        ),
+      ).toEqual([2 * 90_000 + 60_000]);
+    } finally {
+      asked.mockRestore();
+    }
+  });
+
+  test("the watchdog follows the timeout of the server status", async () => {
+    pinGlobalConfig({ timeoutMs: 90_000 });
+    const captured = await captureOverlay(DROPPED_INLINE);
+    fire(captured, "permission.asked", {
+      type: "permission.asked",
+      properties: request(),
+    });
+    fire(captured, "tui.command.execute", {
+      properties: {
+        command: encodeUiStatus(
+          createUiStatus(request(), "reviewing", {
+            model: "test-model",
+            variant: "high",
+            timeoutMs: 10_000,
+          }),
+        ),
+      },
+    });
+    expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
+    const realNow = Date.now.bind(Date);
+    const clock = spyOn(Date, "now").mockImplementation(
+      () => realNow() + 20_000,
+    );
+    try {
+      // 10s of server budget plus the watchdog grace is long gone; the
+      // placeholder's 240s would not be.
+      await Bun.sleep(600);
+      expect(factoryAttempt(captured, "app_bottom").rendered).toBe(true);
+    } finally {
+      clock.mockRestore();
+    }
   });
 });
