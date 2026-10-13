@@ -56,7 +56,7 @@ To report a vulnerability, see [SECURITY.md](../SECURITY.md).
   Jev denial that reports a probable absolute policy violation or a material safety signal stays
   final.
 - A hand-off to the reasoning reviewer needs 15 seconds of review budget; with less, the request
-  escalates to you instead, including an uncertain Jev denial, which Jev alone never finalizes.
+  escalates and `escalationMode` applies, including an uncertain Jev denial that was due for review.
 - A narrow deterministic emergency brake rejects unmistakable root destruction and direct
   credential-file export before any model call. See
   [Emergency brake](HOW-IT-WORKS.md#2-emergency-brake) for the forms it recognizes and its limits.

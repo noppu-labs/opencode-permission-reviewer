@@ -91,7 +91,9 @@ for inspection on either host generation. Leave it `false` in normal use.
 `reviewBudgetMs` bounds the whole review, and retries consume it. Its default is
 `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000`: never less than
 `2 * timeoutMs + 60000`, and longer when the escalation reviewer's timeout is. An
-`escalationReviewer` without its own `timeoutMs` counts its default, `120000`.
+`escalationReviewer` without its own `timeoutMs` counts its default, `120000`. A hand-off to the
+reasoning reviewer needs 15 seconds of budget left, so a `reviewBudgetMs` at or below
+`timeoutMs + 15000` leaves no room for one after a Jev timeout.
 
 ## Cost
 
@@ -112,7 +114,7 @@ falls back to the default.
 | `outputFormat`                 | `json_schema`                                                      | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)                                      |
 | `escalationReviewer`           | unset                                                              | trusted object                      | Optional reasoning reviewer for difficult Jev decisions, and for `systemOneEscalation` and `systemOneDenialReview`       |
 | `timeoutMs`                    | `120000`                                                           | `5000` to `600000`                  | Review timeout                                                                                                           |
-| `reviewBudgetMs`               | `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000` | `5000` to `900000`                  | Total budget for one review, including retries                                                                           |
+| `reviewBudgetMs`               | `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000` | `5000` to `900000`                  | Total budget for one review, including retries; a hand-off needs 15 s of it left                                         |
 | `confidenceThreshold`          | `0.7`                                                              | `0.5` to `1`                        | Minimum confidence to auto-act; below it escalates                                                                       |
 | `systemOneConfidenceThreshold` | `0.4`                                                              | `0.3` to `1`                        | Calibrated Jev outcome-confidence floor; below it escalates                                                              |
 | `systemOneReasoningThreshold`  | `0.38`                                                             | `0` to `1`                          | Combined `allow`/`deny` probability required to send an explicit Jev escalation to reasoning                             |
@@ -304,7 +306,8 @@ before it receives new records. Each record (`schemaVersion: 3`) contains:
 Remote commands are stored as SHA-256, never in clear text.
 
 `audit report` counts records by hand-off trigger and by resolution. A request that reached you
-from Jev alone shows `resolution` `reviewer` or `budget-exhausted` and no `reviewerEscalatedFrom`.
+from Jev alone shows `resolution` `reviewer` or `budget-exhausted` and no `reviewerEscalatedFrom`,
+or no `resolution` at all when an allow gate stopped Jev's approval.
 
 ### System One scores
 
