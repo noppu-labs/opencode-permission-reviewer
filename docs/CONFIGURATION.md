@@ -185,10 +185,27 @@ marks the run as degraded:
 - An invalid `escalationReviewer`, `enforcementMode`, or `escalationMode` in the global config.
 
 In a degraded run, reviews still run, but automatic approval stays off and everything escalates
-until the file is fixed. The plugin reports the degradation on stderr.
+until the file is fixed. The plugin reports the degradation on stderr, and `doctor` lists each
+reason under `degraded:`.
 
 A malformed project file is reported and ignored, without degrading the run: the project layer
 can only add restrictions, so losing it never loosens the trusted config.
+
+## Config warnings
+
+A config warning reports a setting that cannot do what it says. Warnings never change a decision
+and never degrade the run. The plugin writes each one to stderr when it loads the config, `doctor`
+lists them under `warning:`, and `config print-effective` shows them as `configWarnings`.
+
+You get a warning when:
+
+- `systemOneEscalation` or `systemOneDenialReview` has an invalid value. It falls back to
+  `"standard"` or `false`. The fallback sends more requests to you, so unlike an invalid
+  `escalationMode` it does not degrade the run.
+- `systemOneEscalation: "reasoning-first"` or `systemOneDenialReview: true` is set but inactive,
+  because `model` is not Jev or no valid `escalationReviewer` is configured. For example:
+  `systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev
+  escalations still go to you`.
 
 ## Declarative policy rules
 

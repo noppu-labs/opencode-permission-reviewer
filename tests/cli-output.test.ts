@@ -278,6 +278,11 @@ describe("audit report output", () => {
   }, 30_000);
 });
 
+const NOT_JEV =
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+const DEGRADED =
+  'global config escalationMode "DENY" is invalid and was ignored';
+
 describe("doctor output", () => {
   test("the human report lists versions, config and audit lines", async () => {
     fresh();
@@ -347,12 +352,40 @@ audit
       "repositoryTrust",
       "policyRuleCount",
       "effectivePolicyHash",
+      "configWarnings",
+      "configDegraded",
     ]);
+    expect(report.config.configWarnings).toEqual([]);
+    expect(report.config.configDegraded).toEqual([]);
     expect(report.audit).toEqual({
       path: "/dev/null/sub/audit.jsonl",
       writable: false,
       error: "ENOTDIR: not a directory, mkdir '/dev/null/sub'",
     });
+  }, 15_000);
+
+  test("config warnings and degradation are listed in both formats", async () => {
+    fresh();
+    const global = join(home, ".config", "opencode");
+    mkdirSync(global, { recursive: true });
+    writeFileSync(
+      join(global, "permission-reviewer.jsonc"),
+      JSON.stringify({
+        escalationMode: "DENY",
+        systemOneEscalation: "reasoning-first",
+      }),
+    );
+    const human = await cli(["doctor"]);
+    expect(human.code).toBe(0);
+    expect(human.stderr).toStartWith(
+      `permission-reviewer: ${DEGRADED}; automatic approval stays disabled until it is fixed\npermission-reviewer: ${NOT_JEV}\nopencode-permission-reviewer doctor`,
+    );
+    expect(human.stderr).toContain(
+      `  warning:    ${NOT_JEV}\n  degraded:   ${DEGRADED}\naudit\n`,
+    );
+    const report = JSON.parse((await cli(["doctor", "--json"])).stdout);
+    expect(report.config.configWarnings).toEqual([NOT_JEV]);
+    expect(report.config.configDegraded).toEqual([DEGRADED]);
   }, 15_000);
 
   test("the host section probes a binary and a connected run needs a password", async () => {
@@ -385,4 +418,27 @@ audit
       stderr: "Reviewer host connections outside loopback require HTTPS\n",
     });
   }, 30_000);
+});
+
+describe("config print-effective output", () => {
+  test("the resolved config carries its warnings and degradation", async () => {
+    fresh();
+    const global = join(home, ".config", "opencode");
+    mkdirSync(global, { recursive: true });
+    writeFileSync(
+      join(global, "permission-reviewer.jsonc"),
+      JSON.stringify({
+        escalationMode: "DENY",
+        systemOneEscalation: "reasoning-first",
+      }),
+    );
+    const result = await cli(["config", "print-effective"]);
+    expect(result.code).toBe(0);
+    const { config } = JSON.parse(result.stdout);
+    expect(config.systemOneEscalation).toBe("reasoning-first");
+    expect(config.systemOneDenialReview).toBe(false);
+    expect(config.configWarnings).toEqual([NOT_JEV]);
+    expect(config.configDegraded).toEqual([DEGRADED]);
+    expect(result.stderr).toContain(`permission-reviewer: ${NOT_JEV}\n`);
+  }, 15_000);
 });
