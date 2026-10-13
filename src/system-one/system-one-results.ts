@@ -78,8 +78,9 @@ export function jevScores(jev: JevOutcome): SystemOneScores | undefined {
   return jev.kind === "valid" ? jev.parsed.scores : undefined;
 }
 
-/** The reason handed to the reasoning reviewer: Jev's contradictions when it
- *  has any, else the reason of its own result. */
+/** The reason handed to the reasoning reviewer: Jev's difficult reason (its
+ *  escalation request or its contradictions) when it has one, else its own
+ *  result's reason. */
 export function handoffReason(jev: JevOutcome, own: JevResult): string {
   return (
     (jev.kind === "valid" ? jev.parsed.difficultReason : undefined) ??
@@ -87,8 +88,8 @@ export function handoffReason(jev: JevOutcome, own: JevResult): string {
   );
 }
 
-/** A logical escalation (an escalate, or one a disposition denied) gets the
- *  resolution; anything else is returned as is. */
+/** An escalation that a disposition already turned into a deny still counts
+ *  as one. */
 function withResolution(
   result: ReviewExecutionResult,
   resolution: ManualResolution,

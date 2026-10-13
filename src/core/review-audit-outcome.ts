@@ -1,6 +1,6 @@
 // The audit record's fields taken from the review result: the escalation
 // hand-off, System One's scores, the reviewer outcome and decision, and the
-// reviewer session, and the config warnings.
+// reviewer session; and the resolved config's warnings.
 import type { ReviewAuditRecord } from "../audit-record.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../types.ts";
 

@@ -129,9 +129,8 @@ export class SystemOneReviewerBackend {
     if (trigger === undefined || !escalation || !model)
       return finalJevResult(own, this.config);
     const block = handoffBlock(attempt);
-    // The host discards any result of an inactive attempt (v1 supersedes it, v2's
-    // attempt wait rejects into a failure-safe escalation), so Jev's own result
-    // here is never applied.
+    // Both hosts reject an inactive attempt's result in `attempt.wait`, so Jev's
+    // own result here is never applied.
     if (block === "inactive") return finalJevResult(own, this.config);
     if (block === "budget-exhausted")
       return budgetExhaustedResult(

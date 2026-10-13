@@ -1,4 +1,3 @@
-// The escalation of a hand-off that is due but has no review time left.
 import { applyEscalationDisposition } from "../escalation.ts";
 import type {
   HandoffTrigger,

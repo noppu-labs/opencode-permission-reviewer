@@ -1,5 +1,5 @@
-// The single hand-off decision: whether a Jev result goes to the reasoning
-// reviewer, under which trigger, and whether the attempt can still afford it.
+// Whether a Jev result goes to the reasoning reviewer, under which trigger,
+// and whether the attempt can still afford it.
 import type { ReviewAttempt } from "../core/review-attempt.ts";
 import type { SystemOneRouting } from "../system-one-routing.ts";
 import type { HandoffTrigger, ReviewExecutionResult } from "../types.ts";

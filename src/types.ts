@@ -321,9 +321,8 @@ export interface ReviewExecutionResult {
    * the request was already answered manually (`manual-superseded`).
    */
   escalationDisposition?: EscalationDisposition;
-  /** How an escalation from the System One backend was reached; kept when a
-   *  disposition turns it into a deny. Absent on allows, explicit denials and
-   *  every other path. */
+  /** Set only by the System One backend, on escalations; kept when a
+   *  disposition turns one into a deny. */
   resolution?: ManualResolution;
 }
 
