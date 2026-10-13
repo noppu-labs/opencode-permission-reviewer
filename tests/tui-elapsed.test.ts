@@ -169,6 +169,7 @@ describe("tui panel live elapsed counter", () => {
     expect(setup.captureCharFrame()).toContain("gpt-6-luna · reasoning medium");
     expect(setup.captureCharFrame()).toContain("after Jev's escalation");
     // The total since the ask, not the time since the hand-off.
-    expect(readElapsed()).toBeGreaterThanOrEqual(0.8);
+    // 0.6 s is the sleep before the hand-off: above the ~0.3 s since it, with slack for a slow host.
+    expect(readElapsed()).toBeGreaterThanOrEqual(0.6);
   }, 10_000);
 });
