@@ -8,7 +8,7 @@ import {
 const ESC = "\u001b[";
 const RESET = `${ESC}0m`;
 
-/** SGR codes for the text attributes a review component can set. */
+/** The OpenTUI text attributes mapped to SGR; any other attribute bit is dropped from the image. */
 const ATTRIBUTE_CODES: ReadonlyArray<readonly [number, number]> = [
   [TextAttributes.BOLD, 1],
   [TextAttributes.DIM, 2],
@@ -53,8 +53,7 @@ export function frameToAnsi(frame: CapturedFrame): string[] {
     .map((line) => `${line.spans.map(spanToAnsi).join("")}${RESET}`);
 }
 
-/** One ANSI row of colored text, for content the host draws (toasts, the
- *  sidebar) and for captions. */
+/** One ANSI row of colored text. */
 export function textRow(parts: readonly TextPart[]): string {
   const text = parts
     .map((part) => `${sgrColor(RGBA.fromHex(part.fg), 38)}${part.text}`)

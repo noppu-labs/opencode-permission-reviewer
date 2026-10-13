@@ -12,7 +12,7 @@ import {
 
 /** The clock every screen renders at; capture-tui.ts pins Date.now to it. */
 export const CAPTURE_NOW = 1_767_225_600_000;
-/** Terminal width of the screens; the long-command screens use the wider one. */
+/** Terminal width of the screens and the toast wrap width; the long-command screens use the wider one. */
 export const COLUMNS = 100;
 export const WIDE_COLUMNS = 120;
 
@@ -55,13 +55,11 @@ export function bashRequest(command: string): PermissionRequest {
   };
 }
 
-/** The phases in which a reviewer model has decided. */
 const DECIDED: readonly ReviewUiPhase[] = ["approved", "denied"];
 
-/** A status as the server publishes it: built by createServerUiStatus, which
- *  adds the action segments, credited to the deciding model once a phase is
- *  decided (the server's `decidedBy`), and round-tripped through the wire
- *  codec, so a sample can only use shapes the TUI accepts. */
+/** Built by `createServerUiStatus` and round-tripped through the wire codec,
+ *  so a sample can only use shapes the TUI accepts. `decidedBy` is set for
+ *  approved and denied; a manual sample passes its own. */
 function published(
   sample: Sample,
   model: string,
@@ -81,13 +79,12 @@ function published(
   return decoded;
 }
 
-/** A status while Jev reviews, or after Jev decided alone. */
+/** A status credited to Jev's run: while Jev reviews, after Jev decided alone, or a manual outcome with no hand-off. */
 export function jevStatus(sample: Sample): ReviewUiStatus {
   return published(sample, JEV, "system-one");
 }
 
-/** A status after Jev handed the request to the reasoning reviewer.
- *  `failureKind` is set for jev-failure ("timeout", "transport", …). */
+/** `failureKind` is set only for `jev-failure` ("timeout", "transport", …). */
 export function handoffStatus(
   trigger: HandoffTrigger,
   sample: Sample,

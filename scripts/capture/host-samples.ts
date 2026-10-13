@@ -35,10 +35,9 @@ function budgetReason(): string {
   ).reason;
 }
 
-/** Manual statuses as the server publishes them, one per resolution:
- *  `finalStatus` (src/opencode/v2/server-review-outcome.ts) with the result's
- *  hand-off, resolution and escalation disposition, and `decidedBy` only when
- *  a reviewer model produced the escalation. */
+/** Shaped as the server publishes them (`decidedByField`): `decidedBy` only
+ *  when a reviewer model produced the escalation, so the failure-safe
+ *  resolutions carry none. */
 export function manualSamples(): Array<[string, ReviewUiStatus]> {
   return [
     [

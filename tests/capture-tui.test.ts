@@ -4,8 +4,7 @@ import { join } from "node:path";
 import type { CapturedFrame, CapturedSpan } from "@opentui/core";
 import type { ScreenName } from "../scripts/capture/screens.ts";
 import type { HandoffTrigger } from "../src/types.ts";
-// Registers the Solid transform before any TUI module loads (see tests/tui-loader.ts); the
-// capture modules are imported dynamically after it for the same reason.
+// Before the dynamic imports below: see tests/tui-loader.ts.
 import "./tui-loader.ts";
 
 const { RGBA, TextAttributes }: typeof import("@opentui/core") = await import(
@@ -136,7 +135,7 @@ describe("capture: ANSI conversion", () => {
   });
 });
 
-// The strings come from the spec's section 3 tables; the docs quote them.
+// Attribution, toast and warning text the docs quote, plus the captions that label each case.
 const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
   [
     "handoff-progress",
@@ -307,7 +306,7 @@ describe("capture: the 3.0.0 source tree", () => {
   });
 });
 
-test("registers every screen the stack contract names", () => {
+test("registers exactly the eight screens the docs use", () => {
   const registered: string[] = [...SCREEN_NAMES].sort();
   expect(registered).toEqual(
     [

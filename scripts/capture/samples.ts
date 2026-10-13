@@ -64,7 +64,7 @@ export function attributionSamples(): ReviewUiStatus[] {
   return [jevAlone(), afterEscalation(), confirmedDenial()];
 }
 
-/** One result strip per hand-off trigger, Jev alone, and a fail-closed block. */
+/** Jev alone, each hand-off trigger (two strips for jev-uncertain-deny), and a fail-closed block. */
 export function resultSamples(): LabelledStatus[] {
   return [
     { caption: "no hand-off: Jev decided", status: jevAlone() },

@@ -32,7 +32,6 @@ export function escapeXml(text: string): string {
   return text.replace(/[&<>"']/g, (char) => XML_ESCAPES[char] ?? char);
 }
 
-/** The title element for a screen, as it appears in its SVG. */
 export function titleElement(title: string): string {
   return `<title>${escapeXml(title)}</title>`;
 }

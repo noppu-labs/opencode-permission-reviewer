@@ -85,8 +85,7 @@ function toastRows(toast: ToastContent): string[] {
   return [heading, ...message];
 }
 
-/** One toast per manual-review resolution, from manualToast() as the V1 host
- *  calls it. */
+/** From `manualToast()` with the V1 host's arguments. */
 export function manualToastBlocks(): Block[] {
   return manualSamples().map(([resolution, status]) => ({
     caption: `toast, resolution ${resolution} · ${HOST_FRAME}`,
@@ -118,7 +117,7 @@ function sidebarBlock(
   };
 }
 
-/** Warning toasts, the sidebar line, and the healthy case, which shows nothing. */
+/** The inactive-setting and degraded-config toasts, the sidebar lines, and the healthy case, which shows nothing. */
 export function configWarningBlocks(): Block[] {
   invariant(
     configToasts([], []).length === 0 && sidebarLine([], []) === undefined,

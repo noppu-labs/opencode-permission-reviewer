@@ -108,7 +108,7 @@ function renderSvg(screen: ScreenName, dir: string): boolean {
     );
     return false;
   }
-  // freeze writes no <title>; see SCREEN_TITLES.
+  // freeze writes no <title>; see `SCREEN_TITLES`.
   writeFileSync(
     svg,
     withTitle(readFileSync(svg, "utf8"), SCREEN_TITLES[screen]),
