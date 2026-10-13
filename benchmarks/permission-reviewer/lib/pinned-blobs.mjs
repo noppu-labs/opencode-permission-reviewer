@@ -27,8 +27,7 @@ export const PINNED_BLOBS = {
   "src/config-risk-policy.ts": "b0153a9fbe82baebecbbb3dd1afe0196978bab91",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/config-rule-condition.ts": "c5d475f4a06542cf79f67058f5ab3d55100c7821",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/system-one-routing.ts": "f336cc70682f8414db9ce463a45593211f7a7f91",
+  "src/system-one-routing.ts": "d0bf91c4e88fe0ba13617c8ef86e3949ceff5a80",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/reviewer-model.ts": "e8b33fa484ff8de522060c5a4a1d6426d55f9845",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

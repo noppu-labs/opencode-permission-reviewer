@@ -8,8 +8,7 @@ export interface SystemOneRouting {
   denialReview: boolean;
 }
 
-/** Why a configured routing setting cannot take effect, or undefined when it
- *  can. A non-Jev model is named first: no reviewer fixes that. */
+/** A non-Jev model is reported first: no escalationReviewer fixes that. */
 function inertCause(
   config: ReviewerConfig,
 ): "not-jev" | "no-reviewer" | undefined {
@@ -28,7 +27,7 @@ export function resolveSystemOneRouting(
   };
 }
 
-/** Warnings for settings that are on but inert; [] when none. */
+/** Warnings for settings that are on but inert. */
 export function systemOneRoutingWarnings(config: ReviewerConfig): string[] {
   const cause = inertCause(config);
   if (cause === undefined) return [];
@@ -52,8 +51,7 @@ export function systemOneRoutingWarnings(config: ReviewerConfig): string[] {
 
 const PREVIEW_CHARS = 80;
 
-/** The value as JSON, cut to a readable length; a warning names the value,
- *  it does not reproduce it. */
+/** A warning names the value; it does not reproduce it. */
 function preview(value: unknown): string {
   const json = JSON.stringify(value) ?? String(value);
   return json.length > PREVIEW_CHARS
@@ -82,8 +80,7 @@ function invalidValueWarnings(
   return warnings;
 }
 
-/** The resolved config with `configWarnings` appended (last, after
- *  configDegraded) when any routing value was invalid or is inert. */
+/** configWarnings goes last, after configDegraded: resolveConfig's key order is part of its output. */
 export function withSystemOneRoutingWarnings(
   config: ReviewerConfig,
   source: Record<string, unknown>,

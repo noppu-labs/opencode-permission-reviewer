@@ -26,8 +26,7 @@ export type EvidenceSufficiency =
 export type EscalationMode = "manual" | "deny";
 /** Effective disposition applied to an internal escalate result. */
 export type EscalationDisposition = "manual" | "deny";
-/** Where an escalation that starts at Jev goes: `standard` keeps today's
- *  routing; `reasoning-first` sends every one to the escalation reviewer. */
+/** Where an escalation that starts at Jev goes; `reasoning-first` sends every one to the escalation reviewer. */
 export type SystemOneEscalationMode = "standard" | "reasoning-first";
 
 export interface ReviewDecision {
@@ -168,11 +167,9 @@ export interface ReviewerConfig {
   /** Minimum combined non-escalate probability for routing an explicit
    *  System One escalation to the optional reasoning reviewer. */
   systemOneReasoningThreshold: number;
-  /** Routing for escalations that start at Jev; inert unless the model is
-   *  Jev and an escalationReviewer is configured. */
+  /** Read through resolveSystemOneRouting, which applies the Jev and escalationReviewer conditions. */
   systemOneEscalation: SystemOneEscalationMode;
-  /** Send uncertain Jev denials to the escalation reviewer; inert under the
-   *  same conditions as systemOneEscalation. */
+  /** Send uncertain Jev denials to the escalation reviewer. Read through resolveSystemOneRouting. */
   systemOneDenialReview: boolean;
   timeoutMs: number;
   /** Total review budget, including context, queueing, and retries. */
