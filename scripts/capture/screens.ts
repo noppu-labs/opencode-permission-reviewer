@@ -1,3 +1,4 @@
+import type { JSX } from "@opentui/solid";
 import { ReviewProgress, type ReviewTheme } from "../../src/ui/components.tsx";
 import { ReviewOverlay } from "../../src/ui/review-overlay.tsx";
 import { ReviewResult } from "../../src/ui/review-result.tsx";
@@ -15,45 +16,50 @@ import {
 
 const theme = (): ReviewTheme => THEME;
 
-function progress(
+function section(
+  height: number,
+  view: () => JSX.Element,
+  caption?: string,
+  columns?: number,
+): Block {
+  return {
+    caption,
+    height,
+    ...(columns === undefined ? {} : { columns }),
+    view,
+  };
+}
+
+const progress = (
   status: ReviewUiStatus,
   frame: number,
   caption?: string,
   columns?: number,
-): Block {
-  return {
+): Block =>
+  section(
+    2,
+    () => ReviewProgress({ theme, status, frame: () => frame }),
     caption,
-    height: 2,
-    ...(columns === undefined ? {} : { columns }),
-    view: () => ReviewProgress({ theme, status, frame: () => frame }),
-  };
-}
+    columns,
+  );
 
-function result(
+const result = (
   status: ReviewUiStatus,
   caption?: string,
   columns?: number,
-): Block {
-  return {
-    caption,
-    height: 2,
-    ...(columns === undefined ? {} : { columns }),
-    view: () => ReviewResult({ theme, status }),
-  };
-}
+): Block => section(2, () => ReviewResult({ theme, status }), caption, columns);
 
-function overlay(
+const overlay = (
   status: ReviewUiStatus,
   caption?: string,
   columns?: number,
-): Block {
-  return {
+): Block =>
+  section(
+    12,
+    () => ReviewOverlay({ theme, status, frame: () => 0 }),
     caption,
-    height: 12,
-    ...(columns === undefined ? {} : { columns }),
-    view: () => ReviewOverlay({ theme, status, frame: () => 0 }),
-  };
-}
+    columns,
+  );
 
 function handoffProgress(): Promise<string[]> {
   const samples = progressSamples();
