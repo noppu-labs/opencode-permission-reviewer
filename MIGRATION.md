@@ -67,8 +67,8 @@ Validated low-confidence denials remain denials.
 
 V2 isolates each reviewer in a temporary location with only its owned hooks.
 The total `reviewBudgetMs` includes context and retries; its default is
-`timeoutMs + escalationReviewer.timeoutMs + 60000`, or `2 * timeoutMs + 60000`
-without an escalation reviewer. Cancellation and unload close the attempt, interrupt
+`timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000` (see
+`docs/CONFIGURATION.md`). Cancellation and unload close the attempt, interrupt
 the auxiliary session, and discard late results. Retention keeps sessions for
 inspection; otherwise the authenticated client removes them.
 Deletion is verified after bounded retries. If cleanup cannot be confirmed,

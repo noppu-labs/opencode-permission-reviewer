@@ -73,18 +73,34 @@ describe("reviewBudgetMs", () => {
   const budget = (source: Record<string, unknown>): number =>
     reviewBudgetMs(resolveConfig({ timeoutMs: 30_000, ...source }));
 
-  test("the derived budget is both reviewer timeouts plus a minute", () => {
+  test("the derived budget is timeoutMs plus the longer of the two timeouts plus a minute", () => {
     expect(budget({})).toBe(120_000);
     expect(budget({ escalationReviewer: reviewer(200_000) })).toBe(290_000);
-    expect(budget({ escalationReviewer: reviewer(10_000) })).toBe(100_000);
+  });
+
+  test("a reviewer shorter than timeoutMs leaves the budget at 2 * timeoutMs + 60 s", () => {
+    expect(budget({ escalationReviewer: reviewer(10_000) })).toBe(120_000);
+    expect(
+      reviewBudgetMs(
+        resolveConfig({
+          timeoutMs: 300_000,
+          escalationReviewer: reviewer(5_000),
+        }),
+      ),
+    ).toBe(660_000);
   });
 
   test("a reviewer without its own timeout counts the builtin 120 s, not timeoutMs", () => {
     expect(budget({ escalationReviewer: reviewer() })).toBe(210_000);
-    // With matching timeouts the formula equals the old 2 * timeoutMs + 60 s.
+    // Both timeouts default to 120 s, which gives 2 * timeoutMs + 60 s.
     expect(
       reviewBudgetMs(resolveConfig({ escalationReviewer: reviewer() })),
     ).toBe(300_000);
+    expect(
+      reviewBudgetMs(
+        resolveConfig({ timeoutMs: 300_000, escalationReviewer: reviewer() }),
+      ),
+    ).toBe(660_000);
   });
 
   test("an explicit reviewBudgetMs still wins", () => {

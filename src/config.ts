@@ -60,11 +60,13 @@ export const DEFAULT_CONFIG: ReviewerConfig = {
   askDecisions: true,
 };
 
-/** Total deadline for a review, shared by the server and TUI watchdog: room
- *  for the primary reviewer and the escalation reviewer, plus a minute. */
+/** Total deadline for a review, shared by the server and TUI watchdog. */
 export function reviewBudgetMs(config: ReviewerConfig): number {
   const escalationMs = config.escalationReviewer?.timeoutMs ?? config.timeoutMs;
-  return config.reviewBudgetMs ?? config.timeoutMs + escalationMs + 60_000;
+  return (
+    config.reviewBudgetMs ??
+    config.timeoutMs + Math.max(config.timeoutMs, escalationMs) + 60_000
+  );
 }
 
 type FlagKey = "retainReviewSessions" | "audit" | "debug" | "askDecisions";
