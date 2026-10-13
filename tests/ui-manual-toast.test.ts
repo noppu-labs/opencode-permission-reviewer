@@ -113,6 +113,18 @@ describe("manual-review toast", () => {
     );
   });
 
+  test("no review time left with an empty model name falls back to the generic name", () => {
+    const status = manual({
+      model: JEV,
+      resolution: "budget-exhausted",
+      reason: BUDGET_REASON,
+    });
+    for (const empty of ["", " / "])
+      expect(manualToast(status, FALLBACK, empty).message).toStartWith(
+        "No review time left for the reasoning reviewer after Jev (Jev escalated).",
+      );
+  });
+
   test("no review time left after a hand-off states the lead once", () => {
     const handoff = { from: JEV, to: LUNA, trigger: "jev-escalate" } as const;
     expect(

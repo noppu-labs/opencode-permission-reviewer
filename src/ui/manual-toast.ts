@@ -60,8 +60,7 @@ function noTimeLeft(
   if (reason === undefined)
     return `${NO_TIME_LEAD} ${GENERIC_REVIEWER} after Jev.`;
   if (parts === null) return reason;
-  const name =
-    reviewer === undefined ? GENERIC_REVIEWER : shortModelName(reviewer);
+  const name = shortModelName(reviewer ?? "") || GENERIC_REVIEWER;
   return `${NO_TIME_LEAD} ${name} after Jev (${parts[1]}). ${parts[2]}`;
 }
 

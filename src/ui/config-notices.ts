@@ -1,5 +1,6 @@
 // The server's config warnings in the TUI: one toast per distinct entry per
-// TUI session, and a one-line sidebar summary while any remain.
+// TUI session, and a one-line sidebar summary while any remain. The same
+// `status` read also names the server's reasoning reviewer.
 import { asObjectLike } from "../is-record.ts";
 
 interface NoticeLists {
@@ -79,8 +80,22 @@ export class ConfigNotices {
   private readonly shown = new Set<string>();
   private warnings: readonly string[] = [];
   private degraded: readonly string[] = [];
+  private reviewer: string | undefined;
 
   constructor(private readonly show: (toast: ConfigToast) => void) {}
+
+  /** The server's `escalationReviewer` model from the last applied `status`
+   *  read; undefined before one, after `reset`, or when none is configured. */
+  get reasoningModel(): string | undefined {
+    return this.reviewer;
+  }
+
+  /** Forgets the lists and the model, for another directory's server.
+   *  Entries already toasted stay shown. */
+  reset(): void {
+    this.reviewer = undefined;
+    this.update({});
+  }
 
   /** Takes the server's current lists (absent means none) and toasts each
    *  entry not yet shown in this TUI session. */
@@ -104,6 +119,8 @@ export class ConfigNotices {
     try {
       const status = asObjectLike(await call());
       if (status === undefined || signal.aborted) return false;
+      const model = status.escalationReviewerModel;
+      this.reviewer = typeof model === "string" ? model : undefined;
       this.update({
         configWarnings: strings(status.configWarnings),
         configDegraded: strings(status.configDegraded),
