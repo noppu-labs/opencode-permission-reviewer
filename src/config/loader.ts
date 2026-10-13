@@ -35,8 +35,8 @@ export function projectConfigPath(directory: string): string {
 }
 
 export interface LoadOptions {
-  /** Print `configWarnings` to stderr (default true). A caller that shows them
-   *  another way, such as the TUI from server statuses, turns this off. */
+  /** Off for a caller that shows `configWarnings` another way, such as the TUI
+   *  from server statuses. */
   printConfigWarnings?: boolean;
 }
 

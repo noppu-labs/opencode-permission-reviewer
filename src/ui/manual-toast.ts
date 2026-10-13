@@ -1,5 +1,5 @@
-// The toast a manual outcome raises: title, variant and lead sentence chosen
-// by how the review ended, then the reason as before.
+// The toast a manual outcome raises: title, variant and lead sentence follow
+// how the review ended, then the reason.
 import { failureKind } from "../failure-kind.ts";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
 import { handoffCause, shortModelName } from "./attribution.ts";
@@ -12,7 +12,8 @@ export interface ManualToast {
 
 const NO_TIME_LEAD = "No review time left for";
 const GENERIC_REVIEWER = "the reasoning reviewer";
-/** The engine's reason: "<lead> after <cause>: <budget sentence> <Jev reason>". */
+/** `budgetExhaustedResult`'s reason (`src/system-one/system-one-budget.ts`):
+ *  "<lead> after <cause>: <budget sentence> <Jev reason>". */
 const BUDGET_REASON =
   /^No review time left for the reasoning reviewer after (.+?): ([\s\S]*)$/;
 
@@ -25,8 +26,8 @@ const warning = (message: string): ManualToast => ({
 const withReason = (lead: string, reason: string | undefined): string =>
   reason ? `${lead} ${reason}` : lead;
 
-/** The reasoning reviewer's short name: the hand-off target, else the model
- *  the status credits (the reasoning reviewer on these resolutions). */
+/** Without a hand-off, `status.model` is the reasoning reviewer on these
+ *  resolutions. */
 const reasoningModel = (status: ReviewUiStatus): string =>
   shortModelName(status.handoff?.to ?? status.model);
 
@@ -64,10 +65,9 @@ function noTimeLeft(
   return `${NO_TIME_LEAD} ${name} after Jev (${parts[1]}). ${parts[2]}`;
 }
 
-/** The manual-review toast for `status`; `fallback` stands in for a missing
- *  reason where no lead sentence already asks for approval, and
- *  `reasoningReviewer` names the configured reasoning model for a review that
- *  ran out of time before the hand-off. */
+/** `fallback` stands in for a missing reason on a `reasoning-escalated` or
+ *  plain manual toast; `reasoningReviewer` names the configured reasoning
+ *  model for a review that ran out of time before the hand-off. */
 export function manualToast(
   status: ReviewUiStatus,
   fallback: string,

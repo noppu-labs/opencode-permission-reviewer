@@ -40,8 +40,8 @@ function status(
   };
 }
 
-/** The non-blank rows of the rendered frame, trimmed. A tree that draws no
- *  cell leaves the whole buffer unwritten, which captures as U+0A00. */
+/** A tree that draws no cell leaves the buffer unwritten, which captures as
+ *  U+0A00. */
 async function rows(render: () => unknown): Promise<string[]> {
   const view = await testRender(() => render() as Element, {
     width: 100,

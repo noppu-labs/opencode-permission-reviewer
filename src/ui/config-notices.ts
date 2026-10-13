@@ -18,8 +18,8 @@ export interface SidebarLine {
   tone: "warning" | "error";
 }
 
-/** Sidebar wording for the inert-setting warnings; other warnings show as
- *  written. */
+/** Keyed by the exact text `systemOneRoutingWarnings` emits; a reworded
+ *  warning falls back to its full text. */
 const SHORT_WARNINGS: Readonly<Record<string, string>> = {
   'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you':
     "reasoning-first inactive (no escalationReviewer)",
@@ -48,8 +48,7 @@ const degradedToast = (reason: string): ConfigToast => ({
   message: `Automatic approval is disabled: ${reason}.`,
 });
 
-/** Every toast the lists call for, degraded reasons first; no per-session
- *  dedupe (ConfigNotices does that). */
+/** No dedupe here: `ConfigNotices.update` shows each entry once per session. */
 export function configToasts(
   warnings: readonly string[],
   degraded: readonly string[],

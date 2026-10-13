@@ -56,8 +56,9 @@ function finalPhase(
   return kind === "deny" ? "denied" : "manual";
 }
 
-/** The reviewer variant to show for the model that decided: the escalation
- *  reviewer's when it is not the configured one. */
+/** The variant for `reviewerModel` (the deciding model on a result, the
+ *  hand-off target on a hand-off status): the escalation reviewer's when it is
+ *  not the configured model. */
 export function reviewerVariant(
   {
     config,

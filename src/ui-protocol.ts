@@ -58,8 +58,8 @@ export interface ReviewUiStatus {
   /** The model that made the decision, on a final status a reviewer model
    *  decided; absent on a brake, policy or failure-safe result. */
   decidedBy?: string;
-  /** The server's inert-setting warnings and degraded-config reasons (v1
-   *  carries them on every status; v2 reads them from the `status` RPC). */
+  /** The server's config warnings and degraded-config reasons. V1 carries them
+   *  on every status; V2 reads them from the `status` RPC. */
   configWarnings?: string[];
   configDegraded?: string[];
 }

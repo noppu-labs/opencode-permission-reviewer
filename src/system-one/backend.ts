@@ -32,16 +32,18 @@ export type ReasoningEscalation = (
   attempt: ReviewAttempt,
 ) => Promise<ReviewExecutionResult>;
 
-/** The hand-off a host shows while the reasoning reviewer runs. `failureKind`
- *  names Jev's failure ("timeout") when the trigger is `jev-failure`. */
+/** Jev's hand-off to the reasoning reviewer, on the second "reviewing" status
+ *  and on the result of a handed-off review. */
 export interface HandoffInfo {
   from: string;
   to: string;
   trigger: HandoffTrigger;
+  /** Jev's failure ("timeout"), only when `trigger` is `jev-failure`. */
   failureKind?: string;
 }
 
-/** Called once per review, right before the reasoning reviewer is invoked. */
+/** Called at most once per review, right before the reasoning reviewer is
+ *  invoked; never on the budget-floor or inactive-attempt paths. */
 export type OnHandoff = (handoff: HandoffInfo) => void;
 
 /** Calls Jev directly and hands its result to the reasoning reviewer at most

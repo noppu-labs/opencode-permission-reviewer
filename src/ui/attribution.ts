@@ -1,5 +1,4 @@
-// Who decided, and why the reasoning reviewer ran: the text the result strip,
-// the progress strip, the v1 overlay and the budget toast show.
+// Who decided, and why the reasoning reviewer ran, as the TUI shows it.
 import type { HandoffInfo } from "../system-one/backend.ts";
 import type { HandoffTrigger } from "../types.ts";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
@@ -39,8 +38,9 @@ export function shortModelName(model: string): string {
 const jevFailed = (kind: string | undefined): string =>
   kind === undefined ? "Jev failed" : `Jev failed (${kind})`;
 
-/** The outcome wording of an uncertain-denial review: overturned on approval,
- *  confirmed on the reasoning reviewer's own block, neutral otherwise. */
+/** A "denied" phase with `escalationDisposition: "deny"` is a fail-closed
+ *  escalation, not the reasoning reviewer's own block, so it does not confirm
+ *  Jev's denial. */
 function denialVerdict(status: PhraseSource): string {
   if (status.phase === "approved") return "overturned Jev's denial";
   if (status.phase === "denied" && status.escalationDisposition !== "deny")
@@ -64,16 +64,15 @@ export function handoffPhrase(status: PhraseSource): string | undefined {
   return AFTER[handoff.trigger];
 }
 
-/** The model credited without a hand-off phrase: the one that ran when the
- *  review ran out of time after a hand-off, else the one that decided. */
+/** `decidedBy`, except a `budget-exhausted` status that carries a hand-off,
+ *  which credits `status.model`: the reasoning reviewer never ran. */
 function creditedModel(status: ReviewUiStatus): string | undefined {
   if (status.handoff !== undefined && status.resolution === "budget-exhausted")
     return status.model;
   return status.decidedBy;
 }
 
-/** Line-2 attribution text per the spec's table; undefined when no model
- *  decided. */
+/** Line 2's attribution; undefined when no model is credited. */
 export function attributionText(status: ReviewUiStatus): string | undefined {
   const phrase = handoffPhrase(status);
   if (phrase !== undefined && status.handoff !== undefined)

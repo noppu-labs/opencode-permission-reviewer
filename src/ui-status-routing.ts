@@ -1,5 +1,5 @@
-// The routing fields a server-side UI status carries: the hand-off a host
-// announces while the reasoning reviewer runs, built here for both hosts.
+// UI status fields shared by the V1 coordinator and the V2 server; not shipped
+// in the TUI package (`scripts/copy-tui.ts`).
 import { failureKind } from "./failure-kind.ts";
 import type { HandoffInfo, OnHandoff } from "./system-one/backend.ts";
 import type { ReasoningHandoff } from "./system-one/system-one-results.ts";
@@ -27,8 +27,7 @@ export function handoffInfo(
   };
 }
 
-/** Tells the host Jev handed off, right before the reasoning reviewer runs.
- *  Showing it is presentation: a throwing hook never changes the review. */
+/** Presentation only: a throwing hook must never change the review. */
 export function announceHandoff(
   onHandoff: OnHandoff | undefined,
   reasoning: ReasoningHandoff,
@@ -78,8 +77,6 @@ export function statusRouting(
   };
 }
 
-/** The model a final status credits: set only when a reviewer model made the
- *  decision, never for a brake, policy or failure-safe result. */
 export function decidedByField(
   result: Partial<
     Pick<ReviewExecutionResult, "decisionSource" | "reviewerModel">

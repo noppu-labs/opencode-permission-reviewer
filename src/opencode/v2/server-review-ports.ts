@@ -40,9 +40,8 @@ async function collectEvidence(
   return envelope;
 }
 
-/** Publishes the second "reviewing" status once Jev hands off. It keeps the
- *  first status's start time, so a reloaded snapshot shows the total elapsed
- *  time, and is queued like every presentation update. */
+/** Keeps the first status's `emittedAt`, so a reloaded snapshot shows the total
+ *  elapsed time across the hand-off. */
 function publishHandoff(
   server: ServerRuntime,
   run: ReviewRun,

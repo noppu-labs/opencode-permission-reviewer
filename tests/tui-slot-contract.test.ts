@@ -390,8 +390,7 @@ describe("tui overlay slot contract", () => {
   });
 });
 
-/** The inline view the server never sees: it loads inline options as unknown
- *  origin, so these routing keys and this escalationReviewer are dropped. */
+/** Inline keys the server drops; see the config load in `src/tui.tsx`. */
 const DROPPED_INLINE = {
   systemOneEscalation: "reasoning-first",
   escalationReviewer: { model: "openai/gpt-6", timeoutMs: 600_000 },

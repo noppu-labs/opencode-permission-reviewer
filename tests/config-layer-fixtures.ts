@@ -16,7 +16,6 @@ export interface Layers {
   project?: unknown;
   inline?: Record<string, unknown>;
   trust?: InlineOptionsTrust;
-  /** Passed through as the loader's `printConfigWarnings` option. */
   printConfigWarnings?: boolean;
 }
 

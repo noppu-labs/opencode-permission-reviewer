@@ -189,7 +189,7 @@ describe("manual-review toast", () => {
     });
   });
 
-  test("a reviewer resolution, or none, keeps today's toast", () => {
+  test('a reviewer resolution, or none, shows the reason under "Manual review required"', () => {
     for (const resolution of ["reviewer", undefined] as const) {
       expect(
         manualToast(

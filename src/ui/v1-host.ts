@@ -25,8 +25,8 @@ function parentSessionID(
 const TOAST_MS = 8_000;
 
 export interface V1Host {
-  /** Applies one server status command: the panel state, the manual toast and
-   *  the config notices it carries. True when the state changed. */
+  /** True when the state changed. A stale or undecodable command applies
+   *  nothing, config notices included. */
   apply(command: string): boolean;
   sidebar(): SidebarLine | undefined;
 }
