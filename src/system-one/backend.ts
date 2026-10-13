@@ -1,5 +1,5 @@
 import type { ReviewAttempt } from "../core/review-attempt.ts";
-import { applyEscalationDisposition } from "../escalation.ts";
+import { resolveSystemOneRouting } from "../system-one-routing.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,
@@ -9,17 +9,20 @@ import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
 } from "./review.ts";
+import { handoffTrigger, type JevOutcome } from "./system-one-handoff.ts";
 import {
   createSystemOneInvoker,
   type SystemOneInvoke,
   systemOneState,
 } from "./system-one-invoker.ts";
 import {
-  invalidDecisionResult,
+  finalJevResult,
+  handoffReason,
+  jevResult,
+  jevScores,
   type ReasoningHandoff,
+  reasoningFailureResult,
   reasoningResult,
-  reviewerFailureResult,
-  systemOneResult,
 } from "./system-one-results.ts";
 import type { SystemOneScores } from "./system-one-types.ts";
 
@@ -28,7 +31,8 @@ export type ReasoningEscalation = (
   attempt: ReviewAttempt,
 ) => Promise<ReviewExecutionResult>;
 
-/** Calls Jev directly and delegates only valid but difficult decisions. */
+/** Calls Jev directly and hands its result to the reasoning reviewer at most
+ *  once, when the hand-off decision says so. */
 export class SystemOneReviewerBackend {
   private readonly jobs = new Set<Promise<ReviewExecutionResult>>();
 
@@ -69,8 +73,22 @@ export class SystemOneReviewerBackend {
     escalation: ReasoningEscalation | undefined,
   ): Promise<ReviewExecutionResult> {
     const started = performance.now();
-    let systemOne: SystemOneScores | undefined;
-    let reasoning: ReasoningHandoff | undefined;
+    try {
+      const jev = await this.askJev(envelope, attempt);
+      return await this.route(jev, envelope, attempt, escalation);
+    } finally {
+      const elapsed = performance.now() - started;
+      envelope.timings = { ...envelope.timings, reviewerMs: elapsed };
+      this.recordReviewerMs?.(envelope, elapsed);
+    }
+  }
+
+  /** Jev's answer, parsed and enforced. Never throws: a failure is an
+   *  outcome the hand-off decision can route. */
+  private async askJev(
+    envelope: ReviewEnvelope,
+    attempt: ReviewAttempt,
+  ): Promise<JevOutcome> {
     try {
       const state = systemOneState(envelope, this.config);
       const response = await attempt.wait(
@@ -80,36 +98,55 @@ export class SystemOneReviewerBackend {
         ),
       );
       const parsed = parseSystemOneReview(response, this.config);
-      if (!parsed) return invalidDecisionResult(this.config);
-      systemOne = parsed.scores;
+      if (!parsed) return { kind: "invalid" };
+      return {
+        kind: "valid",
+        parsed,
+        enforced: enforceParsedSystemOneReview(parsed, this.config),
+      };
+    } catch (error) {
+      return { kind: "failure", error };
+    }
+  }
 
-      const enforced = enforceParsedSystemOneReview(parsed, this.config);
-      if (enforced.kind !== "escalate")
-        return systemOneResult(enforced, this.config, systemOne);
+  /** The single hand-off decision: Jev's own result, or one reasoning review. */
+  private async route(
+    jev: JevOutcome,
+    envelope: ReviewEnvelope,
+    attempt: ReviewAttempt,
+    escalation: ReasoningEscalation | undefined,
+  ): Promise<ReviewExecutionResult> {
+    const own = jevResult(jev, this.config);
+    const trigger = handoffTrigger(jev, resolveSystemOneRouting(this.config));
+    const model = this.escalationModel;
+    if (trigger === undefined || !escalation || !model)
+      return finalJevResult(own, this.config);
+    const handoff: ReasoningHandoff = {
+      model,
+      escalatedFrom: {
+        model: this.config.model,
+        reason: handoffReason(jev, own),
+        trigger,
+      },
+    };
+    return this.handOff(envelope, attempt, escalation, handoff, jevScores(jev));
+  }
 
-      if (escalation && this.escalationModel && parsed.reasoningRecommended) {
-        reasoning = {
-          model: this.escalationModel,
-          escalatedFrom: { model: this.config.model, reason: enforced.reason },
-        };
-        return reasoningResult(
-          await escalation(envelope, attempt),
-          reasoning,
-          systemOne,
-        );
-      }
-
-      return applyEscalationDisposition(
-        systemOneResult(enforced, this.config, systemOne),
-        this.config,
-        "general",
+  private async handOff(
+    envelope: ReviewEnvelope,
+    attempt: ReviewAttempt,
+    escalation: ReasoningEscalation,
+    handoff: ReasoningHandoff,
+    systemOne: SystemOneScores | undefined,
+  ): Promise<ReviewExecutionResult> {
+    try {
+      return reasoningResult(
+        await escalation(envelope, attempt),
+        handoff,
+        systemOne,
       );
     } catch (error) {
-      return reviewerFailureResult(this.config, error, systemOne, reasoning);
-    } finally {
-      const elapsed = performance.now() - started;
-      envelope.timings = { ...envelope.timings, reviewerMs: elapsed };
-      this.recordReviewerMs?.(envelope, elapsed);
+      return reasoningFailureResult(this.config, error, handoff, systemOne);
     }
   }
 }

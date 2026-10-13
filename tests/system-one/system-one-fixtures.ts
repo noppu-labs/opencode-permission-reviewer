@@ -88,7 +88,7 @@ export function response(overrides: Record<string, unknown> = {}): {
 
 export const JEV_MODEL = "opencode/jev-1.13-free";
 export const REASONING_MODEL = "openai/gpt-5.6-luna";
-export const OUTCOMES = ["allow", "deny", "escalate"] as const;
+const OUTCOMES = ["allow", "deny", "escalate"] as const;
 export const RISKS = ["low", "medium", "high", "critical"] as const;
 const SCOPES = ["aligned", "partial", "misaligned", "unknown"] as const;
 
@@ -172,6 +172,43 @@ export const REASONING_DENY: ReviewExecutionResult = {
   kind: "deny",
   reason: "Reasoning reviewer denied the action.",
   decisionSource: "llm-reviewer",
+};
+
+export function reasoningAllow(
+  evidence: "sufficient" | "partial",
+  rationale = "The action is supported by complete evidence.",
+): ReviewExecutionResult {
+  return {
+    kind: "allow",
+    reason: rationale,
+    decisionSource: "llm-reviewer",
+    reviewerOutcome: "allow",
+    decision: {
+      version: 2,
+      outcome: "allow",
+      risk_level: "low",
+      user_authorization: "high",
+      scope_alignment: "aligned",
+      evidence_completeness: evidence,
+      rationale,
+      confidence: 0.95,
+    },
+  };
+}
+
+export const REASONING_ESCALATE: ReviewExecutionResult = {
+  kind: "escalate",
+  reason: "The reasoning reviewer wants a person to decide.",
+  decisionSource: "llm-reviewer",
+  reviewerOutcome: "escalate",
+};
+
+/** What a reasoning backend returns after its own timeout: already disposed. */
+export const REASONING_UNAVAILABLE: ReviewExecutionResult = {
+  kind: "escalate",
+  reason: "reviewer backend failed (TimeoutError): synthetic reasoning timeout",
+  decisionSource: "failure-safe",
+  escalationDisposition: "manual",
 };
 
 /** A backend whose Jev answers per `jev` and whose reasoning reviewer

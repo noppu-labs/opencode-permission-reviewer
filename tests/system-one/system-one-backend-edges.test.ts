@@ -147,6 +147,7 @@ describe("System One backend edges", () => {
     expect(result.reviewerEscalatedFrom).toEqual({
       model: "opencode/jev-1.13-free",
       reason: "System One explicitly requested a reasoning or human review.",
+      trigger: "jev-escalate",
     });
   });
 

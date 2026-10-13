@@ -4,6 +4,8 @@ import { ReviewAttempt } from "../../src/core/review-attempt.ts";
 import { evaluateReview } from "../../src/core/review-engine.ts";
 import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
 import type {
+  HandoffTrigger,
+  ManualResolution,
   ReviewEnvelope,
   ReviewExecutionResult,
   ReviewerConfig,
@@ -13,35 +15,21 @@ import {
   choice,
   envelope,
   JEV_ANSWERS,
+  JEV_MODEL,
   type JevScript,
+  noul,
   PRIMARY_BASES,
+  REASONING_DENY,
+  REASONING_ESCALATE,
+  REASONING_MODEL,
+  REASONING_UNAVAILABLE,
+  RISKS,
+  reasoningAllow,
   response,
   reviewOnce,
   routedBackend,
   routingConfig,
 } from "./system-one-fixtures.ts";
-
-function reasoningAllow(
-  evidence: "sufficient" | "partial",
-  rationale: string,
-): ReviewExecutionResult {
-  return {
-    kind: "allow",
-    reason: rationale,
-    decisionSource: "llm-reviewer",
-    reviewerOutcome: "allow",
-    decision: {
-      version: 2,
-      outcome: "allow",
-      risk_level: "low",
-      user_authorization: "high",
-      scope_alignment: "aligned",
-      evidence_completeness: evidence,
-      rationale,
-      confidence: 0.95,
-    },
-  };
-}
 
 // An explicit Jev escalation at 0.6 is plausible enough to hand to reasoning.
 function escalatingJevBackend(
@@ -81,6 +69,8 @@ interface Route {
   decisionSource: ReviewExecutionResult["decisionSource"];
   reasoningCalls: number;
   escalationDisposition?: ReviewExecutionResult["escalationDisposition"];
+  trigger?: HandoffTrigger;
+  resolution?: ManualResolution;
 }
 
 async function observedRoute(
@@ -89,6 +79,7 @@ async function observedRoute(
 ): Promise<Route> {
   const { backend, calls } = routedBackend(config, jev);
   const result = await reviewOnce(backend);
+  const trigger = result.reviewerEscalatedFrom?.trigger;
   return {
     kind: result.kind,
     decisionSource: result.decisionSource,
@@ -96,6 +87,10 @@ async function observedRoute(
     ...(result.escalationDisposition === undefined
       ? {}
       : { escalationDisposition: result.escalationDisposition }),
+    ...(trigger === undefined ? {} : { trigger }),
+    ...(result.resolution === undefined
+      ? {}
+      : { resolution: result.resolution }),
   };
 }
 
@@ -104,28 +99,33 @@ const jevFinal = (kind: "allow" | "deny"): Route => ({
   decisionSource: "system-one-reviewer",
   reasoningCalls: 0,
 });
-const REASONED: Route = {
+/** The reasoning stub denies, so a hand-off reads as an llm-reviewer deny. */
+const reasoned = (trigger: HandoffTrigger): Route => ({
   kind: "deny",
   decisionSource: "llm-reviewer",
   reasoningCalls: 1,
-};
+  trigger,
+});
 const JEV_ESCALATED: Route = {
   kind: "escalate",
   decisionSource: "system-one-reviewer",
   reasoningCalls: 0,
   escalationDisposition: "manual",
+  resolution: "reviewer",
 };
 const JEV_FAILED: Route = {
   kind: "escalate",
   decisionSource: "failure-safe",
   reasoningCalls: 0,
   escalationDisposition: "manual",
+  resolution: "reviewer",
 };
 
 interface RoutingRow {
   title: string;
   jev: JevScript;
   standard: Route;
+  reasoningFirst: Route;
 }
 
 const ROUTING_TABLE: RoutingRow[] = [
@@ -133,55 +133,159 @@ const ROUTING_TABLE: RoutingRow[] = [
     title: "a clean allow",
     jev: JEV_ANSWERS.cleanAllow,
     standard: jevFinal("allow"),
+    reasoningFirst: jevFinal("allow"),
   },
   {
     title: "a clean deny",
     jev: JEV_ANSWERS.cleanDeny,
     standard: jevFinal("deny"),
+    reasoningFirst: jevFinal("deny"),
   },
   {
     title: "an uncertain allow",
     jev: JEV_ANSWERS.uncertainAllow,
-    standard: REASONED,
+    standard: reasoned("jev-uncertain-allow"),
+    reasoningFirst: reasoned("jev-uncertain-allow"),
   },
   {
     title: "an uncertain allow a gate also stops",
     jev: JEV_ANSWERS.uncertainGatedAllow,
-    standard: REASONED,
+    standard: reasoned("jev-uncertain-allow"),
+    reasoningFirst: reasoned("jev-uncertain-allow"),
   },
   {
     title: "an escalation below the reasoning threshold",
     jev: JEV_ANSWERS.clearEscalate,
     standard: JEV_ESCALATED,
+    reasoningFirst: reasoned("jev-escalate"),
   },
   {
     title: "an escalation at or above the reasoning threshold",
     jev: JEV_ANSWERS.plausibleEscalate,
-    standard: REASONED,
+    standard: reasoned("jev-escalate"),
+    reasoningFirst: reasoned("jev-escalate"),
   },
   {
     title: "a consistent allow the critical-risk gate stops",
     jev: JEV_ANSWERS.criticalGatedAllow,
     standard: JEV_ESCALATED,
+    reasoningFirst: reasoned("jev-gate"),
   },
   {
     title: "a consistent allow the scope gate stops",
     jev: JEV_ANSWERS.misalignedGatedAllow,
     standard: JEV_ESCALATED,
+    reasoningFirst: reasoned("jev-gate"),
   },
-  { title: "invalid Jev output", jev: "invalid", standard: JEV_FAILED },
-  { title: "a Jev transport failure", jev: "failure", standard: JEV_FAILED },
+  {
+    title: "invalid Jev output",
+    jev: "invalid",
+    standard: JEV_FAILED,
+    reasoningFirst: reasoned("jev-invalid"),
+  },
+  {
+    title: "a Jev transport failure",
+    jev: "failure",
+    standard: JEV_FAILED,
+    reasoningFirst: reasoned("jev-failure"),
+  },
   {
     title: "an uncertain deny without denial review",
     jev: JEV_ANSWERS.uncertainDeny,
     standard: jevFinal("deny"),
+    reasoningFirst: jevFinal("deny"),
+  },
+];
+
+const DENIAL_REVIEW_TABLE: { title: string; jev: JevScript; route: Route }[] = [
+  {
+    title: "an uncertain deny",
+    jev: JEV_ANSWERS.uncertainDeny,
+    route: reasoned("jev-uncertain-deny"),
+  },
+  {
+    title: "a clean deny",
+    jev: JEV_ANSWERS.cleanDeny,
+    route: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain deny with an absolute policy-deny signal",
+    jev: { ...JEV_ANSWERS.uncertainDeny, absolute_policy_deny: noul(0.7) },
+    route: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain deny with a material data-loss signal",
+    jev: { ...JEV_ANSWERS.uncertainDeny, unauthorized_data_loss: noul(0.5) },
+    route: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain deny with a material disclosure signal",
+    jev: {
+      ...JEV_ANSWERS.uncertainDeny,
+      untrusted_sensitive_disclosure: noul(0.5),
+    },
+    route: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain deny with a material credential signal",
+    jev: {
+      ...JEV_ANSWERS.uncertainDeny,
+      excessive_credential_access: noul(0.5),
+    },
+    route: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain deny with a material security-change signal",
+    jev: {
+      ...JEV_ANSWERS.uncertainDeny,
+      unauthorized_security_change: noul(0.5),
+    },
+    route: jevFinal("deny"),
+  },
+  {
+    title: "an uncertain deny with a material external-mutation signal",
+    jev: {
+      ...JEV_ANSWERS.uncertainDeny,
+      unauthorized_external_mutation: noul(0.5),
+    },
+    route: jevFinal("deny"),
   },
 ];
 
 describe("System One routing table", () => {
-  test.each(ROUTING_TABLE)("$title", async ({ jev, standard }) => {
-    expect(await observedRoute(routingConfig("standard"), jev)).toEqual(
-      standard,
+  test.each(ROUTING_TABLE)(
+    "$title",
+    async ({ jev, standard, reasoningFirst }) => {
+      expect(await observedRoute(routingConfig("standard"), jev)).toEqual(
+        standard,
+      );
+      expect(
+        await observedRoute(routingConfig("reasoning-first"), jev),
+      ).toEqual(reasoningFirst);
+    },
+  );
+
+  test.each(DENIAL_REVIEW_TABLE)(
+    "denial review: $title",
+    async ({ jev, route }) => {
+      expect(await observedRoute(routingConfig("standard", true), jev)).toEqual(
+        route,
+      );
+      expect(
+        await observedRoute(routingConfig("reasoning-first", true), jev),
+      ).toEqual(route);
+    },
+  );
+
+  test("both settings stay inert without an escalationReviewer", async () => {
+    const inert = routingConfig("reasoning-first", true, {
+      escalationReviewer: undefined,
+    });
+    expect(await observedRoute(inert, JEV_ANSWERS.clearEscalate)).toEqual(
+      JEV_ESCALATED,
+    );
+    expect(await observedRoute(inert, JEV_ANSWERS.uncertainDeny)).toEqual(
+      jevFinal("deny"),
     );
   });
 });
@@ -212,12 +316,13 @@ describe("System One reviewer", () => {
     expect(result.reviewerModel).toBe("openai/gpt-5.6-luna");
     expect(result.reviewerEscalatedFrom?.model).toBe("opencode/jev-1.13-free");
     expect(escalations).toBe(1);
-    // Jev's scores go in `systemOne`; `reviewerEscalatedFrom` keeps only model and reason.
+    // Jev's scores go in `systemOne`; `reviewerEscalatedFrom` keeps the model,
+    // the reason and the hand-off trigger.
     expect(
       Object.keys(
         defined(result.reviewerEscalatedFrom, "reviewerEscalatedFrom"),
       ).sort(),
-    ).toEqual(["model", "reason"]);
+    ).toEqual(["model", "reason", "trigger"]);
     expect(result.systemOne).toMatchObject({
       returnedModel: "jev-1.13.0",
       outcome: {
@@ -315,7 +420,9 @@ describe("System One reviewer", () => {
     expect(result.reviewerEscalatedFrom).toEqual({
       model: "opencode/jev-1.13-free",
       reason: "System One explicitly requested a reasoning or human review.",
+      trigger: "jev-escalate",
     });
+    expect(result.resolution).toBe("reasoning-unavailable");
     expect(result.reason).toContain("reasoning reviewer failed");
     expect(result.reason).toContain("shutting down");
     expect(result.reason).not.toContain("System One reviewer");
@@ -463,5 +570,185 @@ describe("System One reviewer", () => {
     expect(result.reason).toContain("System One reviewer failed");
     expect(result.reviewerModel).toBe("opencode/jev-1.13-free");
     expect(result.reviewerEscalatedFrom).toBeUndefined();
+  });
+});
+
+const HANDOFFS: {
+  trigger: HandoffTrigger;
+  jev: JevScript;
+  config: ReviewerConfig;
+}[] = [
+  {
+    trigger: "jev-escalate",
+    jev: JEV_ANSWERS.clearEscalate,
+    config: routingConfig("reasoning-first"),
+  },
+  {
+    trigger: "jev-uncertain-allow",
+    jev: JEV_ANSWERS.uncertainAllow,
+    config: routingConfig("standard"),
+  },
+  {
+    trigger: "jev-gate",
+    jev: JEV_ANSWERS.criticalGatedAllow,
+    config: routingConfig("reasoning-first"),
+  },
+  {
+    trigger: "jev-invalid",
+    jev: "invalid",
+    config: routingConfig("reasoning-first"),
+  },
+  {
+    trigger: "jev-failure",
+    jev: "failure",
+    config: routingConfig("reasoning-first"),
+  },
+  {
+    trigger: "jev-uncertain-deny",
+    jev: JEV_ANSWERS.uncertainDeny,
+    config: routingConfig("standard", true),
+  },
+];
+
+async function handedOff(
+  config: ReviewerConfig,
+  jev: JevScript,
+  reasoning: () => Promise<ReviewExecutionResult>,
+): Promise<ReviewExecutionResult> {
+  const { backend, calls } = routedBackend(config, jev, reasoning);
+  const result = await reviewOnce(backend);
+  expect(calls()).toBe(1);
+  return result;
+}
+
+describe("reasoning reviewer results after a hand-off", () => {
+  test.each(HANDOFFS)(
+    "$trigger: an allow without sufficient evidence stays an escalation",
+    async ({ trigger, jev, config }) => {
+      const result = await handedOff(config, jev, async () =>
+        reasoningAllow("partial"),
+      );
+      expect(result).toMatchObject({
+        kind: "escalate",
+        reviewerOutcome: "allow",
+        resolution: "reasoning-escalated",
+        reviewerModel: REASONING_MODEL,
+        reviewerEscalatedFrom: { model: JEV_MODEL, trigger },
+      });
+    },
+  );
+
+  test.each(HANDOFFS)(
+    "$trigger: an allow on sufficient evidence stands",
+    async ({ trigger, jev, config }) => {
+      const result = await handedOff(config, jev, async () =>
+        reasoningAllow("sufficient"),
+      );
+      expect(result.kind).toBe("allow");
+      expect(result.reviewerEscalatedFrom?.trigger).toBe(trigger);
+      expect("resolution" in result).toBe(false);
+    },
+  );
+
+  test.each(HANDOFFS)(
+    "$trigger: the reasoning reviewer's escalation is final and left for the engine to dispose",
+    async ({ jev, config }) => {
+      const result = await handedOff(
+        config,
+        jev,
+        async () => REASONING_ESCALATE,
+      );
+      expect(result).toMatchObject({
+        kind: "escalate",
+        decisionSource: "llm-reviewer",
+        resolution: "reasoning-escalated",
+      });
+      expect(result.escalationDisposition).toBeUndefined();
+    },
+  );
+
+  test.each(HANDOFFS)(
+    "$trigger: an unavailable reasoning reviewer ends in its own final escalation",
+    async ({ jev, config }) => {
+      const result = await handedOff(
+        config,
+        jev,
+        async () => REASONING_UNAVAILABLE,
+      );
+      expect(result).toMatchObject({
+        kind: "escalate",
+        decisionSource: "failure-safe",
+        resolution: "reasoning-unavailable",
+        escalationDisposition: "manual",
+        reason: REASONING_UNAVAILABLE.reason,
+      });
+    },
+  );
+
+  test.each(HANDOFFS)(
+    "$trigger: a reasoning reviewer that throws ends in a final escalation",
+    async ({ trigger, jev, config }) => {
+      const result = await handedOff(config, jev, async () => {
+        throw new Error("synthetic reasoning outage");
+      });
+      expect(result).toMatchObject({
+        kind: "escalate",
+        decisionSource: "failure-safe",
+        resolution: "reasoning-unavailable",
+        escalationDisposition: "manual",
+        reviewerModel: REASONING_MODEL,
+        reviewerEscalatedFrom: { model: JEV_MODEL, trigger },
+      });
+      expect(result.reason).toContain("reasoning reviewer failed");
+    },
+  );
+
+  test("Jev's scores travel with a hand-off only when Jev answered", async () => {
+    const config = routingConfig("reasoning-first");
+    const answered = await handedOff(
+      config,
+      JEV_ANSWERS.clearEscalate,
+      async () => REASONING_DENY,
+    );
+    const invalid = await handedOff(
+      config,
+      "invalid",
+      async () => REASONING_DENY,
+    );
+    const failed = await handedOff(
+      config,
+      "failure",
+      async () => REASONING_DENY,
+    );
+    expect(answered.systemOne?.outcome.choice).toBe("escalate");
+    expect(invalid.systemOne).toBeUndefined();
+    expect(failed.systemOne).toBeUndefined();
+  });
+
+  test("the hand-off reason is Jev's own", async () => {
+    const config = routingConfig("reasoning-first", true);
+    const reasonFor = async (jev: JevScript): Promise<string | undefined> =>
+      (await handedOff(config, jev, async () => REASONING_DENY))
+        .reviewerEscalatedFrom?.reason;
+    expect(await reasonFor("invalid")).toBe(
+      "System One reviewer returned a missing, invalid, or ambiguous decision.",
+    );
+    expect(await reasonFor("failure")).toContain("System One reviewer failed");
+    expect(await reasonFor(JEV_ANSWERS.criticalGatedAllow)).toBe(
+      "Reviewer returned a non-denial for critical risk; manual review required.",
+    );
+    expect(await reasonFor(JEV_ANSWERS.uncertainDeny)).toStartWith(
+      "System One decision is uncertain or inconsistent:",
+    );
+  });
+
+  test("an uncertain critical-risk Jev denial is reviewed like any other uncertain denial", async () => {
+    const result = await handedOff(
+      routingConfig("standard", true),
+      { ...JEV_ANSWERS.uncertainDeny, risk_level: choice("critical", RISKS) },
+      async () => REASONING_DENY,
+    );
+    expect(result.reviewerEscalatedFrom?.trigger).toBe("jev-uncertain-deny");
+    expect(result.kind).toBe("deny");
   });
 });
