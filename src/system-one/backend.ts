@@ -6,6 +6,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
+import { announceHandoff } from "../ui-status-routing.ts";
 import { askJev } from "./system-one-ask.ts";
 import { budgetExhaustedResult } from "./system-one-budget.ts";
 import {
@@ -40,6 +41,9 @@ export interface HandoffInfo {
   failureKind?: string;
 }
 
+/** Called once per review, right before the reasoning reviewer is invoked. */
+export type OnHandoff = (handoff: HandoffInfo) => void;
+
 /** Calls Jev directly and hands its result to the reasoning reviewer at most
  *  once, when the hand-off decision says so. */
 export class SystemOneReviewerBackend {
@@ -64,10 +68,14 @@ export class SystemOneReviewerBackend {
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
     escalation: ReasoningEscalation | undefined = this.escalation,
+    onHandoff?: OnHandoff,
   ): Promise<ReviewExecutionResult> {
-    const job = this.runReview(envelope, attempt, escalation).finally(() =>
-      this.jobs.delete(job),
-    );
+    const job = this.runReview(
+      envelope,
+      attempt,
+      escalation,
+      onHandoff,
+    ).finally(() => this.jobs.delete(job));
     this.jobs.add(job);
     return job;
   }
@@ -80,11 +88,12 @@ export class SystemOneReviewerBackend {
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
     escalation: ReasoningEscalation | undefined,
+    onHandoff: OnHandoff | undefined,
   ): Promise<ReviewExecutionResult> {
     const started = performance.now();
     try {
       const jev = await askJev(this.config, this.invoke, envelope, attempt);
-      return await this.route(jev, envelope, attempt, escalation);
+      return await this.route(jev, envelope, attempt, escalation, onHandoff);
     } finally {
       const elapsed = performance.now() - started;
       envelope.timings = { ...envelope.timings, reviewerMs: elapsed };
@@ -98,6 +107,7 @@ export class SystemOneReviewerBackend {
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
     escalation: ReasoningEscalation | undefined,
+    onHandoff: OnHandoff | undefined,
   ): Promise<ReviewExecutionResult> {
     const own = jevResult(jev, this.config);
     const routing = resolveSystemOneRouting(this.config);
@@ -125,6 +135,7 @@ export class SystemOneReviewerBackend {
         trigger,
       },
     };
+    announceHandoff(onHandoff, handoff);
     return this.handOff(envelope, attempt, escalation, handoff, jevScores(jev));
   }
 
