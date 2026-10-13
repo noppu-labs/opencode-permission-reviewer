@@ -225,3 +225,13 @@ export async function reviewOnce(
     attempt.close("finished");
   }
 }
+
+/** A 60 s attempt on a fixed clock that has `remainingMs` left. The caller
+ *  closes it (reviewOnce does). */
+export function attemptWithRemaining(remainingMs: number): ReviewAttempt {
+  let now = 0;
+  const budget = 60_000;
+  const attempt = new ReviewAttempt("generation", budget, () => now);
+  now = budget - remainingMs;
+  return attempt;
+}
