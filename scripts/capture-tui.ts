@@ -62,7 +62,7 @@ function regenerate(): number {
   const version = Bun.spawnSync(["freeze", "--version"])
     .stdout.toString()
     .trim();
-  if (!version.includes(FREEZE_VERSION))
+  if (version.split(" ")[2] !== FREEZE_VERSION)
     console.warn(
       `expected freeze ${FREEZE_VERSION}, found "${version}"; the SVGs may change for that reason alone`,
     );
