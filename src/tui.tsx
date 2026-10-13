@@ -10,10 +10,9 @@ import { reviewBudgetMs } from "./config.ts";
 // inside the TUI process.
 import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
 import { ConfigNoticeSlot, SPINNER } from "./ui/components.tsx";
-import { ConfigNotices } from "./ui/config-notices.ts";
 import { ReviewOverlay } from "./ui/review-overlay.tsx";
 import { ReviewResult } from "./ui/review-result.tsx";
-import { activeStatus, applyCommand } from "./ui/v1-host.ts";
+import { activeStatus, createV1Host } from "./ui/v1-host.ts";
 import { setupTuiV2 } from "./ui/v2.tsx";
 import type { ReviewUiStatus } from "./ui-protocol.ts";
 import { ReviewUiState } from "./ui-state.ts";
@@ -30,9 +29,7 @@ export const tui: TuiPlugin = async (
     variant: config.variant,
     timeoutMs: reviewBudgetMs(config),
   });
-  const notices = new ConfigNotices((toast) =>
-    api.ui.toast({ ...toast, duration: 8_000 }),
-  );
+  const host = createV1Host(api, state, config.escalationReviewer?.model);
 
   // Signal bumps whenever the UI state changes. Both slot factories read it
   // directly in their bodies, which makes the host re-render each panel:
@@ -74,16 +71,7 @@ export const tui: TuiPlugin = async (
     touch();
   });
   api.event.on("tui.command.execute", (event) => {
-    if (
-      applyCommand(
-        api,
-        state,
-        notices,
-        event.properties.command,
-        config.escalationReviewer?.model,
-      )
-    )
-      touch();
+    if (host.apply(event.properties.command)) touch();
   });
 
   // Keep watchdog and result expiry running even when the UI is hidden.
@@ -151,7 +139,7 @@ export const tui: TuiPlugin = async (
         return (
           <ConfigNoticeSlot
             theme={() => api.theme.current}
-            line={notices.sidebar()}
+            line={host.sidebar()}
           />
         );
       },
