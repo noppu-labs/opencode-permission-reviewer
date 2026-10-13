@@ -73,7 +73,8 @@ export const tui: TuiPlugin = async (
     const status = decodeUiStatus(event.properties.command);
     if (!status) return;
     if (!state.apply(status)) return;
-    if (status.phase === "manual") notifyManual(api, status);
+    if (status.phase === "manual")
+      notifyManual(api, status, config.escalationReviewer?.model);
     touch();
   });
 

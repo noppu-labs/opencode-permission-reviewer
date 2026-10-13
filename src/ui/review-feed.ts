@@ -1,6 +1,7 @@
 import type { Plugin } from "@opencode/plugin/tui";
 import { asObjectLike } from "../is-record.ts";
 import type { ReviewUiState } from "../ui-state.ts";
+import { manualToast } from "./manual-toast.ts";
 import { type Connection, receive, release } from "./review-connection.ts";
 import { isSnapshot, ReviewStore } from "./review-store.ts";
 import { ReviewerRpc } from "./rpc.ts";
@@ -27,11 +28,7 @@ export function createReviewFeed(
   let directory = ctx.location?.directory;
   const rpc = ctx.client.rpc(ReviewerRpc);
   const store = new ReviewStore((status) =>
-    ctx.ui.toast.show({
-      variant: "warning",
-      title: "Manual review required",
-      message: status.reason ?? "The host requires your decision.",
-    }),
+    ctx.ui.toast.show(manualToast(status, "The host requires your decision.")),
   );
   let stopped = false;
   let controller: AbortController | undefined;

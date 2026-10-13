@@ -37,14 +37,24 @@ interface CapturedApi {
   factories: Partial<Record<"app" | "app_bottom", () => unknown>>;
   /** By-reference mode bookkeeping: a bare number would be snapshotted. */
   mode: { pushes: string[]; pops: number };
-  toasts: Array<{ title?: string }>;
+  toasts: Array<{
+    variant?: string;
+    title?: string;
+    message?: string;
+    duration?: number;
+  }>;
   dispose: () => void;
 }
 
 async function captureOverlay(): Promise<CapturedApi> {
   const handlers = new Map<string, EventHandler[]>();
   const mode = { pushes: [] as string[], pops: 0 };
-  const toasts: Array<{ title?: string }> = [];
+  const toasts: Array<{
+    variant?: string;
+    title?: string;
+    message?: string;
+    duration?: number;
+  }> = [];
   let factories: Partial<Record<"app" | "app_bottom", () => unknown>> = {};
 
   let dispose = (): void => {};
@@ -79,7 +89,9 @@ async function captureOverlay(): Promise<CapturedApi> {
         return () => {};
       },
     },
-    ui: { toast: (input: { title?: string }) => void toasts.push(input) },
+    ui: {
+      toast: (input: CapturedApi["toasts"][number]) => void toasts.push(input),
+    },
     state: { session: { get: () => undefined } },
     mode: {
       current: () => "normal",
@@ -237,6 +249,28 @@ describe("tui overlay slot contract", () => {
     expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
     expect(captured.mode.pushes).toEqual(["permission-reviewer"]);
     expect(captured.mode.pops).toBe(1);
+  });
+
+  test("a manual outcome after an unavailable reasoning reviewer toasts as an error", async () => {
+    const captured = await captureOverlay();
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("manual", {
+        model: "openai/gpt-6-luna",
+        resolution: "reasoning-unavailable",
+        reason: "reasoning reviewer failed (TimeoutError): slow",
+      }),
+    );
+    expect(captured.toasts).toEqual([
+      {
+        variant: "error",
+        title: "Reasoning reviewer unavailable",
+        message:
+          "gpt-6-luna failed (timeout). This permission needs your approval. reasoning reviewer failed (TimeoutError): slow",
+        duration: 8_000,
+      },
+    ]);
   });
 
   test("a terminal result after the reply does not reacquire the mode", async () => {

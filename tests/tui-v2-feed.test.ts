@@ -145,6 +145,32 @@ describe("V2 TUI reviewer feed", () => {
     ]);
   });
 
+  test("words a manual toast by its resolution", async () => {
+    const running = await start(
+      host({
+        respond: [
+          () =>
+            snapshot([
+              {
+                ...status("manual", { reason: "Both unsure." }),
+                model: "openai/gpt-6-luna",
+                resolution: "reasoning-escalated",
+              },
+            ]),
+        ],
+      }),
+    );
+    await running.until(() => running.state.toasts.length === 1, "toast");
+    expect(running.state.toasts).toEqual([
+      {
+        variant: "warning",
+        title: "Manual review required",
+        message:
+          "gpt-6-luna reviewed this after Jev; it needs your approval: Both unsure.",
+      },
+    ]);
+  });
+
   test("toasts a manual status that arrives as an event", async () => {
     const running = await start(
       host({ respond: [() => snapshot([status("reviewing")])] }),

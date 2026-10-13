@@ -30,6 +30,8 @@ const files = [
   ["src/ui/review-connection.ts", "ui/review-connection.ts"],
   ["src/ui/review-theme.ts", "ui/review-theme.ts"],
   ["src/ui/attribution.ts", "ui/attribution.ts"],
+  ["src/ui/manual-toast.ts", "ui/manual-toast.ts"],
+  ["src/failure-kind.ts", "failure-kind.ts"],
   ["src/config.ts", "config.ts"],
   ["src/config-fields.ts", "config-fields.ts"],
   ["src/config-knobs.ts", "config-knobs.ts"],

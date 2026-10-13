@@ -14,6 +14,8 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/ui/review-connection.ts",
   "dist/tui/ui/review-theme.ts",
   "dist/tui/ui/attribution.ts",
+  "dist/tui/ui/manual-toast.ts",
+  "dist/tui/failure-kind.ts",
   "dist/tui/config.ts",
   "dist/tui/config-fields.ts",
   "dist/tui/config-knobs.ts",

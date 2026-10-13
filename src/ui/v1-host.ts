@@ -1,6 +1,10 @@
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
 import type { ReviewUiState } from "../ui-state.ts";
+import { manualToast } from "./manual-toast.ts";
+
+const MANUAL_FALLBACK =
+  "The reviewer could not decide. This permission now needs your approval.";
 
 function routeSessionID(api: TuiPluginApi): string | undefined {
   const route = api.route.current;
@@ -17,13 +21,13 @@ function parentSessionID(
   return api.state.session.get(sessionID)?.parentID;
 }
 
-export function notifyManual(api: TuiPluginApi, status: ReviewUiStatus): void {
+export function notifyManual(
+  api: TuiPluginApi,
+  status: ReviewUiStatus,
+  reasoningModel?: string,
+): void {
   api.ui.toast({
-    variant: "warning",
-    title: "Manual review required",
-    message:
-      status.reason ??
-      "The reviewer could not decide. This permission now needs your approval.",
+    ...manualToast(status, MANUAL_FALLBACK, reasoningModel),
     duration: 8_000,
   });
 }
