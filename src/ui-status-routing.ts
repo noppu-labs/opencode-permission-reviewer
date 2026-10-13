@@ -36,7 +36,10 @@ export function announceHandoff(
   if (onHandoff === undefined) return;
   const { model, reason, trigger } = reasoning.escalatedFrom;
   try {
-    onHandoff(handoffInfo(model, reasoning.model, trigger, reason));
+    const pending: unknown = onHandoff(
+      handoffInfo(model, reasoning.model, trigger, reason),
+    );
+    if (pending instanceof Promise) pending.catch(() => {});
   } catch {
     // The review goes on without the indicator.
   }

@@ -123,6 +123,24 @@ describe("System One hand-off hook", () => {
     expect(result).toMatchObject({ kind: "deny", reviewerModel: LUNA });
   });
 
+  test("a rejecting async hook never leaves an unhandled rejection", async () => {
+    const seen: unknown[] = [];
+    const onRejection = (reason: unknown): void => {
+      seen.push(reason);
+    };
+    process.on("unhandledRejection", onRejection);
+    try {
+      const result = await run(backend(escalating), async () => {
+        throw new Error("status publish failed");
+      });
+      await Bun.sleep(10);
+      expect(result).toMatchObject({ kind: "deny", reviewerModel: LUNA });
+    } finally {
+      process.off("unhandledRejection", onRejection);
+    }
+    expect(seen).toEqual([]);
+  });
+
   describe("stays silent without a hand-off", () => {
     async function silent(
       attempt: ReviewAttempt,
