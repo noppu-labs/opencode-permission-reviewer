@@ -282,6 +282,39 @@ describe("hand-off budget and attempt state", () => {
     },
   );
 
+  test("a budget escalation states the cause, the time left and Jev's own reason", async () => {
+    const { backend } = routedBackend(
+      routingConfig("reasoning-first"),
+      JEV_ANSWERS.clearEscalate,
+    );
+    const result = await reviewOnce(
+      backend,
+      attemptWithRemaining(HANDOFF_BUDGET_FLOOR_MS - 1),
+    );
+    expect(result.reason).toBe(
+      "No review time left for the reasoning reviewer after Jev escalated: 14s of the review budget remain and a hand-off needs 15s. System One explicitly requested a reasoning or human review.",
+    );
+  });
+
+  test("a reasoning result already denied by its own backend stays a denial with its resolution", async () => {
+    const { backend } = routedBackend(
+      routingConfig("reasoning-first"),
+      JEV_ANSWERS.clearEscalate,
+      async () => ({
+        kind: "deny",
+        reason: "reviewer backend failed (TimeoutError): synthetic",
+        decisionSource: "failure-safe",
+        escalationDisposition: "deny",
+      }),
+    );
+    const result = await reviewOnce(backend);
+    expect(result).toMatchObject({
+      kind: "deny",
+      resolution: "reasoning-unavailable",
+      escalationDisposition: "deny",
+    });
+  });
+
   test("a budget escalation is denied under escalationMode deny and keeps its resolution", async () => {
     const { backend } = routedBackend(
       routingConfig("reasoning-first", false, { escalationMode: "deny" }),
@@ -385,4 +418,39 @@ describe("hand-off budget and attempt state", () => {
     expect(calls()).toBe(1);
     expect(result.kind).toBe("escalate");
   });
+});
+
+const STANDARD_REVIEWS: { title: string; jev: JevScript }[] = [
+  { title: "a clean allow", jev: JEV_ANSWERS.cleanAllow },
+  { title: "a clean deny", jev: JEV_ANSWERS.cleanDeny },
+  { title: "a clear escalation", jev: JEV_ANSWERS.clearEscalate },
+  { title: "invalid output", jev: "invalid" },
+];
+
+describe("the hand-off floor applies only to hand-offs", () => {
+  test.each(STANDARD_REVIEWS)(
+    "standard mode finishes $title below the floor as it does on a full budget",
+    async ({ jev }) => {
+      const full = routedBackend(routingConfig("standard"), jev);
+      const expected = await reviewOnce(full.backend);
+      const short = routedBackend(routingConfig("standard"), jev);
+      const result = await reviewOnce(
+        short.backend,
+        attemptWithRemaining(HANDOFF_BUDGET_FLOOR_MS - 1),
+      );
+      expect(short.calls()).toBe(0);
+      expect(result.resolution).not.toBe("budget-exhausted");
+      expect({
+        kind: result.kind,
+        decisionSource: result.decisionSource,
+        escalationDisposition: result.escalationDisposition,
+        resolution: result.resolution,
+      }).toEqual({
+        kind: expected.kind,
+        decisionSource: expected.decisionSource,
+        escalationDisposition: expected.escalationDisposition,
+        resolution: expected.resolution,
+      });
+    },
+  );
 });
