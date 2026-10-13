@@ -23,9 +23,10 @@ export const tui: TuiPlugin = async (
   api: TuiPluginApi,
   options: PluginOptions | undefined,
 ) => {
-  // The server's own view: it loads inline options as unknown origin, so the
-  // TUI budget and model match it, and routing warnings come from its statuses
-  // instead of a trusted-inline view the server does not use.
+  // Follow the server's trust rule: it loads inline options as unknown origin,
+  // so inline routing keys and an inline escalationReviewer are dropped here
+  // too. Routing warnings come from its statuses, not from this load. (No
+  // project directory is passed, so project config is not read here.)
   const config = loadResolvedConfig(options, undefined, "unknown", {
     printConfigWarnings: false,
   });
