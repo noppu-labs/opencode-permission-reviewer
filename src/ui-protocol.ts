@@ -8,6 +8,7 @@ import type {
 } from "./types.ts";
 import {
   boundedText,
+  fitConfigLists,
   type StatusExtrasOptions,
   statusExtras,
 } from "./ui-status-extras.ts";
@@ -98,7 +99,7 @@ export function createUiStatus(
   phase: ReviewUiPhase,
   options: UiStatusOptions,
 ): ReviewUiStatus {
-  return {
+  return fitConfigLists({
     version: 1,
     requestID: request.id,
     sessionID: request.sessionID,
@@ -123,7 +124,7 @@ export function createUiStatus(
       ? {}
       : { actorProfile: options.actorProfile }),
     ...statusExtras(options),
-  };
+  });
 }
 
 export function encodeUiStatus(status: ReviewUiStatus): string {

@@ -126,6 +126,27 @@ describe("TUI status protocol", () => {
     expect(decodeUiStatus(encoded)).toEqual(status);
   });
 
+  test("a status with multi-byte text at every bound still decodes", () => {
+    const list = (tag: string): string[] =>
+      Array.from({ length: 5 }, (_, i) => `${tag}${i}${"界".repeat(250)}`);
+    const status = createUiStatus(
+      request({ metadata: { command: "界".repeat(600) } }),
+      "manual",
+      {
+        ...options,
+        reason: "界".repeat(3_000),
+        handoff: HANDOFF,
+        resolution: "budget-exhausted",
+        decidedBy: "openai/gpt-6-luna",
+        configWarnings: list("w"),
+        configDegraded: list("d"),
+      },
+    );
+    const decoded = decodeUiStatus(encodeUiStatus(status));
+    expect(decoded).toBeDefined();
+    expect(decoded?.configDegraded?.[0]).toStartWith("d0");
+  });
+
   test("rejects invalid escalationDisposition values", () => {
     const status = createUiStatus(request(), "denied", {
       ...options,

@@ -70,3 +70,32 @@ export function statusExtras(options: StatusExtrasOptions): StatusExtras {
     ...(configDegraded.length === 0 ? {} : { configDegraded }),
   };
 }
+
+/** The JSON byte size whose base64url encoding fits the 16000-character cap
+ *  `decodeUiStatus` enforces. */
+const MAX_STATUS_BYTES = 12_000;
+
+function withoutLastEntry<T extends StatusExtras>(status: T): T | undefined {
+  const key =
+    (status.configWarnings?.length ?? 0) > 0
+      ? "configWarnings"
+      : (status.configDegraded?.length ?? 0) > 0
+        ? "configDegraded"
+        : undefined;
+  if (key === undefined) return;
+  const { [key]: list, ...rest } = status;
+  const kept = (list ?? []).slice(0, -1);
+  return (kept.length === 0 ? rest : { ...rest, [key]: kept }) as T;
+}
+
+/** Drops config list entries, warnings before degraded reasons and the last
+ *  first, until the encoded status fits the cap. */
+export function fitConfigLists<T extends StatusExtras>(status: T): T {
+  let fitted = status;
+  while (Buffer.byteLength(JSON.stringify(fitted), "utf8") > MAX_STATUS_BYTES) {
+    const next = withoutLastEntry(fitted);
+    if (next === undefined) break;
+    fitted = next;
+  }
+  return fitted;
+}
