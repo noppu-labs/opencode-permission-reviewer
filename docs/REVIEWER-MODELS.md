@@ -125,16 +125,17 @@ Jev's consistency checks, for example an outcome confidence below
 `systemOneConfidenceThreshold`. The denial stays final when Jev reports an absolute policy-deny
 signal of 0.7 or more, or a data-loss, sensitive-disclosure, credential-access, security-change, or
 external-mutation signal of 0.5 or more. Denials from the emergency brake and policy rules are
-never reviewed. A reasoning approval of an uncertain denial that Jev rated critical risk escalates to
-you instead of allowing. The two settings are independent.
+never reviewed. A reasoning approval of an uncertain denial that Jev rated critical risk escalates
+instead of allowing. The two settings are independent.
 
 #### After a hand-off
 
 - A reasoning `deny` is final.
 - A reasoning `allow` passes the normal gates, applied to the reasoning reviewer's own decision
   (its own risk rating and evidence), and stands only with `sufficient` evidence; otherwise the
-  request escalates. When Jev rated an uncertain denial critical risk, a reasoning `allow` escalates
-  to you instead of allowing.
+  request escalates. Under `reasoning-first`, and for an uncertain denial, when the Jev decision
+  that triggered the hand-off rated the request critical risk, a reasoning `allow` escalates instead
+  of allowing.
 - A reasoning `escalate`, an invalid answer, or a reasoning failure is a final escalation.
   `escalationMode`, `riskPolicy.onInvalidDecision`, and `riskPolicy.onReviewerFailure` apply to
   this final outcome, never to Jev's own answer.

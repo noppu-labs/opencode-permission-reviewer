@@ -590,7 +590,7 @@ const HANDOFFS: {
   },
   {
     trigger: "jev-gate",
-    jev: JEV_ANSWERS.criticalGatedAllow,
+    jev: JEV_ANSWERS.misalignedGatedAllow,
     config: routingConfig("reasoning-first"),
   },
   {
@@ -742,13 +742,24 @@ describe("reasoning reviewer results after a hand-off", () => {
     );
   });
 
-  test("an uncertain critical-risk Jev denial is reviewed like any other uncertain denial", async () => {
-    const result = await handedOff(
-      routingConfig("standard", true),
-      { ...JEV_ANSWERS.uncertainDeny, risk_level: choice("critical", RISKS) },
-      async () => REASONING_DENY,
-    );
+  test("an uncertain critical-risk Jev denial is reviewed, and a reasoning approval of it escalates", async () => {
+    const config = routingConfig("standard", true);
+    const jev: JevScript = {
+      ...JEV_ANSWERS.uncertainDeny,
+      risk_level: choice("critical", RISKS),
+    };
+    const result = await handedOff(config, jev, async () => REASONING_DENY);
     expect(result.reviewerEscalatedFrom?.trigger).toBe("jev-uncertain-deny");
     expect(result.kind).toBe("deny");
+    const approved = await handedOff(config, jev, async () =>
+      reasoningAllow("sufficient"),
+    );
+    expect(approved).toMatchObject({
+      kind: "escalate",
+      reason:
+        "Jev rated this request critical risk; a reasoning approval needs manual review.",
+      resolution: "reasoning-escalated",
+      reviewerEscalatedFrom: { trigger: "jev-uncertain-deny" },
+    });
   });
 });

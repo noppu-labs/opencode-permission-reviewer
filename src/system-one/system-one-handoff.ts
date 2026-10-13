@@ -73,16 +73,17 @@ export function handoffTrigger(
   return escalationTrigger(jev.parsed, routing);
 }
 
-/** An uncertain denial that Jev rated critical risk: a reasoning approval of
- *  it is not final. */
-export function isCriticalDenialReview(
+/** Jev rated the request critical, and its rating holds through the
+ *  hand-off. */
+export function jevCriticalHolds(
   jev: JevOutcome,
   trigger: HandoffTrigger,
+  routing: SystemOneRouting,
 ): boolean {
   return (
-    trigger === "jev-uncertain-deny" &&
     jev.kind === "valid" &&
-    jev.parsed.decision.risk_level === "critical"
+    jev.parsed.decision.risk_level === "critical" &&
+    (trigger === "jev-uncertain-deny" || routing.reasoningFirst)
   );
 }
 

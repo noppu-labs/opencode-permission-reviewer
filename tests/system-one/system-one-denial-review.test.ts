@@ -19,7 +19,7 @@ import {
 } from "./system-one-fixtures.ts";
 
 const CRITICAL_REASON =
-  "Reviewer returned a non-denial for critical risk; manual review required.";
+  "Jev rated this request critical risk; a reasoning approval needs manual review.";
 
 const CRITICAL_UNCERTAIN_DENY: JevScript = {
   ...JEV_ANSWERS.uncertainDeny,
@@ -110,15 +110,75 @@ describe("a reasoning approval of an uncertain denial rated critical risk", () =
     expect(result.kind).toBe("allow");
     expect(result.reviewerEscalatedFrom?.trigger).toBe("jev-uncertain-deny");
   });
+});
 
-  test("a reasoning approval after a safety-gated Jev approval stands on its own gates", async () => {
-    const { backend } = routedBackend(
-      routingConfig("reasoning-first", true),
-      JEV_ANSWERS.criticalGatedAllow,
-      async () => reasoningAllow("sufficient"),
-    );
-    const result = await reviewOnce(backend);
-    expect(result.kind).toBe("allow");
-    expect(result.reviewerEscalatedFrom?.trigger).toBe("jev-gate");
-  });
+async function approvedAfter(
+  config: ReviewerConfig,
+  jev: JevScript,
+): Promise<ReviewExecutionResult> {
+  const { backend, calls } = routedBackend(config, jev, async () =>
+    reasoningAllow("sufficient"),
+  );
+  const result = await reviewOnce(backend);
+  expect(calls()).toBe(1);
+  return result;
+}
+
+const CRITICAL_ESCALATE: JevScript = {
+  ...JEV_ANSWERS.clearEscalate,
+  risk_level: choice("critical", RISKS),
+};
+
+describe("a reasoning approval after a Jev decision rated critical risk", () => {
+  test.each([
+    {
+      trigger: "jev-gate",
+      jev: JEV_ANSWERS.criticalGatedAllow,
+      denialReview: false,
+    },
+    { trigger: "jev-escalate", jev: CRITICAL_ESCALATE, denialReview: false },
+    {
+      trigger: "jev-uncertain-allow",
+      jev: JEV_ANSWERS.uncertainGatedAllow,
+      denialReview: false,
+    },
+    {
+      trigger: "jev-uncertain-deny",
+      jev: CRITICAL_UNCERTAIN_DENY,
+      denialReview: true,
+    },
+  ])(
+    "under reasoning-first, $trigger: needs manual review",
+    async ({ trigger, jev, denialReview }) => {
+      const result = await approvedAfter(
+        routingConfig("reasoning-first", denialReview),
+        jev,
+      );
+      expect(result).toMatchObject({
+        kind: "escalate",
+        reason: CRITICAL_REASON,
+        reviewerOutcome: "allow",
+        resolution: "reasoning-escalated",
+        reviewerEscalatedFrom: { trigger },
+      });
+    },
+  );
+
+  test.each([
+    { trigger: "jev-uncertain-allow", jev: JEV_ANSWERS.uncertainGatedAllow },
+    {
+      trigger: "jev-escalate",
+      jev: {
+        ...JEV_ANSWERS.plausibleEscalate,
+        risk_level: choice("critical", RISKS),
+      },
+    },
+  ])(
+    "in standard mode, $trigger: a reasoning approval stands on its own gates",
+    async ({ trigger, jev }) => {
+      const result = await approvedAfter(routingConfig("standard"), jev);
+      expect(result.kind).toBe("allow");
+      expect(result.reviewerEscalatedFrom?.trigger).toBe(trigger);
+    },
+  );
 });

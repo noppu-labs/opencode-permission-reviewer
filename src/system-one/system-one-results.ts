@@ -17,8 +17,8 @@ import type { SystemOneScores } from "./system-one-types.ts";
 /** The reasoning reviewer a Jev result was handed to. */
 export interface ReasoningHandoff {
   model: string;
-  /** Jev rated the uncertain denial it handed off critical risk. */
-  criticalDenial: boolean;
+  /** Jev rated the request critical, and its rating holds. */
+  jevCritical: boolean;
   escalatedFrom: Required<
     NonNullable<ReviewExecutionResult["reviewerEscalatedFrom"]>
   >;
@@ -111,31 +111,28 @@ export function finalJevResult(
   );
 }
 
-/** The reason a reasoning approval of an uncertain Jev denial at critical risk
- *  goes to the user; the wording of the critical-risk gate. */
-const CRITICAL_DENIAL_REASON =
-  "Reviewer returned a non-denial for critical risk; manual review required.";
+/** The reason a reasoning approval stays an escalation when Jev rated the
+ *  request critical risk. */
+const JEV_CRITICAL_REASON =
+  "Jev rated this request critical risk; a reasoning approval needs manual review.";
 
 const INSUFFICIENT_EVIDENCE_REASON =
   "The reasoning reviewer did not find sufficient evidence to override the System One escalation.";
 
-/** A reasoning allow stands only on sufficient evidence, and not on an
- *  uncertain denial Jev rated critical risk; otherwise it stays an
- *  escalation. */
+/** A reasoning allow stands only on sufficient evidence, and not when Jev's
+ *  critical rating holds; otherwise it stays an escalation. */
 function reconcileReasoningEscalation(
   result: ReviewExecutionResult,
-  criticalDenial: boolean,
+  jevCritical: boolean,
 ): ReviewExecutionResult {
   if (result.kind !== "allow") return result;
   const sufficient = result.decision?.evidence_completeness === "sufficient";
-  if (sufficient && !criticalDenial) return result;
+  if (sufficient && !jevCritical) return result;
   const reviewerOutcome = result.decision?.outcome ?? result.reviewerOutcome;
   return {
     ...result,
     kind: "escalate",
-    reason: criticalDenial
-      ? CRITICAL_DENIAL_REASON
-      : INSUFFICIENT_EVIDENCE_REASON,
+    reason: jevCritical ? JEV_CRITICAL_REASON : INSUFFICIENT_EVIDENCE_REASON,
     ...(reviewerOutcome === undefined ? {} : { reviewerOutcome }),
   };
 }
@@ -148,10 +145,7 @@ export function reasoningResult(
   handoff: ReasoningHandoff,
   systemOne: SystemOneScores | undefined,
 ): ReviewExecutionResult {
-  const secondary = reconcileReasoningEscalation(
-    result,
-    handoff.criticalDenial,
-  );
+  const secondary = reconcileReasoningEscalation(result, handoff.jevCritical);
   return withResolution(
     {
       ...secondary,

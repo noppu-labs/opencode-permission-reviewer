@@ -46,14 +46,15 @@ To report a vulnerability, see [SECURITY.md](../SECURITY.md).
 - With `systemOneEscalation: "reasoning-first"`, a Jev escalation, invalid answer, or failure goes
   to the reasoning reviewer first, and `escalationMode` and the failure settings apply to that
   reviewer's final outcome. Under `escalationMode: "deny"` a Jev escalation is therefore no longer
-  denied outright: a reasoning approval on sufficient evidence allows it, and a reasoning
-  escalation is still denied.
+  denied outright: a reasoning approval on sufficient evidence allows it unless Jev rated the
+  request critical risk, and a reasoning escalation is still denied.
 - With `systemOneDenialReview`, the reasoning reviewer can overturn an uncertain Jev denial, meaning
   a Jev `deny` that fails at least one of Jev's consistency checks, for example an outcome
   confidence below `systemOneConfidenceThreshold`. Its approval passes every gate above, applied to
-  its own decision, and when Jev rated the uncertain denial critical risk, the approval escalates to
-  you instead of allowing. Denials from the emergency brake and policy rules are never reviewed, and a Jev
-  denial that reports a probable absolute policy violation or a material safety signal stays final.
+  its own decision, and when Jev rated the uncertain denial critical risk, the approval escalates
+  instead of allowing. Denials from the emergency brake and policy rules are never reviewed, and a
+  Jev denial that reports a probable absolute policy violation or a material safety signal stays
+  final.
 - A hand-off to the reasoning reviewer needs 15 seconds of review budget; with less, the request
   escalates to you instead, including an uncertain Jev denial, which Jev alone never finalizes.
 - A narrow deterministic emergency brake rejects unmistakable root destruction and direct

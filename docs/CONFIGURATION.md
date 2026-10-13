@@ -267,7 +267,8 @@ own case:
 
 With `systemOneEscalation: "reasoning-first"`, these settings apply to the reasoning reviewer's
 final outcome: a Jev escalation, invalid answer, or failure is handed to the reasoning reviewer
-before any of them is applied. See [Reviewer models](REVIEWER-MODELS.md#after-a-hand-off).
+before any of them is applied. A reasoning approval after a Jev decision rated critical risk
+escalates instead of allowing; see [Reviewer models](REVIEWER-MODELS.md#after-a-hand-off).
 
 With `systemOneDenialReview: true`, an uncertain Jev denial also goes to the reasoning reviewer. An
 uncertain Jev denial is a Jev `deny` that fails at least one of Jev's consistency checks, for

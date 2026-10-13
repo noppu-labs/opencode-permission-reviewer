@@ -13,8 +13,8 @@ import { budgetExhaustedResult } from "./system-one-budget.ts";
 import {
   handoffBlock,
   handoffTrigger,
-  isCriticalDenialReview,
   type JevOutcome,
+  jevCriticalHolds,
 } from "./system-one-handoff.ts";
 import {
   createSystemOneInvoker,
@@ -123,7 +123,8 @@ export class SystemOneReviewerBackend {
     escalation: ReasoningEscalation | undefined,
   ): Promise<ReviewExecutionResult> {
     const own = jevResult(jev, this.config);
-    const trigger = handoffTrigger(jev, resolveSystemOneRouting(this.config));
+    const routing = resolveSystemOneRouting(this.config);
+    const trigger = handoffTrigger(jev, routing);
     const model = this.escalationModel;
     if (trigger === undefined || !escalation || !model)
       return finalJevResult(own, this.config);
@@ -141,7 +142,7 @@ export class SystemOneReviewerBackend {
       );
     const handoff: ReasoningHandoff = {
       model,
-      criticalDenial: isCriticalDenialReview(jev, trigger),
+      jevCritical: jevCriticalHolds(jev, trigger, routing),
       escalatedFrom: {
         model: this.config.model,
         reason: handoffReason(jev, own),

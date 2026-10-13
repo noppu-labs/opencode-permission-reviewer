@@ -12,10 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `systemOneEscalation: "reasoning-first"`: with a Jev `model` and an `escalationReviewer`, every
   escalation that starts at Jev, including an invalid answer or a failed call, goes to the
   reasoning reviewer before it can reach you, unless less than 15 seconds of the review budget
-  remain. The default, `"standard"`, keeps the existing
-  routing.
+  remain. The default, `"standard"`, keeps the existing routing.
 - `systemOneDenialReview: true`: an uncertain Jev denial goes to the reasoning reviewer, which can
   confirm or overturn it. Denials with a strong policy or safety signal stay final.
+- Under `systemOneEscalation: "reasoning-first"`, and for an uncertain denial under
+  `systemOneDenialReview`, a reasoning approval after a Jev decision rated critical risk escalates
+  instead of allowing.
 - Audit records carry `reviewerEscalatedFrom.trigger`, a `resolution` on escalations from the
   System One backend, and `configWarnings`. `audit report` counts records by hand-off trigger and
   by resolution.
