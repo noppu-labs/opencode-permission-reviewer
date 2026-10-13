@@ -276,6 +276,22 @@ export interface ApprovedAnnotation {
   decision: ReviewDecision;
 }
 
+/** Why a System One (Jev) result was handed to the reasoning reviewer. */
+export type HandoffTrigger =
+  | "jev-escalate"
+  | "jev-uncertain-allow"
+  | "jev-gate"
+  | "jev-invalid"
+  | "jev-failure"
+  | "jev-uncertain-deny";
+
+/** How an escalation that left the System One backend was reached. */
+export type ManualResolution =
+  | "reviewer"
+  | "reasoning-escalated"
+  | "reasoning-unavailable"
+  | "budget-exhausted";
+
 export interface ReviewExecutionResult {
   kind: "allow" | "deny" | "escalate";
   decision?: ReviewDecision;
@@ -285,8 +301,13 @@ export interface ReviewExecutionResult {
   decisionSource?: DecisionSource;
   /** Actual model that produced the final reviewer decision. */
   reviewerModel?: string;
-  /** Primary model and routing reason when a second reviewer was used. */
-  reviewerEscalatedFrom?: { model: string; reason: string };
+  /** Primary model, routing reason and hand-off trigger when a second
+   *  reviewer was used. */
+  reviewerEscalatedFrom?: {
+    model: string;
+    reason: string;
+    trigger?: HandoffTrigger;
+  };
   /** Jev's scores whenever it returned a parsed decision. */
   systemOne?: SystemOneScores;
   /**
@@ -300,6 +321,10 @@ export interface ReviewExecutionResult {
    * the request was already answered manually (`manual-superseded`).
    */
   escalationDisposition?: EscalationDisposition;
+  /** How an escalation from the System One backend was reached; kept when a
+   *  disposition turns it into a deny. Absent on allows, explicit denials and
+   *  every other path. */
+  resolution?: ManualResolution;
 }
 
 /** Generic policy templates, NOT automatic trust levels. */
