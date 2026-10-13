@@ -103,3 +103,73 @@ describe("trusted layers that cannot be honored degrade the config", () => {
     );
   });
 });
+
+describe("config warnings reach stderr without degrading", () => {
+  const INVALID_ESCALATION =
+    'systemOneEscalation "on" is not "standard" or "reasoning-first"; using "standard"';
+  const INVALID_DENIAL =
+    'systemOneDenialReview "yes" is not a boolean; using false';
+  const NOT_JEV =
+    'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+
+  test("an invalid global routing value falls back and warns", () => {
+    const { config, warnings } = loadLayers({
+      global: { systemOneEscalation: "on", systemOneDenialReview: "yes" },
+    });
+    expect(config.systemOneEscalation).toBe("standard");
+    expect(config.systemOneDenialReview).toBe(false);
+    expect(config.configDegraded).toBeUndefined();
+    expect(config.configWarnings).toEqual([INVALID_ESCALATION, INVALID_DENIAL]);
+    expect(warnings).toEqual([
+      `permission-reviewer: ${INVALID_ESCALATION}`,
+      `permission-reviewer: ${INVALID_DENIAL}`,
+    ]);
+  });
+
+  test("an inert global setting warns", () => {
+    const { config, warnings } = loadLayers({
+      global: { systemOneEscalation: "reasoning-first" },
+    });
+    expect(config.systemOneEscalation).toBe("reasoning-first");
+    expect(config.configWarnings).toEqual([NOT_JEV]);
+    expect(warnings).toEqual([`permission-reviewer: ${NOT_JEV}`]);
+  });
+
+  test("trusted inline values warn like the global file", () => {
+    const { config, warnings } = loadLayers({
+      inline: { systemOneDenialReview: "yes" },
+    });
+    expect(config.configWarnings).toEqual([INVALID_DENIAL]);
+    expect(warnings).toEqual([`permission-reviewer: ${INVALID_DENIAL}`]);
+  });
+
+  test.each(["unknown", "project"] as const)(
+    "%s inline options cannot set either key, so they never warn",
+    (trust) => {
+      const { config, warnings } = loadLayers({
+        inline: {
+          systemOneEscalation: "reasoning-first",
+          systemOneDenialReview: "yes",
+        },
+        trust,
+      });
+      expect(config.systemOneEscalation).toBe("standard");
+      expect(config.systemOneDenialReview).toBe(false);
+      expect(config.configWarnings).toBeUndefined();
+      expect(warnings).toEqual([]);
+    },
+  );
+
+  test("degradation warnings come before config warnings", () => {
+    const { config, warnings } = loadLayers({
+      global: { escalationMode: "DENY", systemOneEscalation: "on" },
+    });
+    expect(config.configDegraded).toEqual([
+      'global config escalationMode "DENY" is invalid and was ignored',
+    ]);
+    expect(warnings).toEqual([
+      `permission-reviewer: global config escalationMode "DENY" is invalid and was ignored; ${UNTIL_FIXED}`,
+      `permission-reviewer: ${INVALID_ESCALATION}`,
+    ]);
+  });
+});
