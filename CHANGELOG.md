@@ -44,10 +44,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request escalates (`resolution: "budget-exhausted"`). This applies in the default mode too.
 - When the hand-off runs, `escalationMode: "deny"`, `riskPolicy.onInvalidDecision`, and
   `riskPolicy.onReviewerFailure` act on the reasoning reviewer's final outcome, not on Jev's.
-- TUI: manual-review toasts now choose their title, variant and first sentence
-  by how the review ended: both reviewers escalated, the reasoning reviewer
-  was unavailable, or no review time was left for it. The reason still
-  follows.
+- TUI: a manual-review toast's first sentence now says how the review ended:
+  the reasoning reviewer's review still needs your approval, the reasoning
+  reviewer was unavailable (an error toast titled "Reasoning reviewer
+  unavailable"), or no review time was left for it. The reason still follows.
 
 ### Fixed
 
