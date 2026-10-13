@@ -367,14 +367,15 @@ describe("server statuses", () => {
   });
 
   test("leave segments off a status they would push past the cap", () => {
+    const { reason: _reason, ...withoutReason } = WIDE_OPTIONS;
     const wideRequest = request({
-      id: wide(300),
-      sessionID: wide(300),
+      id: wide(1_300),
+      sessionID: wide(1_300),
       metadata: { command: WIDE_COMMAND },
     });
-    const plain = createUiStatus(wideRequest, "reviewing", WIDE_OPTIONS);
+    const plain = createUiStatus(wideRequest, "reviewing", withoutReason);
     const withSegments = createUiStatus(wideRequest, "reviewing", {
-      ...WIDE_OPTIONS,
+      ...withoutReason,
       actionSegments: actionSegments(WIDE_COMMAND) ?? [],
     });
     expect(Buffer.byteLength(JSON.stringify(plain))).toBeLessThanOrEqual(
@@ -383,7 +384,11 @@ describe("server statuses", () => {
     expect(Buffer.byteLength(JSON.stringify(withSegments))).toBeGreaterThan(
       MAX_STATUS_BYTES,
     );
-    const status = createServerUiStatus(wideRequest, "reviewing", WIDE_OPTIONS);
+    const status = createServerUiStatus(
+      wideRequest,
+      "reviewing",
+      withoutReason,
+    );
     expect(status).toEqual(plain);
     expect("actionSegments" in status).toBe(false);
     expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);

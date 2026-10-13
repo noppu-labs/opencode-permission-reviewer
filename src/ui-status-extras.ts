@@ -88,14 +88,78 @@ function withoutLastEntry<T extends StatusExtras>(status: T): T | undefined {
   return (kept.length === 0 ? rest : { ...rest, [key]: kept }) as T;
 }
 
+/** The status fields the fit may drop or shorten. */
+interface FittableStatus extends StatusExtras {
+  reason?: string;
+  decision?: { rationale: string; script_analysis?: string };
+}
+
+const FITTABLE_FIELDS = ["reason", "rationale", "script_analysis"] as const;
+type FittableField = (typeof FITTABLE_FIELDS)[number];
+
+const ELLIPSIS = "…";
+
+function jsonBytes(value: unknown): number {
+  return Buffer.byteLength(JSON.stringify(value), "utf8");
+}
+
 /** Drops config list entries, warnings before degraded reasons and the last
  *  first, until the encoded status fits the cap. */
-export function fitConfigLists<T extends StatusExtras>(status: T): T {
+function fitConfigLists<T extends StatusExtras>(status: T): T {
   let fitted = status;
-  while (Buffer.byteLength(JSON.stringify(fitted), "utf8") > MAX_STATUS_BYTES) {
+  while (jsonBytes(fitted) > MAX_STATUS_BYTES) {
     const next = withoutLastEntry(fitted);
     if (next === undefined) break;
     fitted = next;
+  }
+  return fitted;
+}
+
+/** The start of `text`, cut on a code-point boundary and ending in "…", whose
+ *  JSON form is at least `excess` bytes smaller; just "…" when the whole text
+ *  is not enough, and `text` itself when it is no longer than "…". */
+function shortenedBy(text: string, excess: number): string {
+  if (jsonBytes(text) <= jsonBytes(ELLIPSIS)) return text;
+  let room = jsonBytes(text) - excess - jsonBytes(ELLIPSIS);
+  let end = 0;
+  for (const char of text) {
+    room -= jsonBytes(char) - 2;
+    if (room < 0) break;
+    end += char.length;
+  }
+  return `${text.slice(0, end)}${ELLIPSIS}`;
+}
+
+function withShorter<T extends FittableStatus>(
+  status: T,
+  field: FittableField,
+  excess: number,
+): T {
+  if (field === "reason") {
+    const { reason } = status;
+    return reason === undefined
+      ? status
+      : { ...status, reason: shortenedBy(reason, excess) };
+  }
+  const { decision } = status;
+  const text = decision?.[field];
+  return decision === undefined || text === undefined
+    ? status
+    : {
+        ...status,
+        decision: { ...decision, [field]: shortenedBy(text, excess) },
+      };
+}
+
+/** Fits the encoded status to the cap: drops config list entries first, then
+ *  shortens the reason, then the decision rationale, then its script analysis.
+ *  A status already under the cap comes back as the same object. */
+export function fitStatus<T extends FittableStatus>(status: T): T {
+  let fitted = fitConfigLists(status);
+  for (const field of FITTABLE_FIELDS) {
+    const excess = jsonBytes(fitted) - MAX_STATUS_BYTES;
+    if (excess <= 0) break;
+    fitted = withShorter(fitted, field, excess);
   }
   return fitted;
 }
