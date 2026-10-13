@@ -5,10 +5,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
-import {
-  enforceParsedSystemOneReview,
-  parseSystemOneReview,
-} from "./review.ts";
+import { askJev } from "./system-one-ask.ts";
 import { budgetExhaustedResult } from "./system-one-budget.ts";
 import {
   handoffBlock,
@@ -16,11 +13,7 @@ import {
   type JevOutcome,
   jevCriticalHolds,
 } from "./system-one-handoff.ts";
-import {
-  createSystemOneInvoker,
-  type SystemOneInvoke,
-  systemOneState,
-} from "./system-one-invoker.ts";
+import type { SystemOneInvoke } from "./system-one-invoker.ts";
 import {
   finalJevResult,
   handoffReason,
@@ -80,38 +73,12 @@ export class SystemOneReviewerBackend {
   ): Promise<ReviewExecutionResult> {
     const started = performance.now();
     try {
-      const jev = await this.askJev(envelope, attempt);
+      const jev = await askJev(this.config, this.invoke, envelope, attempt);
       return await this.route(jev, envelope, attempt, escalation);
     } finally {
       const elapsed = performance.now() - started;
       envelope.timings = { ...envelope.timings, reviewerMs: elapsed };
       this.recordReviewerMs?.(envelope, elapsed);
-    }
-  }
-
-  /** Jev's answer, parsed and enforced. Never throws: a failure is an
-   *  outcome the hand-off decision can route. */
-  private async askJev(
-    envelope: ReviewEnvelope,
-    attempt: ReviewAttempt,
-  ): Promise<JevOutcome> {
-    try {
-      const state = systemOneState(envelope, this.config);
-      const response = await attempt.wait(
-        (this.invoke ?? createSystemOneInvoker(this.config))(
-          state,
-          attempt.signal,
-        ),
-      );
-      const parsed = parseSystemOneReview(response, this.config);
-      if (!parsed) return { kind: "invalid" };
-      return {
-        kind: "valid",
-        parsed,
-        enforced: enforceParsedSystemOneReview(parsed, this.config),
-      };
-    } catch (error) {
-      return { kind: "failure", error };
     }
   }
 
