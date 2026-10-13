@@ -28,7 +28,10 @@ To report a vulnerability, see [SECURITY.md](../SECURITY.md).
 
 ### Decisions
 
-- A decision the model labels critical is never auto-approved, whatever its outcome says. This
+- A decision the model labels critical is never auto-approved, whatever its outcome says. The
+  label that counts is the one from the model that makes the final decision, which after a
+  hand-off is the reasoning reviewer. Under `systemOneEscalation: "reasoning-first"`, and for an
+  uncertain Jev denial sent for review, Jev's critical label also holds through the hand-off. This
   does not guarantee that the model classifies every dangerous action correctly.
 - With the default `riskPolicy` matrix, high-risk actions with low or unknown authorization and
   medium-risk actions with unknown authorization are deterministically escalated. The model
