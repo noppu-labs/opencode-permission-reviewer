@@ -49,6 +49,8 @@ export interface FixtureOptions {
   result?: ReviewExecutionResult;
   delay?: Promise<void>;
   connectionError?: boolean;
+  /** Makes the host's session context read fail. */
+  contextError?: Error;
   budget?: number;
   hostVersion?: string;
   config?: Partial<ReviewerConfig>;
@@ -121,14 +123,17 @@ export async function fixture(
   const client = {
     session: {
       get: ctx.session.get,
-      context: async () => [
-        {
-          type: "user",
-          id: "msg_user",
-          text: "Run printf safe",
-          time: { created: 2 },
-        },
-      ],
+      context: async () => {
+        if (options.contextError) throw options.contextError;
+        return [
+          {
+            type: "user",
+            id: "msg_user",
+            text: "Run printf safe",
+            time: { created: 2 },
+          },
+        ];
+      },
     },
   } as unknown as OpenCodeClient;
   const dispose = await setupWithServices(ctx, {

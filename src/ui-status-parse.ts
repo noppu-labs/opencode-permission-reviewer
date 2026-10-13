@@ -104,6 +104,7 @@ const STATUS_CHECKS: Record<keyof ReviewUiStatus, Check> = {
   ),
   handoff: optional(isHandoff),
   resolution: optional(oneOf(Object.keys(RESOLUTIONS))),
+  decidedBy: optional(isString),
   configWarnings: optional(isStringList),
   configDegraded: optional(isStringList),
 };

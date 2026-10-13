@@ -19,6 +19,7 @@ export function boundedText(value: string, max: number): string {
 export interface StatusExtrasOptions {
   handoff?: HandoffInfo;
   resolution?: ManualResolution;
+  decidedBy?: string;
   configWarnings?: readonly string[];
   configDegraded?: readonly string[];
 }
@@ -26,6 +27,7 @@ export interface StatusExtrasOptions {
 interface StatusExtras {
   handoff?: HandoffInfo;
   resolution?: ManualResolution;
+  decidedBy?: string;
   configWarnings?: string[];
   configDegraded?: string[];
 }
@@ -49,8 +51,8 @@ function boundedHandoff(handoff: HandoffInfo): HandoffInfo {
   };
 }
 
-/** The hand-off, resolution and config lists a status carries; an empty list
- *  is left out. */
+/** The hand-off, resolution, deciding model and config lists a status
+ *  carries; an empty list is left out. */
 export function statusExtras(options: StatusExtrasOptions): StatusExtras {
   const configWarnings = boundedList(options.configWarnings);
   const configDegraded = boundedList(options.configDegraded);
@@ -61,6 +63,9 @@ export function statusExtras(options: StatusExtrasOptions): StatusExtras {
     ...(options.resolution === undefined
       ? {}
       : { resolution: options.resolution }),
+    ...(options.decidedBy === undefined
+      ? {}
+      : { decidedBy: boundedText(options.decidedBy, MAX_MODEL_CHARS) }),
     ...(configWarnings.length === 0 ? {} : { configWarnings }),
     ...(configDegraded.length === 0 ? {} : { configDegraded }),
   };

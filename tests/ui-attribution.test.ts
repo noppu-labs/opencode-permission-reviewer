@@ -116,10 +116,34 @@ describe("attribution text", () => {
   );
 
   test("names the deciding model alone without a hand-off", () => {
-    expect(attributionText(status("approved", { model: JEV }))).toBe(
-      "jev-1.13-free",
-    );
-    expect(attributionText(status("approved", { model: "" }))).toBeUndefined();
+    expect(
+      attributionText(status("approved", { model: JEV, decidedBy: JEV })),
+    ).toBe("jev-1.13-free");
+    expect(
+      attributionText(status("approved", { model: "", decidedBy: "" })),
+    ).toBeUndefined();
+  });
+
+  test("credits the model that decided, not the model the status names", () => {
+    expect(
+      attributionText(status("denied", { model: LUNA, decidedBy: JEV })),
+    ).toBe("jev-1.13-free");
+  });
+
+  test("credits no model when none decided", () => {
+    expect(attributionText(status("denied", { model: JEV }))).toBeUndefined();
+    expect(attributionText(status("manual", { model: LUNA }))).toBeUndefined();
+  });
+
+  test("the hand-off phrase wins over the deciding model", () => {
+    expect(
+      attributionText(
+        status("approved", {
+          handoff: handoff("jev-escalate"),
+          decidedBy: LUNA,
+        }),
+      ),
+    ).toBe("gpt-6-luna after Jev's escalation");
   });
 
   test("uncertain-deny fail-closed never claims the denial was confirmed", () => {
@@ -166,6 +190,19 @@ describe("strip text", () => {
       "No result.",
     );
     expect(resultDetail(status("approved"))).toBeUndefined();
+  });
+
+  test("result line 2 credits the deciding model, else shows the reason alone", () => {
+    expect(
+      resultDetail(
+        status("approved", { decidedBy: JEV, reason: "Read-only command." }),
+      ),
+    ).toBe("jev-1.13-free — Read-only command.");
+    expect(
+      resultDetail(
+        status("denied", { model: JEV, reason: "Emergency brake: stop." }),
+      ),
+    ).toBe("Emergency brake: stop.");
   });
 
   test("the progress label shows the hand-off, else the full model", () => {

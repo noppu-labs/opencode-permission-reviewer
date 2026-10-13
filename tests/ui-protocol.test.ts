@@ -52,12 +52,13 @@ describe("TUI status protocol", () => {
     }
   });
 
-  test("round-trips the hand-off, resolution and config lists", () => {
+  test("round-trips the hand-off, resolution, deciding model and config lists", () => {
     const status = createUiStatus(request(), "manual", {
       ...options,
       emittedAt: 123,
       handoff: HANDOFF,
       resolution: "reasoning-unavailable",
+      decidedBy: "openai/gpt-6-luna",
       configWarnings: [
         "systemOneDenialReview is inactive: the reviewer model is not Jev",
       ],
@@ -74,6 +75,7 @@ describe("TUI status protocol", () => {
         from: "j".repeat(300),
         failureKind: "k".repeat(80),
       },
+      decidedBy: ` ${"b".repeat(300)} `,
       configWarnings: [],
       configDegraded: Array.from(
         { length: 8 },
@@ -88,6 +90,7 @@ describe("TUI status protocol", () => {
     expect(status.handoff?.from).toHaveLength(200);
     expect(status.handoff?.failureKind).toHaveLength(40);
     expect(status.handoff?.trigger).toBe("jev-failure");
+    expect(status.decidedBy).toBe(`${"b".repeat(199)}…`);
   });
 
   test("a status with every field at its bound stays under the command cap", () => {
@@ -111,6 +114,7 @@ describe("TUI status protocol", () => {
           failureKind: long("k", 80),
         },
         resolution: "reasoning-escalated",
+        decidedBy: long("b", 300),
         configWarnings: Array.from({ length: 9 }, () => long("w", 400)),
         configDegraded: Array.from({ length: 9 }, () => long("d", 400)),
       },

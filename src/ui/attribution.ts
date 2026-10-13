@@ -59,12 +59,21 @@ export function handoffPhrase(status: PhraseSource): string | undefined {
   return AFTER[handoff.trigger];
 }
 
-/** Line-2 attribution text per the spec's table; undefined when there is nothing to attribute. */
+/** The model credited without a hand-off phrase: the one that ran when the
+ *  review ran out of time after a hand-off, else the one that decided. */
+function creditedModel(status: ReviewUiStatus): string | undefined {
+  if (status.handoff !== undefined && status.resolution === "budget-exhausted")
+    return status.model;
+  return status.decidedBy;
+}
+
+/** Line-2 attribution text per the spec's table; undefined when no model
+ *  decided. */
 export function attributionText(status: ReviewUiStatus): string | undefined {
   const phrase = handoffPhrase(status);
   if (phrase !== undefined && status.handoff !== undefined)
     return `${shortModelName(status.handoff.to)} ${phrase}`;
-  const model = shortModelName(status.model);
+  const model = shortModelName(creditedModel(status) ?? "");
   return model === "" ? undefined : model;
 }
 
@@ -83,8 +92,8 @@ export function reviewerLabel(status: ReviewUiStatus): string {
   return attributionText(status) ?? status.model;
 }
 
-/** Result strip line 2: "<attribution> — <reason>". The reason alone on an
- *  unknown status, where nobody decided; undefined without a reason. */
+/** Result strip line 2: "<attribution> — <reason>". The reason alone when no
+ *  model decided or the status is unknown; undefined without a reason. */
 export function resultDetail(status: ReviewUiStatus): string | undefined {
   if (!status.reason) return;
   const attribution =

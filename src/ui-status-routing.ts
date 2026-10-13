@@ -75,6 +75,23 @@ export function statusRouting(
   };
 }
 
+/** The model a final status credits: set only when a reviewer model made the
+ *  decision, never for a brake, policy or failure-safe result. */
+export function decidedByField(
+  result: Partial<
+    Pick<ReviewExecutionResult, "decisionSource" | "reviewerModel">
+  >,
+  config: Pick<ReviewerConfig, "model">,
+): Pick<UiStatusOptions, "decidedBy"> {
+  const { decisionSource } = result;
+  if (
+    decisionSource !== "system-one-reviewer" &&
+    decisionSource !== "llm-reviewer"
+  )
+    return {};
+  return { decidedBy: result.reviewerModel ?? config.model };
+}
+
 /** The config lists a v1 status carries, only when non-empty. */
 export function configNoticeFields(
   config: Pick<ReviewerConfig, "configWarnings" | "configDegraded">,

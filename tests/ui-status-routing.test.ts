@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import type { DecisionSource } from "../src/audit-record.ts";
 import type { ReasoningHandoff } from "../src/system-one/system-one-results.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 import {
   announceHandoff,
   configNoticeFields,
+  decidedByField,
   handoffInfo,
   resultHandoff,
   statusRouting,
@@ -130,5 +132,27 @@ describe("routing fields of a result", () => {
       configNoticeFields({ configWarnings: ["w"], configDegraded: [] }),
     ).toEqual({ configWarnings: ["w"] });
     expect(configNoticeFields({})).toEqual({});
+  });
+});
+
+describe("the model a final status credits", () => {
+  test.each<[DecisionSource, string | undefined]>([
+    ["system-one-reviewer", JEV],
+    ["llm-reviewer", JEV],
+    ["emergency-brake", undefined],
+    ["deterministic-policy", undefined],
+    ["manual-superseded", undefined],
+    ["failure-safe", undefined],
+  ])("a %s result credits %p", (decisionSource, decidedBy) => {
+    expect(
+      decidedByField({ decisionSource, reviewerModel: JEV }, { model: LUNA }),
+    ).toEqual(decidedBy === undefined ? {} : { decidedBy });
+  });
+
+  test("falls back to the configured model, and credits nobody without a source", () => {
+    expect(
+      decidedByField({ decisionSource: "llm-reviewer" }, { model: LUNA }),
+    ).toEqual({ decidedBy: LUNA });
+    expect(decidedByField({ reviewerModel: JEV }, { model: LUNA })).toEqual({});
   });
 });

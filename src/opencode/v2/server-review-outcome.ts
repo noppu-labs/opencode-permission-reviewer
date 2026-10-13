@@ -3,7 +3,7 @@
 // and audit record queued after it.
 import type { PermissionRequest, ReviewExecutionResult } from "../../types.ts";
 import { createUiStatus, type ReviewUiStatus } from "../../ui-protocol.ts";
-import { statusRouting } from "../../ui-status-routing.ts";
+import { decidedByField, statusRouting } from "../../ui-status-routing.ts";
 import { reviewAuditRecord } from "./server-audit.ts";
 import { snapshotAction } from "./server-events.ts";
 import type { ReviewRun, ServerState } from "./server-state.ts";
@@ -83,6 +83,7 @@ function finalStatus(
     reason: result.reason,
     ...(result.decision ? { decision: result.decision } : {}),
     ...statusRouting(result, server.config),
+    ...decidedByField(result, server.config),
   });
 }
 

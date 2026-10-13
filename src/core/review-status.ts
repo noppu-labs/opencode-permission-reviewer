@@ -10,7 +10,11 @@ import type {
   ReviewerConfig,
 } from "../types.ts";
 import { createUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
-import { configNoticeFields, statusRouting } from "../ui-status-routing.ts";
+import {
+  configNoticeFields,
+  decidedByField,
+  statusRouting,
+} from "../ui-status-routing.ts";
 import type { CoordinatorState } from "./coordinator-state.ts";
 
 type StatusScope = Pick<
@@ -29,6 +33,7 @@ export type StatusDetails = Partial<
     | "reviewerModel"
     | "reviewerEscalatedFrom"
     | "resolution"
+    | "decisionSource"
   >
 > & { handoff?: HandoffInfo };
 
@@ -58,6 +63,7 @@ function statusFor(
     ...(reason === undefined ? {} : { reason }),
     ...(decision === undefined ? {} : { decision }),
     ...statusRouting(details, scope.config),
+    ...decidedByField(details, scope.config),
     ...configNoticeFields(scope.config),
     ...(actor?.agentName.value === undefined
       ? {}

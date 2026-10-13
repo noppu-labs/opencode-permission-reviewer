@@ -85,12 +85,26 @@ describe("review result strip", () => {
         status: status("approved", {
           action: "printf a\nprintf b",
           reason: "First line\r\nsecond\tline",
+          decidedBy: "fixture/reviewer",
         }),
       }),
     );
     expect(shown).toEqual([
       "✓ Review approved · bash · printf a printf b",
       "reviewer — First line second line",
+    ]);
+  });
+
+  test("shows the reason alone when no model decided", async () => {
+    const shown = await rows(() =>
+      ReviewResult({
+        theme,
+        status: status("denied", { reason: "Emergency brake: stop." }),
+      }),
+    );
+    expect(shown).toEqual([
+      "✕ Review blocked · bash · $ printf safe",
+      "Emergency brake: stop.",
     ]);
   });
 

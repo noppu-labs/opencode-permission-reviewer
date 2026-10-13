@@ -54,6 +54,9 @@ export interface ReviewUiStatus {
   handoff?: HandoffInfo;
   /** How a manual outcome came about; chooses the manual-review toast. */
   resolution?: ManualResolution;
+  /** The model that made the decision, on a final status a reviewer model
+   *  decided; absent on a brake, policy or failure-safe result. */
+  decidedBy?: string;
   /** The server's inert-setting warnings and degraded-config reasons (v1
    *  carries them on every status; v2 reads them from the `status` RPC). */
   configWarnings?: string[];
