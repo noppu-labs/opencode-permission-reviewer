@@ -5,9 +5,15 @@ import {
   type OnHandoff,
   SystemOneReviewerBackend,
 } from "../../src/system-one/backend.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one/system-one-handoff.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../../src/types.ts";
 import { config } from "../helpers.ts";
-import { choice, envelope, response } from "./system-one-fixtures.ts";
+import {
+  attemptWithRemaining,
+  choice,
+  envelope,
+  response,
+} from "./system-one-fixtures.ts";
 
 const JEV = "opencode/jev-1.13-free";
 const LUNA = "openai/gpt-6-luna";
@@ -45,13 +51,9 @@ function backend(
 function run(
   target: SystemOneReviewerBackend,
   onHandoff: OnHandoff,
+  attempt: ReviewAttempt = new ReviewAttempt("generation", 60_000),
 ): Promise<ReviewExecutionResult> {
-  return target.review(
-    envelope(),
-    new ReviewAttempt("generation", 60_000),
-    undefined,
-    onHandoff,
-  );
+  return target.review(envelope(), attempt, undefined, onHandoff);
 }
 
 const escalating = async (): Promise<unknown> =>
@@ -116,5 +118,53 @@ describe("System One hand-off hook", () => {
     );
     expect(reasoningRuns).toBe(1);
     expect(result).toMatchObject({ kind: "deny", reviewerModel: LUNA });
+  });
+
+  describe("stays silent without a hand-off", () => {
+    async function silent(
+      attempt: ReviewAttempt,
+      target?: SystemOneReviewerBackend,
+    ): Promise<{ handoffs: HandoffInfo[]; reasoningRuns: number }> {
+      const handoffs: HandoffInfo[] = [];
+      let reasoningRuns = 0;
+      await run(
+        target ??
+          backend(escalating, async () => {
+            reasoningRuns++;
+            return DENIED;
+          }),
+        (handoff) => {
+          handoffs.push(handoff);
+        },
+        attempt,
+      );
+      attempt.close("finished");
+      return { handoffs, reasoningRuns };
+    }
+
+    test("when the attempt is no longer active", async () => {
+      const attempt = new ReviewAttempt("generation", 60_000);
+      attempt.close("cancelled");
+      expect(await silent(attempt)).toEqual({ handoffs: [], reasoningRuns: 0 });
+    });
+
+    test("when less than the hand-off budget floor remains", async () => {
+      const attempt = attemptWithRemaining(HANDOFF_BUDGET_FLOOR_MS - 1);
+      expect(await silent(attempt)).toEqual({ handoffs: [], reasoningRuns: 0 });
+    });
+
+    test("when no reasoning reviewer is configured", async () => {
+      const unconfigured = new SystemOneReviewerBackend(
+        reasoningFirst(),
+        undefined,
+        undefined,
+        escalating,
+      );
+      const { handoffs } = await silent(
+        new ReviewAttempt("generation", 60_000),
+        unconfigured,
+      );
+      expect(handoffs).toEqual([]);
+    });
   });
 });
