@@ -3,12 +3,14 @@
 import { reviewBudgetMs } from "../config.ts";
 import { withTimeout } from "../opencode/transport.ts";
 import { isSystemOneReviewerModel } from "../reviewer-model.ts";
+import type { HandoffInfo } from "../system-one/backend.ts";
 import type {
   PermissionRequest,
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
 import { createUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
+import { configNoticeFields, statusRouting } from "../ui-status-routing.ts";
 import type { CoordinatorState } from "./coordinator-state.ts";
 
 type StatusScope = Pick<
@@ -16,13 +18,19 @@ type StatusScope = Pick<
   "ctx" | "config" | "attempts" | "log" | "metadataCallTimeoutMs"
 >;
 
-/** The outcome fields a phase can show; a result carries all of them. */
+/** The outcome fields a phase can show; a result carries all of them but the
+ *  hand-off, which the "reviewing" status during a hand-off sets. */
 export type StatusDetails = Partial<
   Pick<
     ReviewExecutionResult,
-    "reason" | "decision" | "escalationDisposition" | "reviewerModel"
+    | "reason"
+    | "decision"
+    | "escalationDisposition"
+    | "reviewerModel"
+    | "reviewerEscalatedFrom"
+    | "resolution"
   >
->;
+> & { handoff?: HandoffInfo };
 
 /** The reviewer variant to show: the escalation reviewer's when another model
  *  decided, System One's label for a System One model, else the configured one. */
@@ -41,7 +49,7 @@ function statusFor(
   phase: ReviewUiStatus["phase"],
   details: StatusDetails,
 ): ReviewUiStatus {
-  const { reason, decision, escalationDisposition, reviewerModel } = details;
+  const { reason, decision, reviewerModel } = details;
   const actor = scope.attempts.get(request.id)?.evidence.actor;
   return createUiStatus(request, phase, {
     model: reviewerModel ?? scope.config.model,
@@ -49,7 +57,8 @@ function statusFor(
     timeoutMs: reviewBudgetMs(scope.config),
     ...(reason === undefined ? {} : { reason }),
     ...(decision === undefined ? {} : { decision }),
-    ...(escalationDisposition === undefined ? {} : { escalationDisposition }),
+    ...statusRouting(details, scope.config),
+    ...configNoticeFields(scope.config),
     ...(actor?.agentName.value === undefined
       ? {}
       : { actorName: actor.agentName.value }),
@@ -98,4 +107,18 @@ export async function publishReviewStatus(
       error: error instanceof Error ? error.message : String(error),
     });
   }
+}
+
+/** Publishes the second "reviewing" status, for the reasoning reviewer Jev
+ *  handed off to. The hook is synchronous, so the publish is not awaited; it
+ *  is best-effort like every status. */
+export function publishHandoffStatus(
+  scope: StatusScope,
+  request: PermissionRequest,
+  handoff: HandoffInfo,
+): void {
+  void publishReviewStatus(scope, request, "reviewing", {
+    reviewerModel: handoff.to,
+    handoff,
+  });
 }
