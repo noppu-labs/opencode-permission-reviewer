@@ -5,8 +5,10 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
+import type { ReviewAttempt } from "../src/core/review-attempt.ts";
 import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
 import { setupWithServices } from "../src/opencode/v2/server.ts";
+import type { HandoffInfo, OnHandoff } from "../src/system-one/backend.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,
@@ -52,6 +54,8 @@ export interface FixtureOptions {
   config?: Partial<ReviewerConfig>;
   emit?: (name: string, payload: unknown) => Promise<void>;
   inspect?: (evidence: ReviewEnvelope) => void;
+  /** Announced through the hook before the fake backend returns. */
+  handoff?: HandoffInfo;
   backendDispose?: () => Promise<void>;
 }
 
@@ -144,10 +148,16 @@ export async function fixture(
       owns: () => false,
       waitForIdle: async () => {},
       dispose: options.backendDispose ?? (async () => {}),
-      review: async (evidence: ReviewEnvelope) => {
+      review: async (
+        evidence: ReviewEnvelope,
+        _attempt: ReviewAttempt,
+        _client: OpenCodeClient,
+        onHandoff?: OnHandoff,
+      ) => {
         starts[reviews]?.resolve();
         reviews++;
         options.inspect?.(evidence);
+        if (options.handoff) onHandoff?.(options.handoff);
         await options.delay;
         return (
           options.result ?? {

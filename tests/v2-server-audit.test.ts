@@ -196,6 +196,7 @@ test.each([
       "model",
       "variant",
       "configDegraded",
+      "configWarnings",
       "effectiveConfigHash",
       "connection",
       "eventConnection",

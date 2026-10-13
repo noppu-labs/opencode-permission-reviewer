@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import type { OpenCodeClient } from "@opencode/client";
+import type { Plugin } from "@opencode/plugin";
 import { ReviewAttempt } from "../../src/core/review-attempt.ts";
+import { createV2ReviewerBackend } from "../../src/opencode/v2/backend-factory.ts";
 import {
   type HandoffInfo,
   type OnHandoff,
@@ -166,5 +169,34 @@ describe("System One hand-off hook", () => {
       );
       expect(handoffs).toEqual([]);
     });
+  });
+});
+
+describe("the V2 backend factory", () => {
+  test("forwards the hook to the System One backend", async () => {
+    const saved = process.env.OPENCODE_API_KEY;
+    delete process.env.OPENCODE_API_KEY;
+    const handoffs: HandoffInfo[] = [];
+    const target = createV2ReviewerBackend(
+      {} as Parameters<Plugin.Plugin["setup"]>[0],
+      reasoningFirst(),
+    );
+    try {
+      await target.review(
+        envelope(),
+        new ReviewAttempt("generation", 60_000),
+        {} as OpenCodeClient,
+        (handoff) => {
+          handoffs.push(handoff);
+        },
+      );
+    } finally {
+      await target.dispose();
+      if (saved === undefined) delete process.env.OPENCODE_API_KEY;
+      else process.env.OPENCODE_API_KEY = saved;
+    }
+    expect(handoffs).toMatchObject([
+      { from: JEV, to: LUNA, trigger: "jev-failure" },
+    ]);
   });
 });
