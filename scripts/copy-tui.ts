@@ -31,6 +31,7 @@ const files = [
   ["src/ui/review-theme.ts", "ui/review-theme.ts"],
   ["src/ui/attribution.ts", "ui/attribution.ts"],
   ["src/ui/manual-toast.ts", "ui/manual-toast.ts"],
+  ["src/ui/config-notices.ts", "ui/config-notices.ts"],
   ["src/failure-kind.ts", "failure-kind.ts"],
   ["src/config.ts", "config.ts"],
   ["src/config-fields.ts", "config-fields.ts"],

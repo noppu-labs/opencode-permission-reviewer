@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createUiStatus, type ReviewUiStatus } from "../src/ui-protocol.ts";
 import { request } from "./helpers.ts";
 import {
+  ConfigNoticeSlot,
   ReviewOverlay,
   ReviewProgress,
   ReviewResult,
@@ -39,7 +40,8 @@ function status(
   };
 }
 
-/** The non-blank rows of the rendered frame, trimmed. */
+/** The non-blank rows of the rendered frame, trimmed. A tree that draws no
+ *  cell leaves the whole buffer unwritten, which captures as U+0A00. */
 async function rows(render: () => unknown): Promise<string[]> {
   const view = await testRender(() => render() as Element, {
     width: 100,
@@ -50,7 +52,7 @@ async function rows(render: () => unknown): Promise<string[]> {
   return view
     .captureCharFrame()
     .split("\n")
-    .map((row) => row.trim())
+    .map((row) => row.replaceAll("\u0a00", "").trim())
     .filter(Boolean);
 }
 
@@ -208,5 +210,24 @@ describe("review overlay", () => {
     expect(shown[5]).toMatch(
       /^│ {4}gpt-6-luna · reasoning medium · after Jev failed \(timeout\) +No action needed$/,
     );
+  });
+});
+
+describe("config notice slot", () => {
+  test("shows the line on one row, and nothing for a healthy config", async () => {
+    expect(
+      await rows(() =>
+        ConfigNoticeSlot({
+          theme,
+          line: {
+            text: "⚠ reviewer: 2 config warnings · first\nsecond",
+            tone: "warning",
+          },
+        }),
+      ),
+    ).toEqual(["⚠ reviewer: 2 config warnings · first second"]);
+    expect(
+      await rows(() => ConfigNoticeSlot({ theme, line: undefined })),
+    ).toEqual([]);
   });
 });

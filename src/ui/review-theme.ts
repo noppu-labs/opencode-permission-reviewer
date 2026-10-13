@@ -14,6 +14,7 @@ const FALLBACK_THEME: Record<keyof ReviewTheme, string> = {
   info: "#4da3ff",
   success: "#48c774",
   error: "#ff5c5c",
+  warning: "#f5a742",
 };
 
 export function resolveReviewTheme(value: unknown): ReviewTheme {
@@ -28,6 +29,7 @@ export function resolveReviewTheme(value: unknown): ReviewTheme {
   const infoFeedback = asObjectLike(feedback?.info);
   const successFeedback = asObjectLike(feedback?.success);
   const errorFeedback = asObjectLike(feedback?.error);
+  const warningFeedback = asObjectLike(feedback?.warning);
   return {
     backgroundPanel:
       color(surface?.overlay) ??
@@ -59,5 +61,10 @@ export function resolveReviewTheme(value: unknown): ReviewTheme {
       color(errorFeedback?.base) ??
       color(host.error) ??
       FALLBACK_THEME.error,
+    warning:
+      color(warningFeedback?.default) ??
+      color(warningFeedback?.base) ??
+      color(host.warning) ??
+      FALLBACK_THEME.warning,
   };
 }

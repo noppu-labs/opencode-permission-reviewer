@@ -1,6 +1,7 @@
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui";
-import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { decodeUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
 import type { ReviewUiState } from "../ui-state.ts";
+import type { ConfigNotices } from "./config-notices.ts";
 import { manualToast } from "./manual-toast.ts";
 
 const MANUAL_FALLBACK =
@@ -21,7 +22,7 @@ function parentSessionID(
   return api.state.session.get(sessionID)?.parentID;
 }
 
-export function notifyManual(
+function notifyManual(
   api: TuiPluginApi,
   status: ReviewUiStatus,
   reasoningModel?: string,
@@ -30,6 +31,22 @@ export function notifyManual(
     ...manualToast(status, MANUAL_FALLBACK, reasoningModel),
     duration: 8_000,
   });
+}
+
+/** Applies one server status command: the panel state, the manual toast and
+ *  the config notices it carries. True when the state changed. */
+export function applyCommand(
+  api: TuiPluginApi,
+  state: ReviewUiState,
+  notices: ConfigNotices,
+  command: string,
+  reasoningModel?: string,
+): boolean {
+  const status = decodeUiStatus(command);
+  if (!status || !state.apply(status)) return false;
+  if (status.phase === "manual") notifyManual(api, status, reasoningModel);
+  notices.update(status);
+  return true;
 }
 
 /** The status the V1 panel shows for the routed session, if any. */

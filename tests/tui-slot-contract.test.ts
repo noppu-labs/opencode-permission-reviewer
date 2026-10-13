@@ -34,7 +34,9 @@ type EventHandler = (event: never) => void;
 interface CapturedApi {
   api: TuiPluginApi;
   handlers: Map<string, EventHandler[]>;
-  factories: Partial<Record<"app" | "app_bottom", () => unknown>>;
+  factories: Partial<
+    Record<"app" | "app_bottom" | "sidebar_content", () => unknown>
+  >;
   /** By-reference mode bookkeeping: a bare number would be snapshotted. */
   mode: { pushes: string[]; pops: number };
   toasts: Array<{
@@ -55,7 +57,9 @@ async function captureOverlay(): Promise<CapturedApi> {
     message?: string;
     duration?: number;
   }> = [];
-  let factories: Partial<Record<"app" | "app_bottom", () => unknown>> = {};
+  let factories: Partial<
+    Record<"app" | "app_bottom" | "sidebar_content", () => unknown>
+  > = {};
 
   let dispose = (): void => {};
   const api = {
@@ -134,7 +138,7 @@ function fire(captured: CapturedApi, type: string, event: unknown): void {
  *  we want: an idle factory returns a falsy value without touching elements. */
 function factoryAttempt(
   captured: CapturedApi,
-  slot: "app" | "app_bottom" = "app",
+  slot: "app" | "app_bottom" | "sidebar_content" = "app",
 ): { rendered: boolean; threw: boolean } {
   const factory = captured.factories[slot];
   expect(factory).toBeFunction();
@@ -169,12 +173,48 @@ describe("tui overlay slot contract", () => {
     expect(Object.keys(captured.factories).sort()).toEqual([
       "app",
       "app_bottom",
+      "sidebar_content",
     ]);
     expect([...captured.handlers.keys()].sort()).toEqual([
       "permission.asked",
       "permission.replied",
       "tui.command.execute",
     ]);
+  });
+
+  test("config warnings toast once per session and keep a sidebar line until they clear", async () => {
+    const captured = await captureOverlay();
+    const warning =
+      'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+    expect(factoryAttempt(captured, "sidebar_content").threw).toBe(false);
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("approved", { configWarnings: [warning] }),
+    );
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("approved", {
+        configWarnings: [warning],
+        emittedAt: Date.now() + 10,
+      }),
+    );
+    expect(captured.toasts).toEqual([
+      {
+        variant: "warning",
+        title: "Permission reviewer config",
+        message: warning,
+        duration: 8_000,
+      },
+    ]);
+    expect(factoryAttempt(captured, "sidebar_content").rendered).toBe(true);
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("denied", { emittedAt: Date.now() + 20 }),
+    );
+    expect(factoryAttempt(captured, "sidebar_content").threw).toBe(false);
   });
 
   test("idle factory renders nothing and pushes no mode", async () => {

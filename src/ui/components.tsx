@@ -5,6 +5,7 @@ import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
 import { reviewerLabel } from "./attribution.ts";
+import type { SidebarLine } from "./config-notices.ts";
 
 export interface ReviewTheme {
   backgroundPanel: ColorInput;
@@ -13,12 +14,29 @@ export interface ReviewTheme {
   info: ColorInput;
   success: ColorInput;
   error: ColorInput;
+  warning: ColorInput;
 }
 export const SPINNER = ["◐", "◓", "◑", "◒"] as const;
 
 /** Collapses line breaks and tabs so a value renders on one row. */
 export const singleLine = (value: string): string =>
   value.replace(/[\r\n\t]+/g, " ");
+
+/** The reviewer's config line in the host sidebar; nothing when healthy. */
+export function ConfigNoticeSlot(props: {
+  theme: () => ReviewTheme;
+  line: SidebarLine | undefined;
+}): JSX.Element {
+  return (
+    <Show when={props.line} keyed>
+      {(line: SidebarLine) => (
+        <text fg={props.theme()[line.tone]} wrapMode="none" truncate>
+          {singleLine(line.text)}
+        </text>
+      )}
+    </Show>
+  );
+}
 
 /** Compact, non-modal progress strip for hosts with an editable composer. */
 export function ReviewProgress(props: {
