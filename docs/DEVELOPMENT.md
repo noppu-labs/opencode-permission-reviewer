@@ -288,7 +288,8 @@ To look at one screen in the terminal, run `bun scripts/capture-tui.ts <screen>`
   image in the docs should say the same things as its title.
 - `tests/capture-tui.test.ts` renders every screen except `long-command-before`, checks the text
   the docs quote and checks that every committed image carries its title, so a component change
-  that breaks a screen fails `bun test`.
+  that drops or rewords quoted text fails `bun test`. Nothing compares the committed images with a
+  fresh render, so regenerate them after any change to a component, the theme or a sample.
 - `docs/images/` is not in the package `files`, so the images never ship. The README links them by
   absolute `raw.githubusercontent.com` URLs on `main`, because npm does not resolve relative image
   paths.
