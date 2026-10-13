@@ -98,6 +98,8 @@ describe("audit summary counts", () => {
       byRiskLevel: { low: 1, "(none)": 7 },
       byDecisionSource: { "system-one-reviewer": 1 },
       byPermission: { bash: 6 },
+      byHandoffTrigger: {},
+      byResolution: {},
       unknownActorNames: [
         { name: "(no actor field)", count: 2 },
         { name: "(unnamed)", count: 2 },
@@ -151,6 +153,8 @@ describe("audit summary counts", () => {
       byRiskLevel: {},
       byDecisionSource: {},
       byPermission: {},
+      byHandoffTrigger: {},
+      byResolution: {},
       unknownActorNames: [],
       missingRequiredFields: [],
     });

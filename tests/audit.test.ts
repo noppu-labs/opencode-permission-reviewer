@@ -592,6 +592,34 @@ describe("audit summary hardening", () => {
     expect(summary.firstTimestamp).toBe("2026-06-01T00:00:00.000Z");
     expect(summary.lastTimestamp).toBe("2026-06-03T00:00:00.000Z");
   }, 30_000);
+
+  test("counts hand-off triggers and resolutions and skips values that are not strings", async () => {
+    const file = join(directory, "audit.jsonl");
+    const jev = { model: "opencode/jev-1.13-free", reason: "r" };
+    await writeFile(
+      file,
+      toJsonl([
+        record({
+          reviewerEscalatedFrom: { ...jev, trigger: "jev-failure" },
+          resolution: "reasoning-unavailable",
+        }),
+        record({ reviewerEscalatedFrom: { ...jev, trigger: "jev-failure" } }),
+        record({ outcome: "escalate", resolution: "budget-exhausted" }),
+        {
+          ...record(),
+          reviewerEscalatedFrom: { ...jev, trigger: 7 },
+          resolution: ["reviewer"],
+        },
+        { ...record(), reviewerEscalatedFrom: "jev-escalate" },
+      ]),
+    );
+    const summary = readAuditSummary(file);
+    expect(summary.byHandoffTrigger).toEqual({ "jev-failure": 2 });
+    expect(summary.byResolution).toEqual({
+      "reasoning-unavailable": 1,
+      "budget-exhausted": 1,
+    });
+  });
 });
 
 describe("audit writer nested redaction", () => {
