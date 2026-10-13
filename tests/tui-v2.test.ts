@@ -119,8 +119,8 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     ui: {
       router: { current: () => ({ type: "session", sessionID }) },
       toast: { show: (value: unknown) => toasts.push(value) },
-      slot: (definition: { render(): unknown }) => {
-        render = definition.render;
+      slot: (definition: { append?: string; render(): unknown }) => {
+        if (definition.append === "app") render = definition.render;
         return () => {};
       },
     },

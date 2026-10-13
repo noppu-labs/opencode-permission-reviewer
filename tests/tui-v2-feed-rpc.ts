@@ -39,10 +39,26 @@ export function reviewerClient(state: Host): unknown {
     const respond = state.respond.shift() ?? ((): unknown => snapshot([]));
     return Promise.resolve(respond(directory));
   };
+  const statusCall = (
+    _input: unknown,
+    options: { location: { directory: string } },
+  ): Promise<unknown> => {
+    const { directory } = options.location;
+    state.statusCalls.push(directory);
+    return state.status === undefined
+      ? Promise.reject(new Error("status is not available"))
+      : Promise.resolve(state.status(directory));
+  };
   const subscribe = (
     _name: string,
     options: { signal: AbortSignal },
   ): AsyncGenerator<unknown, void, unknown> =>
     subscription(state.channels, options.signal);
-  return { rpc: () => ({ snapshot: snapshotCall, events: { subscribe } }) };
+  return {
+    rpc: () => ({
+      snapshot: snapshotCall,
+      status: statusCall,
+      events: { subscribe },
+    }),
+  };
 }

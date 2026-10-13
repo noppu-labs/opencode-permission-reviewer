@@ -1,6 +1,7 @@
 import type { Plugin } from "@opencode/plugin/tui";
 import { asObjectLike } from "../is-record.ts";
 import type { ReviewUiState } from "../ui-state.ts";
+import { ConfigNotices } from "./config-notices.ts";
 import { manualToast } from "./manual-toast.ts";
 import { type Connection, receive, release } from "./review-connection.ts";
 import { isSnapshot, ReviewStore } from "./review-store.ts";
@@ -13,6 +14,8 @@ type Context = Parameters<Plugin.Definition["setup"]>[0];
 interface ReviewFeed {
   readonly directory: string | undefined;
   readonly state: ReviewUiState;
+  /** The server's config warnings for the current directory. */
+  readonly notices: ConfigNotices;
   connect(): Promise<void>;
   /** Switches to another directory with an empty state, and reconnects. */
   retarget(directory: string | undefined): void;
@@ -30,6 +33,20 @@ export function createReviewFeed(
   const store = new ReviewStore((status) =>
     ctx.ui.toast.show(manualToast(status, "The host requires your decision.")),
   );
+  const notices = new ConfigNotices((toast) => ctx.ui.toast.show(toast));
+  // Read once per connection; a failed call leaves the notices as they are.
+  const refreshNotices = async (connection: Connection): Promise<void> => {
+    const { directory: target, controller: owner } = connection;
+    const applied = await notices.refresh(
+      () =>
+        rpc.status(
+          {},
+          { location: { directory: target }, signal: owner.signal },
+        ),
+      owner.signal,
+    );
+    if (applied) changed();
+  };
   let stopped = false;
   let controller: AbortController | undefined;
   let reconnect: ReturnType<typeof setTimeout> | undefined;
@@ -81,6 +98,7 @@ export function createReviewFeed(
     const current = connection.controller;
     const stream = listen(connection);
     void stream.catch(() => {});
+    void refreshNotices(connection);
     try {
       const snapshot = await rpc.snapshot(
         {},
@@ -107,10 +125,14 @@ export function createReviewFeed(
     get state(): ReviewUiState {
       return store.state;
     },
+    get notices(): ConfigNotices {
+      return notices;
+    },
     connect,
     retarget: (next: string | undefined): void => {
       directory = next;
       store.reset();
+      notices.update({});
       changed();
       void connect();
     },

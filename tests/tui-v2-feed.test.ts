@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  DIRECTORY,
   event,
   gate,
   host,
@@ -233,4 +234,67 @@ describe("V2 TUI reviewer feed", () => {
     );
     await running.sees("Reviewing this permission");
   }, 10_000);
+
+  const INERT =
+    'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+
+  test("reads config warnings from the status RPC and keeps a sidebar line", async () => {
+    const running = await start(
+      host({
+        status: () => ({ configWarnings: [INERT], configDegraded: [] }),
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    await running.until(
+      () => running.state.toasts.length === 1,
+      "config toast",
+    );
+    expect(running.state.statusCalls).toEqual([DIRECTORY]);
+    expect(running.state.toasts).toEqual([
+      {
+        variant: "warning",
+        title: "Permission reviewer config",
+        message: INERT,
+      },
+    ]);
+    expect(await running.sidebarFrame()).toContain(
+      "⚠ reviewer: reasoning-first inactive (no escalationReviewer)",
+    );
+  });
+
+  test("an older server without the status call keeps the feed working with no notice", async () => {
+    const running = await start(
+      host({ respond: [() => snapshot([status("reviewing")])] }),
+    );
+    await running.sees("Reviewing this permission");
+    expect(running.state.statusCalls).toEqual([DIRECTORY]);
+    expect(running.state.toasts).toEqual([]);
+    expect(await running.sidebarFrame()).not.toContain("reviewer:");
+  });
+
+  test("malformed config lists keep only their strings", async () => {
+    const running = await start(
+      host({
+        status: () => ({
+          configWarnings: "broken",
+          configDegraded: [1, "fs broken"],
+        }),
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    await running.until(
+      () => running.state.toasts.length === 1,
+      "config toast",
+    );
+    expect(running.state.toasts).toEqual([
+      {
+        variant: "error",
+        title: "Permission reviewer config degraded",
+        message: "Automatic approval is disabled: fs broken.",
+      },
+    ]);
+    expect(await running.sidebarFrame()).toContain(
+      "✕ reviewer: auto-approval disabled (fs broken)",
+    );
+  });
 });

@@ -174,4 +174,30 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
     expect(running.state.snapshots).toHaveLength(1);
     expect(running.state.mode.depth).toBe(0);
   });
+
+  test("re-reads config warnings for a new directory without repeating a toast", async () => {
+    const warning =
+      "systemOneDenialReview is inactive: the reviewer model is not Jev";
+    const state = host({
+      // Both directories report the same warning: the second must not toast again.
+      status: () => ({ configWarnings: [warning] }),
+      respond: [
+        () => snapshot([status("reviewing")]),
+        (directory: string) => snapshot([], { directory }),
+      ],
+    });
+    const running = await start(state);
+    await running.until(() => state.toasts.length === 1, "first toast");
+    moveTo(state, SECOND);
+    await running.until(
+      () => state.statusCalls.length === 2,
+      "second status call",
+    );
+    await running.settle();
+    expect(state.statusCalls).toEqual([DIRECTORY, SECOND]);
+    expect(state.toasts).toHaveLength(1);
+    expect(await running.sidebarFrame()).toContain(
+      "denial review inactive (model is not Jev)",
+    );
+  });
 });

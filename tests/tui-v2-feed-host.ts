@@ -7,7 +7,11 @@ import { reviewerClient } from "./tui-v2-feed-rpc.ts";
 
 type Context = Parameters<typeof setupTuiV2>[0];
 
-function context(state: Host, slot: { render: () => unknown }): Context {
+function context(
+  state: Host,
+  slot: { render: () => unknown },
+  sidebar: { render: () => unknown },
+): Context {
   const pushMode = (): (() => void) => {
     if (state.mode.throws) throw new Error("unknown mode");
     state.mode.depth++;
@@ -27,8 +31,13 @@ function context(state: Host, slot: { render: () => unknown }): Context {
         show: (value: Host["toasts"][number]): number =>
           state.toasts.push(value),
       },
-      slot: (definition: { render(): unknown }): (() => void) => {
-        slot.render = definition.render;
+      slot: (definition: {
+        append?: string;
+        render(): unknown;
+      }): (() => void) => {
+        if (definition.append === "sidebar.content")
+          sidebar.render = definition.render;
+        else slot.render = definition.render;
         return (): void => {};
       },
     },
@@ -47,6 +56,8 @@ export interface Running {
   /** Lets the feed settle past its 250 ms sweep, then fires every pending
    *  1 s timer as if its second had passed. */
   settle(): Promise<void>;
+  /** Renders what the plugin put in the sidebar. */
+  sidebarFrame(): Promise<string>;
   dispose(): void;
 }
 
@@ -59,9 +70,10 @@ export function stopAll(): void {
 
 export async function start(state: Host): Promise<Running> {
   const slot = { render: (): unknown => null };
+  const sidebar = { render: (): unknown => null };
   const timers = holdOneSecondTimers();
   cleanups.push(timers.restore);
-  const dispose = await setupTuiV2(context(state, slot));
+  const dispose = await setupTuiV2(context(state, slot, sidebar));
   let disposed = false;
   const stop = (): void => {
     if (disposed) return;
@@ -99,5 +111,23 @@ export async function start(state: Host): Promise<Running> {
     timers.fire();
     await view.flush();
   };
-  return { state, frame, until, sees, reconnect, settle, dispose: stop };
+  const sidebarFrame = async (): Promise<string> => {
+    const sidebarView = await testRender(() => sidebar.render() as Element, {
+      width: 80,
+      height: 2,
+    });
+    cleanups.push(() => sidebarView.renderer.destroy());
+    await sidebarView.flush();
+    return sidebarView.captureCharFrame();
+  };
+  return {
+    state,
+    frame,
+    until,
+    sees,
+    reconnect,
+    settle,
+    sidebarFrame,
+    dispose: stop,
+  };
 }
