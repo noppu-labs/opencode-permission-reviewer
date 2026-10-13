@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
+import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { JSX } from "@opentui/solid";
@@ -32,10 +32,10 @@ export function missingRefMessage(ref: string): string | undefined {
     : `${ref} is not in this checkout, and long-command-before renders it: ${FETCH_TAGS}`;
 }
 
-/** Removes an extracted tree. The node_modules link goes first, so removal
- *  never walks into the repo's own node_modules. */
+/** Removes the node_modules link first, so removal never walks into the
+ *  repo's own node_modules. */
 export function removeSource(dir: string): void {
-  unlinkSync(join(dir, "node_modules"));
+  rmSync(join(dir, "node_modules"), { force: true });
   rmSync(dir, { recursive: true, force: true });
 }
 
@@ -51,15 +51,18 @@ export function extractSource(ref: string): string {
       `git archive ${ref} failed (${FETCH_TAGS}): ${archive.stderr.toString().trim()}`,
     );
   const dir = mkdtempSync(join(tmpdir(), "capture-tui-"));
-  symlinkSync(join(ROOT, "node_modules"), join(dir, "node_modules"), "dir");
-  const tar = Bun.spawnSync(["tar", "-x", "-C", dir], {
-    stdin: archive.stdout,
-  });
-  if (tar.exitCode !== 0) {
+  try {
+    symlinkSync(join(ROOT, "node_modules"), join(dir, "node_modules"), "dir");
+    const tar = Bun.spawnSync(["tar", "-x", "-C", dir], {
+      stdin: archive.stdout,
+    });
+    if (tar.exitCode !== 0)
+      throw new Error(
+        `extracting ${ref} failed: ${tar.stderr.toString().trim()}`,
+      );
+  } catch (error) {
     removeSource(dir);
-    throw new Error(
-      `extracting ${ref} failed: ${tar.stderr.toString().trim()}`,
-    );
+    throw error;
   }
   return dir;
 }
