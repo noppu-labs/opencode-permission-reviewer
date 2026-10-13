@@ -14,7 +14,7 @@ export const LONG_COMMAND = [
   "cat > notes <<'EOF'",
   ...Array.from(
     { length: HEREDOC_LINES },
-    (_, index) => `- module ${index + 1}: release notes for this change`,
+    (_, index) => `- module ${index + 1}: add one more line to the notes file`,
   ),
   "EOF",
   `npm run build && ${PIPE}`,
