@@ -94,7 +94,7 @@ interface FittableStatus extends StatusExtras {
   decision?: { rationale: string; script_analysis?: string };
 }
 
-const FITTABLE_FIELDS = ["reason", "rationale", "script_analysis"] as const;
+const FITTABLE_FIELDS = ["rationale", "script_analysis", "reason"] as const;
 type FittableField = (typeof FITTABLE_FIELDS)[number];
 
 const ELLIPSIS = "…";
@@ -152,7 +152,7 @@ function withShorter<T extends FittableStatus>(
 }
 
 /** Fits the encoded status to the cap: drops config list entries first, then
- *  shortens the reason, then the decision rationale, then its script analysis.
+ *  shortens the decision rationale, then its script analysis, then the reason.
  *  A status already under the cap comes back as the same object. */
 export function fitStatus<T extends FittableStatus>(status: T): T {
   let fitted = fitConfigLists(status);

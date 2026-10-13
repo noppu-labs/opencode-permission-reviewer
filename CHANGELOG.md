@@ -71,10 +71,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - V2: a block from a fail-closed escalation now shows "Review blocked
   (fail-closed)" instead of "Review blocked", as V1 already did.
-- TUI: a status whose reason or decision rationale is too long for the status message is no longer
-  dropped. Config warning entries still go first; then the reason, and if needed the rationale and
-  then the script analysis, is shortened, keeping its start and ending in `…`, so the status shows
-  on both hosts.
+- TUI: a status whose reason, decision rationale or script analysis is too long for the status
+  message is no longer dropped. Config warning and degraded-config entries still go first; then the
+  rationale, the script analysis and, last, the reason are shortened as needed, each keeping its
+  start and ending in `…`, so the status shows on both hosts.
 
 ## [3.0.0] - 2026-10-12
 

@@ -55,9 +55,8 @@ describe("whole-status size fit", () => {
     expect(status.reason?.slice(0, -1)).toBe(
       ESCAPED.repeat((status.reason?.length ?? 0) - 1),
     );
-    expect(status.decision?.rationale).toBe(
-      "The action has unsafe unrequested effects.",
-    );
+    expect(status.reason?.length).toBeGreaterThan(1_000);
+    expect(status.decision?.rationale).toBe("…");
     expectFits(status);
   });
 
@@ -69,29 +68,43 @@ describe("whole-status size fit", () => {
     expect(jsonBytes(status)).toBe(MAX_STATUS_BYTES);
   });
 
-  test("a 2000-character CJK reason and rationale shorten the reason first", () => {
+  test("a 2000-character CJK reason and rationale shorten the rationale first", () => {
     const status = createUiStatus(request(), "denied", {
       ...options,
       reason: CJK.repeat(2_000),
       decision: decision("deny", { rationale: CJK.repeat(2_000) }),
     });
-    expect(status.reason).toEndWith("…");
-    expect(status.reason?.slice(0, -1)).toBe(
-      CJK.repeat((status.reason?.length ?? 0) - 1),
-    );
-    expect(status.decision?.rationale).toBe(CJK.repeat(2_000));
+    const rationale = status.decision?.rationale ?? "";
+    expect(rationale).toEndWith("…");
+    expect(rationale.slice(0, -1)).toBe(CJK.repeat(rationale.length - 1));
+    expect(status.reason).toBe(CJK.repeat(2_000));
     expectFits(status);
   });
 
-  test("shortens the rationale once the reason is used up", () => {
+  test("a 2000-character escaped rationale is shortened before a shorter reason", () => {
+    const reason = CJK.repeat(300);
     const status = createUiStatus(request(), "denied", {
       ...options,
-      reason: "r".repeat(100),
+      reason,
       decision: decision("deny", { rationale: ESCAPED.repeat(2_000) }),
     });
-    expect(status.reason).toBe("…");
-    expect(status.decision?.rationale).toEndWith("…");
-    expect(status.decision?.rationale.length).toBeGreaterThan(1_000);
+    const rationale = status.decision?.rationale ?? "";
+    expect(status.reason).toBe(reason);
+    expect(rationale).toEndWith("…");
+    expect(rationale.slice(0, -1)).toBe(ESCAPED.repeat(rationale.length - 1));
+    expect(rationale.length).toBeGreaterThan(1_000);
+    expectFits(status);
+  });
+
+  test("shortens the reason once the rationale is used up", () => {
+    const status = createUiStatus(request(), "denied", {
+      ...options,
+      reason: ESCAPED.repeat(2_000),
+      decision: decision("deny", { rationale: ESCAPED.repeat(2_000) }),
+    });
+    expect(status.decision?.rationale).toBe("…");
+    expect(status.reason).toEndWith("…");
+    expect(status.reason?.length).toBeGreaterThan(1_000);
     expectFits(status);
   });
 
@@ -102,10 +115,10 @@ describe("whole-status size fit", () => {
       reason: astral,
       decision: decision("deny", { rationale: astral }),
     });
-    expect(status.reason).toBe("…");
-    expect(status.decision?.rationale).toEndWith("😀…");
-    const rationale = status.decision?.rationale ?? "";
-    expect(Buffer.from(rationale, "utf8").toString("utf8")).toBe(rationale);
+    expect(status.decision?.rationale).toBe("…");
+    expect(status.reason).toEndWith("😀…");
+    const reason = status.reason ?? "";
+    expect(Buffer.from(reason, "utf8").toString("utf8")).toBe(reason);
     expectFits(status);
   });
 
@@ -117,7 +130,7 @@ describe("whole-status size fit", () => {
     expect(fitStatus(base).reason).toBe("ok");
   });
 
-  test("a maximal script analysis of escaped characters is shortened last", () => {
+  test("a maximal script analysis of escaped characters is shortened before the reason", () => {
     const status = createUiStatus(
       request({ metadata: { command: ESCAPED.repeat(500) } }),
       "denied",
@@ -134,16 +147,16 @@ describe("whole-status size fit", () => {
         }),
       },
     );
-    const analysis = status.decision?.script_analysis ?? "";
-    expect(status.reason).toBe("…");
+    const reason = status.reason ?? "";
     expect(status.decision?.rationale).toBe("…");
-    expect(analysis).toEndWith("…");
-    expect(analysis.length).toBeGreaterThan(1);
-    expect(analysis.slice(0, -1)).toBe(ESCAPED.repeat(analysis.length - 1));
+    expect(status.decision?.script_analysis).toBe("…");
+    expect(reason).toEndWith("…");
+    expect(reason.length).toBeGreaterThan(1);
+    expect(reason.slice(0, -1)).toBe(ESCAPED.repeat(reason.length - 1));
     expectFits(status);
   });
 
-  test("full config lists, segments and long text: lists go first, segments whole, then the reason", () => {
+  test("full config lists, segments and long text: lists go first, segments whole, then the rationale", () => {
     const list = (tag: string): string[] =>
       Array.from({ length: 5 }, (_, i) => `${tag}${i}${CJK.repeat(190)}`);
     const status = createServerUiStatus(
@@ -160,8 +173,8 @@ describe("whole-status size fit", () => {
     expect(status.configWarnings).toBeUndefined();
     expect(status.configDegraded).toBeUndefined();
     expect("actionSegments" in status).toBe(false);
-    expect(status.reason).toEndWith("…");
-    expect(status.decision?.rationale).toBe(CJK.repeat(2_000));
+    expect(status.decision?.rationale).toEndWith("…");
+    expect(status.reason).toBe(CJK.repeat(2_000));
     expectFits(status);
   });
 });

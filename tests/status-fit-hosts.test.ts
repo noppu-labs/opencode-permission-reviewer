@@ -10,7 +10,7 @@ import { decision, MockClient, request, runtime } from "./helpers.ts";
 import { until } from "./poll-until.ts";
 import { fixture } from "./v2-server-fixture.ts";
 
-/** 2000 characters JSON escapes to six bytes each. */
+/** 2000 characters that JSON escapes to six bytes each. */
 const ESCAPED_TEXT = "\u0001".repeat(2_000);
 
 function expectEveryStatusDecodes(
@@ -29,8 +29,8 @@ test("v1 publishes a decodable status for a rationale of 2000 escaped characters
   await harness.runtime.process(request());
   const final = client.uiStatuses.at(-1);
   expect(final?.phase).toBe("denied");
-  expect(final?.reason).toBe("…");
-  expect(final?.decision?.rationale).toEndWith("…");
+  expect(final?.decision?.rationale).toBe("…");
+  expect(final?.reason).toEndWith("…");
   expectEveryStatusDecodes(client.uiStatuses);
 });
 
@@ -55,8 +55,8 @@ test("v2 publishes a decodable status for a reason and rationale of 2000 escaped
       () => statuses.some((status) => status?.phase === "denied"),
       "the final UI status",
     );
-    expect(statuses.at(-1)?.reason).toBe("…");
-    expect(statuses.at(-1)?.decision?.rationale).toEndWith("…");
+    expect(statuses.at(-1)?.decision?.rationale).toBe("…");
+    expect(statuses.at(-1)?.reason).toEndWith("…");
     expectEveryStatusDecodes(statuses);
   } finally {
     await harness.cleanup();
