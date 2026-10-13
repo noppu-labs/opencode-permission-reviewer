@@ -282,4 +282,49 @@ describe("TUI state machine", () => {
       "reviewing",
     );
   });
+
+  test("a hand-off keeps the review's start time and its watchdog", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_100 });
+    expect(
+      state.apply({
+        ...asked,
+        model: "openai/gpt-6-luna",
+        emittedAt: 9_000,
+        handoff: HANDOFF,
+      }),
+    ).toBe(true);
+    expect(state.get("per_1")).toMatchObject({
+      emittedAt: 1_000,
+      model: "openai/gpt-6-luna",
+      handoff: HANDOFF,
+    });
+    expect(
+      state.expire(1_000 + options.timeoutMs + UI_WATCHDOG_GRACE_MS)[0]?.phase,
+    ).toBe("unknown");
+  });
+
+  test("a late plain reviewing status never replaces the hand-off", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_200, handoff: HANDOFF });
+    expect(state.apply({ ...asked, emittedAt: 1_100 })).toBe(false);
+    expect(state.get("per_1")?.handoff).toEqual(HANDOFF);
+    expect(state.get("per_1")?.emittedAt).toBe(1_000);
+  });
+
+  test("a result after a hand-off replaces it with its own time", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_200, handoff: HANDOFF });
+    const approved = {
+      ...asked,
+      phase: "approved" as const,
+      emittedAt: 9_500,
+      handoff: HANDOFF,
+    };
+    expect(state.apply(approved)).toBe(true);
+    expect(state.get("per_1")).toEqual(approved);
+  });
 });

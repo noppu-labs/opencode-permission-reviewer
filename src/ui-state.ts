@@ -17,6 +17,20 @@ const RESULT_DISPLAY_MS = {
   denied: 5_000,
 } as const;
 
+/** What a newer status for a known request leaves stored: a "reviewing"
+ *  status after another keeps the first start time, so elapsed time stays the
+ *  total across a hand-off, and a plain one never replaces a hand-off;
+ *  undefined when the newer status is stale. */
+function successor(
+  current: ReviewUiStatus,
+  status: ReviewUiStatus,
+): ReviewUiStatus | undefined {
+  if (current.phase !== "reviewing" || status.phase !== "reviewing")
+    return status;
+  if (current.handoff !== undefined && status.handoff === undefined) return;
+  return { ...status, emittedAt: current.emittedAt };
+}
+
 export class ReviewUiState {
   private readonly requests = new Map<string, ReviewUiStatus>();
   private readonly acknowledged = new Set<string>();
@@ -47,7 +61,9 @@ export class ReviewUiState {
       return true;
     }
     if (current && status.emittedAt < current.emittedAt) return false;
-    this.requests.set(status.requestID, status);
+    const next = current ? successor(current, status) : status;
+    if (!next) return false;
+    this.requests.set(status.requestID, next);
     this.acknowledged.add(status.requestID);
     return true;
   }
