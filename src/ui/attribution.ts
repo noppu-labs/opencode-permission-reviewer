@@ -35,8 +35,7 @@ export function shortModelName(model: string): string {
   return segments.at(-1) ?? "";
 }
 
-/** A model as the TUI names it: the last path segment, or the whole id when
- *  that segment is empty. */
+/** The last non-blank path segment, or the whole id when there is none ("///"). */
 export function modelLabel(model: string): string {
   return shortModelName(model) || model;
 }

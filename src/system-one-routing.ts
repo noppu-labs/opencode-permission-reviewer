@@ -52,8 +52,8 @@ export function systemOneRoutingWarnings(config: ReviewerConfig): string[] {
   return warnings;
 }
 
-/** An explicit budget too short for a hand-off after Jev's own call. Standard
- *  routing hands off too, so this does not depend on either routing key. */
+/** Standard routing hands off too, so neither routing key gates this. The
+ *  default budget always leaves the floor, so only an explicit one can warn. */
 function budgetFloorWarnings(config: ReviewerConfig): string[] {
   const budget = config.reviewBudgetMs;
   if (budget === undefined || inertCause(config) !== undefined) return [];

@@ -90,8 +90,8 @@ export class ConfigNotices {
     return this.reviewer;
   }
 
-  /** Forgets the lists and the model, for another directory's server.
-   *  Entries already toasted stay shown. */
+  /** For another directory's server. Keeps `shown`, so an entry already
+   *  toasted is not toasted again. */
   reset(): void {
     this.reviewer = undefined;
     this.update({});
