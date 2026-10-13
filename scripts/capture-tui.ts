@@ -3,9 +3,18 @@
  * --all, regenerates every docs/images/<screen>.svg through Charm's freeze.
  * See docs/DEVELOPMENT.md, "TUI screens".
  */
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { ensureSolidTransformPlugin } from "@opentui/solid/bun-plugin";
+import type { ScreenName } from "./capture/screens.ts";
 import { SCREEN_TITLES, withTitle } from "./capture/titles.ts";
 
 // The Solid transform must be registered before any TUI module loads (see
@@ -63,33 +72,48 @@ function regenerate(): number {
     console.error(missing);
     return 1;
   }
-  mkdirSync(join(ROOT, "docs", "images"), { recursive: true });
-  for (const screen of SCREEN_NAMES) {
-    const freeze = Bun.spawnSync(
-      [
-        "freeze",
-        "--execute",
-        `bun scripts/capture-tui.ts ${screen}`,
-        "--output",
-        join("docs", "images", `${screen}.svg`),
-        ...FREEZE_FLAGS,
-      ],
-      { cwd: ROOT, stdout: "inherit", stderr: "inherit" },
-    );
-    if (freeze.exitCode !== 0) {
-      console.error(
-        `freeze failed for ${screen}; run \`bun scripts/capture-tui.ts ${screen}\` to see the error`,
+  // Render into a staging directory so a failure leaves docs/images untouched.
+  const staging = mkdtempSync(join(tmpdir(), "capture-svg-"));
+  try {
+    if (!SCREEN_NAMES.every((screen) => renderSvg(screen, staging))) return 1;
+    const images = join(ROOT, "docs", "images");
+    mkdirSync(images, { recursive: true });
+    for (const screen of SCREEN_NAMES)
+      copyFileSync(
+        join(staging, `${screen}.svg`),
+        join(images, `${screen}.svg`),
       );
-      return 1;
-    }
-    // freeze writes no <title>; the committed SVGs need one (Biome a11y rule, screen readers).
-    const svg = join(ROOT, "docs", "images", `${screen}.svg`);
-    writeFileSync(
-      svg,
-      withTitle(readFileSync(svg, "utf8"), SCREEN_TITLES[screen]),
-    );
+    return 0;
+  } finally {
+    rmSync(staging, { recursive: true, force: true });
   }
-  return 0;
+}
+
+function renderSvg(screen: ScreenName, dir: string): boolean {
+  const svg = join(dir, `${screen}.svg`);
+  const freeze = Bun.spawnSync(
+    [
+      "freeze",
+      "--execute",
+      `bun scripts/capture-tui.ts ${screen}`,
+      "--output",
+      svg,
+      ...FREEZE_FLAGS,
+    ],
+    { cwd: ROOT, stdout: "inherit", stderr: "inherit" },
+  );
+  if (freeze.exitCode !== 0) {
+    console.error(
+      `freeze failed for ${screen}; run \`bun scripts/capture-tui.ts ${screen}\` to see the error`,
+    );
+    return false;
+  }
+  // freeze writes no <title>; see SCREEN_TITLES.
+  writeFileSync(
+    svg,
+    withTitle(readFileSync(svg, "utf8"), SCREEN_TITLES[screen]),
+  );
+  return true;
 }
 
 async function capture(screen: string | undefined): Promise<number> {
