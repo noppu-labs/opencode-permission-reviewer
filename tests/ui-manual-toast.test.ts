@@ -111,6 +111,23 @@ describe("manual-review toast", () => {
     );
   });
 
+  test("no review time left after a hand-off states the lead once", () => {
+    const handoff = { from: JEV, to: LUNA, trigger: "jev-escalate" } as const;
+    expect(
+      manualToast(
+        manual({
+          model: JEV,
+          resolution: "budget-exhausted",
+          handoff,
+          reason: BUDGET_REASON,
+        }),
+        FALLBACK,
+      ).message,
+    ).toBe(
+      "No review time left for gpt-6-luna after Jev (Jev escalated). 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.",
+    );
+  });
+
   test("no review time left without the engine's reason shape", () => {
     expect(
       manualToast(

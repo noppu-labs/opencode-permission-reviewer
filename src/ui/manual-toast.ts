@@ -43,21 +43,21 @@ function unavailable(status: ReviewUiStatus): ManualToast {
   };
 }
 
-/** Wording for a review that ran out of time. The engine's own reason repeats
- *  the lead, so it is reshaped rather than appended to. */
+/** The engine's reason repeats the lead, so it is reshaped rather than
+ *  appended to. */
 function noTimeLeft(
   status: ReviewUiStatus,
   reviewer: string | undefined,
 ): string {
   const { handoff, reason } = status;
+  const parts = reason === undefined ? null : BUDGET_REASON.exec(reason);
   if (handoff !== undefined)
     return withReason(
       `${NO_TIME_LEAD} ${shortModelName(handoff.to)} after Jev (${handoffCause(handoff)}).`,
-      reason,
+      parts === null ? reason : parts[2],
     );
   if (reason === undefined)
     return `${NO_TIME_LEAD} ${GENERIC_REVIEWER} after Jev.`;
-  const parts = BUDGET_REASON.exec(reason);
   if (parts === null) return reason;
   const name =
     reviewer === undefined ? GENERIC_REVIEWER : shortModelName(reviewer);
