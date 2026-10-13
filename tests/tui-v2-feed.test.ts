@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { FIND_ACTION, FIND_SEGMENTS } from "./action-fixtures.ts";
 import {
   DIRECTORY,
   event,
@@ -316,5 +317,18 @@ describe("V2 TUI reviewer feed", () => {
     await sidebar.sees("reasoning-first inactive");
     moveTo(running.state, SECOND);
     await sidebar.sees("reviewer:", false);
+  });
+
+  test("renders a segmented action fitted to the terminal width", async () => {
+    const long = {
+      ...status("reviewing"),
+      action: FIND_ACTION,
+      actionSegments: FIND_SEGMENTS,
+    };
+    const running = await start(host({ respond: [() => snapshot([long])] }));
+    await running.sees("⋯ 5 more ⋯ sh");
+    expect(running.frame()).toContain(
+      "bash · $ find . -name '*.ts' -not -path './node_modules/*' | ⋯ 5 more ⋯ sh",
+    );
   });
 });

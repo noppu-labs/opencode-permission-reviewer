@@ -37,6 +37,10 @@ function fullStatus(): Record<string, unknown> {
         "systemOneDenialReview is inactive: the reviewer model is not Jev",
       ],
       configDegraded: ["global config file is malformed and was ignored"],
+      actionSegments: [
+        { text: "$ printf a", separator: "|" },
+        { text: "cat <<EOF > out.txt", heredocLines: 2 },
+      ],
     }),
   };
 }
@@ -132,6 +136,34 @@ const REJECTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
   ["configWarnings holding a number", { configWarnings: ["inactive", 1] }],
   ["configDegraded as null", { configDegraded: null }],
   ["configDegraded as an object", { configDegraded: { first: "x" } }],
+  ["actionSegments as null", { actionSegments: null }],
+  ["actionSegments as an object", { actionSegments: { text: "a" } }],
+  ["an actionSegments entry as a string", { actionSegments: ["a"] }],
+  [
+    "an actionSegments entry without text",
+    { actionSegments: [{ separator: "|" }] },
+  ],
+  ["an actionSegments text as a number", { actionSegments: [{ text: 1 }] }],
+  [
+    "an unlisted actionSegments separator",
+    { actionSegments: [{ text: "a", separator: "(" }] },
+  ],
+  [
+    "a fractional heredocLines",
+    { actionSegments: [{ text: "a", heredocLines: 1.5 }] },
+  ],
+  [
+    "a negative heredocLines",
+    { actionSegments: [{ text: "a", heredocLines: -1 }] },
+  ],
+  [
+    "heredocLines as a string",
+    { actionSegments: [{ text: "a", heredocLines: "2" }] },
+  ],
+  [
+    "an infinite heredocLines",
+    { actionSegments: [{ text: "a", heredocLines: OVERFLOW }] },
+  ],
 ];
 
 const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
@@ -149,6 +181,7 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
       decidedBy: undefined,
       configWarnings: undefined,
       configDegraded: undefined,
+      actionSegments: undefined,
     },
   ],
   ["the unknown phase", { phase: "unknown" }],
@@ -235,6 +268,17 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
           user_authorization: risk_level,
         }),
       },
+    ],
+  ),
+  ["an empty actionSegments list", { actionSegments: [] }],
+  [
+    "zero heredoc lines",
+    { actionSegments: [{ text: "cat <<EOF", heredocLines: 0 }] },
+  ],
+  ...(["|", "||", "&&", ";", "&"] as const).map(
+    (separator): [string, Record<string, unknown>] => [
+      `the ${separator} separator`,
+      { actionSegments: [{ text: "a", separator }, { text: "b" }] },
     ],
   ),
 ];

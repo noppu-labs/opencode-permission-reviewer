@@ -9,7 +9,7 @@ import type { NormalizedReviewRequest } from "../../core/contracts.ts";
 import type { ReviewEnginePorts } from "../../core/review-engine.ts";
 import type { HandoffInfo } from "../../system-one/backend.ts";
 import type { PermissionRequest, ReviewEnvelope } from "../../types.ts";
-import { createUiStatus } from "../../ui-protocol.ts";
+import { createServerUiStatus } from "../../ui-action-segments.ts";
 import { createV2ContextReader } from "./context-reader.ts";
 import { reviewerVariant } from "./server-review-outcome.ts";
 import type { ReviewRun } from "./server-state.ts";
@@ -49,7 +49,7 @@ function publishHandoff(
   handoff: HandoffInfo,
 ): void {
   const started = server.statuses.get(request.id)?.emittedAt;
-  const status = createUiStatus(request, "reviewing", {
+  const status = createServerUiStatus(request, "reviewing", {
     model: handoff.to,
     variant: reviewerVariant(server, handoff.to),
     timeoutMs: run.budget,

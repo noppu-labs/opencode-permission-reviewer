@@ -5,7 +5,7 @@ import type {
   ManualResolution,
   ReviewDecision,
 } from "./types.ts";
-import type { ReviewUiStatus } from "./ui-protocol.ts";
+import type { ActionSegment, ReviewUiStatus } from "./ui-protocol.ts";
 
 // Structural checks for a decoded UI status payload. A payload passes only
 // when every field holds a value the protocol defines; it is then returned
@@ -77,6 +77,22 @@ const HANDOFF_CHECKS: Record<keyof HandoffInfo, Check> = {
 const isHandoff: Check = (value: unknown): boolean =>
   isRecord(value) && fieldsPass(value, HANDOFF_CHECKS);
 
+const SEGMENT_CHECKS: Record<keyof ActionSegment, Check> = {
+  text: isString,
+  separator: optional(oneOf(["|", "||", "&&", ";", "&"])),
+  heredocLines: optional(
+    (value: unknown): boolean =>
+      isFiniteNumber(value) && Number.isInteger(value) && value >= 0,
+  ),
+};
+
+const isActionSegments: Check = (value: unknown): boolean =>
+  Array.isArray(value) &&
+  value.every(
+    (segment: unknown): boolean =>
+      isRecord(segment) && fieldsPass(segment, SEGMENT_CHECKS),
+  );
+
 const STATUS_CHECKS: Record<keyof ReviewUiStatus, Check> = {
   version: (value: unknown): boolean => value === 1,
   requestID: isString,
@@ -107,6 +123,7 @@ const STATUS_CHECKS: Record<keyof ReviewUiStatus, Check> = {
   decidedBy: optional(isString),
   configWarnings: optional(isStringList),
   configDegraded: optional(isStringList),
+  actionSegments: optional(isActionSegments),
 };
 
 export function parseUiStatus(value: unknown): ReviewUiStatus | undefined {

@@ -7,7 +7,7 @@ import { evaluateReview } from "../../core/review-engine.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import { formatFailureReason } from "../../failure-reason.ts";
 import type { ReviewExecutionResult } from "../../types.ts";
-import { createUiStatus } from "../../ui-protocol.ts";
+import { createServerUiStatus } from "../../ui-action-segments.ts";
 import { normalizeV2Permission } from "./permission-codec.ts";
 import { exactToolInput, snapshotAction } from "./server-events.ts";
 import { finishReview } from "./server-review-outcome.ts";
@@ -64,7 +64,7 @@ export async function runReview(
     const permission = beginReview(server, run);
     await publishStatus(
       server,
-      createUiStatus(permission.request, "reviewing", {
+      createServerUiStatus(permission.request, "reviewing", {
         model: server.config.model,
         variant: server.systemOneReviewer
           ? "system-one"

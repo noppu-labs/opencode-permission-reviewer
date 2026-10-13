@@ -1,9 +1,12 @@
 /** @jsxImportSource @opentui/solid */
 
 import type { MouseEvent } from "@opentui/core";
+import { useTerminalDimensions } from "@opentui/solid";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { type ActionFitPart, fitAction } from "./action-fit.ts";
+import { ActionSpans, overlayActionColumns } from "./action-spans.tsx";
 import { handoffPhrase, shortModelName } from "./attribution.ts";
 import { type ReviewTheme, SPINNER } from "./components.tsx";
 
@@ -22,6 +25,16 @@ export function ReviewOverlay(props: {
     const elapsedMs = Math.max(0, Date.now() - props.status.emittedAt);
     return `${(elapsedMs / 1_000).toFixed(1)}s`;
   };
+  const terminal = useTerminalDimensions();
+  const action = (): ActionFitPart[] =>
+    fitAction(
+      props.status,
+      overlayActionColumns(
+        terminal().width,
+        props.status.permission,
+        props.status.actorName,
+      ),
+    );
 
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: <box> is an OpenTUI terminal renderable, not a DOM element, so the ARIA role rule does not apply
@@ -63,12 +76,20 @@ export function ReviewOverlay(props: {
           <text fg={theme().textMuted}>{elapsed()}</text>
         </box>
         <box flexDirection="row" gap={1} paddingLeft={2}>
-          <text fg={theme().textMuted}>{props.status.permission}</text>
-          <text fg={theme().text} wrapMode="word">
-            {props.status.action}
+          <text fg={theme().textMuted} flexShrink={0}>
+            {props.status.permission}
+          </text>
+          <text fg={theme().text} wrapMode="char" flexShrink={1} minWidth={0}>
+            <ActionSpans
+              parts={action()}
+              color={theme().text}
+              muted={theme().textMuted}
+            />
           </text>
           <Show when={props.status.actorName}>
-            <text fg={theme().textMuted}>· actor {props.status.actorName}</text>
+            <text fg={theme().textMuted} flexShrink={0}>
+              · actor {props.status.actorName}
+            </text>
           </Show>
         </box>
         <box paddingLeft={2} flexDirection="row" gap={1}>
