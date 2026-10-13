@@ -117,14 +117,15 @@ export async function publishReviewStatus(
 
 /** Publishes the second "reviewing" status, for the reasoning reviewer Jev
  *  handed off to. The hook is synchronous, so the publish is not awaited; it
- *  is best-effort like every status. */
+ *  is best-effort like every status, and a status that cannot be built is
+ *  dropped. */
 export function publishHandoffStatus(
   scope: StatusScope,
   request: PermissionRequest,
   handoff: HandoffInfo,
 ): void {
-  void publishReviewStatus(scope, request, "reviewing", {
+  publishReviewStatus(scope, request, "reviewing", {
     reviewerModel: handoff.to,
     handoff,
-  });
+  }).catch(() => {});
 }
