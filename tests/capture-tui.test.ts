@@ -109,6 +109,21 @@ describe("capture: ANSI conversion", () => {
     expect(frameToAnsi(frame)).toEqual([]);
   });
 
+  test("keeps an unpainted row between painted ones", () => {
+    const frame: CapturedFrame = {
+      cols: 2,
+      rows: 4,
+      cursor: [0, 0],
+      lines: [
+        { spans: [span("ok", green, clear)] },
+        { spans: [span("  ", white, clear)] },
+        { spans: [span("hi", green, clear)] },
+        { spans: [span("  ", white, clear)] },
+      ],
+    };
+    expect(frameToAnsi(frame).map(plain)).toEqual(["ok", "  ", "hi"]);
+  });
+
   test("colors plain text rows from hex", () => {
     expect(
       textRow([

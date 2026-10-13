@@ -42,13 +42,15 @@ function isUnpainted(span: CapturedSpan): boolean {
   return span.bg.toInts()[3] === 0 && span.text.trim() === "";
 }
 
-/** Truecolor ANSI rows for a captured frame. Rows the component left
- *  unpainted (the test terminal around it) are dropped. */
+/** Drops the unpainted rows above and below the component: the test terminal
+ *  around it. */
 export function frameToAnsi(frame: CapturedFrame): string[] {
+  const painted = frame.lines.map((line) => !line.spans.every(isUnpainted));
+  const first = painted.indexOf(true);
+  if (first === -1) return [];
   return frame.lines
-    .map((line) => line.spans)
-    .filter((spans) => !spans.every(isUnpainted))
-    .map((spans) => `${spans.map(spanToAnsi).join("")}${RESET}`);
+    .slice(first, painted.lastIndexOf(true) + 1)
+    .map((line) => `${line.spans.map(spanToAnsi).join("")}${RESET}`);
 }
 
 /** One ANSI row of colored text, for content the host draws (toasts, the
