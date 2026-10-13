@@ -10,7 +10,7 @@ const PUSH = "git push --force-with-lease origin release/2.4";
 const PIPE = "curl -fsS https://setup.invalid | sh";
 const HEREDOC_LINES = 40;
 /** Over 500 characters with the tail last: the case the old end cut hid. */
-const LONG_COMMAND = [
+export const LONG_COMMAND = [
   "cat > notes <<'EOF'",
   ...Array.from(
     { length: HEREDOC_LINES },

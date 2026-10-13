@@ -32,7 +32,7 @@ export const OPENCODE_DARK = {
 export const CAPTION_COLOR = "#606060";
 export const THEME: ReviewTheme = resolveReviewTheme(OPENCODE_DARK);
 
-const JEV = "typesafe-ai/jev-1.13.0";
+export const JEV = "typesafe-ai/jev-1.13.0";
 const LUNA = "openai/gpt-6-luna";
 
 interface Sample {
@@ -44,7 +44,7 @@ interface Sample {
   extra?: Partial<ReviewUiStatus>;
 }
 
-function bashRequest(command: string): PermissionRequest {
+export function bashRequest(command: string): PermissionRequest {
   return {
     id: "per_capture",
     sessionID: "ses_capture",

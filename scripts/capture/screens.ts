@@ -2,6 +2,7 @@ import { ReviewProgress, type ReviewTheme } from "../../src/ui/components.tsx";
 import { ReviewOverlay } from "../../src/ui/review-overlay.tsx";
 import { ReviewResult } from "../../src/ui/review-result.tsx";
 import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
+import { renderBefore } from "./before.ts";
 import { THEME, WIDE_COLUMNS } from "./fixtures.ts";
 import { configWarningBlocks, manualToastBlocks } from "./host-content.ts";
 import { type Block, renderSections } from "./render.ts";
@@ -80,6 +81,7 @@ export type ScreenName =
   | "result-attribution"
   | "v1-overlay-handoff"
   | "result-triggers"
+  | "long-command-before"
   | "long-command-after"
   | "manual-toasts"
   | "config-warnings";
@@ -94,6 +96,7 @@ const SCREENS: Record<ScreenName, () => Promise<string[]>> = {
     renderSections(
       resultSamples().map((sample) => result(sample.status, sample.caption)),
     ),
+  "long-command-before": renderBefore,
   "long-command-after": longCommandAfter,
   "manual-toasts": (): Promise<string[]> => renderSections(manualToastBlocks()),
   "config-warnings": (): Promise<string[]> =>

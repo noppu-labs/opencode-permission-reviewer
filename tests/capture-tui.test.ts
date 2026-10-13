@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { CapturedFrame, CapturedSpan } from "@opentui/core";
 import type { ScreenName } from "../scripts/capture/screens.ts";
@@ -14,8 +15,18 @@ const { frameToAnsi, textRow }: typeof import("../scripts/capture/ansi.ts") =
   await import("../scripts/capture/ansi.ts");
 const { handoffStatus }: typeof import("../scripts/capture/fixtures.ts") =
   await import("../scripts/capture/fixtures.ts");
-const { renderScreen }: typeof import("../scripts/capture/screens.ts") =
-  await import("../scripts/capture/screens.ts");
+const {
+  renderScreen,
+  SCREEN_NAMES,
+}: typeof import("../scripts/capture/screens.ts") = await import(
+  "../scripts/capture/screens.ts"
+);
+const {
+  extractSource,
+  removeSource,
+}: typeof import("../scripts/capture/before.ts") = await import(
+  "../scripts/capture/before.ts"
+);
 
 const ROOT = join(import.meta.dir, "..");
 
@@ -201,4 +212,40 @@ describe("capture: CLI", () => {
       "usage: bun scripts/capture-tui.ts <handoff-progress",
     );
   }, 60_000);
+});
+
+// long-command-before renders the v3.0.0 tag, which CI's shallow checkout does
+// not fetch; `bun run docs:screens` renders it. These tests cover the parts
+// that can break a contributor's checkout: the error and the cleanup.
+describe("capture: the 3.0.0 source tree", () => {
+  test("extracts src at a ref and removes it without touching the repo's node_modules", () => {
+    const dir = extractSource("HEAD");
+    expect(existsSync(join(dir, "src/ui/review-result.tsx"))).toBe(true);
+    expect(existsSync(join(dir, "node_modules/@opentui/solid"))).toBe(true);
+    removeSource(dir);
+    expect(existsSync(dir)).toBe(false);
+    expect(existsSync(join(ROOT, "node_modules/@opentui/solid"))).toBe(true);
+  });
+
+  test("names the fix when the ref is missing", () => {
+    expect(() => extractSource("v0.0.0-capture-missing")).toThrow(
+      "git fetch --tags",
+    );
+  });
+});
+
+test("registers every screen the stack contract names", () => {
+  const registered: string[] = [...SCREEN_NAMES].sort();
+  expect(registered).toEqual(
+    [
+      "config-warnings",
+      "handoff-progress",
+      "long-command-after",
+      "long-command-before",
+      "manual-toasts",
+      "result-attribution",
+      "result-triggers",
+      "v1-overlay-handoff",
+    ].sort(),
+  );
 });
