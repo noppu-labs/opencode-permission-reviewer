@@ -12,6 +12,12 @@ const options = {
   timeoutMs: 120_000,
 };
 
+const HANDOFF = {
+  from: "opencode/jev-1.13-free",
+  to: "openai/gpt-6-luna",
+  trigger: "jev-uncertain-deny",
+} as const;
+
 // A status with every optional field set, so each row below changes exactly
 // one field of an otherwise accepted payload.
 function fullStatus(): Record<string, unknown> {
@@ -24,6 +30,12 @@ function fullStatus(): Record<string, unknown> {
       escalationDisposition: "manual",
       actorName: "builder",
       actorProfile: "workspace",
+      handoff: HANDOFF,
+      resolution: "reasoning-escalated",
+      configWarnings: [
+        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+      ],
+      configDegraded: ["global config file is malformed and was ignored"],
     }),
   };
 }
@@ -99,6 +111,24 @@ const REJECTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
   ["actorName as null", { actorName: null }],
   ["unlisted actorProfile", { actorProfile: "admin" }],
   ["actorProfile as null", { actorProfile: null }],
+  ["handoff as null", { handoff: null }],
+  ["handoff as a string", { handoff: "jev-escalate" }],
+  [
+    "unlisted handoff trigger",
+    { handoff: { ...HANDOFF, trigger: "jev-panic" } },
+  ],
+  ["handoff without to", { handoff: { from: "a", trigger: "jev-escalate" } }],
+  ["handoff from as a number", { handoff: { ...HANDOFF, from: 1 } }],
+  [
+    "handoff failureKind as a number",
+    { handoff: { ...HANDOFF, failureKind: 1 } },
+  ],
+  ["unlisted resolution", { resolution: "human" }],
+  ["resolution as null", { resolution: null }],
+  ["configWarnings as a string", { configWarnings: "inactive" }],
+  ["configWarnings holding a number", { configWarnings: ["inactive", 1] }],
+  ["configDegraded as null", { configDegraded: null }],
+  ["configDegraded as an object", { configDegraded: { first: "x" } }],
 ];
 
 const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
@@ -111,6 +141,10 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
       escalationDisposition: undefined,
       actorName: undefined,
       actorProfile: undefined,
+      handoff: undefined,
+      resolution: undefined,
+      configWarnings: undefined,
+      configDegraded: undefined,
     },
   ],
   ["the unknown phase", { phase: "unknown" }],
@@ -144,6 +178,35 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
       },
     },
   ],
+  ["empty config lists", { configWarnings: [], configDegraded: [] }],
+  [
+    "a hand-off with a failure kind",
+    { handoff: { ...HANDOFF, trigger: "jev-failure", failureKind: "timeout" } },
+  ],
+  ...(
+    [
+      "jev-escalate",
+      "jev-uncertain-allow",
+      "jev-gate",
+      "jev-invalid",
+      "jev-failure",
+      "jev-uncertain-deny",
+    ] as const
+  ).map((trigger): [string, Record<string, unknown>] => [
+    `the ${trigger} hand-off trigger`,
+    { handoff: { ...HANDOFF, trigger } },
+  ]),
+  ...(
+    [
+      "reviewer",
+      "reasoning-escalated",
+      "reasoning-unavailable",
+      "budget-exhausted",
+    ] as const
+  ).map((resolution): [string, Record<string, unknown>] => [
+    `the ${resolution} resolution`,
+    { resolution },
+  ]),
   ["unknown extra fields", { extra: { nested: true }, version: 1 }],
   ...(
     [

@@ -31,6 +31,7 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/descriptor-io.ts",
   "dist/tui/is-record.ts",
   "dist/tui/ui-protocol.ts",
+  "dist/tui/ui-status-extras.ts",
   "dist/tui/ui-status-parse.ts",
   "dist/tui/ui-state.ts",
   "dist/tui/types.ts",

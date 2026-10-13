@@ -19,6 +19,13 @@ const options = {
   timeoutMs: 120_000,
 };
 
+const HANDOFF = {
+  from: "opencode/jev-1.13-free",
+  to: "openai/gpt-6-luna",
+  trigger: "jev-failure",
+  failureKind: "timeout",
+} as const;
+
 const ROUND_TRIPS: ReadonlyArray<{
   phase: ReviewUiPhase;
   outcome: ReviewDecision["outcome"];
@@ -43,6 +50,76 @@ describe("TUI status protocol", () => {
       expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
       expect(status.escalationDisposition).toBe(disposition);
     }
+  });
+
+  test("round-trips the hand-off, resolution and config lists", () => {
+    const status = createUiStatus(request(), "manual", {
+      ...options,
+      emittedAt: 123,
+      handoff: HANDOFF,
+      resolution: "reasoning-unavailable",
+      configWarnings: [
+        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+      ],
+      configDegraded: ["global config file is malformed and was ignored"],
+    });
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("omits empty config lists and bounds the hand-off and every list", () => {
+    const status = createUiStatus(request(), "approved", {
+      ...options,
+      handoff: {
+        ...HANDOFF,
+        from: "j".repeat(300),
+        failureKind: "k".repeat(80),
+      },
+      configWarnings: [],
+      configDegraded: Array.from(
+        { length: 8 },
+        (_, index) => `${index} ${"d".repeat(400)}`,
+      ),
+    });
+    expect(status.configWarnings).toBeUndefined();
+    expect(status.configDegraded).toHaveLength(5);
+    expect(status.configDegraded?.every((entry) => entry.length <= 200)).toBe(
+      true,
+    );
+    expect(status.handoff?.from).toHaveLength(200);
+    expect(status.handoff?.failureKind).toHaveLength(40);
+    expect(status.handoff?.trigger).toBe("jev-failure");
+  });
+
+  test("a status with every field at its bound stays under the command cap", () => {
+    const long = (char: string, length: number): string => char.repeat(length);
+    const status = createUiStatus(
+      request({ metadata: { command: long("c", 900) } }),
+      "denied",
+      {
+        model: long("m", 300),
+        variant: long("v", 200),
+        timeoutMs: 120_000,
+        reason: long("r", 3_000),
+        decision: decision("deny", { rationale: long("x", 2_000) }),
+        escalationDisposition: "deny",
+        actorName: long("a", 300),
+        actorProfile: "operator",
+        handoff: {
+          from: long("f", 300),
+          to: long("t", 300),
+          trigger: "jev-uncertain-deny",
+          failureKind: long("k", 80),
+        },
+        resolution: "reasoning-escalated",
+        configWarnings: Array.from({ length: 9 }, () => long("w", 400)),
+        configDegraded: Array.from({ length: 9 }, () => long("d", 400)),
+      },
+    );
+    const encoded = encodeUiStatus(status);
+    expect(encoded.length - UI_COMMAND_PREFIX.length).toBeLessThanOrEqual(
+      16_000,
+    );
+    expect(decodeUiStatus(encoded)).toEqual(status);
   });
 
   test("rejects invalid escalationDisposition values", () => {

@@ -1,6 +1,7 @@
 import type { ReviewAttempt } from "../core/review-attempt.ts";
 import { resolveSystemOneRouting } from "../system-one-routing.ts";
 import type {
+  HandoffTrigger,
   ReviewEnvelope,
   ReviewExecutionResult,
   ReviewerConfig,
@@ -29,6 +30,15 @@ export type ReasoningEscalation = (
   envelope: ReviewEnvelope,
   attempt: ReviewAttempt,
 ) => Promise<ReviewExecutionResult>;
+
+/** The hand-off a host shows while the reasoning reviewer runs. `failureKind`
+ *  names Jev's failure ("timeout") when the trigger is `jev-failure`. */
+export interface HandoffInfo {
+  from: string;
+  to: string;
+  trigger: HandoffTrigger;
+  failureKind?: string;
+}
 
 /** Calls Jev directly and hands its result to the reasoning reviewer at most
  *  once, when the hand-off decision says so. */
