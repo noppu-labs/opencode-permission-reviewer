@@ -1,9 +1,10 @@
+import { resolveConfig } from "../../src/config.ts";
 import { formatFailureReason } from "../../src/failure-reason.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one/system-one-handoff.ts";
+import { budgetExhaustedResult } from "../../src/system-one/system-one-budget.ts";
 import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
-import { handoffStatus, jevStatus } from "./fixtures.ts";
+import { handoffStatus, JEV, jevStatus, LUNA } from "./fixtures.ts";
+import { PUSH } from "./samples.ts";
 
-const PUSH = "git push --force-with-lease origin release/2.4";
 const PUSH_REASON = "The force-push would rewrite a shared branch.";
 
 /** The reason the server records when the reasoning reviewer throws
@@ -18,8 +19,20 @@ function reasoningTimeout(): string {
 /** The reason of `budgetExhaustedResult` (src/system-one/system-one-budget.ts)
  *  after Jev escalated with 9s of the budget left. */
 function budgetReason(): string {
-  const needed = HANDOFF_BUDGET_FLOOR_MS / 1000;
-  return `No review time left for the reasoning reviewer after Jev escalated: 9s of the review budget remain and a hand-off needs ${needed}s. ${PUSH_REASON}`;
+  const own = {
+    result: {
+      kind: "escalate" as const,
+      reason: PUSH_REASON,
+      decisionSource: "system-one-reviewer" as const,
+    },
+    category: "general" as const,
+  };
+  return budgetExhaustedResult(
+    own,
+    "jev-escalate",
+    9_000,
+    resolveConfig({ model: JEV }),
+  ).reason;
 }
 
 /** Manual statuses as the server publishes them, one per resolution:
@@ -37,7 +50,7 @@ export function manualSamples(): Array<[string, ReviewUiStatus]> {
         extra: {
           resolution: "reasoning-escalated",
           escalationDisposition: "manual",
-          decidedBy: "openai/gpt-6-luna",
+          decidedBy: LUNA,
         },
       }),
     ],
@@ -74,7 +87,7 @@ export function manualSamples(): Array<[string, ReviewUiStatus]> {
         extra: {
           resolution: "reviewer",
           escalationDisposition: "manual",
-          decidedBy: "typesafe-ai/jev-1.13.0",
+          decidedBy: JEV,
         },
       }),
     ],

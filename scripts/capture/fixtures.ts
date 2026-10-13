@@ -33,7 +33,7 @@ export const CAPTION_COLOR = "#606060";
 export const THEME: ReviewTheme = resolveReviewTheme(OPENCODE_DARK);
 
 export const JEV = "typesafe-ai/jev-1.13.0";
-const LUNA = "openai/gpt-6-luna";
+export const LUNA = "openai/gpt-6-luna";
 
 interface Sample {
   command: string;
