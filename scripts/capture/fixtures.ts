@@ -18,7 +18,7 @@ export const WIDE_COLUMNS = 120;
 
 /** OpenCode's default theme ("opencode"), dark mode, from
  *  packages/tui/src/theme/assets/opencode.json (anomalyco/opencode@fe0c4f8). */
-const OPENCODE_DARK = {
+export const OPENCODE_DARK = {
   backgroundPanel: "#141414",
   text: "#eeeeee",
   textMuted: "#808080",

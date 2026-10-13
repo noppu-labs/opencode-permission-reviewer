@@ -139,6 +139,28 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
     ],
   ],
   ["long-command-after", ["https://setup.invalid | sh", "40-line heredoc"]],
+  [
+    "manual-toasts",
+    [
+      "gpt-6-luna reviewed this after Jev; it needs your approval: The force-push would rewrite",
+      "Reasoning reviewer unavailable",
+      "gpt-6-luna failed (timeout). This permission needs your approval.",
+      "This permission needs your approval.",
+      "No review time left for gpt-6-luna after Jev (Jev escalated).",
+      "No review time left for gpt-6-luna after Jev",
+      "Manual review required",
+      "OpenCode draws the frame",
+    ],
+  ],
+  [
+    "config-warnings",
+    [
+      'systemOneEscalation "reasoning-first" is inactive',
+      "global config file is malformed and was ignored",
+      "sidebar line, several warnings",
+      "healthy config: no toast and no sidebar line",
+    ],
+  ],
 ];
 
 describe("capture: screens", () => {
