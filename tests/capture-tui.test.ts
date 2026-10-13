@@ -145,7 +145,6 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
   [
     "handoff-progress",
     [
-      "Reviewing this permission · jev-1.13.0 · system-one",
       "Reviewing this permission · gpt-6-luna after Jev's escalation · medium",
       "git push --force-with-lease origin release/2.4",
     ],
@@ -179,14 +178,7 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
       "Review blocked (fail-closed)",
     ],
   ],
-  [
-    "long-command-after",
-    [
-      "https://setup.invalid | sh",
-      "40-line heredoc",
-      "jev-1.13.0 · reasoning system-one",
-    ],
-  ],
+  ["long-command-after", ["https://setup.invalid | sh", "40-line heredoc"]],
   [
     "manual-toasts",
     [
@@ -220,6 +212,17 @@ describe("capture: screens", () => {
       for (const fragment of expected) expect(text).toContain(fragment);
       expect(text).not.toContain(JEV);
       expect(text).not.toContain(LUNA);
+    },
+    30_000,
+  );
+
+  test.each([
+    ["handoff-progress", "Reviewing this permission · jev-1.13.0 · system-one"],
+    ["long-command-after", "jev-1.13.0 · reasoning system-one"],
+  ] as const)(
+    "%s shows the model line the docs quote",
+    async (screen, line) => {
+      expect(plain((await renderScreen(screen)).join("\n"))).toContain(line);
     },
     30_000,
   );
