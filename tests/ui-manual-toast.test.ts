@@ -125,6 +125,28 @@ describe("manual-review toast", () => {
       );
   });
 
+  test("a reasoning reviewer whose last segment is empty is never a blank name", () => {
+    const handoff = { from: JEV, to: "///", trigger: "jev-escalate" } as const;
+    const toast = (extra: Partial<ReviewUiStatus>): string =>
+      manualToast(manual({ handoff, reason: "why", ...extra }), FALLBACK)
+        .message;
+    expect(toast({ resolution: "reasoning-escalated" })).toStartWith(
+      "/// reviewed this after Jev;",
+    );
+    expect(toast({ resolution: "reasoning-unavailable" })).toStartWith(
+      "/// failed.",
+    );
+    expect(
+      toast({
+        model: JEV,
+        resolution: "budget-exhausted",
+        reason: BUDGET_REASON,
+      }),
+    ).toStartWith(
+      "No review time left for the reasoning reviewer after Jev (Jev escalated).",
+    );
+  });
+
   test("no review time left after a hand-off states the lead once", () => {
     const handoff = { from: JEV, to: LUNA, trigger: "jev-escalate" } as const;
     expect(

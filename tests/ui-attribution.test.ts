@@ -229,6 +229,9 @@ describe("strip text", () => {
         status("denied", { model: JEV, reason: "Emergency brake: stop." }),
       ),
     ).toBe("Emergency brake: stop.");
+    expect(
+      resultDetail(status("approved", { decidedBy: "///", reason: "ok" })),
+    ).toBe("/// — ok");
   });
 
   test("the progress label shows the hand-off, else the model's label", () => {
@@ -237,6 +240,13 @@ describe("strip text", () => {
     ).toBe("gpt-6-luna after Jev's escalation");
     expect(reviewerLabel(status("reviewing"))).toBe("gpt-6-luna");
     expect(reviewerLabel(status("reviewing", { model: "///" }))).toBe("///");
+    expect(
+      reviewerLabel(
+        status("reviewing", {
+          handoff: { ...handoff("jev-escalate"), to: "///" },
+        }),
+      ),
+    ).toBe("/// after Jev's escalation");
   });
 
   test.each<[HandoffTrigger, string | undefined, string]>([

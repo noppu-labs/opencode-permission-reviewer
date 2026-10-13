@@ -82,8 +82,8 @@ function creditedModel(status: ReviewUiStatus): string | undefined {
 export function attributionText(status: ReviewUiStatus): string | undefined {
   const phrase = handoffPhrase(status);
   if (phrase !== undefined && status.handoff !== undefined)
-    return `${shortModelName(status.handoff.to)} ${phrase}`;
-  const model = shortModelName(creditedModel(status) ?? "");
+    return `${modelLabel(status.handoff.to)} ${phrase}`;
+  const model = modelLabel(creditedModel(status) ?? "");
   return model === "" ? undefined : model;
 }
 
