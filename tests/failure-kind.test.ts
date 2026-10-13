@@ -46,4 +46,17 @@ describe("failure kind", () => {
       ),
     ).toBe("abort");
   });
+
+  test.each([
+    ["APIConnectionError", "transport"],
+    ["RateLimitError", "rate-limit"],
+    ["InternalServerError", "server"],
+    ["AuthenticationError", "auth"],
+    ["APIUserAbortError", "abort"],
+    ["constructor", "constructor"],
+  ])("reads the SDK's %p as %p", (name, kind) => {
+    expect(
+      failureKind(formatFailureReason("System One reviewer", named(name, "x"))),
+    ).toBe(kind);
+  });
 });
