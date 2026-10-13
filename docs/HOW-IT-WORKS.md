@@ -23,11 +23,11 @@ on its model line. The elapsed time keeps counting from the start of the review.
 
 Once the review resolves, both hosts show a compact status strip: one line for the result and a
 second that names who decided ahead of the rationale, for example
-`gpt-6-luna after Jev failed (timeout) — …` or `gpt-6-luna overturned Jev's denial — …`. A review
-without a hand-off names the model as configured, shortened to its last path segment, as in the
-example above. Long text is truncated. The review keymap is released immediately, and the result
-stays visible for 5 s. Whether the editor is available during a pending review depends on the host;
-the V2 strip is not a keyboard lock.
+`gpt-6-luna after Jev failed (timeout) — …` or `gpt-6-luna overturned Jev's denial — …`. A review a
+model decided without a hand-off names that model, shortened to its last path segment; a result no
+model decided shows the reason alone. Long text is truncated. The review keymap is released
+immediately, and the result stays visible for 5 s. Whether the editor is available during a pending
+review depends on the host; the V2 strip is not a keyboard lock.
 
 On a final escalation in interactive mode, the overlay is removed and OpenCode's native approval
 controls become available with a toast. Its first sentence says how the review ended: the
@@ -36,14 +36,14 @@ reasoning reviewer's review still needs your approval, the reasoning reviewer wa
 reason follows. Host interruption, event-stream loss, and fail-closed settings can deny the
 request instead. A broken TUI transport never changes the safety decision.
 
-Reviewer config that cannot take effect, such as `systemOneEscalation: "reasoning-first"` without
-an `escalationReviewer`, raises one toast per entry per TUI session and keeps a line in the
-sidebar, for example `⚠ reviewer: reasoning-first inactive (no escalationReviewer)`. A degraded
-config raises an error toast and an `✕` line, since automatic approval stays off until it is
-fixed. With several warnings the line shows the count and the first; `doctor` lists them all. A
-healthy config shows no line. V2 reads these lists from the reviewer's `status` RPC each time the TUI connects or the
-directory changes, so they appear before the first review. V1 reads them from each review status,
-so they first appear when a review starts.
+Reviewer config that cannot take effect, such as `systemOneEscalation: "reasoning-first"` without an
+`escalationReviewer`, raises one toast per entry per TUI session and keeps a line in the sidebar,
+for example `⚠ reviewer: reasoning-first inactive (no escalationReviewer)`. A degraded config raises
+an error toast and an `✕` line, since automatic approval stays off until it is fixed. With several
+warnings the line shows the count and the first; `doctor` lists them all. A healthy config shows no
+line. V2 reads these lists from the reviewer's `status` RPC each time the TUI connects or the
+directory changes, so they appear before the first review. V1 reads them from each review status, so
+they first appear when a review starts.
 
 ## The review pipeline
 
