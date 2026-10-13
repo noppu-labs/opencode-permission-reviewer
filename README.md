@@ -125,8 +125,9 @@ authorization level, rationale, and confidence. Invariants in code then decide w
 decision can stand: invalid output, low confidence, and risky actions without matching
 authorization escalate instead of being approved.
 
-When Jev escalates, the reasoning reviewer takes over and the progress strip says so; the elapsed
-time keeps counting from the start of the review.
+With Jev as the reviewer and an `escalationReviewer` configured
+([Reviewer models](docs/REVIEWER-MODELS.md)), Jev can hand a request to that reasoning reviewer,
+and the progress strip says so; the elapsed time keeps counting from the start of the review.
 
 ![Two progress strips. While Jev reviews: "◐ Reviewing this permission · typesafe-ai/jev-1.13.0 · system-one", 2.1s. After the hand-off: "◓ Reviewing this permission · gpt-6-luna after Jev's escalation · medium", 7.3s. Both show "bash · $ git push --force-with-lease origin release/2.4".](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/handoff-progress.svg)
 
