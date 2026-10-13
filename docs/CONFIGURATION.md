@@ -164,7 +164,7 @@ The project layer cannot:
 - Set `repositoryTrust: "trusted"`.
 - Set `enforcementMode` in either direction.
 - Turn on `systemOneEscalation: "reasoning-first"` or `systemOneDenialReview: true`. It may set
-  `"standard"` or `false`, which keeps more requests with you.
+  `"standard"` or `false`, which adds no hand-off to `escalationReviewer`.
 - Relax a trusted `escalationMode: "deny"`, a failure-mode deny knob, `confidenceThreshold`,
   `systemOneConfidenceThreshold`, `systemOneReasoningThreshold`, or `riskPolicy`.
 
@@ -201,9 +201,10 @@ lists them under `warning:`, and `config print-effective` shows them as `configW
 
 You get a warning when:
 
-- `systemOneEscalation` or `systemOneDenialReview` has an invalid value. It falls back to
-  `"standard"` or `false`. The fallback sends more requests to you, so unlike an invalid
-  `escalationMode` it does not degrade the run.
+- `systemOneEscalation` or `systemOneDenialReview` has an invalid value in the global config or
+  trusted inline options. It falls back to `"standard"` or `false`, which adds no hand-off to
+  `escalationReviewer`, so unlike an invalid `escalationMode` it does not degrade the run. A
+  repository's invalid value is dropped without a warning, and the trusted value stays.
 - `systemOneEscalation: "reasoning-first"` or `systemOneDenialReview: true` is set but inactive,
   because `model` is not Jev or no valid `escalationReviewer` is configured. For example:
   `systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev

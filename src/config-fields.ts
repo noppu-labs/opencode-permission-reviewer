@@ -29,9 +29,9 @@ export function resolveEscalationMode(value: unknown): EscalationMode {
   return value === "deny" ? "deny" : "manual";
 }
 
-/** The two System One routing keys. Anything but an exact valid value falls
- *  back to the conservative default, which leaves more requests with the
- *  human; the fallback is reported as a config warning, never degradation. */
+/** An invalid value falls back to the default, which adds no hand-off to the
+ *  escalation reviewer, so system-one-routing.ts reports it as a config
+ *  warning, never degradation. */
 export function systemOneRoutingFields(
   source: Record<string, unknown>,
 ): Pick<ReviewerConfig, "systemOneEscalation" | "systemOneDenialReview"> {

@@ -21,8 +21,7 @@ export const PINNED_BLOBS = {
   "src/context/synthetic-parts.ts": "d57f10540a5b243a4da49f3dc72deb71d307d322",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/config.ts": "5202f85ae9fc790d3b24f9c843489525a7428d16",
-  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/config-fields.ts": "8095bd91a52dca1b6cc89467fe29e1692d335572",
+  "src/config-fields.ts": "5a95a9cf02bea0f33e3eaa086b91269b5769ba9c",
   "src/config-knobs.ts": "e576c89b91d0eee6eec91998a4680728025792c4",
   "src/config-policy-rules.ts": "c114277b0c48c7edba60e15be44f80f84cd6f9d4",
   "src/config-risk-policy.ts": "b0153a9fbe82baebecbbb3dd1afe0196978bab91",
