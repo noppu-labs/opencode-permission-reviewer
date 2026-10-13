@@ -162,6 +162,20 @@ describe("attribution text", () => {
     ).toBe("gpt-6-luna after Jev's uncertain denial");
   });
 
+  test("a fail-closed result after the reasoning reviewer failed credits no model", () => {
+    const failed = status("denied", {
+      model: JEV,
+      handoff: handoff("jev-failure", "timeout"),
+      resolution: "reasoning-unavailable",
+      escalationDisposition: "deny",
+      reason: "reasoning reviewer failed (Error): boom",
+    });
+    expect(attributionText(failed)).toBeUndefined();
+    expect(resultDetail(failed)).toBe(
+      "reasoning reviewer failed (Error): boom",
+    );
+  });
+
   test("budget-exhausted credits the model that ran, never the reasoning reviewer", () => {
     expect(
       attributionText(

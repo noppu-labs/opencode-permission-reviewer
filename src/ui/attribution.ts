@@ -48,11 +48,16 @@ function denialVerdict(status: PhraseSource): string {
   return "after Jev's uncertain denial";
 }
 
-/** What the reasoning reviewer did after Jev; undefined without a hand-off,
- *  or when the review ran out of time before the reasoning reviewer ran. */
+/** Undefined on `budget-exhausted` (the reasoning reviewer never ran) and on
+ *  `reasoning-unavailable` (it made no decision). */
 export function handoffPhrase(status: PhraseSource): string | undefined {
   const { handoff } = status;
-  if (handoff === undefined || status.resolution === "budget-exhausted") return;
+  if (
+    handoff === undefined ||
+    status.resolution === "budget-exhausted" ||
+    status.resolution === "reasoning-unavailable"
+  )
+    return;
   if (handoff.trigger === "jev-failure")
     return `after ${jevFailed(handoff.failureKind)}`;
   if (handoff.trigger === "jev-uncertain-deny") return denialVerdict(status);
