@@ -4,6 +4,7 @@ import type { ColorInput } from "@opentui/core";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { resultDetail } from "./attribution.ts";
 import { type ReviewTheme, singleLine } from "./components.tsx";
 
 export function ReviewResult(props: {
@@ -32,9 +33,10 @@ export function ReviewResult(props: {
     }
     return { color: theme().error, icon: "✕", title: "Review blocked" };
   };
+  const detail = (): string | undefined => resultDetail(props.status);
   return (
     <box
-      height={props.status.reason ? 2 : 1}
+      height={detail() ? 2 : 1}
       flexShrink={0}
       overflow="hidden"
       backgroundColor={theme().backgroundPanel}
@@ -46,9 +48,9 @@ export function ReviewResult(props: {
         {appearance().icon} {appearance().title} · {props.status.permission} ·{" "}
         {singleLine(props.status.action)}
       </text>
-      <Show when={props.status.reason}>
+      <Show when={detail()}>
         <text fg={theme().textMuted} wrapMode="none" truncate>
-          {singleLine(props.status.reason ?? "")}
+          {singleLine(detail() ?? "")}
         </text>
       </Show>
     </box>

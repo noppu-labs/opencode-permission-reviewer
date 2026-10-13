@@ -4,6 +4,7 @@ import type { MouseEvent } from "@opentui/core";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { handoffPhrase, shortModelName } from "./attribution.ts";
 import { type ReviewTheme, SPINNER } from "./components.tsx";
 
 export function ReviewOverlay(props: {
@@ -72,7 +73,15 @@ export function ReviewOverlay(props: {
         </box>
         <box paddingLeft={2} flexDirection="row" gap={1}>
           <text fg={theme().textMuted}>
-            {props.status.model} · reasoning {props.status.variant}
+            {props.status.handoff
+              ? shortModelName(props.status.handoff.to)
+              : props.status.model}{" "}
+            · reasoning {props.status.variant}
+            <Show when={handoffPhrase(props.status)} keyed>
+              {(phrase: string) => (
+                <span style={{ fg: theme().info }}> · {phrase}</span>
+              )}
+            </Show>
           </text>
           <box flexGrow={1} />
           <text fg={theme().textMuted}>No action needed</text>

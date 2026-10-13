@@ -4,6 +4,7 @@ import type { ColorInput } from "@opentui/core";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { reviewerLabel } from "./attribution.ts";
 
 export interface ReviewTheme {
   backgroundPanel: ColorInput;
@@ -52,7 +53,7 @@ export function ReviewProgress(props: {
           permission
           <span style={{ fg: props.theme().textMuted }}>
             {" "}
-            · {singleLine(props.status.model)} ·{" "}
+            · {singleLine(reviewerLabel(props.status))} ·{" "}
             {singleLine(props.status.variant)}
           </span>
         </text>

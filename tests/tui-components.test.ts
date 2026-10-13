@@ -15,6 +15,7 @@ const THEME = {
   info: "#4da3ff",
   success: "#48c774",
   error: "#ff5c5c",
+  warning: "#f5a742",
 };
 const theme = (): typeof THEME => THEME;
 const frame = (): number => 0;
@@ -87,7 +88,28 @@ describe("review result strip", () => {
     );
     expect(shown).toEqual([
       "✓ Review approved · bash · printf a printf b",
-      "First line second line",
+      "reviewer — First line second line",
+    ]);
+  });
+
+  test("credits the reasoning reviewer ahead of the reason after a hand-off", async () => {
+    const shown = await rows(() =>
+      ReviewResult({
+        theme,
+        status: status("approved", {
+          model: "omniroute/auto/gpt-6-luna",
+          reason: "Requested push.",
+          handoff: {
+            from: "opencode/jev-1.13-free",
+            to: "omniroute/auto/gpt-6-luna",
+            trigger: "jev-escalate",
+          },
+        }),
+      }),
+    );
+    expect(shown).toEqual([
+      "✓ Review approved · bash · $ printf safe",
+      "gpt-6-luna after Jev's escalation — Requested push.",
     ]);
   });
 });
@@ -119,6 +141,27 @@ describe("review progress strip", () => {
     );
     expect(shown[1]).toBe("bash · $ printf safe · actor build er");
   });
+
+  test("names the hand-off while the reasoning reviewer runs", async () => {
+    const shown = await rows(() =>
+      ReviewProgress({
+        theme,
+        frame,
+        status: status("reviewing", {
+          model: "omniroute/auto/gpt-6-luna",
+          variant: "medium",
+          handoff: {
+            from: "opencode/jev-1.13-free",
+            to: "omniroute/auto/gpt-6-luna",
+            trigger: "jev-escalate",
+          },
+        }),
+      }),
+    );
+    expect(shown[0]).toStartWith(
+      "◐ Reviewing this permission · gpt-6-luna after Jev's escalation · medium",
+    );
+  });
 });
 
 describe("review overlay", () => {
@@ -143,5 +186,27 @@ describe("review overlay", () => {
       ReviewOverlay({ theme, frame, status: status("reviewing") }),
     );
     expect(shown[3]).toBe("│    bash $ printf safe");
+  });
+
+  test("puts the hand-off on the model line", async () => {
+    const shown = await rows(() =>
+      ReviewOverlay({
+        theme,
+        frame,
+        status: status("reviewing", {
+          model: "omniroute/auto/gpt-6-luna",
+          variant: "medium",
+          handoff: {
+            from: "opencode/jev-1.13-free",
+            to: "omniroute/auto/gpt-6-luna",
+            trigger: "jev-failure",
+            failureKind: "timeout",
+          },
+        }),
+      }),
+    );
+    expect(shown[5]).toMatch(
+      /^│ {4}gpt-6-luna · reasoning medium · after Jev failed \(timeout\) +No action needed$/,
+    );
   });
 });
