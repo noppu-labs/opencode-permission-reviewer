@@ -285,6 +285,14 @@ export type HandoffTrigger =
   | "jev-failure"
   | "jev-uncertain-deny";
 
+/** The primary model, routing reason and hand-off trigger of a review a
+ *  second reviewer decided. */
+export interface EscalatedFrom {
+  model: string;
+  reason: string;
+  trigger?: HandoffTrigger;
+}
+
 /** How an escalation that left the System One backend was reached. */
 export type ManualResolution =
   | "reviewer"
@@ -303,11 +311,7 @@ export interface ReviewExecutionResult {
   reviewerModel?: string;
   /** Primary model, routing reason and hand-off trigger when a second
    *  reviewer was used. */
-  reviewerEscalatedFrom?: {
-    model: string;
-    reason: string;
-    trigger?: HandoffTrigger;
-  };
+  reviewerEscalatedFrom?: EscalatedFrom;
   /** Jev's scores whenever it returned a parsed decision. */
   systemOne?: SystemOneScores;
   /**
