@@ -1,0 +1,61 @@
+import {
+  type CapturedFrame,
+  type CapturedSpan,
+  RGBA,
+  TextAttributes,
+} from "@opentui/core";
+
+const ESC = "\u001b[";
+const RESET = `${ESC}0m`;
+
+/** SGR codes for the text attributes a review component can set. */
+const ATTRIBUTE_CODES: ReadonlyArray<readonly [number, number]> = [
+  [TextAttributes.BOLD, 1],
+  [TextAttributes.DIM, 2],
+  [TextAttributes.ITALIC, 3],
+  [TextAttributes.UNDERLINE, 4],
+];
+
+interface TextPart {
+  text: string;
+  /** `#rrggbb` */
+  fg: string;
+}
+
+function sgrColor(color: RGBA, layer: 38 | 48): string {
+  const [r, g, b, alpha] = color.toInts();
+  return alpha === 0 ? "" : `${ESC}${layer};2;${r};${g};${b}m`;
+}
+
+function sgrAttributes(attributes: number): string {
+  return ATTRIBUTE_CODES.filter(([bit]) => (attributes & bit) !== 0)
+    .map(([, code]) => `${ESC}${code}m`)
+    .join("");
+}
+
+function spanToAnsi(span: CapturedSpan): string {
+  return `${RESET}${sgrColor(span.fg, 38)}${sgrColor(span.bg, 48)}${sgrAttributes(span.attributes)}${span.text}`;
+}
+
+/** A run of cells the component did not paint: no background and no glyph. */
+function isUnpainted(span: CapturedSpan): boolean {
+  return span.bg.toInts()[3] === 0 && span.text.trim() === "";
+}
+
+/** Truecolor ANSI rows for a captured frame. Rows the component left
+ *  unpainted (the test terminal around it) are dropped. */
+export function frameToAnsi(frame: CapturedFrame): string[] {
+  return frame.lines
+    .map((line) => line.spans)
+    .filter((spans) => !spans.every(isUnpainted))
+    .map((spans) => `${spans.map(spanToAnsi).join("")}${RESET}`);
+}
+
+/** One ANSI row of colored text, for content the host draws (toasts, the
+ *  sidebar) and for captions. */
+export function textRow(parts: readonly TextPart[]): string {
+  const text = parts
+    .map((part) => `${sgrColor(RGBA.fromHex(part.fg), 38)}${part.text}`)
+    .join("");
+  return `${text}${RESET}`;
+}
