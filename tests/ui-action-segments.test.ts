@@ -438,13 +438,13 @@ describe("server statuses", () => {
     const withAnalysis = {
       ...withoutReason,
       decision: decision("deny", {
-        rationale: "Short rationale.",
-        script_analysis: wide(2_000),
+        rationale: "No.",
+        script_analysis: wide(1_500),
       }),
     };
     const wideRequest = request({
-      id: wide(300),
-      sessionID: wide(300),
+      id: wide(500),
+      sessionID: wide(500),
       metadata: { command: WIDE_COMMAND },
     });
     const withSegments = createUiStatus(wideRequest, "denied", {
@@ -452,8 +452,9 @@ describe("server statuses", () => {
       actionSegments: actionSegments(WIDE_COMMAND) ?? [],
     });
     expect(withSegments.decision?.script_analysis).toEndWith("…");
+    expect(withSegments.decision?.rationale).toBe("No.");
     const status = createServerUiStatus(wideRequest, "denied", withAnalysis);
-    expect(status.decision?.script_analysis).toBe(wide(2_000));
+    expect(status.decision?.script_analysis).toBe(wide(1_500));
     expect("actionSegments" in status).toBe(false);
     expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
   });
