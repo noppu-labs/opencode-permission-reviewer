@@ -122,12 +122,54 @@ describe("whole-status size fit", () => {
     expectFits(status);
   });
 
-  test("leaves a reason no longer than the ellipsis as it is", () => {
-    const base = createUiStatus(request({ id: "i".repeat(13_000) }), "denied", {
-      ...options,
+  test("leaves a reason of at most three UTF-8 bytes as it is", () => {
+    const input = {
+      ...createUiStatus(request({ id: "i".repeat(13_000) }), "denied", options),
       reason: "ok",
-    });
-    expect(fitStatus(base).reason).toBe("ok");
+      decision: decision("deny", { rationale: "x", script_analysis: "y" }),
+    };
+    const fitted = fitStatus(input);
+    expect(jsonBytes(fitted)).toBeGreaterThan(MAX_STATUS_BYTES);
+    expect(jsonBytes(fitted)).toBeLessThanOrEqual(jsonBytes(input));
+    expect(fitted.reason).toBe("ok");
+    expect(fitted.decision?.rationale).toBe("x");
+    expect(fitted.decision?.script_analysis).toBe("y");
+  });
+
+  test("a status still over the cap after the fit comes back no larger", () => {
+    const input = {
+      ...createUiStatus(request({ id: "i".repeat(13_000) }), "denied", options),
+      reason: ESCAPED.repeat(2_000),
+      decision: decision("deny", {
+        rationale: ESCAPED.repeat(2_000),
+        script_analysis: ESCAPED.repeat(1_500),
+      }),
+    };
+    expect(jsonBytes(fitStatus(input))).toBeLessThanOrEqual(jsonBytes(input));
+  });
+
+  test("a script analysis whose saving covers the overflow keeps its start", () => {
+    const analysis = ESCAPED.repeat(1_500);
+    const reason = "Concrete reason";
+    const make = (id: string): ReviewUiStatus =>
+      createUiStatus(request({ id }), "denied", {
+        ...options,
+        reason,
+        decision: decision("deny", {
+          rationale: "No.",
+          script_analysis: analysis,
+        }),
+      });
+    const status = make(
+      "i".repeat(MAX_STATUS_BYTES - jsonBytes(make("")) + 100),
+    );
+    const shortened = status.decision?.script_analysis ?? "";
+    expect(status.reason).toBe(reason);
+    expect(status.decision?.rationale).toBe("No.");
+    expect(shortened).toEndWith("…");
+    expect(shortened.length).toBeGreaterThan(1);
+    expect(shortened.slice(0, -1)).toBe(ESCAPED.repeat(shortened.length - 1));
+    expectFits(status);
   });
 
   test("a maximal script analysis of escaped characters is shortened before the reason", () => {
@@ -156,7 +198,7 @@ describe("whole-status size fit", () => {
     expectFits(status);
   });
 
-  test("full config lists, segments and long text: lists go first, segments whole, then the rationale", () => {
+  test("full config lists, segments and long text: lists go first, then the segments as a whole, then the rationale is shortened", () => {
     const list = (tag: string): string[] =>
       Array.from({ length: 5 }, (_, i) => `${tag}${i}${CJK.repeat(190)}`);
     const status = createServerUiStatus(
