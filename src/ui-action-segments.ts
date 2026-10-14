@@ -99,9 +99,8 @@ function keepsSegments(plain: ReviewUiStatus, full: ReviewUiStatus): boolean {
 }
 
 /** `createUiStatus` plus the request's action segments: how server code
- *  builds every status it publishes. The segments are left off when they
- *  would push the status past the cap, crowd out a config entry, or shorten
- *  the reason, rationale or script analysis. */
+ *  builds every status it publishes. The segments are left off unless the
+ *  status fits with them and the fit drops or shortens nothing else. */
 export function createServerUiStatus(
   request: PermissionRequest,
   phase: ReviewUiPhase,

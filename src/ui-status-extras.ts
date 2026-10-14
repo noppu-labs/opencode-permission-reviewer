@@ -1,5 +1,5 @@
-// The optional status fields that carry routing and config state, bounded so
-// an encoded status always fits the TUI command cap.
+// Bounds the routing and config fields, then fits the whole status to the TUI
+// command cap. Oversized identifiers are not cut, so they can still overflow it.
 import type { HandoffInfo } from "./system-one/backend.ts";
 import type { ManualResolution, ReviewDecision } from "./types.ts";
 
@@ -88,7 +88,7 @@ function withoutLastEntry<T extends StatusExtras>(status: T): T | undefined {
   return (kept.length === 0 ? rest : { ...rest, [key]: kept }) as T;
 }
 
-/** The status fields the fit may drop or shorten. */
+/** The config lists the fit drops and the texts it shortens. */
 interface FittableStatus extends StatusExtras {
   reason?: string;
   decision?: Pick<ReviewDecision, "rationale" | "script_analysis">;
@@ -115,9 +115,8 @@ function fitConfigLists<T extends StatusExtras>(status: T): T {
   return fitted;
 }
 
-/** The start of `text`, cut on a code-point boundary and ending in "…", whose
- *  JSON form is at least `excess` bytes smaller; just "…" when the whole text
- *  is not enough, and `text` itself when it is no longer than "…". */
+/** Cuts on a code-point boundary so the JSON form, "…" included, is at least
+ *  `excess` bytes smaller; "…" alone when even the whole text is not enough. */
 function shortenedBy(text: string, excess: number): string {
   if (jsonBytes(text) <= jsonBytes(ELLIPSIS)) return text;
   let room = jsonBytes(text) - excess - jsonBytes(ELLIPSIS);
@@ -151,9 +150,10 @@ function withShorter<T extends FittableStatus>(
       };
 }
 
-/** Fits the encoded status to the cap: drops config list entries first, then
- *  shortens the decision rationale, then its script analysis, then the reason.
- *  A status already under the cap comes back as the same object. */
+/** Drops config entries, then shortens fields in FITTABLE_FIELDS order. The
+ *  TUI shows only reason, and the gate paths copy the rationale into it, so the
+ *  hidden fields go first. A status under the cap comes back as the same
+ *  object. */
 export function fitStatus<T extends FittableStatus>(status: T): T {
   let fitted = fitConfigLists(status);
   for (const field of FITTABLE_FIELDS) {

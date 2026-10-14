@@ -10,7 +10,7 @@ import { decision, MockClient, request, runtime } from "./helpers.ts";
 import { until } from "./poll-until.ts";
 import { fixture } from "./v2-server-fixture.ts";
 
-/** 2000 characters that JSON escapes to six bytes each. */
+/** JSON escapes each of these characters to six bytes. */
 const ESCAPED_TEXT = "\u0001".repeat(2_000);
 
 function expectEveryStatusDecodes(
