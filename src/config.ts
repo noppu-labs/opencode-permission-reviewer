@@ -5,6 +5,7 @@ import {
   resolveActorProfiles,
   resolveEscalationMode,
   resolveRepositoryTrust,
+  systemOneRoutingFields,
   trimmedText,
 } from "./config-fields.ts";
 import {
@@ -25,6 +26,7 @@ import {
   isProviderModelId,
   resolveEscalationReviewer,
 } from "./reviewer-model.ts";
+import { withSystemOneRoutingWarnings } from "./system-one-routing.ts";
 import type { ReviewerConfig } from "./types.ts";
 
 export const DEFAULT_CONFIG: ReviewerConfig = {
@@ -42,6 +44,8 @@ export const DEFAULT_CONFIG: ReviewerConfig = {
   confidenceThreshold: 0.7,
   systemOneConfidenceThreshold: 0.4,
   systemOneReasoningThreshold: 0.38,
+  systemOneEscalation: "standard",
+  systemOneDenialReview: false,
   retainReviewSessions: false,
   audit: true,
   debug: false,
@@ -58,7 +62,11 @@ export const DEFAULT_CONFIG: ReviewerConfig = {
 
 /** Total deadline for a review, shared by the server and TUI watchdog. */
 export function reviewBudgetMs(config: ReviewerConfig): number {
-  return config.reviewBudgetMs ?? config.timeoutMs * 2 + 60_000;
+  const escalationMs = config.escalationReviewer?.timeoutMs ?? config.timeoutMs;
+  return (
+    config.reviewBudgetMs ??
+    config.timeoutMs + Math.max(config.timeoutMs, escalationMs) + 60_000
+  );
 }
 
 type FlagKey = "retainReviewSessions" | "audit" | "debug" | "askDecisions";
@@ -73,7 +81,7 @@ export function resolveConfig(
 ): ReviewerConfig {
   const source = options ?? {};
   // Key order is part of the output: the server hashes the serialized config.
-  return {
+  const resolved: ReviewerConfig = {
     model: isProviderModelId(source.model)
       ? source.model
       : DEFAULT_CONFIG.model,
@@ -87,6 +95,7 @@ export function resolveConfig(
     ...reviewBudgetKnob(source),
     ...integerKnobs(source, CONTEXT_BUDGETS, DEFAULT_CONFIG),
     ...numberKnobs(source, CONFIDENCE_FLOORS, DEFAULT_CONFIG),
+    ...systemOneRoutingFields(source),
     retainReviewSessions: flag(source, "retainReviewSessions"),
     audit: flag(source, "audit"),
     ...optional("auditPath", trimmedText(source.auditPath)),
@@ -107,4 +116,5 @@ export function resolveConfig(
       ? { configDegraded: source.configDegraded }
       : {}),
   };
+  return withSystemOneRoutingWarnings(resolved, source);
 }

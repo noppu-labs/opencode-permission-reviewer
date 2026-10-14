@@ -13,6 +13,8 @@ describe("resolveConfig structured fields", () => {
       auditPath: "/tmp/audit.jsonl",
       policy: "Review carefully.",
       configDegraded: ["reason"],
+      // Inert with the default model, so configWarnings is present too.
+      systemOneEscalation: "reasoning-first",
     });
     expect(Object.keys(config)).toEqual([
       "model",
@@ -31,6 +33,8 @@ describe("resolveConfig structured fields", () => {
       "confidenceThreshold",
       "systemOneConfidenceThreshold",
       "systemOneReasoningThreshold",
+      "systemOneEscalation",
+      "systemOneDenialReview",
       "retainReviewSessions",
       "audit",
       "auditPath",
@@ -46,6 +50,7 @@ describe("resolveConfig structured fields", () => {
       "policyRules",
       "askDecisions",
       "configDegraded",
+      "configWarnings",
     ]);
   });
 

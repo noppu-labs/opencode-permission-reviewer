@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
+import {
+  DEFAULT_CONFIG,
+  resolveConfig,
+  reviewBudgetMs,
+} from "../src/config.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 
 type Knob = [key: keyof ReviewerConfig, min: number, max: number];
@@ -61,6 +65,51 @@ describe("resolveConfig clamps every numeric knob to its bounds", () => {
   });
 });
 
+describe("reviewBudgetMs", () => {
+  const reviewer = (timeoutMs?: number): Record<string, unknown> => ({
+    model: "openai/gpt-6-luna",
+    ...(timeoutMs === undefined ? {} : { timeoutMs }),
+  });
+  const budget = (source: Record<string, unknown>): number =>
+    reviewBudgetMs(resolveConfig({ timeoutMs: 30_000, ...source }));
+
+  test("the derived budget is timeoutMs plus the longer of the two timeouts plus a minute", () => {
+    expect(budget({})).toBe(120_000);
+    expect(budget({ escalationReviewer: reviewer(200_000) })).toBe(290_000);
+  });
+
+  test("a reviewer shorter than timeoutMs leaves the budget at 2 * timeoutMs + 60 s", () => {
+    expect(budget({ escalationReviewer: reviewer(10_000) })).toBe(120_000);
+    expect(
+      reviewBudgetMs(
+        resolveConfig({
+          timeoutMs: 300_000,
+          escalationReviewer: reviewer(5_000),
+        }),
+      ),
+    ).toBe(660_000);
+  });
+
+  test("a reviewer without its own timeout counts the builtin 120 s, not timeoutMs", () => {
+    expect(budget({ escalationReviewer: reviewer() })).toBe(210_000);
+    // Both timeouts default to 120 s, which gives 2 * timeoutMs + 60 s.
+    expect(
+      reviewBudgetMs(resolveConfig({ escalationReviewer: reviewer() })),
+    ).toBe(300_000);
+    expect(
+      reviewBudgetMs(
+        resolveConfig({ timeoutMs: 300_000, escalationReviewer: reviewer() }),
+      ),
+    ).toBe(660_000);
+  });
+
+  test("an explicit reviewBudgetMs still wins", () => {
+    expect(
+      budget({ reviewBudgetMs: 90_000, escalationReviewer: reviewer(200_000) }),
+    ).toBe(90_000);
+  });
+});
+
 describe("resolveConfig flags, modes and text fields", () => {
   test.each([
     "retainReviewSessions",
@@ -93,6 +142,33 @@ describe("resolveConfig flags, modes and text fields", () => {
     expect(resolved("repositoryTrust", "trusted")).toBe("trusted");
     expect(resolved("repositoryTrust", "untrusted")).toBe("untrusted");
     expect(resolved("repositoryTrust", "TRUSTED")).toBe("unknown");
+  });
+
+  test("System One routing keys keep only exact valid values", () => {
+    expect(DEFAULT_CONFIG.systemOneEscalation).toBe("standard");
+    expect(DEFAULT_CONFIG.systemOneDenialReview).toBe(false);
+    const escalations = [
+      "standard",
+      "reasoning-first",
+      "Reasoning-First",
+      "",
+      1,
+      null,
+    ];
+    expect(
+      escalations.map((value) => resolved("systemOneEscalation", value)),
+    ).toEqual([
+      "standard",
+      "reasoning-first",
+      "standard",
+      "standard",
+      "standard",
+      "standard",
+    ]);
+    const denials = [true, false, "true", 1, null];
+    expect(
+      denials.map((value) => resolved("systemOneDenialReview", value)),
+    ).toEqual([true, false, false, false, false]);
   });
 
   test.each(["policy", "auditPath"])(

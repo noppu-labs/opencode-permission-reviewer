@@ -79,7 +79,11 @@ export function loadResolvedConfig(
     inlineTrust,
   );
   if (degraded.length > 0) out.configDegraded = degraded;
-  return resolveConfig(out);
+  const config = resolveConfig(out);
+  for (const warning of config.configWarnings ?? []) {
+    console.warn(`permission-reviewer: ${warning}`);
+  }
+  return config;
 }
 
 function mergeLayers(

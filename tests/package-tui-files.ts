@@ -20,6 +20,7 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/config-risk-policy.ts",
   "dist/tui/config-rule-condition.ts",
   "dist/tui/reviewer-model.ts",
+  "dist/tui/system-one-routing.ts",
   "dist/tui/config/loader.ts",
   "dist/tui/config/layer-read.ts",
   "dist/tui/config/trust-boundary.ts",

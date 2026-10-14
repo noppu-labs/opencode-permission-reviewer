@@ -19,13 +19,15 @@ export const PINNED_BLOBS = {
   "src/context/pending-permission.ts":
     "97ba73673a05a5a9d118098b266b1f6177ea2ad0",
   "src/context/synthetic-parts.ts": "d57f10540a5b243a4da49f3dc72deb71d307d322",
-  "src/config.ts": "de7f2cda9fea53bed690b0316ac929965b7ce8f5",
-  "src/config-fields.ts": "ad5aa5bcee0d873c523a8b903bf43ed676fabe01",
+  // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+  "src/config.ts": "5202f85ae9fc790d3b24f9c843489525a7428d16",
+  "src/config-fields.ts": "5a95a9cf02bea0f33e3eaa086b91269b5769ba9c",
   "src/config-knobs.ts": "e576c89b91d0eee6eec91998a4680728025792c4",
   "src/config-policy-rules.ts": "c114277b0c48c7edba60e15be44f80f84cd6f9d4",
   "src/config-risk-policy.ts": "b0153a9fbe82baebecbbb3dd1afe0196978bab91",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/config-rule-condition.ts": "c5d475f4a06542cf79f67058f5ab3d55100c7821",
+  "src/system-one-routing.ts": "d0bf91c4e88fe0ba13617c8ef86e3949ceff5a80",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/reviewer-model.ts": "e8b33fa484ff8de522060c5a4a1d6426d55f9845",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential

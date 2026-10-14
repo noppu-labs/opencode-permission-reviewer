@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The default `reviewBudgetMs` is now
+  `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000`. It is
+  never shorter than before, and it grows when the escalation reviewer's
+  timeout is longer than `timeoutMs`. An escalation reviewer without its own
+  `timeoutMs` counts 120000.
+
 ## [3.0.0] - 2026-10-12
 
 ### Changed
