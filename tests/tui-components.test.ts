@@ -2,6 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { createUiStatus, type ReviewUiStatus } from "../src/ui-protocol.ts";
 import { request } from "./helpers.ts";
 import {
+  ConfigNoticeSlot,
   ReviewOverlay,
   ReviewProgress,
   ReviewResult,
@@ -15,6 +16,7 @@ const THEME = {
   info: "#4da3ff",
   success: "#48c774",
   error: "#ff5c5c",
+  warning: "#f5a742",
 };
 const theme = (): typeof THEME => THEME;
 const frame = (): number => 0;
@@ -38,7 +40,8 @@ function status(
   };
 }
 
-/** The non-blank rows of the rendered frame, trimmed. */
+/** A tree that draws no cell leaves the buffer unwritten, which captures as
+ *  U+0A00. */
 async function rows(render: () => unknown): Promise<string[]> {
   const view = await testRender(() => render() as Element, {
     width: 100,
@@ -49,7 +52,7 @@ async function rows(render: () => unknown): Promise<string[]> {
   return view
     .captureCharFrame()
     .split("\n")
-    .map((row) => row.trim())
+    .map((row) => row.replaceAll("\u0a00", "").trim())
     .filter(Boolean);
 }
 
@@ -82,12 +85,47 @@ describe("review result strip", () => {
         status: status("approved", {
           action: "printf a\nprintf b",
           reason: "First line\r\nsecond\tline",
+          decidedBy: "fixture/reviewer",
         }),
       }),
     );
     expect(shown).toEqual([
       "✓ Review approved · bash · printf a printf b",
-      "First line second line",
+      "reviewer — First line second line",
+    ]);
+  });
+
+  test("shows the reason alone when no model decided", async () => {
+    const shown = await rows(() =>
+      ReviewResult({
+        theme,
+        status: status("denied", { reason: "Emergency brake: stop." }),
+      }),
+    );
+    expect(shown).toEqual([
+      "✕ Review blocked · bash · $ printf safe",
+      "Emergency brake: stop.",
+    ]);
+  });
+
+  test("credits the reasoning reviewer ahead of the reason after a hand-off", async () => {
+    const shown = await rows(() =>
+      ReviewResult({
+        theme,
+        status: status("approved", {
+          model: "omniroute/auto/gpt-6-luna",
+          reason: "Requested push.",
+          handoff: {
+            from: "opencode/jev-1.13-free",
+            to: "omniroute/auto/gpt-6-luna",
+            trigger: "jev-escalate",
+          },
+        }),
+      }),
+    );
+    expect(shown).toEqual([
+      "✓ Review approved · bash · $ printf safe",
+      "gpt-6-luna after Jev's escalation — Requested push.",
     ]);
   });
 });
@@ -119,6 +157,27 @@ describe("review progress strip", () => {
     );
     expect(shown[1]).toBe("bash · $ printf safe · actor build er");
   });
+
+  test("names the hand-off while the reasoning reviewer runs", async () => {
+    const shown = await rows(() =>
+      ReviewProgress({
+        theme,
+        frame,
+        status: status("reviewing", {
+          model: "omniroute/auto/gpt-6-luna",
+          variant: "medium",
+          handoff: {
+            from: "opencode/jev-1.13-free",
+            to: "omniroute/auto/gpt-6-luna",
+            trigger: "jev-escalate",
+          },
+        }),
+      }),
+    );
+    expect(shown[0]).toStartWith(
+      "◐ Reviewing this permission · gpt-6-luna after Jev's escalation · medium",
+    );
+  });
 });
 
 describe("review overlay", () => {
@@ -143,5 +202,46 @@ describe("review overlay", () => {
       ReviewOverlay({ theme, frame, status: status("reviewing") }),
     );
     expect(shown[3]).toBe("│    bash $ printf safe");
+  });
+
+  test("puts the hand-off on the model line", async () => {
+    const shown = await rows(() =>
+      ReviewOverlay({
+        theme,
+        frame,
+        status: status("reviewing", {
+          model: "omniroute/auto/gpt-6-luna",
+          variant: "medium",
+          handoff: {
+            from: "opencode/jev-1.13-free",
+            to: "omniroute/auto/gpt-6-luna",
+            trigger: "jev-failure",
+            failureKind: "timeout",
+          },
+        }),
+      }),
+    );
+    expect(shown[5]).toMatch(
+      /^│ {4}gpt-6-luna · reasoning medium · after Jev failed \(timeout\) +No action needed$/,
+    );
+  });
+});
+
+describe("config notice slot", () => {
+  test("shows the line on one row, and nothing for a healthy config", async () => {
+    expect(
+      await rows(() =>
+        ConfigNoticeSlot({
+          theme,
+          line: {
+            text: "⚠ reviewer: 2 config warnings · first\nsecond",
+            tone: "warning",
+          },
+        }),
+      ),
+    ).toEqual(["⚠ reviewer: 2 config warnings · first second"]);
+    expect(
+      await rows(() => ConfigNoticeSlot({ theme, line: undefined })),
+    ).toEqual([]);
   });
 });

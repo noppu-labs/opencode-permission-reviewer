@@ -3,6 +3,7 @@
 // and audit record queued after it.
 import type { PermissionRequest, ReviewExecutionResult } from "../../types.ts";
 import { createUiStatus, type ReviewUiStatus } from "../../ui-protocol.ts";
+import { decidedByField, statusRouting } from "../../ui-status-routing.ts";
 import { reviewAuditRecord } from "./server-audit.ts";
 import { snapshotAction } from "./server-events.ts";
 import type { ReviewRun, ServerState } from "./server-state.ts";
@@ -55,14 +56,17 @@ function finalPhase(
   return kind === "deny" ? "denied" : "manual";
 }
 
-function finalVariant(
+/** The variant for `reviewerModel` (the deciding model on a result, the
+ *  hand-off target on a hand-off status): the escalation reviewer's when it is
+ *  not the configured model. */
+export function reviewerVariant(
   {
     config,
     systemOneReviewer,
   }: Pick<ServerState, "config" | "systemOneReviewer">,
-  result: ReviewExecutionResult,
+  reviewerModel: string | undefined,
 ): string {
-  if (result.reviewerModel && result.reviewerModel !== config.model)
+  if (reviewerModel && reviewerModel !== config.model)
     return config.escalationReviewer?.variant ?? config.variant;
   return systemOneReviewer ? "system-one" : config.variant;
 }
@@ -75,10 +79,12 @@ function finalStatus(
 ): ReviewUiStatus {
   return createUiStatus(request, finalPhase(result.kind), {
     model: result.reviewerModel ?? server.config.model,
-    variant: finalVariant(server, result),
+    variant: reviewerVariant(server, result.reviewerModel),
     timeoutMs: budget,
     reason: result.reason,
     ...(result.decision ? { decision: result.decision } : {}),
+    ...statusRouting(result, server.config),
+    ...decidedByField(result, server.config),
   });
 }
 

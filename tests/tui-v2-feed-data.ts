@@ -31,6 +31,10 @@ export interface Host {
   location: { directory: string } | undefined;
   /** Directory of every snapshot request, in call order. */
   snapshots: string[];
+  /** The `status` RPC's answer per directory; unset rejects like an older server. */
+  status?: (directory: string) => unknown;
+  /** Directory of every status request, in call order. */
+  statusCalls: string[];
   /** One responder per snapshot request; an empty snapshot once exhausted. */
   respond: Array<(directory: string) => unknown>;
   channels: Channel[];
@@ -44,6 +48,7 @@ export function host(overrides: Partial<Host> = {}): Host {
     session: { location: { directory: DIRECTORY } },
     location: { directory: DIRECTORY },
     snapshots: [],
+    statusCalls: [],
     respond: [],
     channels: [],
     toasts: [],

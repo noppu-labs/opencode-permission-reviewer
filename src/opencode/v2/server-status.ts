@@ -54,6 +54,7 @@ function statusHandlers(state: ServerState): RpcHandlers<typeof ReviewerRpc> {
       model: config.model,
       variant: systemOneReviewer ? "system-one" : config.variant,
       configDegraded: config.configDegraded ?? [],
+      configWarnings: config.configWarnings ?? [],
       effectiveConfigHash: state.effectiveConfigHash,
       connection: state.connectionState,
       eventConnection: state.eventStreamHealthy ? "connected" : "unavailable",

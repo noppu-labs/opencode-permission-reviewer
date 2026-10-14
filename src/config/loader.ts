@@ -34,6 +34,12 @@ export function projectConfigPath(directory: string): string {
   return join(directory, ".opencode", "permission-reviewer.jsonc");
 }
 
+export interface LoadOptions {
+  /** Off for a caller that shows `configWarnings` another way, such as the TUI
+   *  from server statuses. */
+  printConfigWarnings?: boolean;
+}
+
 /** Load and merge config from global, project, and inline sources.
  *
  * Precedence (lowest to highest): builtin defaults → global → project → inline,
@@ -48,6 +54,7 @@ export function loadResolvedConfig(
   inlineOptions: Record<string, unknown> | undefined,
   directory?: string,
   inlineTrust: InlineOptionsTrust = "trusted",
+  { printConfigWarnings = true }: LoadOptions = {},
 ): ReviewerConfig {
   const globalLayer = readConfigLayer(globalConfigPath());
   const projectLayer: ConfigLayer =
@@ -80,8 +87,10 @@ export function loadResolvedConfig(
   );
   if (degraded.length > 0) out.configDegraded = degraded;
   const config = resolveConfig(out);
-  for (const warning of config.configWarnings ?? []) {
-    console.warn(`permission-reviewer: ${warning}`);
+  if (printConfigWarnings) {
+    for (const warning of config.configWarnings ?? []) {
+      console.warn(`permission-reviewer: ${warning}`);
+    }
   }
   return config;
 }

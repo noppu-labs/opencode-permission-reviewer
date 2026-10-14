@@ -2,7 +2,10 @@ import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
-import { SystemOneReviewerBackend } from "../../system-one/backend.ts";
+import {
+  type OnHandoff,
+  SystemOneReviewerBackend,
+} from "../../system-one/backend.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,
@@ -18,6 +21,7 @@ export interface V2ReviewBackend {
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
     client: OpenCodeClient,
+    onHandoff?: OnHandoff,
   ): Promise<ReviewExecutionResult>;
   waitForIdle(): Promise<void>;
   dispose(): Promise<void>;
@@ -55,6 +59,7 @@ export function createV2ReviewerBackend(
       envelope: ReviewEnvelope,
       attempt: ReviewAttempt,
       client: OpenCodeClient,
+      onHandoff?: OnHandoff,
     ) =>
       primary.review(
         envelope,
@@ -63,6 +68,7 @@ export function createV2ReviewerBackend(
           ? (value: ReviewEnvelope, current: ReviewAttempt) =>
               secondary.review(value, current, client)
           : undefined,
+        onHandoff,
       ),
     waitForIdle: async () => {
       await Promise.all([primary.waitForIdle(), secondary?.waitForIdle()]);

@@ -33,8 +33,12 @@ export const {
 }: typeof import("../src/ui/review-theme.ts") = await import(
   "../src/ui/review-theme.ts"
 );
-export const { ReviewProgress }: typeof import("../src/ui/components.tsx") =
-  await import("../src/ui/components.tsx");
+export const {
+  ConfigNoticeSlot,
+  ReviewProgress,
+}: typeof import("../src/ui/components.tsx") = await import(
+  "../src/ui/components.tsx"
+);
 export const { ReviewResult }: typeof import("../src/ui/review-result.tsx") =
   await import("../src/ui/review-result.tsx");
 export const { ReviewOverlay }: typeof import("../src/ui/review-overlay.tsx") =

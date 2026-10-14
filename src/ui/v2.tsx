@@ -2,7 +2,12 @@
 import type { Plugin } from "@opencode/plugin/tui";
 import { createSignal, Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
-import { ReviewProgress, type ReviewTheme } from "./components.tsx";
+import {
+  ConfigNoticeSlot,
+  ReviewProgress,
+  type ReviewTheme,
+} from "./components.tsx";
+import type { SidebarLine } from "./config-notices.ts";
 import { createReviewFeed } from "./review-feed.ts";
 import { ReviewResult } from "./review-result.tsx";
 import { resolveReviewTheme } from "./review-theme.ts";
@@ -78,6 +83,16 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
       );
     },
   });
+  const sidebar = ctx.ui.slot({
+    append: "sidebar.content",
+    render: () => {
+      const line = (): SidebarLine | undefined => {
+        revision();
+        return feed.notices.sidebar();
+      };
+      return <ConfigNoticeSlot theme={theme} line={line()} />;
+    },
+  });
   // Refreshes on a session switch, and follows the routed session's directory.
   const followRoute = (): void => {
     const route = ctx.ui.router.current();
@@ -103,5 +118,6 @@ export async function setupTuiV2(ctx: Context): Promise<() => void> {
     clearInterval(timer);
     popMode?.();
     slot();
+    sidebar();
   };
 }

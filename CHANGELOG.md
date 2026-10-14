@@ -21,6 +21,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Audit records carry `reviewerEscalatedFrom.trigger`, a `resolution` on escalations from the
   System One backend, and `configWarnings`. `audit report` counts records by hand-off trigger and
   by resolution.
+- TUI: when Jev hands a request to the reasoning reviewer, the progress strip
+  and the V1 overlay switch to that reviewer and say why (for example
+  `gpt-6-luna after Jev's escalation`). The elapsed time keeps counting from
+  the start of the review.
+- TUI: the result strip's second line names who decided ahead of the reason,
+  for example `gpt-6-luna overturned Jev's denial — …`; a review Jev decided
+  alone names Jev's model.
+- TUI: reviewer config that cannot take effect, or a degraded config, raises
+  one toast per entry per TUI session (warning or error) and keeps a line in
+  the sidebar on both hosts. A healthy config shows no line. The V2 TUI reads
+  the lists from the reviewer's `status` RPC.
 
 ### Changed
 
@@ -33,6 +44,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   request escalates (`resolution: "budget-exhausted"`). This applies in the default mode too.
 - When the hand-off runs, `escalationMode: "deny"`, `riskPolicy.onInvalidDecision`, and
   `riskPolicy.onReviewerFailure` act on the reasoning reviewer's final outcome, not on Jev's.
+- TUI: a manual-review toast's first sentence now says how the review ended:
+  the reasoning reviewer's review still needs your approval, the reasoning
+  reviewer was unavailable (an error toast titled "Reasoning reviewer
+  unavailable"), or no review time was left for it. The reason still follows.
+
+### Fixed
+
+- V2: a block from a fail-closed escalation now shows "Review blocked
+  (fail-closed)" instead of "Review blocked", as V1 already did.
 
 ## [3.0.0] - 2026-10-12
 

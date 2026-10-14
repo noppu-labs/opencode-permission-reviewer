@@ -16,6 +16,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
         feedback: {
           success: { default: "nested-success" },
           error: { default: "nested-error" },
+          warning: { default: "nested-warning" },
         },
       },
     }),
@@ -26,6 +27,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
     info: "nested-info",
     success: "nested-success",
     error: "nested-error",
+    warning: "nested-warning",
   });
   expect(
     resolveReviewTheme({
@@ -37,6 +39,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
           info: { base: "current-info" },
           success: { base: "current-success" },
           error: { base: "current-error" },
+          warning: { base: "current-warning" },
         },
       },
     }),
@@ -47,6 +50,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
     info: "current-info",
     success: "current-success",
     error: "current-error",
+    warning: "current-warning",
   });
   expect(
     resolveReviewTheme({
@@ -56,6 +60,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
       info: "flat-info",
       success: "flat-success",
       error: "flat-error",
+      warning: "flat-warning",
     }),
   ).toEqual({
     backgroundPanel: "flat-background",
@@ -64,6 +69,7 @@ test("TUI resolves nested, flat, and unavailable host themes", () => {
     info: "flat-info",
     success: "flat-success",
     error: "flat-error",
+    warning: "flat-warning",
   });
   expect(resolveReviewTheme(undefined)).toMatchObject({
     backgroundPanel: expect.any(String),
@@ -113,8 +119,8 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     ui: {
       router: { current: () => ({ type: "session", sessionID }) },
       toast: { show: (value: unknown) => toasts.push(value) },
-      slot: (definition: { render(): unknown }) => {
-        render = definition.render;
+      slot: (definition: { append?: string; render(): unknown }) => {
+        if (definition.append === "app") render = definition.render;
         return () => {};
       },
     },

@@ -17,6 +17,19 @@ const RESULT_DISPLAY_MS = {
   denied: 5_000,
 } as const;
 
+/** A "reviewing" status after another keeps the first `emittedAt`, so elapsed
+ *  time is the total across a hand-off; a plain one after a hand-off, or any
+ *  "reviewing" status after a final one, is stale and dropped. */
+function successor(
+  current: ReviewUiStatus,
+  status: ReviewUiStatus,
+): ReviewUiStatus | undefined {
+  if (status.phase !== "reviewing") return status;
+  if (current.phase !== "reviewing") return;
+  if (current.handoff !== undefined && status.handoff === undefined) return;
+  return { ...status, emittedAt: current.emittedAt };
+}
+
 export class ReviewUiState {
   private readonly requests = new Map<string, ReviewUiStatus>();
   private readonly acknowledged = new Set<string>();
@@ -47,7 +60,9 @@ export class ReviewUiState {
       return true;
     }
     if (current && status.emittedAt < current.emittedAt) return false;
-    this.requests.set(status.requestID, status);
+    const next = current ? successor(current, status) : status;
+    if (!next) return false;
+    this.requests.set(status.requestID, next);
     this.acknowledged.add(status.requestID);
     return true;
   }

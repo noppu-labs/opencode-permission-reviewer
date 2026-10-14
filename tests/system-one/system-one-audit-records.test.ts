@@ -155,7 +155,7 @@ describe("System One scores in V1 audit records", () => {
     });
   });
 
-  test("UI statuses name System One, then the reasoning reviewer with the base variant when it sets none", async () => {
+  test("UI statuses name System One, then the reasoning reviewer (hand-off, then verdict) with the base variant when it sets none", async () => {
     const client = new MockClient();
     client.nextStructured = decision("deny", { confidence: 0.9 });
     const harness = runtime(client, {
@@ -184,6 +184,7 @@ describe("System One scores in V1 audit records", () => {
         model: "opencode/jev-1.13-free",
         variant: "system-one",
       },
+      { phase: "reviewing", model: "openai/gpt-5.6-luna", variant: "high" },
       { phase: "denied", model: "openai/gpt-5.6-luna", variant: "high" },
     ]);
   });

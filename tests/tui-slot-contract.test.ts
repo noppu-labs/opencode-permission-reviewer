@@ -1,6 +1,15 @@
-import { afterEach, describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, spyOn, test } from "bun:test";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import type { TuiPluginApi, TuiPluginMeta } from "@opencode-ai/plugin/tui";
-import { createUiStatus, encodeUiStatus } from "../src/ui-protocol.ts";
+import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
+import {
+  createUiStatus,
+  encodeUiStatus,
+  type ReviewUiStatus,
+} from "../src/ui-protocol.ts";
+import { ReviewUiState } from "../src/ui-state.ts";
 import { defined, request } from "./helpers.ts";
 import { tui } from "./tui-loader.ts";
 
@@ -25,27 +34,56 @@ import { tui } from "./tui-loader.ts";
  */
 
 const disposers: Array<() => void> = [];
+const tempDirs: string[] = [];
 afterEach(() => {
   for (const dispose of disposers.splice(0)) dispose();
+  setGlobalConfigPathForTests(undefined);
+  for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true });
 });
+
+/** Points the loader at a temp global config so a developer's own file never
+ *  reaches a test. An absent `contents` means no global file. */
+function pinGlobalConfig(contents?: Record<string, unknown>): void {
+  const dir = mkdtempSync(join(tmpdir(), "reviewer-tui-global-"));
+  tempDirs.push(dir);
+  const path = join(dir, "permission-reviewer.jsonc");
+  if (contents !== undefined) writeFileSync(path, JSON.stringify(contents));
+  setGlobalConfigPathForTests(path);
+}
 
 type EventHandler = (event: never) => void;
 
 interface CapturedApi {
   api: TuiPluginApi;
   handlers: Map<string, EventHandler[]>;
-  factories: Partial<Record<"app" | "app_bottom", () => unknown>>;
+  factories: Partial<
+    Record<"app" | "app_bottom" | "sidebar_content", () => unknown>
+  >;
   /** By-reference mode bookkeeping: a bare number would be snapshotted. */
   mode: { pushes: string[]; pops: number };
-  toasts: Array<{ title?: string }>;
+  toasts: Array<{
+    variant?: string;
+    title?: string;
+    message?: string;
+    duration?: number;
+  }>;
   dispose: () => void;
 }
 
-async function captureOverlay(): Promise<CapturedApi> {
+async function captureOverlay(
+  options: Record<string, unknown> = {},
+): Promise<CapturedApi> {
   const handlers = new Map<string, EventHandler[]>();
   const mode = { pushes: [] as string[], pops: 0 };
-  const toasts: Array<{ title?: string }> = [];
-  let factories: Partial<Record<"app" | "app_bottom", () => unknown>> = {};
+  const toasts: Array<{
+    variant?: string;
+    title?: string;
+    message?: string;
+    duration?: number;
+  }> = [];
+  let factories: Partial<
+    Record<"app" | "app_bottom" | "sidebar_content", () => unknown>
+  > = {};
 
   let dispose = (): void => {};
   const api = {
@@ -79,7 +117,9 @@ async function captureOverlay(): Promise<CapturedApi> {
         return () => {};
       },
     },
-    ui: { toast: (input: { title?: string }) => void toasts.push(input) },
+    ui: {
+      toast: (input: CapturedApi["toasts"][number]) => void toasts.push(input),
+    },
     state: { session: { get: () => undefined } },
     mode: {
       current: () => "normal",
@@ -97,7 +137,7 @@ async function captureOverlay(): Promise<CapturedApi> {
     },
   } as unknown as TuiPluginApi;
 
-  await tui(api, {}, {
+  await tui(api, options, {
     id: "opencode-permission-reviewer",
     source: "npm",
     spec: "opencode-permission-reviewer@1.2.4",
@@ -122,7 +162,7 @@ function fire(captured: CapturedApi, type: string, event: unknown): void {
  *  we want: an idle factory returns a falsy value without touching elements. */
 function factoryAttempt(
   captured: CapturedApi,
-  slot: "app" | "app_bottom" = "app",
+  slot: "app" | "app_bottom" | "sidebar_content" = "app",
 ): { rendered: boolean; threw: boolean } {
   const factory = captured.factories[slot];
   expect(factory).toBeFunction();
@@ -157,12 +197,48 @@ describe("tui overlay slot contract", () => {
     expect(Object.keys(captured.factories).sort()).toEqual([
       "app",
       "app_bottom",
+      "sidebar_content",
     ]);
     expect([...captured.handlers.keys()].sort()).toEqual([
       "permission.asked",
       "permission.replied",
       "tui.command.execute",
     ]);
+  });
+
+  test("config warnings toast once per session and keep a sidebar line until they clear", async () => {
+    const captured = await captureOverlay();
+    const warning =
+      'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+    expect(factoryAttempt(captured, "sidebar_content").threw).toBe(false);
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("approved", { configWarnings: [warning] }),
+    );
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("approved", {
+        configWarnings: [warning],
+        emittedAt: Date.now() + 10,
+      }),
+    );
+    expect(captured.toasts).toEqual([
+      {
+        variant: "warning",
+        title: "Permission reviewer config",
+        message: warning,
+        duration: 8_000,
+      },
+    ]);
+    expect(factoryAttempt(captured, "sidebar_content").rendered).toBe(true);
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("denied", { emittedAt: Date.now() + 20 }),
+    );
+    expect(factoryAttempt(captured, "sidebar_content").threw).toBe(false);
   });
 
   test("idle factory renders nothing and pushes no mode", async () => {
@@ -239,6 +315,28 @@ describe("tui overlay slot contract", () => {
     expect(captured.mode.pops).toBe(1);
   });
 
+  test("a manual outcome after an unavailable reasoning reviewer toasts as an error", async () => {
+    const captured = await captureOverlay();
+    fire(
+      captured,
+      "tui.command.execute",
+      statusEvent("manual", {
+        model: "openai/gpt-6-luna",
+        resolution: "reasoning-unavailable",
+        reason: "reasoning reviewer failed (TimeoutError): slow",
+      }),
+    );
+    expect(captured.toasts).toEqual([
+      {
+        variant: "error",
+        title: "Reasoning reviewer unavailable",
+        message:
+          "gpt-6-luna failed (timeout). This permission needs your approval. reasoning reviewer failed (TimeoutError): slow",
+        duration: 8_000,
+      },
+    ]);
+  });
+
   test("a terminal result after the reply does not reacquire the mode", async () => {
     const captured = await captureOverlay();
     fire(captured, "permission.asked", {
@@ -289,5 +387,113 @@ describe("tui overlay slot contract", () => {
     expect(attempt.threw).toBe(false);
     expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
     expect(captured.mode.pushes).toHaveLength(0);
+  });
+});
+
+/** Inline keys the server drops; see the config load in `src/tui.tsx`. */
+const DROPPED_INLINE = {
+  systemOneEscalation: "reasoning-first",
+  escalationReviewer: { model: "openai/gpt-6", timeoutMs: 600_000 },
+};
+
+describe("tui config comes from the server's view", () => {
+  test("inline routing keys neither warn nor toast nor leave a sidebar line", async () => {
+    pinGlobalConfig();
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const captured = await captureOverlay(DROPPED_INLINE);
+      expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([]);
+      // A clean server status: the inline keys leave nothing behind to show.
+      fire(captured, "tui.command.execute", statusEvent("approved"));
+      expect(captured.toasts).toEqual([]);
+      expect(factoryAttempt(captured, "sidebar_content").rendered).toBe(false);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test("routing warnings of the global file reach the TUI only through server statuses", async () => {
+    pinGlobalConfig({ systemOneEscalation: "reasoning-first" });
+    const warn = spyOn(console, "warn").mockImplementation(() => {});
+    try {
+      const captured = await captureOverlay();
+      expect(warn.mock.calls.map((call) => String(call[0]))).toEqual([]);
+      expect(captured.toasts).toEqual([]);
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  test("the placeholder budget ignores an inline escalationReviewer the server drops", async () => {
+    pinGlobalConfig({ timeoutMs: 90_000 });
+    const asked = spyOn(ReviewUiState.prototype, "asked");
+    try {
+      const captured = await captureOverlay(DROPPED_INLINE);
+      fire(captured, "permission.asked", {
+        type: "permission.asked",
+        properties: request(),
+      });
+      expect(
+        asked.mock.results.map(
+          (result) => (result.value as ReviewUiStatus).timeoutMs,
+        ),
+      ).toEqual([2 * 90_000 + 60_000]);
+    } finally {
+      asked.mockRestore();
+    }
+  });
+
+  test("the watchdog follows the timeout of the server status", async () => {
+    pinGlobalConfig({ timeoutMs: 90_000 });
+    // Capture the 250ms watchdog ticker so the test drives it by hand, and pin
+    // the clock, instead of waiting on real time.
+    let tick: (() => void) | undefined;
+    const interval = spyOn(globalThis, "setInterval").mockImplementation(((
+      fn: () => void,
+      ms?: number,
+    ) => {
+      if (ms === 250) tick = fn;
+      return 0;
+    }) as unknown as typeof setInterval);
+    const realNow = Date.now.bind(Date);
+    const startedAt = realNow();
+    let offsetMs = 0;
+    const clock = spyOn(Date, "now").mockImplementation(
+      () => startedAt + offsetMs,
+    );
+    try {
+      const captured = await captureOverlay(DROPPED_INLINE);
+      const runTick = defined(tick, "watchdog ticker");
+      fire(captured, "permission.asked", {
+        type: "permission.asked",
+        properties: request(),
+      });
+      fire(captured, "tui.command.execute", {
+        properties: {
+          command: encodeUiStatus(
+            createUiStatus(request(), "reviewing", {
+              model: "test-model",
+              variant: "high",
+              timeoutMs: 30_000,
+              emittedAt: startedAt,
+            }),
+          ),
+        },
+      });
+      // Past the 15s start grace but before the server's 30s + 5s deadline: an
+      // unacknowledged review would be gone, so this also proves the server
+      // status was applied.
+      offsetMs = 20_000;
+      runTick();
+      expect(factoryAttempt(captured, "app").rendered).toBe(true);
+      expect(factoryAttempt(captured, "app_bottom").threw).toBe(false);
+      // Past the server deadline, far inside the placeholder's 240s.
+      offsetMs = 40_000;
+      runTick();
+      expect(factoryAttempt(captured, "app_bottom").rendered).toBe(true);
+    } finally {
+      clock.mockRestore();
+      interval.mockRestore();
+    }
   });
 });

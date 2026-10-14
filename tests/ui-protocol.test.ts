@@ -19,6 +19,13 @@ const options = {
   timeoutMs: 120_000,
 };
 
+const HANDOFF = {
+  from: "opencode/jev-1.13-free",
+  to: "openai/gpt-6-luna",
+  trigger: "jev-failure",
+  failureKind: "timeout",
+} as const;
+
 const ROUND_TRIPS: ReadonlyArray<{
   phase: ReviewUiPhase;
   outcome: ReviewDecision["outcome"];
@@ -43,6 +50,101 @@ describe("TUI status protocol", () => {
       expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
       expect(status.escalationDisposition).toBe(disposition);
     }
+  });
+
+  test("round-trips the hand-off, resolution, deciding model and config lists", () => {
+    const status = createUiStatus(request(), "manual", {
+      ...options,
+      emittedAt: 123,
+      handoff: HANDOFF,
+      resolution: "reasoning-unavailable",
+      decidedBy: "openai/gpt-6-luna",
+      configWarnings: [
+        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+      ],
+      configDegraded: ["global config file is malformed and was ignored"],
+    });
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("omits empty config lists and bounds the hand-off and every list", () => {
+    const status = createUiStatus(request(), "approved", {
+      ...options,
+      handoff: {
+        ...HANDOFF,
+        from: "j".repeat(300),
+        failureKind: "k".repeat(80),
+      },
+      decidedBy: ` ${"b".repeat(300)} `,
+      configWarnings: [],
+      configDegraded: Array.from(
+        { length: 8 },
+        (_, index) => `${index} ${"d".repeat(400)}`,
+      ),
+    });
+    expect(status.configWarnings).toBeUndefined();
+    expect(status.configDegraded).toHaveLength(5);
+    expect(status.configDegraded?.every((entry) => entry.length <= 200)).toBe(
+      true,
+    );
+    expect(status.handoff?.from).toHaveLength(200);
+    expect(status.handoff?.failureKind).toHaveLength(40);
+    expect(status.handoff?.trigger).toBe("jev-failure");
+    expect(status.decidedBy).toBe(`${"b".repeat(199)}…`);
+  });
+
+  test("a status with every field at its bound stays under the command cap", () => {
+    const long = (char: string, length: number): string => char.repeat(length);
+    const status = createUiStatus(
+      request({ metadata: { command: long("c", 900) } }),
+      "denied",
+      {
+        model: long("m", 300),
+        variant: long("v", 200),
+        timeoutMs: 120_000,
+        reason: long("r", 3_000),
+        decision: decision("deny", { rationale: long("x", 2_000) }),
+        escalationDisposition: "deny",
+        actorName: long("a", 300),
+        actorProfile: "operator",
+        handoff: {
+          from: long("f", 300),
+          to: long("t", 300),
+          trigger: "jev-uncertain-deny",
+          failureKind: long("k", 80),
+        },
+        resolution: "reasoning-escalated",
+        decidedBy: long("b", 300),
+        configWarnings: Array.from({ length: 9 }, () => long("w", 400)),
+        configDegraded: Array.from({ length: 9 }, () => long("d", 400)),
+      },
+    );
+    const encoded = encodeUiStatus(status);
+    expect(encoded.length - UI_COMMAND_PREFIX.length).toBeLessThanOrEqual(
+      16_000,
+    );
+    expect(decodeUiStatus(encoded)).toEqual(status);
+  });
+
+  test("a status with multi-byte text at every bound still decodes", () => {
+    const list = (tag: string): string[] =>
+      Array.from({ length: 5 }, (_, i) => `${tag}${i}${"界".repeat(250)}`);
+    const status = createUiStatus(
+      request({ metadata: { command: "界".repeat(600) } }),
+      "manual",
+      {
+        ...options,
+        reason: "界".repeat(3_000),
+        handoff: HANDOFF,
+        resolution: "budget-exhausted",
+        decidedBy: "openai/gpt-6-luna",
+        configWarnings: list("w"),
+        configDegraded: list("d"),
+      },
+    );
+    const decoded = decodeUiStatus(encodeUiStatus(status));
+    expect(decoded).toBeDefined();
+    expect(decoded?.configDegraded?.[0]).toStartWith("d0");
   });
 
   test("rejects invalid escalationDisposition values", () => {
@@ -204,5 +306,66 @@ describe("TUI state machine", () => {
     expect(state.activeFor("ses_main", () => undefined)?.phase).toBe(
       "reviewing",
     );
+  });
+
+  test("a hand-off keeps the review's start time and its watchdog", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_100 });
+    expect(
+      state.apply({
+        ...asked,
+        model: "openai/gpt-6-luna",
+        emittedAt: 9_000,
+        handoff: HANDOFF,
+      }),
+    ).toBe(true);
+    expect(state.get("per_1")).toMatchObject({
+      emittedAt: 1_000,
+      model: "openai/gpt-6-luna",
+      handoff: HANDOFF,
+    });
+    expect(
+      state.expire(1_000 + options.timeoutMs + UI_WATCHDOG_GRACE_MS)[0]?.phase,
+    ).toBe("unknown");
+  });
+
+  test("a late plain reviewing status never replaces the hand-off", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_200, handoff: HANDOFF });
+    expect(state.apply({ ...asked, emittedAt: 1_100 })).toBe(false);
+    expect(state.get("per_1")?.handoff).toEqual(HANDOFF);
+    expect(state.get("per_1")?.emittedAt).toBe(1_000);
+  });
+
+  test("a hand-off status as old as the result never replaces it", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_100 });
+    state.apply({
+      ...asked,
+      phase: "approved",
+      emittedAt: 2_000,
+      handoff: HANDOFF,
+    });
+    expect(state.apply({ ...asked, emittedAt: 2_000, handoff: HANDOFF })).toBe(
+      false,
+    );
+    expect(state.get("per_1")?.phase).toBe("approved");
+  });
+
+  test("a result after a hand-off replaces it with its own time", () => {
+    const state = new ReviewUiState(options);
+    const asked = state.asked(request(), 1_000);
+    state.apply({ ...asked, emittedAt: 1_200, handoff: HANDOFF });
+    const approved = {
+      ...asked,
+      phase: "approved" as const,
+      emittedAt: 9_500,
+      handoff: HANDOFF,
+    };
+    expect(state.apply(approved)).toBe(true);
+    expect(state.get("per_1")).toEqual(approved);
   });
 });

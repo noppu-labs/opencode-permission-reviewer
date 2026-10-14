@@ -1,9 +1,17 @@
+import type { HandoffInfo } from "./system-one/backend.ts";
 import type {
   ActorProfile,
   EscalationDisposition,
+  ManualResolution,
   PermissionRequest,
   ReviewDecision,
 } from "./types.ts";
+import {
+  boundedText,
+  fitConfigLists,
+  type StatusExtrasOptions,
+  statusExtras,
+} from "./ui-status-extras.ts";
 import { parseUiStatus } from "./ui-status-parse.ts";
 
 export const UI_COMMAND_PREFIX = "opencode-permission-reviewer.status.";
@@ -42,12 +50,18 @@ export interface ReviewUiStatus {
    *  collection completes). */
   actorName?: string;
   actorProfile?: ActorProfile;
-}
-
-function boundedText(value: string, max: number): string {
-  const compact = value.replace(/\s+/g, " ").trim();
-  if (compact.length <= max) return compact;
-  return `${compact.slice(0, Math.max(0, max - 1))}…`;
+  /** Jev's hand-off to the reasoning reviewer, on the second "reviewing"
+   *  status and on the result of a handed-off review. */
+  handoff?: HandoffInfo;
+  /** How a manual outcome came about; chooses the manual-review toast. */
+  resolution?: ManualResolution;
+  /** The model that made the decision, on a final status a reviewer model
+   *  decided; absent on a brake, policy or failure-safe result. */
+  decidedBy?: string;
+  /** The server's config warnings and degraded-config reasons. V1 carries them
+   *  on every status; V2 reads them from the `status` RPC. */
+  configWarnings?: string[];
+  configDegraded?: string[];
 }
 
 export function permissionAction(request: PermissionRequest): string {
@@ -68,22 +82,24 @@ export function permissionAction(request: PermissionRequest): string {
   return boundedText(`${prefix}${detail ?? request.permission}`, 500);
 }
 
+export type UiStatusOptions = {
+  model: string;
+  variant: string;
+  timeoutMs: number;
+  reason?: string;
+  decision?: ReviewDecision;
+  escalationDisposition?: EscalationDisposition;
+  emittedAt?: number;
+  actorName?: string;
+  actorProfile?: ActorProfile;
+} & StatusExtrasOptions;
+
 export function createUiStatus(
   request: PermissionRequest,
   phase: ReviewUiPhase,
-  options: {
-    model: string;
-    variant: string;
-    timeoutMs: number;
-    reason?: string;
-    decision?: ReviewDecision;
-    escalationDisposition?: EscalationDisposition;
-    emittedAt?: number;
-    actorName?: string;
-    actorProfile?: ActorProfile;
-  },
+  options: UiStatusOptions,
 ): ReviewUiStatus {
-  return {
+  return fitConfigLists({
     version: 1,
     requestID: request.id,
     sessionID: request.sessionID,
@@ -107,7 +123,8 @@ export function createUiStatus(
     ...(options.actorProfile === undefined
       ? {}
       : { actorProfile: options.actorProfile }),
-  };
+    ...statusExtras(options),
+  });
 }
 
 export function encodeUiStatus(status: ReviewUiStatus): string {
