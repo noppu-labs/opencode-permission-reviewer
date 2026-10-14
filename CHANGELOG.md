@@ -73,8 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (fail-closed)" instead of "Review blocked", as V1 already did.
 - TUI: a status whose reason, decision rationale or script analysis is too long for the status
   message is no longer dropped. Config warning and degraded-config entries still go first; then the
-  rationale, the script analysis and, last, the reason are shortened as needed, each keeping its
-  start and ending in `…`, so the status shows on both hosts.
+  rationale, the script analysis and, last, the reason are shortened as needed, down to `…` alone
+  when the overflow calls for it, so the status shows on both hosts.
 
 ## [3.0.0] - 2026-10-12
 
