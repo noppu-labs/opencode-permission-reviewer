@@ -179,6 +179,40 @@ describe("audit writer", () => {
     });
   });
 
+  test("keeps the hand-off trigger and resolution and bounds and redacts config warnings", async () => {
+    const auditPath = join(directory, "audit.jsonl");
+    const writeAudit = writerFor(auditPath);
+    await writeAudit(
+      record({
+        reviewerEscalatedFrom: {
+          model: "opencode/jev-1.13-free",
+          reason: "Jev failed.",
+          trigger: "jev-failure",
+        },
+        resolution: "reasoning-unavailable",
+        configWarnings: [
+          `systemOneEscalation "${GITHUB_PAT_ALPHANUMERIC}" is not "standard" or "reasoning-first"; using "standard"`,
+          "w".repeat(5_000),
+        ],
+      }),
+    );
+    const parsed = await readOnlyRecord(auditPath);
+    expect(parsed.reviewerEscalatedFrom?.trigger).toBe("jev-failure");
+    expect(parsed.resolution).toBe("reasoning-unavailable");
+    const [secret, long] = defined(parsed.configWarnings, "configWarnings");
+    expect(secret).not.toContain(GITHUB_PAT_ALPHANUMERIC);
+    expect(secret).toStartWith("systemOneEscalation ");
+    expect(defined(long, "long warning").length).toBeLessThanOrEqual(2_001);
+  });
+
+  test("adds no config warnings key when the record has none", async () => {
+    const auditPath = join(directory, "audit.jsonl");
+    await writerFor(auditPath)(record());
+    expect(
+      Object.hasOwn(await readOnlyRecord(auditPath), "configWarnings"),
+    ).toBe(false);
+  });
+
   test("bounds and redacts the provider-reported System One model ID", async () => {
     const auditPath = join(directory, "audit.jsonl");
     const writeAudit = writerFor(auditPath);
@@ -558,6 +592,34 @@ describe("audit summary hardening", () => {
     expect(summary.firstTimestamp).toBe("2026-06-01T00:00:00.000Z");
     expect(summary.lastTimestamp).toBe("2026-06-03T00:00:00.000Z");
   }, 30_000);
+
+  test("counts hand-off triggers and resolutions and skips values that are not strings", async () => {
+    const file = join(directory, "audit.jsonl");
+    const jev = { model: "opencode/jev-1.13-free", reason: "r" };
+    await writeFile(
+      file,
+      toJsonl([
+        record({
+          reviewerEscalatedFrom: { ...jev, trigger: "jev-failure" },
+          resolution: "reasoning-unavailable",
+        }),
+        record({ reviewerEscalatedFrom: { ...jev, trigger: "jev-failure" } }),
+        record({ outcome: "escalate", resolution: "budget-exhausted" }),
+        {
+          ...record(),
+          reviewerEscalatedFrom: { ...jev, trigger: 7 },
+          resolution: ["reviewer"],
+        },
+        { ...record(), reviewerEscalatedFrom: "jev-escalate" },
+      ]),
+    );
+    const summary = readAuditSummary(file);
+    expect(summary.byHandoffTrigger).toEqual({ "jev-failure": 2 });
+    expect(summary.byResolution).toEqual({
+      "reasoning-unavailable": 1,
+      "budget-exhausted": 1,
+    });
+  });
 });
 
 describe("audit writer nested redaction", () => {

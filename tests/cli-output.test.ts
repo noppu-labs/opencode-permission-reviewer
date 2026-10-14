@@ -212,6 +212,43 @@ describe("audit report output", () => {
     });
   }, 15_000);
 
+  test("the human report counts hand-off triggers and resolutions when records carry them", async () => {
+    fresh();
+    const file = join(tmp, "audit.jsonl");
+    const from = {
+      model: "opencode/jev-1.13-free",
+      reason: "r",
+      trigger: "jev-escalate",
+    };
+    writeFileSync(
+      file,
+      toJsonl([
+        { ...rows[0], reviewerEscalatedFrom: from },
+        {
+          ...rows[0],
+          requestID: "r4",
+          outcome: "escalate",
+          reviewerEscalatedFrom: from,
+          resolution: "reasoning-escalated",
+        },
+        {
+          ...rows[0],
+          requestID: "r5",
+          outcome: "escalate",
+          resolution: "budget-exhausted",
+        },
+      ]),
+    );
+    const lines = (await cli(["audit", "report", "--path", file])).stdout.split(
+      "\n",
+    );
+    const permission = lines.indexOf("  by permission:     bash 3");
+    expect(lines.slice(permission + 1, permission + 3)).toEqual([
+      "  by hand-off:       jev-escalate 2",
+      "  by resolution:     reasoning-escalated 1 | budget-exhausted 1",
+    ]);
+  }, 15_000);
+
   test("an empty report omits the optional sections and caps lists at ten", async () => {
     fresh();
     const file = join(tmp, "audit.jsonl");

@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { PermissionEvaluation } from "@opencode/plugin/promise/permission";
 import packageInfo from "../../../package.json";
 import type { ReviewAuditRecord } from "../../audit-record.ts";
+import { configWarningsField } from "../../core/review-audit-outcome.ts";
 import { REVIEWER_PROMPT_VERSION } from "../../policy.ts";
 import type { ReviewExecutionResult } from "../../types.ts";
 import { evidenceFields } from "./server-audit-evidence.ts";
@@ -53,6 +54,7 @@ function decisionFields(
   | "scopeAlignment"
   | "confidence"
   | "escalationDisposition"
+  | "resolution"
 > {
   return {
     ...(result.decision
@@ -67,6 +69,7 @@ function decisionFields(
     ...(result.escalationDisposition
       ? { escalationDisposition: result.escalationDisposition }
       : {}),
+    ...(result.resolution ? { resolution: result.resolution } : {}),
   };
 }
 
@@ -93,6 +96,7 @@ export function reviewAuditRecord(
     reviewerModel: result.reviewerModel ?? scope.config.model,
     ...reviewerFields(result),
     effectiveConfigHash: scope.effectiveConfigHash,
+    ...configWarningsField(scope.config),
     ...fingerprintField(run),
     reviewID: attempt.id,
     requestID: attempt.id,

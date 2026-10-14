@@ -98,6 +98,8 @@ export function summarizeAuditTail(
     byRiskLevel: emptyCounts(),
     byDecisionSource: emptyCounts(),
     byPermission: emptyCounts(),
+    byHandoffTrigger: emptyCounts(),
+    byResolution: emptyCounts(),
     unknownActorNames: [],
     missingRequiredFields: [],
   };
