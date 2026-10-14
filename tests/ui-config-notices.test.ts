@@ -18,6 +18,7 @@ const DENIAL_NOT_JEV =
   "systemOneDenialReview is inactive: the reviewer model is not Jev";
 const INVALID = 'systemOneDenialReview "yes" is not a boolean; using false';
 const DEGRADED = "global config escalationReviewer is invalid and was ignored";
+const LUNA = "openai/gpt-6-luna";
 
 function tracked(): { notices: ConfigNotices; toasts: ConfigToast[] } {
   const toasts: ConfigToast[] = [];
@@ -154,5 +155,46 @@ describe("config notices", () => {
       await notices.refresh(async () => ({ configWarnings: [] }), live.signal),
     ).toBe(false);
     expect(notices.sidebar()).toBeDefined();
+  });
+
+  test("refresh keeps the reasoning reviewer's model, and reset drops it with the lists", async () => {
+    const { notices } = tracked();
+    const live = new AbortController();
+    expect(notices.reasoningModel).toBeUndefined();
+    await notices.refresh(
+      async () => ({
+        escalationReviewerModel: LUNA,
+        configWarnings: [NOT_JEV],
+      }),
+      live.signal,
+    );
+    expect(notices.reasoningModel).toBe(LUNA);
+    notices.reset();
+    expect(notices.reasoningModel).toBeUndefined();
+    expect(notices.sidebar()).toBeUndefined();
+    await notices.refresh(
+      async () => ({ escalationReviewerModel: 7 }),
+      live.signal,
+    );
+    expect(notices.reasoningModel).toBeUndefined();
+  });
+
+  test("a failed or dropped refresh keeps the model it had", async () => {
+    const { notices } = tracked();
+    const live = new AbortController();
+    await notices.refresh(
+      async () => ({ escalationReviewerModel: LUNA }),
+      live.signal,
+    );
+    await notices.refresh(async () => {
+      throw new Error("offline");
+    }, live.signal);
+    expect(notices.reasoningModel).toBe(LUNA);
+    live.abort();
+    await notices.refresh(
+      async () => ({ escalationReviewerModel: "openai/other" }),
+      live.signal,
+    );
+    expect(notices.reasoningModel).toBe(LUNA);
   });
 });

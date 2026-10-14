@@ -2,7 +2,7 @@
 // how the review ended, then the reason.
 import { failureKind } from "../failure-kind.ts";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
-import { handoffCause, shortModelName } from "./attribution.ts";
+import { handoffCause, modelLabel, shortModelName } from "./attribution.ts";
 
 export interface ManualToast {
   variant: "warning" | "error";
@@ -29,7 +29,7 @@ const withReason = (lead: string, reason: string | undefined): string =>
 /** Without a hand-off, `status.model` is the reasoning reviewer on these
  *  resolutions. */
 const reasoningModel = (status: ReviewUiStatus): string =>
-  shortModelName(status.handoff?.to ?? status.model);
+  modelLabel(status.handoff?.to ?? status.model);
 
 function unavailable(status: ReviewUiStatus): ManualToast {
   const kind = failureKind(status.reason ?? "");
@@ -54,14 +54,13 @@ function noTimeLeft(
   const parts = reason === undefined ? null : BUDGET_REASON.exec(reason);
   if (handoff !== undefined)
     return withReason(
-      `${NO_TIME_LEAD} ${shortModelName(handoff.to)} after Jev (${handoffCause(handoff)}).`,
+      `${NO_TIME_LEAD} ${shortModelName(handoff.to) || GENERIC_REVIEWER} after Jev (${handoffCause(handoff)}).`,
       parts === null ? reason : parts[2],
     );
   if (reason === undefined)
     return `${NO_TIME_LEAD} ${GENERIC_REVIEWER} after Jev.`;
   if (parts === null) return reason;
-  const name =
-    reviewer === undefined ? GENERIC_REVIEWER : shortModelName(reviewer);
+  const name = shortModelName(reviewer ?? "") || GENERIC_REVIEWER;
   return `${NO_TIME_LEAD} ${name} after Jev (${parts[1]}). ${parts[2]}`;
 }
 

@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   toasts, config warnings and long commands. The README shows the hand-off and result screens. The
   images are rendered from the plugin's components; `bun run docs:screens` regenerates them
   (`docs/DEVELOPMENT.md`, "TUI screens").
+- A config warning when `model` is Jev, a valid `escalationReviewer` is configured and an explicit
+  `reviewBudgetMs` leaves less than 15000 ms after `timeoutMs`: hand-offs to the reasoning reviewer
+  would escalate to you instead. It applies in either routing mode, never degrades the config, and
+  the default budget never triggers it.
 
 ### Changed
 
@@ -52,6 +56,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the reasoning reviewer's review still needs your approval, the reasoning
   reviewer was unavailable (an error toast titled "Reasoning reviewer
   unavailable"), or no review time was left for it. The reason still follows.
+- TUI: the progress strip and the V1 overlay name the reviewer by the last segment of its model
+  ID (`jev-1.13.0`), like the rest of the TUI. On V2, the toast for a review with no time left for
+  the hand-off now names the reasoning reviewer's model, as on V1; the V2 TUI reads it from the
+  reviewer's `status` RPC (`escalationReviewerModel`).
 - The TUI no longer hides the end of a long command. The progress strip, the result strip and the
   V1 overlay show the first command, a muted `⋯ N more ⋯` and as many of the last commands as fit,
   and a heredoc body the server can match shows as `⋯ N-line heredoc ⋯` instead of its contents. A

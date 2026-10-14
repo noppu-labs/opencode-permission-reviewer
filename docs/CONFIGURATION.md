@@ -92,8 +92,10 @@ for inspection on either host generation. Leave it `false` in normal use.
 `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000`: never less than
 `2 * timeoutMs + 60000`, and longer when the escalation reviewer's timeout is. An
 `escalationReviewer` without its own `timeoutMs` counts its default, `120000`. A hand-off to the
-reasoning reviewer needs 15 seconds of budget left, so a `reviewBudgetMs` at or below
-`timeoutMs + 15000` leaves no room for one after a Jev timeout.
+reasoning reviewer needs 15 seconds of budget left, and the budget also counts the time before
+Jev's call, so a `reviewBudgetMs` at or below `timeoutMs + 15000` leaves no room for one after a
+Jev timeout. An explicit `reviewBudgetMs` under that line raises a
+[config warning](#config-warnings).
 
 ## Cost
 
@@ -211,6 +213,10 @@ You get a warning when:
   because `model` is not Jev or no valid `escalationReviewer` is configured. For example:
   `systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev
   escalations still go to you`.
+- `model` is Jev, a valid `escalationReviewer` is configured, and an explicit `reviewBudgetMs`
+  leaves less than 15000 ms after `timeoutMs`, whichever routing settings are on. Hand-offs to the
+  reasoning reviewer then escalate to you instead. For example: `reviewBudgetMs 20000 leaves less
+  than 15000 ms after timeoutMs; hand-offs to the reasoning reviewer will escalate to you instead`.
 
 ## Declarative policy rules
 

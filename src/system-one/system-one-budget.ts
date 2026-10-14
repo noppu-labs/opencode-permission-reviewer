@@ -1,10 +1,10 @@
 import { applyEscalationDisposition } from "../escalation.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../system-one-routing.ts";
 import type {
   HandoffTrigger,
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "./system-one-handoff.ts";
 import type { JevResult } from "./system-one-results.ts";
 
 const TRIGGER_CAUSE: Record<HandoffTrigger, string> = {

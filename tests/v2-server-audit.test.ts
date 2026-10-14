@@ -194,6 +194,7 @@ test.each([
       "revision",
       "outputFormat",
       "model",
+      "escalationReviewerModel",
       "variant",
       "configDegraded",
       "configWarnings",

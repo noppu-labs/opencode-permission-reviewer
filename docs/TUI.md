@@ -6,9 +6,9 @@ explains how. Toasts and the sidebar are drawn by OpenCode, so their images show
 variant the plugin sends, without the host's frame.
 
 The examples use Jev (`typesafe-ai/jev-1.13.0`) as the reviewer and `openai/gpt-6-luna` as the
-`escalationReviewer`. While Jev reviews, the progress strip and the overlay show the configured
-model ID. Everywhere else, including the hand-off and result text, a model is named by the last
-segment of its ID. Captions starting with `#` label the examples and are not part of the TUI.
+`escalationReviewer`. The TUI names a model by the last segment of its ID, so they show as
+`jev-1.13.0` and `gpt-6-luna`. Captions starting with `#` label the examples and are not part of
+the TUI.
 
 ## While a review runs
 
@@ -20,7 +20,7 @@ time. Line 2 has the permission and the action. When Jev hands a request to the 
 reviewer, line 1 names the reasoning reviewer and why it took over. The elapsed time keeps
 counting from the start of the review.
 
-![Two progress strips. While Jev reviews: "◐ Reviewing this permission · typesafe-ai/jev-1.13.0 · system-one", 2.1s. After the hand-off: "◓ Reviewing this permission · gpt-6-luna after Jev's escalation · medium", 7.3s. Both show "bash · $ git push --force-with-lease origin release/2.4".](images/handoff-progress.svg)
+![Two progress strips. While Jev reviews: "◐ Reviewing this permission · jev-1.13.0 · system-one", 2.1s. After the hand-off: "◓ Reviewing this permission · gpt-6-luna after Jev's escalation · medium", 7.3s. Both show "bash · $ git push --force-with-lease origin release/2.4".](images/handoff-progress.svg)
 
 ### Overlay (V1)
 
@@ -64,14 +64,14 @@ toast falls back to a fixed sentence.
 | --- | --- | --- | --- |
 | The reasoning reviewer reviewed it after Jev and it still needs you | warning | Manual review required | `gpt-6-luna reviewed this after Jev; it needs your approval: <reason>` |
 | The reasoning reviewer failed | error | Reasoning reviewer unavailable | `gpt-6-luna failed (<kind>). This permission needs your approval. <reason>` |
-| No review time was left for the hand-off, on V1 | warning | Manual review required | `No review time left for gpt-6-luna after Jev (<cause>). <reason>` |
-| No review time was left for the hand-off, on V2 | warning | Manual review required | `No review time left for the reasoning reviewer after Jev (<cause>). <reason>` |
+| No review time was left for the hand-off | warning | Manual review required | `No review time left for gpt-6-luna after Jev (<cause>). <reason>` |
 | The reviewer escalated without a hand-off | warning | Manual review required | the reviewer's reason |
 
-V1 knows the configured reasoning reviewer, so it names the model when no review time was left;
-V2 says "the reasoning reviewer". The image shows the V1 wording.
+Both hosts name the configured reasoning reviewer when no review time was left: V1 from its own
+config, V2 from the reviewer's `status` RPC. When the TUI does not know it, the toast says "the
+reasoning reviewer".
 
-![Toast text for four manual outcomes. "Manual review required" (warning): "gpt-6-luna reviewed this after Jev; it needs your approval: The force-push would rewrite a shared branch." "Reasoning reviewer unavailable" (error): "gpt-6-luna failed (timeout). This permission needs your approval." followed by the failure reason. "Manual review required" (warning), as V1 shows it: "No review time left for gpt-6-luna after Jev (Jev escalated)." followed by the reason. "Manual review required" (warning) with only the reviewer's reason when there was no hand-off.](images/manual-toasts.svg)
+![Toast text for four manual outcomes. "Manual review required" (warning): "gpt-6-luna reviewed this after Jev; it needs your approval: The force-push would rewrite a shared branch." "Reasoning reviewer unavailable" (error): "gpt-6-luna failed (timeout). This permission needs your approval." followed by the failure reason. "Manual review required" (warning): "No review time left for gpt-6-luna after Jev (Jev escalated)." followed by the reason. "Manual review required" (warning) with only the reviewer's reason when there was no hand-off.](images/manual-toasts.svg)
 
 ## Config warnings
 

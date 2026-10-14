@@ -4,6 +4,7 @@ import type { HandoffTrigger } from "../src/types.ts";
 import {
   attributionText,
   handoffCause,
+  modelLabel,
   resultDetail,
   reviewerLabel,
   shortModelName,
@@ -47,6 +48,17 @@ describe("short model name", () => {
     ["   ", ""],
   ])("shortens %p to %p", (model, short) => {
     expect(shortModelName(model)).toBe(short);
+  });
+});
+
+describe("model label", () => {
+  test.each([
+    ["typesafe-ai/jev-1.13.0", "jev-1.13.0"],
+    ["omniroute/auto/gpt-6-luna", "gpt-6-luna"],
+    ["gpt-6-luna", "gpt-6-luna"],
+    ["///", "///"],
+  ])("labels %p as %p", (model, label) => {
+    expect(modelLabel(model)).toBe(label);
   });
 });
 
@@ -217,13 +229,24 @@ describe("strip text", () => {
         status("denied", { model: JEV, reason: "Emergency brake: stop." }),
       ),
     ).toBe("Emergency brake: stop.");
+    expect(
+      resultDetail(status("approved", { decidedBy: "///", reason: "ok" })),
+    ).toBe("/// — ok");
   });
 
-  test("the progress label shows the hand-off, else the full model", () => {
+  test("the progress label shows the hand-off, else the model's label", () => {
     expect(
       reviewerLabel(status("reviewing", { handoff: handoff("jev-escalate") })),
     ).toBe("gpt-6-luna after Jev's escalation");
-    expect(reviewerLabel(status("reviewing"))).toBe(LUNA);
+    expect(reviewerLabel(status("reviewing"))).toBe("gpt-6-luna");
+    expect(reviewerLabel(status("reviewing", { model: "///" }))).toBe("///");
+    expect(
+      reviewerLabel(
+        status("reviewing", {
+          handoff: { ...handoff("jev-escalate"), to: "///" },
+        }),
+      ),
+    ).toBe("/// after Jev's escalation");
   });
 
   test.each<[HandoffTrigger, string | undefined, string]>([

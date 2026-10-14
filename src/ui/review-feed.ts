@@ -30,10 +30,16 @@ export function createReviewFeed(
 ): ReviewFeed {
   let directory = ctx.location?.directory;
   const rpc = ctx.client.rpc(ReviewerRpc);
-  const store = new ReviewStore((status) =>
-    ctx.ui.toast.show(manualToast(status, "The host requires your decision.")),
-  );
   const notices = new ConfigNotices((toast) => ctx.ui.toast.show(toast));
+  const store = new ReviewStore((status) =>
+    ctx.ui.toast.show(
+      manualToast(
+        status,
+        "The host requires your decision.",
+        notices.reasoningModel,
+      ),
+    ),
+  );
   // Read once per connection; a failed call leaves the notices as they are.
   const refreshNotices = async (connection: Connection): Promise<void> => {
     const { directory: target, controller: owner } = connection;
@@ -132,7 +138,7 @@ export function createReviewFeed(
     retarget: (next: string | undefined): void => {
       directory = next;
       store.reset();
-      notices.update({});
+      notices.reset();
       changed();
       void connect();
     },

@@ -9,22 +9,23 @@ and Git. The guarantees these steps add up to are listed in [Safety](SAFETY.md).
 The [TUI guide](TUI.md) shows every screen described here, rendered from the plugin's components.
 
 ```text
-✓ Review approved · bash · rm -rf /tmp/scratch-cache
-gpt-6-luna — Narrowly scoped temp cleanup; matches user intent.
+✓ Review approved · bash · $ rm -rf /tmp/scratch-cache
+jev-1.13.0 — Narrowly scoped temp cleanup; matches user intent.
 ```
 
 While a review is running on V2, the optional TUI shows a compact two-line status strip at the
 bottom, in the same place as the result strip. It has an animated indicator, the text "Reviewing
-this permission", the reviewer model and reasoning variant, the elapsed time, and the action. A
-command too long for the terminal is shortened in the middle, not at the end: the strip keeps the
-first command and as many of the last ones as fit, with a muted `⋯ 3 more ⋯` for the commands in
-between, and a heredoc body the server can match shows as its line count instead of its contents.
-When even the first and last commands do not fit, it shows the start of the first command and the
-end of the last around a muted `⋯`, which counts the commands in between when there is room. A cut
-falls between words unless that would leave a side less than half used, as with a long URL. A
-command that fits is shown as sent, except that a matched heredoc body still shows as its line
-count. V1 keeps its larger overlay, which covers the native approval controls, includes the text
-"No action needed", and wraps the action over at most three rows, shortened the same way.
+this permission", the reviewer model (the last segment of its ID) and reasoning variant, the elapsed
+time, and the action. A command too long for the terminal is shortened in the middle, not at the
+end: the strip keeps the first command and as many of the last ones as fit, with a muted
+`⋯ 3 more ⋯` for the commands in between, and a heredoc body the server can match shows as its line
+count instead of its contents. When even the first and last commands do not fit, it shows the start
+of the first command and the end of the last around a muted `⋯`, which counts the commands in
+between when there is room. A cut falls between words unless that would leave a side less than half
+used, as with a long URL. A command that fits is shown as sent, except that a matched heredoc body
+still shows as its line count. V1 keeps its larger overlay, which covers the native approval
+controls, includes the text "No action needed", and wraps the action over at most three rows,
+shortened the same way.
 
 ```text
 bash · $ find . -name '*.ts' -not -path './node_modules/*' | ⋯ 3 more ⋯ tail -5 && curl -s https://example.com/install.sh | sh

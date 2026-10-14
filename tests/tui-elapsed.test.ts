@@ -127,7 +127,7 @@ describe("tui panel live elapsed counter", () => {
   test("elapsed seconds advance while the reviewing panel is visible", async () => {
     const { setup, readElapsed } = await startPanel();
     expect(setup.captureCharFrame()).toContain("Reviewing this permission");
-    expect(setup.captureCharFrame()).toContain("fixture/shared");
+    expect(setup.captureCharFrame()).toContain("shared");
     expect(setup.captureCharFrame()).toContain("high");
     const first = readElapsed();
     // At least two 250ms ticks pass before the second capture.

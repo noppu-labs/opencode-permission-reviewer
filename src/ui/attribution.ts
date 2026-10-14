@@ -35,6 +35,11 @@ export function shortModelName(model: string): string {
   return segments.at(-1) ?? "";
 }
 
+/** The last non-blank path segment, or the whole id when there is none ("///"). */
+export function modelLabel(model: string): string {
+  return shortModelName(model) || model;
+}
+
 const jevFailed = (kind: string | undefined): string =>
   kind === undefined ? "Jev failed" : `Jev failed (${kind})`;
 
@@ -76,8 +81,8 @@ function creditedModel(status: ReviewUiStatus): string | undefined {
 export function attributionText(status: ReviewUiStatus): string | undefined {
   const phrase = handoffPhrase(status);
   if (phrase !== undefined && status.handoff !== undefined)
-    return `${shortModelName(status.handoff.to)} ${phrase}`;
-  const model = shortModelName(creditedModel(status) ?? "");
+    return `${modelLabel(status.handoff.to)} ${phrase}`;
+  const model = modelLabel(creditedModel(status) ?? "");
   return model === "" ? undefined : model;
 }
 
@@ -90,10 +95,10 @@ export function handoffCause(handoff: HandoffInfo): string {
 }
 
 /** The progress strip's reviewer: the hand-off while the reasoning reviewer
- *  runs, else the model as configured. */
+ *  runs, else the model's label. */
 export function reviewerLabel(status: ReviewUiStatus): string {
-  if (status.handoff === undefined) return status.model;
-  return attributionText(status) ?? status.model;
+  if (status.handoff === undefined) return modelLabel(status.model);
+  return attributionText(status) ?? modelLabel(status.model);
 }
 
 /** Result strip line 2: "<attribution> — <reason>". The reason alone when no

@@ -171,7 +171,8 @@ test("TUI restores authoritative snapshots after disconnect and isolates routes,
     const occupied = progressFrame.split("\n").filter((line) => line.trim());
     expect(occupied).toHaveLength(2);
     expect(progressFrame.split("\n").findIndex((line) => line.trim())).toBe(22);
-    expect(occupied[0]).toContain("fixture/reviewer");
+    expect(occupied[0]).toContain("Reviewing this permission · reviewer · max");
+    expect(occupied[0]).not.toContain("fixture/");
     expect(occupied[1]).toContain("printf long action");
     const firstElapsed = Number(progressFrame.match(/(\d+\.\d)s/)?.[1]);
     await Bun.sleep(700);

@@ -131,17 +131,17 @@ describe("review result strip", () => {
 });
 
 describe("review progress strip", () => {
-  test("shows the model, variant, permission and action without an actor", async () => {
+  test("shows the model's last path segment, variant, permission and action without an actor", async () => {
     const shown = await rows(() =>
       ReviewProgress({
         theme,
         frame,
-        status: status("reviewing", { model: "fixture/\nreviewer" }),
+        status: status("reviewing", { model: "fixture/review\ner" }),
       }),
     );
     expect(shown).toHaveLength(2);
     expect(shown[0]).toStartWith(
-      "◐ Reviewing this permission · fixture/ reviewer · max",
+      "◐ Reviewing this permission · review er · max",
     );
     expect(shown[0]).toMatch(/\d+\.\ds$/);
     expect(shown[1]).toBe("bash · $ printf safe");
@@ -193,7 +193,7 @@ describe("review overlay", () => {
     expect(shown[1]).toMatch(/^│ {2}◐ Reviewing this permission +\d+\.\ds$/);
     expect(shown[3]).toBe("│    bash $ printf safe · actor builder");
     expect(shown[5]).toMatch(
-      /^│ {4}fixture\/reviewer · reasoning max +No action needed$/,
+      /^│ {4}reviewer · reasoning max +No action needed$/,
     );
   });
 

@@ -4,6 +4,7 @@ import {
   DIRECTORY,
   event,
   gate,
+  type Host,
   host,
   latest,
   moveTo,
@@ -329,6 +330,93 @@ describe("V2 TUI reviewer feed", () => {
     await running.sees("⋯ 5 more ⋯ sh");
     expect(running.frame()).toContain(
       "bash · $ find . -name '*.ts' -not -path './node_modules/*' | ⋯ 5 more ⋯ sh",
+    );
+  });
+
+  const BUDGET_REASON =
+    "No review time left for the reasoning reviewer after Jev escalated: 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
+  const BUDGET_REST =
+    "4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
+
+  async function budgetToastMessage(
+    statusAnswer: Partial<Host>,
+  ): Promise<string | undefined> {
+    const running = await start(
+      host({
+        ...statusAnswer,
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    await running.sees("Reviewing this permission");
+    push(
+      latest(running.state),
+      event(
+        update(2, {
+          ...status("manual", { reason: BUDGET_REASON }),
+          resolution: "budget-exhausted",
+        }),
+      ),
+    );
+    await running.until(
+      () => running.state.toasts.length === 1,
+      "budget toast",
+    );
+    return running.state.toasts[0]?.message;
+  }
+
+  test("the budget toast names the reasoning reviewer's model from the status RPC", async () => {
+    expect(
+      await budgetToastMessage({
+        status: () => ({
+          escalationReviewerModel: "omniroute/auto/gpt-6-luna",
+        }),
+      }),
+    ).toBe(
+      `No review time left for gpt-6-luna after Jev (Jev escalated). ${BUDGET_REST}`,
+    );
+  });
+
+  test("without a model from the status RPC the budget toast keeps the generic name", async () => {
+    expect(await budgetToastMessage({})).toBe(
+      `No review time left for the reasoning reviewer after Jev (Jev escalated). ${BUDGET_REST}`,
+    );
+  });
+
+  test("after a directory change the budget toast drops the previous server's model", async () => {
+    const budget = (directory: string): ReturnType<typeof event> =>
+      event(
+        update(
+          2,
+          {
+            ...status("manual", { reason: BUDGET_REASON }),
+            resolution: "budget-exhausted",
+          },
+          { directory },
+        ),
+        directory,
+      );
+    const state = host({
+      status: (directory: string): unknown =>
+        directory === DIRECTORY
+          ? { escalationReviewerModel: "omniroute/auto/gpt-6-luna" }
+          : Promise.reject(new Error("older server")),
+      respond: [
+        () => snapshot([status("reviewing")]),
+        (directory: string) => snapshot([status("reviewing")], { directory }),
+      ],
+    });
+    const running = await start(state);
+    await running.sees("Reviewing this permission");
+    push(latest(state), budget(DIRECTORY));
+    await running.until(() => state.toasts.length === 1, "first toast");
+    expect(state.toasts[0]?.message).toContain("for gpt-6-luna after Jev");
+    moveTo(state, SECOND);
+    await running.until(() => state.snapshots.length === 2, "second snapshot");
+    await running.sees("Reviewing this permission");
+    push(latest(state), budget(SECOND));
+    await running.until(() => state.toasts.length === 2, "second toast");
+    expect(state.toasts[1]?.message).toBe(
+      `No review time left for the reasoning reviewer after Jev (Jev escalated). ${BUDGET_REST}`,
     );
   });
 });

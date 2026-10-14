@@ -52,6 +52,7 @@ function statusHandlers(state: ServerState): RpcHandlers<typeof ReviewerRpc> {
       revision: state.revision,
       outputFormat: systemOneReviewer ? "system_one" : config.outputFormat,
       model: config.model,
+      escalationReviewerModel: config.escalationReviewer?.model,
       variant: systemOneReviewer ? "system-one" : config.variant,
       configDegraded: config.configDegraded ?? [],
       configWarnings: config.configWarnings ?? [],

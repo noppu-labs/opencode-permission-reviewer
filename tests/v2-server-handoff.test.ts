@@ -127,3 +127,14 @@ test("the status RPC reports config warnings beside the degraded reasons", async
     configDegraded: [],
   });
 });
+
+test("the status RPC names the configured reasoning reviewer's model", async () => {
+  const configured = await start({
+    config: { model: JEV, escalationReviewer: REASONING },
+  });
+  expect(await configured.rpc.status()).toMatchObject({
+    escalationReviewerModel: LUNA,
+  });
+  const none = await start();
+  expect((await none.rpc.status()).escalationReviewerModel).toBeUndefined();
+});
