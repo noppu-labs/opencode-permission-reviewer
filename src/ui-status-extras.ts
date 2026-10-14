@@ -1,7 +1,7 @@
-// The optional status fields that carry routing and config state, bounded so
-// an encoded status always fits the TUI command cap.
+// Bounds the routing and config fields, then fits the whole status to the TUI
+// command cap. Oversized identifiers are not cut, so they can still overflow it.
 import type { HandoffInfo } from "./system-one/backend.ts";
-import type { ManualResolution } from "./types.ts";
+import type { ManualResolution, ReviewDecision } from "./types.ts";
 
 const MAX_LIST_ENTRIES = 5;
 const MAX_ENTRY_CHARS = 200;
@@ -88,14 +88,78 @@ function withoutLastEntry<T extends StatusExtras>(status: T): T | undefined {
   return (kept.length === 0 ? rest : { ...rest, [key]: kept }) as T;
 }
 
+/** The config lists the fit drops and the texts it shortens. */
+interface FittableStatus extends StatusExtras {
+  reason?: string;
+  decision?: Pick<ReviewDecision, "rationale" | "script_analysis">;
+}
+
+const FITTABLE_FIELDS = ["rationale", "script_analysis", "reason"] as const;
+type FittableField = (typeof FITTABLE_FIELDS)[number];
+
+const ELLIPSIS = "…";
+
+function jsonBytes(value: unknown): number {
+  return Buffer.byteLength(JSON.stringify(value), "utf8");
+}
+
 /** Drops config list entries, warnings before degraded reasons and the last
  *  first, until the encoded status fits the cap. */
-export function fitConfigLists<T extends StatusExtras>(status: T): T {
+function fitConfigLists<T extends StatusExtras>(status: T): T {
   let fitted = status;
-  while (Buffer.byteLength(JSON.stringify(fitted), "utf8") > MAX_STATUS_BYTES) {
+  while (jsonBytes(fitted) > MAX_STATUS_BYTES) {
     const next = withoutLastEntry(fitted);
     if (next === undefined) break;
     fitted = next;
+  }
+  return fitted;
+}
+
+/** Cuts on a code-point boundary so the JSON form, "…" included, is at least
+ *  `excess` bytes smaller; "…" alone when even the whole text is not enough. */
+function shortenedBy(text: string, excess: number): string {
+  if (jsonBytes(text) <= jsonBytes(ELLIPSIS)) return text;
+  let room = jsonBytes(text) - excess - jsonBytes(ELLIPSIS);
+  let end = 0;
+  for (const char of text) {
+    room -= jsonBytes(char) - 2;
+    if (room < 0) break;
+    end += char.length;
+  }
+  return `${text.slice(0, end)}${ELLIPSIS}`;
+}
+
+function withShorter<T extends FittableStatus>(
+  status: T,
+  field: FittableField,
+  excess: number,
+): T {
+  if (field === "reason") {
+    const { reason } = status;
+    return reason === undefined
+      ? status
+      : { ...status, reason: shortenedBy(reason, excess) };
+  }
+  const { decision } = status;
+  const text = decision?.[field];
+  return decision === undefined || text === undefined
+    ? status
+    : {
+        ...status,
+        decision: { ...decision, [field]: shortenedBy(text, excess) },
+      };
+}
+
+/** Drops config entries, then shortens fields in FITTABLE_FIELDS order. The
+ *  TUI shows only reason, and the gate paths copy the rationale into it, so the
+ *  hidden fields go first. A status under the cap comes back as the same
+ *  object. */
+export function fitStatus<T extends FittableStatus>(status: T): T {
+  let fitted = fitConfigLists(status);
+  for (const field of FITTABLE_FIELDS) {
+    const excess = jsonBytes(fitted) - MAX_STATUS_BYTES;
+    if (excess <= 0) break;
+    fitted = withShorter(fitted, field, excess);
   }
   return fitted;
 }

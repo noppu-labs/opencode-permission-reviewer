@@ -22,7 +22,7 @@ import {
   HEREDOC_SEGMENTS,
   LONG_COMMAND,
 } from "./action-fixtures.ts";
-import { request } from "./helpers.ts";
+import { decision, request } from "./helpers.ts";
 
 /** Fixture segments without the `$ ` prompt `createServerUiStatus` adds. */
 function unprompted(segments: readonly ActionSegment[]): ActionSegment[] {
@@ -367,14 +367,15 @@ describe("server statuses", () => {
   });
 
   test("leave segments off a status they would push past the cap", () => {
+    const { reason: _reason, ...withoutReason } = WIDE_OPTIONS;
     const wideRequest = request({
-      id: wide(300),
-      sessionID: wide(300),
+      id: wide(1_300),
+      sessionID: wide(1_300),
       metadata: { command: WIDE_COMMAND },
     });
-    const plain = createUiStatus(wideRequest, "reviewing", WIDE_OPTIONS);
+    const plain = createUiStatus(wideRequest, "reviewing", withoutReason);
     const withSegments = createUiStatus(wideRequest, "reviewing", {
-      ...WIDE_OPTIONS,
+      ...withoutReason,
       actionSegments: actionSegments(WIDE_COMMAND) ?? [],
     });
     expect(Buffer.byteLength(JSON.stringify(plain))).toBeLessThanOrEqual(
@@ -383,8 +384,77 @@ describe("server statuses", () => {
     expect(Buffer.byteLength(JSON.stringify(withSegments))).toBeGreaterThan(
       MAX_STATUS_BYTES,
     );
-    const status = createServerUiStatus(wideRequest, "reviewing", WIDE_OPTIONS);
+    const status = createServerUiStatus(
+      wideRequest,
+      "reviewing",
+      withoutReason,
+    );
     expect(status).toEqual(plain);
+    expect("actionSegments" in status).toBe(false);
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("leave segments off rather than shorten the reason", () => {
+    const wideRequest = request({
+      id: wide(300),
+      sessionID: wide(300),
+      metadata: { command: WIDE_COMMAND },
+    });
+    const withSegments = createUiStatus(wideRequest, "reviewing", {
+      ...WIDE_OPTIONS,
+      actionSegments: actionSegments(WIDE_COMMAND) ?? [],
+    });
+    expect(withSegments.reason).toEndWith("…");
+    const status = createServerUiStatus(wideRequest, "reviewing", WIDE_OPTIONS);
+    expect(status.reason).toBe(WIDE_OPTIONS.reason);
+    expect("actionSegments" in status).toBe(false);
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("leave segments off rather than shorten the rationale", () => {
+    const { reason: _reason, ...withoutReason } = WIDE_OPTIONS;
+    const withRationale = {
+      ...withoutReason,
+      decision: decision("deny", { rationale: wide(2_000) }),
+    };
+    const wideRequest = request({
+      id: wide(300),
+      sessionID: wide(300),
+      metadata: { command: WIDE_COMMAND },
+    });
+    const withSegments = createUiStatus(wideRequest, "denied", {
+      ...withRationale,
+      actionSegments: actionSegments(WIDE_COMMAND) ?? [],
+    });
+    expect(withSegments.decision?.rationale).toEndWith("…");
+    const status = createServerUiStatus(wideRequest, "denied", withRationale);
+    expect(status.decision?.rationale).toBe(wide(2_000));
+    expect("actionSegments" in status).toBe(false);
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("leave segments off rather than shorten the script analysis", () => {
+    const { reason: _reason, ...withoutReason } = WIDE_OPTIONS;
+    const withAnalysis = {
+      ...withoutReason,
+      decision: decision("deny", {
+        rationale: "No.",
+        script_analysis: wide(1_500),
+      }),
+    };
+    const wideRequest = request({
+      id: wide(500),
+      sessionID: wide(500),
+      metadata: { command: WIDE_COMMAND },
+    });
+    const withSegments = createUiStatus(wideRequest, "denied", {
+      ...withAnalysis,
+      actionSegments: actionSegments(WIDE_COMMAND) ?? [],
+    });
+    expect(withSegments.decision?.script_analysis).toEndWith("…");
+    expect(withSegments.decision?.rationale).toBe("No.");
+    const status = createServerUiStatus(wideRequest, "denied", withAnalysis);
+    expect(status.decision?.script_analysis).toBe(wide(1_500));
     expect("actionSegments" in status).toBe(false);
     expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
   });

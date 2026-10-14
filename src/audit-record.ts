@@ -4,8 +4,8 @@ import type { EvidenceConfidence } from "./actor-context-types.ts";
 import type { SystemOneScores } from "./system-one/system-one-types.ts";
 import type {
   ActorProfile,
+  EscalatedFrom,
   EscalationDisposition,
-  HandoffTrigger,
   ManualResolution,
   ReviewExecutionResult,
   ReviewOutcome,
@@ -87,11 +87,7 @@ export interface ReviewAuditRecord {
   reviewerModel?: string;
   /** Present when a System One result was handed to a reasoning reviewer;
    *  `trigger` says why. */
-  reviewerEscalatedFrom?: {
-    model: string;
-    reason: string;
-    trigger?: HandoffTrigger;
-  };
+  reviewerEscalatedFrom?: EscalatedFrom;
   /** How an escalation from the System One backend was reached. */
   resolution?: ManualResolution;
   /** Warnings on the resolved config (inert or invalid settings); present
