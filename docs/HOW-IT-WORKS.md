@@ -6,6 +6,8 @@ and Git. The guarantees these steps add up to are listed in [Safety](SAFETY.md).
 
 ## What you'll see
 
+The [TUI guide](TUI.md) shows every screen described here, rendered from the plugin's components.
+
 ```text
 ✓ Review approved · bash · rm -rf /tmp/scratch-cache
 gpt-6-luna — Narrowly scoped temp cleanup; matches user intent.

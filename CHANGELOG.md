@@ -32,6 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one toast per entry per TUI session (warning or error) and keeps a line in
   the sidebar on both hosts. A healthy config shows no line. The V2 TUI reads
   the lists from the reviewer's `status` RPC.
+- A TUI guide (`docs/TUI.md`) with every screen: progress and hand-offs, result strips, manual-review
+  toasts, config warnings and long commands. The README shows the hand-off and result screens. The
+  images are rendered from the plugin's components; `bun run docs:screens` regenerates them
+  (`docs/DEVELOPMENT.md`, "TUI screens").
 
 ### Changed
 
