@@ -1,7 +1,7 @@
 // The optional status fields that carry routing and config state, bounded so
 // an encoded status always fits the TUI command cap.
 import type { HandoffInfo } from "./system-one/backend.ts";
-import type { ManualResolution } from "./types.ts";
+import type { ManualResolution, ReviewDecision } from "./types.ts";
 
 const MAX_LIST_ENTRIES = 5;
 const MAX_ENTRY_CHARS = 200;
@@ -91,7 +91,7 @@ function withoutLastEntry<T extends StatusExtras>(status: T): T | undefined {
 /** The status fields the fit may drop or shorten. */
 interface FittableStatus extends StatusExtras {
   reason?: string;
-  decision?: { rationale: string; script_analysis?: string };
+  decision?: Pick<ReviewDecision, "rationale" | "script_analysis">;
 }
 
 const FITTABLE_FIELDS = ["rationale", "script_analysis", "reason"] as const;
