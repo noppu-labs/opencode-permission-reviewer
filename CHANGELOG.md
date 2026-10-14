@@ -48,6 +48,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the reasoning reviewer's review still needs your approval, the reasoning
   reviewer was unavailable (an error toast titled "Reasoning reviewer
   unavailable"), or no review time was left for it. The reason still follows.
+- The TUI no longer hides the end of a long command. The progress strip, the result strip and the
+  V1 overlay show the first command, a muted `⋯ N more ⋯` and as many of the last commands as fit,
+  and a heredoc body the server can match shows as `⋯ N-line heredoc ⋯` instead of its contents. A
+  command too wide for even that shows the start of its first command and the end of its last. The
+  status's plain `action` (and the exported `permissionAction`) now keeps the start and end of a
+  long action around one `⋯` instead of cutting the end.
 
 ### Fixed
 

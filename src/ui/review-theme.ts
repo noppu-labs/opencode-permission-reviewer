@@ -19,7 +19,7 @@ const FALLBACK_THEME: Record<keyof ReviewTheme, string> = {
 
 export function resolveReviewTheme(value: unknown): ReviewTheme {
   const host = asObjectLike(value);
-  if (!host) return FALLBACK_THEME;
+  if (!host) return { ...FALLBACK_THEME };
   const background = asObjectLike(host.background);
   const surface = asObjectLike(background?.surface);
   const raised = asObjectLike(background?.raised);

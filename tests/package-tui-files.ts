@@ -4,6 +4,9 @@
 export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/tui.tsx",
   "dist/tui/ui/components.tsx",
+  "dist/tui/ui/action-fit.ts",
+  "dist/tui/ui/fit-parts.ts",
+  "dist/tui/ui/action-spans.tsx",
   "dist/tui/ui/review-overlay.tsx",
   "dist/tui/ui/review-result.tsx",
   "dist/tui/ui/v1-host.ts",
@@ -36,6 +39,7 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/is-record.ts",
   "dist/tui/ui-protocol.ts",
   "dist/tui/ui-status-extras.ts",
+  "dist/tui/ui-text-elide.ts",
   "dist/tui/ui-status-parse.ts",
   "dist/tui/ui-state.ts",
   "dist/tui/types.ts",

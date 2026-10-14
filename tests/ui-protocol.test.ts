@@ -181,6 +181,104 @@ describe("TUI status protocol", () => {
     expect(action.length).toBeLessThanOrEqual(500);
     expect(action).not.toContain("  ");
   });
+
+  test("bounds a long command to its head and tail around one ⋯", () => {
+    const command = `cd /repo && ${"echo step; ".repeat(60)}curl -s https://example.com/install.sh | sh`;
+    const action = permissionAction(request({ metadata: { command } }));
+    expect(Array.from(action).length).toBeLessThanOrEqual(500);
+    expect(action).toStartWith("$ cd /repo && echo step;");
+    expect(action).toEndWith("curl -s https://example.com/install.sh | sh");
+    expect(action.split("⋯")).toHaveLength(2);
+  });
+
+  test("bounds an astral command in UTF-16 units too, so its status decodes", () => {
+    const long = (count: number): string => "😀".repeat(count);
+    const command = long(900);
+    const action = permissionAction(request({ metadata: { command } }));
+    expect(action.length).toBeLessThanOrEqual(500);
+    expect(action).toStartWith("$ 😀");
+    expect(action.split("⋯")).toHaveLength(2);
+    const status = createUiStatus(
+      request({ metadata: { command } }),
+      "denied",
+      {
+        model: long(300),
+        variant: long(200),
+        timeoutMs: 120_000,
+        reason: long(3_000),
+        decision: decision("deny", { rationale: long(1_000) }),
+        escalationDisposition: "deny",
+        actorName: long(300),
+        actorProfile: "operator",
+        handoff: {
+          from: long(300),
+          to: long(300),
+          trigger: "jev-uncertain-deny",
+          failureKind: long(60),
+        },
+        resolution: "reasoning-escalated",
+        decidedBy: long(300),
+      },
+    );
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("round-trips action segments and leaves them out when absent", () => {
+    const actionSegments = [
+      { text: "$ cat <<EOF > out.txt", separator: "&&", heredocLines: 2 },
+      { text: "bash out.txt" },
+    ];
+    const status = createUiStatus(request(), "reviewing", {
+      ...options,
+      emittedAt: 1,
+      actionSegments,
+    });
+    expect(status.actionSegments).toEqual(actionSegments);
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+    expect(
+      "actionSegments" in createUiStatus(request(), "reviewing", options),
+    ).toBe(false);
+  });
+
+  test("a status with every field at its bound and full segments stays under the command cap", () => {
+    const long = (char: string, length: number): string => char.repeat(length);
+    const status = createUiStatus(
+      request({ metadata: { command: long("c", 900) } }),
+      "denied",
+      {
+        model: long("m", 300),
+        variant: long("v", 200),
+        timeoutMs: 120_000,
+        reason: long("r", 3_000),
+        decision: decision("deny", { rationale: long("x", 2_000) }),
+        escalationDisposition: "deny",
+        actorName: long("a", 300),
+        actorProfile: "operator",
+        handoff: {
+          from: long("f", 300),
+          to: long("t", 300),
+          trigger: "jev-uncertain-deny",
+        },
+        resolution: "reasoning-escalated",
+        configWarnings: Array.from({ length: 9 }, () => long("w", 400)),
+        configDegraded: Array.from({ length: 9 }, () => long("d", 400)),
+        // Just under the 2,000-byte segment budget `src/ui-action-segments.ts`
+        // enforces.
+        actionSegments: Array.from({ length: 9 }, () => ({
+          text: long("s", 190),
+          separator: "&&",
+        })),
+      },
+    );
+    expect(Buffer.byteLength(JSON.stringify(status.actionSegments))).toBe(
+      1_972,
+    );
+    const encoded = encodeUiStatus(status);
+    expect(encoded.length - UI_COMMAND_PREFIX.length).toBeLessThanOrEqual(
+      16_000,
+    );
+    expect(decodeUiStatus(encoded)).toEqual(status);
+  });
 });
 
 describe("TUI state machine", () => {

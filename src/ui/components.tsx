@@ -1,9 +1,12 @@
 /** @jsxImportSource @opentui/solid */
 
 import type { ColorInput } from "@opentui/core";
+import { useTerminalDimensions } from "@opentui/solid";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { type ActionFitPart, fitAction, singleLine } from "./action-fit.ts";
+import { ActionSpans, stripActionColumns } from "./action-spans.tsx";
 import { reviewerLabel } from "./attribution.ts";
 import type { SidebarLine } from "./config-notices.ts";
 
@@ -17,10 +20,6 @@ export interface ReviewTheme {
   warning: ColorInput;
 }
 export const SPINNER = ["◐", "◓", "◑", "◒"] as const;
-
-/** Collapses line breaks and tabs so a value renders on one row. */
-export const singleLine = (value: string): string =>
-  value.replace(/[\r\n\t]+/g, " ");
 
 /** The reviewer's config line in the host sidebar; nothing when healthy. */
 export function ConfigNoticeSlot(props: {
@@ -48,6 +47,20 @@ export function ReviewProgress(props: {
     props.frame();
     return `${(Math.max(0, Date.now() - props.status.emittedAt) / 1_000).toFixed(1)}s`;
   };
+  const terminal = useTerminalDimensions();
+  const actor = (): string =>
+    props.status.actorName
+      ? ` · actor ${singleLine(props.status.actorName)}`
+      : "";
+  const action = (): ActionFitPart[] =>
+    fitAction(
+      props.status,
+      stripActionColumns(
+        terminal().width,
+        `${props.status.permission} · `,
+        actor(),
+      ),
+    );
   return (
     <box
       height={2}
@@ -83,7 +96,11 @@ export function ReviewProgress(props: {
         <span style={{ fg: props.theme().textMuted }}>
           {props.status.permission} ·{" "}
         </span>
-        {singleLine(props.status.action)}
+        <ActionSpans
+          parts={action()}
+          color={props.theme().text}
+          muted={props.theme().textMuted}
+        />
         <Show when={props.status.actorName}>
           <span style={{ fg: props.theme().textMuted }}>
             {" "}

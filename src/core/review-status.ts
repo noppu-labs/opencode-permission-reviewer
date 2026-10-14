@@ -9,7 +9,8 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../types.ts";
-import { createUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
+import { createServerUiStatus } from "../ui-action-segments.ts";
+import type { ReviewUiStatus } from "../ui-protocol.ts";
 import {
   configNoticeFields,
   decidedByField,
@@ -56,7 +57,7 @@ function statusFor(
 ): ReviewUiStatus {
   const { reason, decision, reviewerModel } = details;
   const actor = scope.attempts.get(request.id)?.evidence.actor;
-  return createUiStatus(request, phase, {
+  return createServerUiStatus(request, phase, {
     model: reviewerModel ?? scope.config.model,
     variant: statusVariant(scope.config, reviewerModel),
     timeoutMs: reviewBudgetMs(scope.config),

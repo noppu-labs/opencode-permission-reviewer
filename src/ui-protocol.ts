@@ -13,6 +13,7 @@ import {
   statusExtras,
 } from "./ui-status-extras.ts";
 import { parseUiStatus } from "./ui-status-parse.ts";
+import { boundedHeadTail } from "./ui-text-elide.ts";
 
 export const UI_COMMAND_PREFIX = "opencode-permission-reviewer.status.";
 // Time to wait for the server's first "reviewing" ack after permission.asked.
@@ -27,6 +28,19 @@ export type ReviewUiPhase =
   | "denied"
   | "manual"
   | "unknown";
+
+/** One command of a shell action as the server split it, for the TUI to fit
+ *  to its width. Built by `src/ui-action-segments.ts`. */
+export interface ActionSegment {
+  /** The segment as typed in the command, heredoc bodies left out,
+   *  whitespace collapsed, at most 200 code points. */
+  text: string;
+  /** The operator that ends this segment: "|", "||", "&&", ";", "&". */
+  separator?: string;
+  /** Total body lines of the segment's heredocs, whose bodies are not
+   *  shown. */
+  heredocLines?: number;
+}
 
 export interface ReviewUiStatus {
   version: 1;
@@ -62,6 +76,10 @@ export interface ReviewUiStatus {
    *  on every status; V2 reads them from the `status` RPC. */
   configWarnings?: string[];
   configDegraded?: string[];
+  /** The action split at its top-level shell operators. Absent when the
+   *  server did not segment it or left the segments off to fit the status
+   *  cap, and from a server that predates segments. */
+  actionSegments?: ActionSegment[];
 }
 
 export function permissionAction(request: PermissionRequest): string {
@@ -79,7 +97,11 @@ export function permissionAction(request: PermissionRequest): string {
       typeof value === "string" && value.trim().length > 0,
   );
   const prefix = request.permission === "bash" && detail ? "$ " : "";
-  return boundedText(`${prefix}${detail ?? request.permission}`, 500);
+  const text = `${prefix}${detail ?? request.permission}`;
+  // 500 UTF-16 units at most, as the status size budget assumes: 250 code
+  // points always fit.
+  const bounded = boundedHeadTail(text, 500);
+  return bounded.length <= 500 ? bounded : boundedHeadTail(text, 250);
 }
 
 export type UiStatusOptions = {
@@ -92,6 +114,7 @@ export type UiStatusOptions = {
   emittedAt?: number;
   actorName?: string;
   actorProfile?: ActorProfile;
+  actionSegments?: ActionSegment[];
 } & StatusExtrasOptions;
 
 export function createUiStatus(
@@ -123,6 +146,9 @@ export function createUiStatus(
     ...(options.actorProfile === undefined
       ? {}
       : { actorProfile: options.actorProfile }),
+    ...(options.actionSegments === undefined
+      ? {}
+      : { actionSegments: options.actionSegments }),
     ...statusExtras(options),
   });
 }

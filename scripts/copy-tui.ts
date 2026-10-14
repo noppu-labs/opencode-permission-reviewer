@@ -20,6 +20,9 @@ const out = join(root, "dist", "tui");
 const files = [
   ["src/tui.tsx", "tui.tsx"],
   ["src/ui/components.tsx", "ui/components.tsx"],
+  ["src/ui/action-fit.ts", "ui/action-fit.ts"],
+  ["src/ui/fit-parts.ts", "ui/fit-parts.ts"],
+  ["src/ui/action-spans.tsx", "ui/action-spans.tsx"],
   ["src/ui/review-overlay.tsx", "ui/review-overlay.tsx"],
   ["src/ui/review-result.tsx", "ui/review-result.tsx"],
   ["src/ui/v1-host.ts", "ui/v1-host.ts"],
@@ -52,6 +55,7 @@ const files = [
   ["src/is-record.ts", "is-record.ts"],
   ["src/ui-protocol.ts", "ui-protocol.ts"],
   ["src/ui-status-extras.ts", "ui-status-extras.ts"],
+  ["src/ui-text-elide.ts", "ui-text-elide.ts"],
   ["src/ui-status-parse.ts", "ui-status-parse.ts"],
   ["src/ui-state.ts", "ui-state.ts"],
   ["src/types.ts", "types.ts"],

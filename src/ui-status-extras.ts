@@ -73,7 +73,7 @@ export function statusExtras(options: StatusExtrasOptions): StatusExtras {
 
 /** The JSON byte size whose base64url encoding fits the 16000-character cap
  *  `decodeUiStatus` enforces. */
-const MAX_STATUS_BYTES = 12_000;
+export const MAX_STATUS_BYTES = 12_000;
 
 function withoutLastEntry<T extends StatusExtras>(status: T): T | undefined {
   const key =
