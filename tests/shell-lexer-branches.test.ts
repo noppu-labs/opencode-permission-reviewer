@@ -21,6 +21,13 @@ function plain(text: string): ShellToken {
   return { raw: text, value: text, spans: [{ text, quoted: false }] };
 }
 
+function redirected(
+  operator: string,
+  target: string,
+): { operator: string; target: string; quoted: boolean } {
+  return { operator, target, quoted: false };
+}
+
 function tokenValues(command: string): string[][] {
   return lexSegments(command).map((segment) =>
     segment.tokens.map((token) => token.value),
@@ -154,31 +161,11 @@ describe("shell lexer quoting edges", () => {
   });
 
   test("a bare carriage return is part of a word, and a tab splits words", () => {
-    expect(lexSegments("a\rb")).toEqual([
-      {
-        tokens: [
-          {
-            raw: "a\rb",
-            value: "a\rb",
-            spans: [{ text: "a\rb", quoted: false }],
-          },
-        ],
-      },
-    ]);
+    expect(lexSegments("a\rb")).toEqual([{ tokens: [plain("a\rb")] }]);
     // A `#` after a carriage return stays inside the word, so the text
     // that follows is not read as a comment.
     expect(lexSegments("echo a\r#b; ls")).toEqual([
-      {
-        tokens: [
-          plain("echo"),
-          {
-            raw: "a\r#b",
-            value: "a\r#b",
-            spans: [{ text: "a\r#b", quoted: false }],
-          },
-        ],
-        endedBy: ";",
-      },
+      { tokens: [plain("echo"), plain("a\r#b")], endedBy: ";" },
       { tokens: [plain("ls")], precededBy: ";" },
     ]);
     expect(tokenValues("a\tb")).toEqual([["a", "b"]]);
@@ -208,14 +195,12 @@ describe("shell lexer quoting edges", () => {
   });
 
   test("|& and ;& are single separators", () => {
-    expect(lexSegments("a |& b")).toEqual([
-      { tokens: [plain("a")], endedBy: "|&" },
-      { tokens: [plain("b")], precededBy: "|&" },
-    ]);
-    expect(lexSegments("a ;& b")).toEqual([
-      { tokens: [plain("a")], endedBy: ";&" },
-      { tokens: [plain("b")], precededBy: ";&" },
-    ]);
+    for (const separator of ["|&", ";&"]) {
+      expect(lexSegments(`a ${separator} b`)).toEqual([
+        { tokens: [plain("a")], endedBy: separator },
+        { tokens: [plain("b")], precededBy: separator },
+      ]);
+    }
     // `;;&` is the ordinary `;` separator followed by the `;&` one; the
     // empty segment the second separator flushes is dropped as today.
     expect(
@@ -266,22 +251,13 @@ describe("shell redirection normalizer edges", () => {
 
   test("an input-duplication redirection stays in its token", () => {
     expect(redirectionsOf("cmd <&3")).toEqual([
-      {
-        words: ["cmd"],
-        redirections: [{ operator: "<&", target: "3", quoted: false }],
-      },
+      { words: ["cmd"], redirections: [redirected("<&", "3")] },
     ]);
     expect(redirectionsOf("exec 3<&0")).toEqual([
-      {
-        words: ["exec"],
-        redirections: [{ operator: "3<&", target: "0", quoted: false }],
-      },
+      { words: ["exec"], redirections: [redirected("3<&", "0")] },
     ]);
     expect(redirectionsOf("cmd 0<&- && ok")).toEqual([
-      {
-        words: ["cmd"],
-        redirections: [{ operator: "0<&", target: "-", quoted: false }],
-      },
+      { words: ["cmd"], redirections: [redirected("0<&", "-")] },
       { words: ["ok"], redirections: [] },
     ]);
     // The normalizer half of the old test still holds for a span-less token.
@@ -289,7 +265,7 @@ describe("shell redirection normalizer edges", () => {
       normalizeShellRedirections([plain("cmd"), { raw: "<&3", value: "<&3" }]),
     ).toEqual({
       tokens: [plain("cmd")],
-      redirections: [{ operator: "<&", target: "3", quoted: false }],
+      redirections: [redirected("<&", "3")],
     });
   });
 
