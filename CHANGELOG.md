@@ -85,9 +85,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shell runs it. In the TUI, a command with `|&`, `;&` or a carriage return
   still shows as one line.
 - Shell analysis: a token's recorded source text now matches the command it
-  was read from — inside double quotes, the character after a backslash is
+  was read from: inside double quotes, the character after a backslash is
   no longer recorded twice, and a lone line continuation no longer carries
-  into the next token — so quoted and literal reads see the command as
+  into the next token, so quoted and literal reads see the command as
   written.
 
 ## [3.0.0] - 2026-10-12
