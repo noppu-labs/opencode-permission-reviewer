@@ -3,33 +3,24 @@ import {
   locateSeparator,
   locateToken,
   onlySkipped,
-  rawSource,
   touchesOperator,
 } from "../src/ui-raw-source.ts";
 import { TUI_SHIP_FILES } from "./package-tui-files.ts";
 
 describe("a token's source text", () => {
-  test.each<[string, string, string]>([
-    ["a plain word", "ls", "ls"],
-    ["single quotes", "'a\\nb'", "'a\\nb'"],
-    ["an unquoted escape", "a\\ b", "a\\ b"],
-    ["an escape inside double quotes (1)", '"a\\nnb"', '"a\\nb"'],
-    ["an escape inside double quotes (2)", '"a\\||b"', '"a\\|b"'],
-    ["an escape inside double quotes (3)", '"\\aaa"', '"\\aa"'],
-    [
-      "escapes kept whole inside double quotes",
-      '"\\$\\"\\\\\\`"',
-      '"\\$\\"\\\\\\`"',
-    ],
-    ["a continuation inside double quotes", '"a\\\nb"', '"a\\\nb"'],
-    [
-      "a quote inside the other quotes",
-      `"it's" 'say "\\nn"'`,
-      `"it's" 'say "\\nn"'`,
-    ],
-    ["a trailing backslash", "a\\", "a\\"],
-  ])("maps %s", (_name, raw, source) => {
-    expect(rawSource(raw)).toBe(source);
+  test("locates a plain word and a double-quoted token directly", () => {
+    expect(locateToken("echo ls x", "ls", 5)).toEqual({
+      start: 5,
+      end: 7,
+      next: 7,
+    });
+    const source = 'printf "%s\\n" x';
+    expect(locateToken(source, '"%s\\n"', 6)).toEqual({
+      start: 7,
+      end: 13,
+      next: 13,
+    });
+    expect(locateToken(source, '"%s\\nn"', 6)).toBeUndefined();
   });
 });
 
@@ -44,15 +35,6 @@ describe("locating a token", () => {
       start: 7,
       end: 8,
       next: 8,
-    });
-  });
-
-  test("finds a token whose raw text differs from its source", () => {
-    const source = 'printf "%s\\n" x';
-    expect(locateToken(source, '"%s\\nn"', 6)).toEqual({
-      start: 7,
-      end: 13,
-      next: 13,
     });
   });
 
