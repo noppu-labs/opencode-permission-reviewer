@@ -75,6 +75,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   message is no longer dropped. Config warning and degraded-config entries still go first; then the
   rationale, the script analysis and, last, the reason are shortened as needed, down to `…` alone
   when the overflow calls for it, so the status shows on both hosts.
+- TUI: a command's shown text now renders control, directional, zero-width and non-ASCII space
+  characters as hex escapes (`\xHH`, `\uHHHH`, `\u{H...}`), shows a line continuation as `\⏎` and a
+  line break inside the shown text as a muted `⏎`, and shows a literal `⏎` or `⋯` typed in the
+  command as `\u23ce` or `\u22ef`, so every marker you see comes from the display itself.
 
 ## [3.0.0] - 2026-10-12
 
