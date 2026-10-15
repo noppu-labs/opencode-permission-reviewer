@@ -141,6 +141,25 @@ describe("progress strip action", () => {
     expect(colorOf(view, "5 more")).not.toEqual(colorOf(view, "$ find"));
   });
 
+  test("renders line-break markers in the muted theme color", async () => {
+    const multiLine: ActionFields = {
+      action: "$ npm ci ⏎ npm test",
+      actionSegments: [{ text: "$ npm ci ⏎ npm test" }],
+    };
+    const view = await show(
+      () =>
+        ReviewProgress({
+          theme,
+          frame,
+          status: status("reviewing", multiLine),
+        }),
+      100,
+    );
+    expect(rows(view)[1]).toBe("bash · $ npm ci ⏎ npm test");
+    expect(colorOf(view, "⏎")).toEqual(colorOf(view, "bash ·"));
+    expect(colorOf(view, "⏎")).not.toEqual(colorOf(view, "$ npm ci"));
+  });
+
   test("refits after a resize", async () => {
     const view = await show(
       () => ReviewProgress({ theme, frame, status: status("reviewing", find) }),

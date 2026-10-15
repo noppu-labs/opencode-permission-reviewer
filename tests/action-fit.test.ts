@@ -376,6 +376,28 @@ describe("fitting an action to a width", () => {
     expect(singleLine("a\r\nb")).toBe("a b");
   });
 
+  test("mutes line-break markers while keeping line continuations and escaped literal markers unmuted", () => {
+    const status = createServerUiStatus(
+      request({
+        metadata: {
+          command: "echo 'line1\nline2' && rm -rf ./build\\\n / && echo '⏎ ⋯'",
+        },
+      }),
+      "reviewing",
+      { model: "fixture/reviewer", variant: "max", timeoutMs: 10_000 },
+    );
+    expect(fitAction(status, 160)).toEqual([
+      plain("$ echo 'line1 "),
+      muted("⏎"),
+      plain(" line2' && rm -rf ./build\\⏎ / && echo '\\u23ce \\u22ef'"),
+    ]);
+    expect(fitAction({ action: status.action }, 160)).toEqual([
+      plain("$ echo 'line1 "),
+      muted("⏎"),
+      plain(" line2' && rm -rf ./build\\⏎ / && echo '\\u23ce \\u22ef'"),
+    ]);
+  });
+
   test("ships with the TUI and imports no shell module", () => {
     const source = readFileSync(
       join(import.meta.dir, "../src/ui/action-fit.ts"),
