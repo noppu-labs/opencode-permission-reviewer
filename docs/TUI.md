@@ -99,8 +99,9 @@ match to its line count. The TUI shows the first command, then as many of the la
 with `⋯ N more ⋯` between them; a heredoc shows as `⋯ N-line heredoc ⋯`. A command that fits is
 shown as sent, except that a matched heredoc body still shows as its line count, line continuations
 show as `\⏎`, line breaks inside the shown text show as a muted `⏎`, and control or format
-characters show as hex escapes. A cut falls between words unless that would leave a side less than
-half used, as with a long URL; then it falls inside the word, with `⋯` at the cut. The reason line is
-still cut at the end.
+characters show as hex escapes. Forms the display cannot yet segment on its own — a pipe with
+stderr (`|&`), a case fall-through (`;&`), or a command containing a carriage return — show as one
+line. A cut falls between words unless that would leave a side less than half used, as with a long
+URL; then it falls inside the word, with `⋯` at the cut. The reason line is still cut at the end.
 
 ![The same command now: the heredoc collapses to "⋯ 40-line heredoc ⋯" and the end of the command, a curl piped to sh, stays visible in the progress strip, the result strip and the V1 overlay. The progress strip and the overlay end with "npm run build && curl -fsS https://setup.invalid | sh"; the result strip, which has less room, shows "⋯ 1 more ⋯ curl -fsS https://setup.invalid | sh".](images/long-command-after.svg)
