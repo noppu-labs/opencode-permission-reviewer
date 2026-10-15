@@ -30,7 +30,7 @@ import {
 import { substitutionAt } from "./shell-substitution.ts";
 import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
 
-const SEPARATORS = new Set([";", "|", "&", "\n", "\r", "(", ")"]);
+const SEPARATORS = new Set([";", "|", "&", "\n", "(", ")"]);
 const WHITESPACE = new Set([" ", "\t"]);
 
 function appendUnquoted(lex: LexState, c: string): void {
@@ -64,7 +64,7 @@ function lexSeparator(lex: LexState, c: string): void {
   // Capture the operator identity (including doubled `||`/`&&` and the
   // two-character `|&` and `;&`) so evidence consumers can reason about
   // how segments relate.
-  let endedBy = c === "\n" || c === "\r" ? ";" : c;
+  let endedBy = c === "\n" ? ";" : c;
   const next = lex.command[lex.index + 1];
   if ((c === "|" || c === "&") && next === c) {
     endedBy = `${c}${c}`;

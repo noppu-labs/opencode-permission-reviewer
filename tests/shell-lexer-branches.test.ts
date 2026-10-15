@@ -153,10 +153,33 @@ describe("shell lexer quoting edges", () => {
     ]);
   });
 
-  test("a carriage return separates like a newline and a tab splits words", () => {
+  test("a bare carriage return is part of a word, and a tab splits words", () => {
     expect(lexSegments("a\rb")).toEqual([
-      { tokens: [plain("a")], endedBy: ";" },
-      { tokens: [plain("b")], precededBy: ";" },
+      {
+        tokens: [
+          {
+            raw: "a\rb",
+            value: "a\rb",
+            spans: [{ text: "a\rb", quoted: false }],
+          },
+        ],
+      },
+    ]);
+    // A `#` after a carriage return stays inside the word, so the text
+    // that follows is not read as a comment.
+    expect(lexSegments("echo a\r#b; ls")).toEqual([
+      {
+        tokens: [
+          plain("echo"),
+          {
+            raw: "a\r#b",
+            value: "a\r#b",
+            spans: [{ text: "a\r#b", quoted: false }],
+          },
+        ],
+        endedBy: ";",
+      },
+      { tokens: [plain("ls")], precededBy: ";" },
     ]);
     expect(tokenValues("a\tb")).toEqual([["a", "b"]]);
   });
