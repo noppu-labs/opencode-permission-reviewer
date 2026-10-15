@@ -101,8 +101,8 @@ export const PINNED_BLOBS = {
     "579703335deab3052f2b1f8b39d34cea10266ba2",
   "src/shell-lex-state.ts": "5acf1a9d6a2cf5a99699582927895cf0401e3275",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
-  "src/shell-quote-scan.ts": "30acc8301b6b44bc45b742bfcfe7ae536958e0da",
-  "src/shell-scanner.ts": "2f528236bd54f7bb9c8d6c0b82f206392b1ec265",
+  "src/shell-quote-scan.ts": "4381d682749bf462455ea907f2b1234816525d96",
+  "src/shell-scanner.ts": "42dd3011f81805637b542a18e7d3b6010d3b8a38",
   // biome-ignore lint/security/noSecrets: a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
   "src/shell-substitution.ts": "1d79b4a38d484f5038a25bf5cf28293d57a041da",
   "src/shell-substitution-end.ts": "42a3dbfbc0c8936aba579a6b25a1f5ac702024cc",
