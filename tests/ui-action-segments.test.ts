@@ -276,6 +276,38 @@ describe("action segments", () => {
   ])("returns no segments for %s", (_name, command) => {
     expect(actionSegments(command)).toBeUndefined();
   });
+
+  test.each<[string, string, ActionSegment[]]>([
+    [
+      "a line continuation inside a token",
+      "rm -rf ./build\\\n /",
+      [{ text: "rm -rf ./build\\⏎ /" }],
+    ],
+    [
+      "a multi-line quoted argument",
+      'printf "%s" "line1\nline2" && echo ok',
+      [
+        { text: 'printf "%s" "line1 ⏎ line2"', separator: "&&" },
+        { text: "echo ok" },
+      ],
+    ],
+    [
+      "control, directional, zero-width, non-ASCII space and literal marker characters",
+      "echo \u202e~ fr- mr\u202c \u001b[2K \u000b#b && echo\u00a0'⋯ 1 more ⋯' '⏎'",
+      [
+        {
+          text: "echo \\u202e~ fr- mr\\u202c \\x1b[2K \\x0b#b",
+          separator: "&&",
+        },
+        { text: "echo\\xa0'\\u22ef 1 more \\u22ef' '\\u23ce'" },
+      ],
+    ],
+  ])(
+    "renders visible escapes and markers in %s",
+    (_name, command, expected) => {
+      expect(actionSegments(command)).toEqual(expected);
+    },
+  );
 });
 
 /** `count` three-byte characters. */

@@ -32,9 +32,9 @@ export const GIT_LOG_SEGMENTS: ActionSegment[] = [
 
 export const HEREDOC_COMMAND =
   "cat <<'EOF' > scripts/check.sh && bash scripts/check.sh\n#!/bin/sh\nset -e\nbun run check\nEOF";
-/** `permissionAction` flattens the body into the bounded action. */
+/** `permissionAction` marks line breaks in the bounded action with `⏎`. */
 export const HEREDOC_ACTION =
-  "$ cat <<'EOF' > scripts/check.sh && bash scripts/check.sh #!/bin/sh set -e bun run check EOF";
+  "$ cat <<'EOF' > scripts/check.sh && bash scripts/check.sh ⏎ #!/bin/sh ⏎ set -e ⏎ bun run check ⏎ EOF";
 export const HEREDOC_SEGMENTS: ActionSegment[] = [
   {
     text: "$ cat <<'EOF' > scripts/check.sh",

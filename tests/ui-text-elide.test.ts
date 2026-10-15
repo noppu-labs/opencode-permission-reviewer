@@ -65,8 +65,8 @@ describe("middle elision", () => {
     });
   });
 
-  test("collapses whitespace and bounds around one ⋯", () => {
-    expect(boundedHeadTail("printf  a\n\tb", 500)).toBe("printf a b");
+  test("collapses whitespace, marks line breaks and bounds around one ⋯", () => {
+    expect(boundedHeadTail("printf  a\n\tb", 500)).toBe("printf a ⏎ b");
     const bounded = boundedHeadTail(`alpha ${"beta ".repeat(200)}omega`, 50);
     expect(Array.from(bounded).length).toBeLessThanOrEqual(50);
     expect(bounded).toStartWith("alpha beta");

@@ -11,6 +11,7 @@ import {
   UI_WATCHDOG_GRACE_MS,
 } from "../src/ui-protocol.ts";
 import { ReviewUiState } from "../src/ui-state.ts";
+import { LINE_BREAK, renderActionText } from "../src/ui-text-elide.ts";
 import { decision, request } from "./helpers.ts";
 
 const options = {
@@ -278,6 +279,60 @@ describe("TUI status protocol", () => {
       16_000,
     );
     expect(decodeUiStatus(encoded)).toEqual(status);
+  });
+
+  test("renders control, directional, zero-width, non-ASCII space and marker characters as visible escapes", () => {
+    expect(
+      renderActionText("printf 'a\u0000b\u0007\u0008\u001b[2K\u007f\u009b2K'"),
+    ).toBe("printf 'a\\x00b\\x07\\x08\\x1b[2K\\x7f\\x9b2K'");
+    expect(
+      renderActionText(
+        "echo \u202e~ fr- mr\u202c \u2066x\u2069 \u200b\u200f\u061c\ufeff",
+      ),
+    ).toBe(
+      "echo \\u202e~ fr- mr\\u202c \\u2066x\\u2069 \\u200b\\u200f\\u061c\\ufeff",
+    );
+    expect(renderActionText("echo\u00a0a\u2028b\u000b#c\u000cd")).toBe(
+      "echo\\xa0a\\u2028b\\x0b#c\\x0cd",
+    );
+    expect(renderActionText("echo \u{e0001}\u{e0100}")).toBe(
+      "echo \\u{e0001}\\u{e0100}",
+    );
+  });
+
+  test("marks line continuations with \\⏎ and line breaks with ⏎", () => {
+    expect(LINE_BREAK).toBe("⏎");
+    expect(renderActionText("rm -rf ./build\\\n /")).toBe(
+      "rm -rf ./build\\⏎ /",
+    );
+    expect(renderActionText("npm ci\nnpm test\n\nnpm run build")).toBe(
+      "npm ci ⏎ npm test ⏎ ⏎ npm run build",
+    );
+  });
+
+  test("escapes literal elision and line-break marker characters in the input", () => {
+    expect(renderActionText("echo ' ⋯ 5 more ⋯ ' '⏎'")).toBe(
+      "echo ' \\u22ef 5 more \\u22ef ' '\\u23ce'",
+    );
+  });
+
+  test("escapes lone surrogates while keeping astral pairs intact", () => {
+    const status = createUiStatus(
+      request({ metadata: { command: "echo 🎉 \ud800 \udfff" } }),
+      "reviewing",
+      { model: "openai/gpt-5", variant: "high", timeoutMs: 10_000 },
+    );
+    expect(status.action).toBe("$ echo 🎉 \\ud800 \\udfff");
+    expect(decodeUiStatus(encodeUiStatus(status))).toEqual(status);
+  });
+
+  test("bounds the escaped action within 500 UTF-16 units", () => {
+    const command = `echo ${"\u202e".repeat(200)} && curl -s https://example.com/install.sh | sh`;
+    const action = permissionAction(request({ metadata: { command } }));
+    expect(action.length).toBeLessThanOrEqual(500);
+    expect(action).toStartWith("$ echo \\u202e\\u202e");
+    expect(action).toEndWith("curl -s https://example.com/install.sh | sh");
+    expect(action.split("⋯")).toHaveLength(2);
   });
 });
 
