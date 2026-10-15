@@ -1,5 +1,25 @@
 // Git blob hashes of the security-critical files actually inspected for this kit.
-// biome-ignore-all lint/security/noSecrets: every entry below is a git blob SHA-1 (40 hex chars) pinned for the parity check, not a credential
+// biome-ignore-all lint/security/noSecrets: every entry below is a git blob SHA-1
+// (40 hex chars) pinned for the parity check, not a credential.
+//
+// The source snapshot (lib/source-snapshot.mjs) hashes each pinned file's bytes
+// the way git hashes a blob object and compares against the entry here; the
+// parity test (tests/plugin-refusals.test.mjs) refuses the plugin unless every
+// entry matches, so a benchmark run can never silently analyze with a locally
+// modified copy of a pinned source file. The snapshot also records the whole
+// `src/` tree by content hash and the checked-out commit for provenance.
+//
+// After changing one of the pinned files, re-pin in the same commit:
+//
+//   git hash-object <path>        # or: git rev-parse HEAD:<path> on a clean tree
+//
+// and replace the entry's hash with the result. The hash follows the file's
+// content only, so a rename keeps it and any edit changes it; a stale entry
+// fails the parity test with the file's path in the difference record.
+//
+// The CI benchmark job runs this parity check first: a pull request that
+// changes a pinned file fails it until the entry is re-pinned, which is the
+// intended reminder rather than a flake.
 export const PINNED_BLOBS = {
   "src/policy.ts": "69522b8244cc041dfedbfaf4690706624b2aab80",
   "src/context.ts": "e328d5e958f93377a98036188391422c0551dac3",
