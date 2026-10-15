@@ -79,6 +79,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   characters as hex escapes (`\xHH`, `\uHHHH`, `\u{H...}`), shows a line continuation as `\⏎` and a
   line break inside the shown text as a muted `⏎`, and shows a literal `⏎` or `⋯` typed in the
   command as `\u23ce` or `\u22ef`, so every marker you see comes from the display itself.
+- Shell analysis: an input-duplication redirection (`<&`, `3<&0`, `0<&-`) now
+  stays inside its token, `|&` and `;&` read as single separators, and a bare
+  carriage return is part of a word, so command structure is read the way the
+  shell runs it. In the TUI, a command with `|&`, `;&` or a carriage return
+  still shows as one line.
 
 ## [3.0.0] - 2026-10-12
 

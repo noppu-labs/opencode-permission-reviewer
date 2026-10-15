@@ -36,7 +36,7 @@ function stdinField(
   preceding: string | undefined,
 ): Record<string, unknown> {
   if (stdin !== undefined) return { stdin };
-  return preceding === "|"
+  return preceding === "|" || preceding === "|&"
     ? {
         stdin: {
           status: "unresolved",
