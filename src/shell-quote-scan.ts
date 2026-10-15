@@ -11,19 +11,22 @@ export function lexSingleQuoted(lex: LexState, c: string): void {
 
 function lexDoubleQuotedEscape(lex: LexState): void {
   const next = lex.command.charAt(lex.index + 1);
-  lex.raw += next;
   // Inside double quotes bash only unescapes $ ` " \ and the newline
   // (a line continuation). A backslash before any other character,
   // including `n`, stays a literal backslash in the value.
   if (next === "\n" || next === "\r") {
+    lex.raw += next;
     lex.index += 2;
     return;
   }
   if ('$`"\\'.includes(next)) {
+    lex.raw += next;
     appendValue(lex, next, true);
     lex.index += 2;
     return;
   }
+  // The backslash stays literal and `next` is re-read as an ordinary
+  // character, so only the backslash joins the token's source text.
   appendValue(lex, "\\", true);
   lex.index += 1;
 }

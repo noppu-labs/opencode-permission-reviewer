@@ -3,33 +3,24 @@ import {
   locateSeparator,
   locateToken,
   onlySkipped,
-  rawSource,
   touchesOperator,
 } from "../src/ui-raw-source.ts";
 import { TUI_SHIP_FILES } from "./package-tui-files.ts";
 
 describe("a token's source text", () => {
-  test.each<[string, string, string]>([
-    ["a plain word", "ls", "ls"],
-    ["single quotes", "'a\\nb'", "'a\\nb'"],
-    ["an unquoted escape", "a\\ b", "a\\ b"],
-    ["an escape inside double quotes (1)", '"a\\nnb"', '"a\\nb"'],
-    ["an escape inside double quotes (2)", '"a\\||b"', '"a\\|b"'],
-    ["an escape inside double quotes (3)", '"\\aaa"', '"\\aa"'],
-    [
-      "escapes kept whole inside double quotes",
-      '"\\$\\"\\\\\\`"',
-      '"\\$\\"\\\\\\`"',
-    ],
-    ["a continuation inside double quotes", '"a\\\nb"', '"a\\\nb"'],
-    [
-      "a quote inside the other quotes",
-      `"it's" 'say "\\nn"'`,
-      `"it's" 'say "\\nn"'`,
-    ],
-    ["a trailing backslash", "a\\", "a\\"],
-  ])("maps %s", (_name, raw, source) => {
-    expect(rawSource(raw)).toBe(source);
+  test("locates a plain word and a double-quoted token directly", () => {
+    expect(locateToken("echo ls x", "ls", 5)).toEqual({
+      start: 5,
+      end: 7,
+      next: 7,
+    });
+    const source = 'printf "%s\\n" x';
+    expect(locateToken(source, '"%s\\n"', 6)).toEqual({
+      start: 7,
+      end: 13,
+      next: 13,
+    });
+    expect(locateToken(source, '"%s\\nn"', 6)).toBeUndefined();
   });
 });
 
@@ -47,26 +38,11 @@ describe("locating a token", () => {
     });
   });
 
-  test("finds a token whose raw text differs from its source", () => {
-    const source = 'printf "%s\\n" x';
-    expect(locateToken(source, '"%s\\nn"', 6)).toEqual({
-      start: 7,
-      end: 13,
-      next: 13,
-    });
-  });
-
-  test("finds a token without the line continuations its raw text starts with", () => {
-    const source = "echo a \\\n  b | wc";
-    expect(locateToken(source, "\\\nb", 6)).toEqual({
-      start: 11,
-      end: 12,
-      next: 12,
-    });
-    expect(locateToken("echo a \\\n| wc", "\\\nwc", 10)).toEqual({
-      start: 11,
-      end: 13,
-      next: 13,
+  test("locates a token after a separator and its continuation", () => {
+    expect(locateToken("echo a;\\\n b", "b", 6)).toEqual({
+      start: 10,
+      end: 11,
+      next: 11,
     });
   });
 
@@ -75,15 +51,6 @@ describe("locating a token", () => {
       start: 7,
       end: 10,
       next: 10,
-    });
-  });
-
-  test("prefers the earlier match when only the stripped form is near", () => {
-    const source = "echo a \\\n b; c \\\nb";
-    expect(locateToken(source, "\\\nb", 6)).toEqual({
-      start: 10,
-      end: 11,
-      next: 11,
     });
   });
 

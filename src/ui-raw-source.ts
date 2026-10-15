@@ -11,56 +11,9 @@ export interface SourceSpan {
   next: number;
 }
 
-type Quote = "'" | '"' | undefined;
-
-/** Characters a backslash inside double quotes escapes; after any other
- *  one, a token's raw text can differ from its source. */
-const ESCAPED_IN_DOUBLE: ReadonlySet<string> = new Set([
-  "$",
-  "`",
-  '"',
-  "\\",
-  "\n",
-  "\r",
-]);
-/** Line continuations a token's raw text can start with. */
-const LEADING_CONTINUATIONS = /^(?:\\[\r\n])+/;
 /** The display puts a space beside a separator, which the shell ignores
  *  unless the neighbour is one of these. */
 const OPERATOR_CHARS = /[<>|&;]/;
-
-function quoteAfter(quote: Quote, c: string): Quote {
-  if (quote === undefined) return c === "'" || c === '"' ? c : undefined;
-  return c === quote ? undefined : quote;
-}
-
-function escapeLength(raw: string, index: number, quote: Quote): number {
-  const next = raw.charAt(index + 1);
-  const repeated =
-    quote === '"' &&
-    !ESCAPED_IN_DOUBLE.has(next) &&
-    raw.charAt(index + 2) === next;
-  return repeated ? 3 : 2;
-}
-
-/** A token's `raw` as it appears in the source. */
-export function rawSource(raw: string): string {
-  let source = "";
-  let quote: Quote;
-  let index = 0;
-  while (index < raw.length) {
-    const c = raw.charAt(index);
-    if (c === "\\" && quote !== "'" && index + 1 < raw.length) {
-      source += raw.slice(index, index + 2);
-      index += escapeLength(raw, index, quote);
-    } else {
-      source += c;
-      quote = quoteAfter(quote, c);
-      index += 1;
-    }
-  }
-  return source;
-}
 
 function spanOf(source: string, text: string, from: number): SourceSpan[] {
   const start = text === "" ? -1 : source.indexOf(text, from);
@@ -76,19 +29,14 @@ const earliest = (spans: readonly SourceSpan[]): SourceSpan | undefined =>
     undefined,
   );
 
-/** Where the token lexed as `raw` sits at or after `from`, with or without
- *  the line continuations its raw text starts with. */
+/** Where the token lexed as `raw` sits at or after `from`. The token's
+ *  raw text is its source, so it is located directly. */
 export function locateToken(
   source: string,
   raw: string,
   from: number,
 ): SourceSpan | undefined {
-  const text = rawSource(raw);
-  const stripped = text.replace(LEADING_CONTINUATIONS, "");
-  return earliest([
-    ...spanOf(source, text, from),
-    ...spanOf(source, stripped, from),
-  ]);
+  return spanOf(source, raw, from)[0];
 }
 
 /** Where a separator or parenthesis sits at or after `from`. A `;` is a

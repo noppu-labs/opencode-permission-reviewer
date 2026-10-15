@@ -109,12 +109,18 @@ describe("shell lexer quoting edges", () => {
     ]);
   });
 
-  test("a literal backslash inside double quotes repeats the next character in raw", () => {
+  test("a token's raw text is the source it was read from", () => {
+    // Inside double quotes a backslash before an ordinary character stays
+    // literal; the token's source text keeps one backslash.
     expect(lexSegments('python "a\\nb.py"')[0]?.tokens[1]).toEqual({
-      raw: '"a\\nnb.py"',
+      raw: '"a\\nb.py"',
       value: "a\\nb.py",
       spans: [{ text: "a\\nb.py", quoted: true }],
     });
+    expect(lexSegments('"\\aaa"')[0]?.tokens[0]?.raw).toBe('"\\aaa"');
+    // The unescaped set keeps its source text too.
+    expect(lexSegments('"a\\$b"')[0]?.tokens[0]?.raw).toBe('"a\\$b"');
+    expect(lexSegments('"\\`x\\`"')[0]?.tokens[0]?.raw).toBe('"\\`x\\`"');
   });
 
   test("a trailing backslash stays literal inside and outside double quotes", () => {
@@ -142,6 +148,14 @@ describe("shell lexer quoting edges", () => {
         ],
       },
     ]);
+  });
+
+  test("a line continuation joins the token in progress only", () => {
+    // Mid-token: the continuation is part of the token's source text.
+    expect(lexSegments("r\\\nm")[0]?.tokens[0]?.raw).toBe("r\\\nm");
+    // After a separator (or at the start): it belongs to no token.
+    expect(lexSegments("a;\\\n b")[1]?.tokens[0]?.raw).toBe("b");
+    expect(lexSegments("\\\n b")[0]?.tokens[0]?.raw).toBe("b");
   });
 
   test("an unterminated single quote still yields its token", () => {
