@@ -5,9 +5,12 @@ export const ELISION: string = " ⋯ ";
 export const LINE_BREAK: string = "⏎";
 const ELISION_COLUMNS: number = Array.from(ELISION).length;
 const ESCAPED =
+  // Each member matches one code point on its own, so no adjacent pair
+  // should read as a combined character; the combining grapheme joiner is
+  // therefore listed first.
   // biome-ignore lint/suspicious/noControlCharactersInRegex: action text renders C0/C1, bidi, format and non-ASCII space code points as visible escapes
   // biome-ignore lint/suspicious/noMisleadingCharacterClass: intentional per-code-point match for variation selectors, joiners and combining grapheme joiner
-  /[\u0000-\u0008\u000b-\u001f\u007f-\u00a0\u00ad\u034f\u061c\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u21b5\u22ef\u23ce\u3000\ud800-\udfff\ufe00-\ufe0f\ufeff\ufff9-\ufffb\u{e0000}-\u{e007f}\u{e0100}-\u{e01ef}]/gu;
+  /[\u034f\u0000-\u0008\u000b-\u001f\u007f-\u00a0\u00ad\u061c\u1680\u180e\u2000-\u200f\u2028-\u202f\u205f-\u206f\u21b5\u22ef\u23ce\u3000\ud800-\udfff\ufe00-\ufe0f\ufeff\ufff9-\ufffb\u{e0000}-\u{e007f}\u{e0100}-\u{e01ef}]/gu;
 
 function escapeChar(char: string): string {
   const code = char.codePointAt(0) ?? 0;
