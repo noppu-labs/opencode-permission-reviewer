@@ -38,17 +38,11 @@ describe("locating a token", () => {
     });
   });
 
-  test("finds a token without the line continuations its raw text starts with", () => {
-    const source = "echo a \\\n  b | wc";
-    expect(locateToken(source, "\\\nb", 6)).toEqual({
-      start: 11,
-      end: 12,
-      next: 12,
-    });
-    expect(locateToken("echo a \\\n| wc", "\\\nwc", 10)).toEqual({
-      start: 11,
-      end: 13,
-      next: 13,
+  test("locates a token after a separator and its continuation", () => {
+    expect(locateToken("echo a;\\\n b", "b", 6)).toEqual({
+      start: 10,
+      end: 11,
+      next: 11,
     });
   });
 
@@ -57,15 +51,6 @@ describe("locating a token", () => {
       start: 7,
       end: 10,
       next: 10,
-    });
-  });
-
-  test("prefers the earlier match when only the stripped form is near", () => {
-    const source = "echo a \\\n b; c \\\nb";
-    expect(locateToken(source, "\\\nb", 6)).toEqual({
-      start: 10,
-      end: 11,
-      next: 11,
     });
   });
 

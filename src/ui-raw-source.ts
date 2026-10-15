@@ -11,8 +11,6 @@ export interface SourceSpan {
   next: number;
 }
 
-/** Line continuations a token's raw text can start with. */
-const LEADING_CONTINUATIONS = /^(?:\\[\r\n])+/;
 /** The display puts a space beside a separator, which the shell ignores
  *  unless the neighbour is one of these. */
 const OPERATOR_CHARS = /[<>|&;]/;
@@ -32,17 +30,13 @@ const earliest = (spans: readonly SourceSpan[]): SourceSpan | undefined =>
   );
 
 /** Where the token lexed as `raw` sits at or after `from`. The token's
- *  raw text is its source, so it is located directly; a stray line
- *  continuation prefix is still tried (removed in the next task). */
+ *  raw text is its source, so it is located directly. */
 export function locateToken(
   source: string,
   raw: string,
   from: number,
 ): SourceSpan | undefined {
-  return earliest([
-    ...spanOf(source, raw, from),
-    ...spanOf(source, raw.replace(LEADING_CONTINUATIONS, ""), from),
-  ]);
+  return spanOf(source, raw, from)[0];
 }
 
 /** Where a separator or parenthesis sits at or after `from`. A `;` is a

@@ -86,10 +86,14 @@ function skipComment(lex: LexState): void {
 
 function lexEscape(lex: LexState): void {
   const next = lex.command.charAt(lex.index + 1);
-  lex.raw += `\\${next}`;
   // Backslash-newline is a line continuation outside quotes: both
   // characters vanish, so `r\<newline>m` lexes as the token `rm`.
-  if (next !== "\n" && next !== "\r") {
+  if (next === "\n" || next === "\r") {
+    // A continuation with no token in progress belongs to no token,
+    // so it stays out of the next token's source text.
+    if (lex.hasToken) lex.raw += `\\${next}`;
+  } else {
+    lex.raw += `\\${next}`;
     appendValue(lex, next, true);
     lex.hasToken = true;
   }
