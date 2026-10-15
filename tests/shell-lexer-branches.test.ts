@@ -183,6 +183,34 @@ describe("shell lexer quoting edges", () => {
       { tokens: [plain("cat")], precededBy: "|" },
     ]);
   });
+
+  test("|& and ;& are single separators", () => {
+    expect(lexSegments("a |& b")).toEqual([
+      { tokens: [plain("a")], endedBy: "|&" },
+      { tokens: [plain("b")], precededBy: "|&" },
+    ]);
+    expect(lexSegments("a ;& b")).toEqual([
+      { tokens: [plain("a")], endedBy: ";&" },
+      { tokens: [plain("b")], precededBy: ";&" },
+    ]);
+    // `;;&` is the ordinary `;` separator followed by the `;&` one; the
+    // empty segment the second separator flushes is dropped as today.
+    expect(
+      lexSegments("a ;;& b").map((s) => [s.endedBy, s.precededBy]),
+    ).toEqual([
+      [";", undefined],
+      [undefined, ";&"],
+    ]);
+    // The doubled forms are unchanged.
+    expect(lexSegments("a || b").map((s) => s.endedBy)).toEqual([
+      "||",
+      undefined,
+    ]);
+    expect(lexSegments("a && b").map((s) => s.endedBy)).toEqual([
+      "&&",
+      undefined,
+    ]);
+  });
 });
 
 describe("shell redirection normalizer edges", () => {

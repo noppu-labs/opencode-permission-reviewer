@@ -32,7 +32,7 @@ export async function stdinEvidence(
   scope: EvidenceScope,
 ): Promise<FileEvidence | undefined> {
   const stdinPath =
-    segment.preceding === "|" && producer
+    (segment.preceding === "|" || segment.preceding === "|&") && producer
       ? catSource(producer.tokens)
       : undefined;
   if (stdinPath === undefined) return undefined;

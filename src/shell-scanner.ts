@@ -61,11 +61,16 @@ function gluesToRedirection(lex: LexState, c: string): boolean {
 }
 
 function lexSeparator(lex: LexState, c: string): void {
-  // Capture the operator identity (including doubled `||`/`&&`) so
-  // evidence consumers can reason about how segments relate.
+  // Capture the operator identity (including doubled `||`/`&&` and the
+  // two-character `|&` and `;&`) so evidence consumers can reason about
+  // how segments relate.
   let endedBy = c === "\n" || c === "\r" ? ";" : c;
-  if ((c === "|" || c === "&") && lex.command[lex.index + 1] === c) {
+  const next = lex.command[lex.index + 1];
+  if ((c === "|" || c === "&") && next === c) {
     endedBy = `${c}${c}`;
+    lex.index += 1;
+  } else if ((c === "|" || c === ";") && next === "&") {
+    endedBy = `${c}&`;
     lex.index += 1;
   }
   flushSegment(lex, endedBy);

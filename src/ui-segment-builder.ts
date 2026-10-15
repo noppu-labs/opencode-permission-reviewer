@@ -128,6 +128,13 @@ export class SegmentBuilder {
   }
 
   private separator(separator: string): void {
+    // `|&` and `;&` are not display separators yet: the status protocol
+    // carries a closed separator set, so these forms fall back to the
+    // action text rather than emit a separator an older TUI would reject.
+    if (separator === "|&" || separator === ";&") {
+      this.misread = true;
+      return;
+    }
     const span = this.located(
       locateSeparator(this.source, separator, this.cursor),
     );

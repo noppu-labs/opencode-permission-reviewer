@@ -278,6 +278,9 @@ describe("action segments", () => {
     ["a heredoc whose body never ends", "cat <<EOF\nline"],
     ["a case statement", "case $x in a) foo;; esac"],
     ["a command over 65,536 characters", `echo ${"a".repeat(65_532)}`],
+    ["a pipe with stderr", "a |& b"],
+    ["a case fallthrough", "case $x in a) echo 1;& b) echo 2;; esac"],
+    ["a command containing a carriage return", "echo a\rb"],
   ])("returns no segments for %s", (_name, command) => {
     expect(actionSegments(command)).toBeUndefined();
   });
