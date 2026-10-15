@@ -193,6 +193,11 @@ describe("action segments", () => {
         { text: 'echo "$x"' },
       ],
     ],
+    [
+      "an input-duplication redirection",
+      "cat <&3 | wc -l",
+      [{ text: "cat <&3", separator: "|" }, { text: "wc -l" }],
+    ],
   ])("splits %s", (_name, command, expected) => {
     expect(actionSegments(command)).toEqual(expected);
   });

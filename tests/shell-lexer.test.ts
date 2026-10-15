@@ -136,6 +136,14 @@ describe("shell lexer", () => {
     ).toEqual(["git", "add", "."]);
   });
 
+  test("an input-duplication redirect never becomes a command head", () => {
+    expect(firstExecutables("exec 3<&0")).toEqual([]);
+    expect(firstExecutables("cat <&3 | wc -l")).toEqual([
+      ["cat"],
+      ["wc", "-l"],
+    ]);
+  });
+
   test("records the separator that ended each segment", () => {
     expect(lexSegments("a; b").map((s) => s.endedBy)).toEqual([";", undefined]);
     expect(lexSegments("a && b || c").map((s) => s.endedBy)).toEqual([

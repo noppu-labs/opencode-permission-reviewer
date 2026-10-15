@@ -213,17 +213,43 @@ describe("shell redirection normalizer edges", () => {
     ]);
   });
 
-  test("the lexer splits <& at the ampersand, so only span-less tokens reach the <& operator", () => {
+  test("an input-duplication redirection stays in its token", () => {
     expect(redirectionsOf("cmd <&3")).toEqual([
-      { words: ["cmd"], redirections: [] },
-      { words: ["3"], redirections: [] },
+      {
+        words: ["cmd"],
+        redirections: [{ operator: "<&", target: "3", quoted: false }],
+      },
     ]);
+    expect(redirectionsOf("exec 3<&0")).toEqual([
+      {
+        words: ["exec"],
+        redirections: [{ operator: "3<&", target: "0", quoted: false }],
+      },
+    ]);
+    expect(redirectionsOf("cmd 0<&- && ok")).toEqual([
+      {
+        words: ["cmd"],
+        redirections: [{ operator: "0<&", target: "-", quoted: false }],
+      },
+      { words: ["ok"], redirections: [] },
+    ]);
+    // The normalizer half of the old test still holds for a span-less token.
     expect(
       normalizeShellRedirections([plain("cmd"), { raw: "<&3", value: "<&3" }]),
     ).toEqual({
       tokens: [plain("cmd")],
       redirections: [{ operator: "<&", target: "3", quoted: false }],
     });
+  });
+
+  test("output-only glue rules are unchanged", () => {
+    // `|` continues only an output redirection (`>|`), never an input one.
+    expect(tokenValues("a<|b")).toEqual([["a<"], ["b"]]);
+    // A background separator after a plain word is still a separator.
+    expect(lexSegments("a < b & c")).toEqual([
+      { tokens: [plain("a"), plain("<"), plain("b")], endedBy: "&" },
+      { tokens: [plain("c")], precededBy: "&" },
+    ]);
   });
 
   test("one word can carry several redirections", () => {

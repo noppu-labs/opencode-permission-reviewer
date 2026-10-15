@@ -41,14 +41,18 @@ function appendUnquoted(lex: LexState, c: string): void {
 }
 
 // Redirection operators may contain characters that are command separators
-// elsewhere. Keep `&>`, `2>&1`, and `>|file` inside the token so the
+// elsewhere. Keep `&>`, `2>&1`, `3<&0`, and `>|file` inside the token so the
 // redirection normalizer (shell-redirections.ts) can interpret them as one
 // shell construct instead of inventing extra commands.
 function gluesToRedirection(lex: LexState, c: string): boolean {
   if (c === "&" && lex.command[lex.index + 1] === ">") return true;
   if (c !== "&" && c !== "|") return false;
+  const last = lex.value.charAt(lex.value.length - 1);
+  // `&` continues an output or input duplication operator (`>&`, `<&`);
+  // `|` continues only an output redirection (`>|`).
+  if (last === "" || (c === "|" && last !== ">")) return false;
   return (
-    lex.value.endsWith(">") &&
+    (last === ">" || last === "<") &&
     !tokenCharIsQuoted(
       { raw: lex.raw, value: lex.value, spans: lex.spans },
       lex.value.length - 1,
