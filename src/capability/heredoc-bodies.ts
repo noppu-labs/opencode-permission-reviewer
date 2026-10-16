@@ -5,6 +5,7 @@ import type { HeredocRecord } from "./capability-types.ts";
 import {
   type BodyRecord,
   bodyRecord,
+  lineTargets,
   type PendingStart,
   readBody,
 } from "./heredoc-body-records.ts";
@@ -42,6 +43,7 @@ export function consumeBodies(
 ): number {
   let position = bodyStart;
   const records: BodyRecord[] = [];
+  const targets = lineTargets(scan.command, lineEnd);
   for (const start of scan.pending) {
     // A bound counts only past the start line's newline: a close the scan
     // passed over on that line bounds nothing.
@@ -52,7 +54,7 @@ export function consumeBodies(
     const read = readBody(scan.command, position, start, bound);
     position = read.position;
     if (read.unterminated) scan.unterminated = true;
-    const record = bodyRecord(scan.command, start, read, lineEnd);
+    const record = bodyRecord(scan.command, start, read, lineEnd, targets);
     if (record.dynamic) scan.hasDynamicConstructs = true;
     records.push(record);
   }

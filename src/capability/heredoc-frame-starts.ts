@@ -11,12 +11,8 @@ import type { Frame, ScanContext } from "./heredoc-scan-context.ts";
  *  backtick reads a body from the lines after it. No such frame reads a
  *  body. */
 export function readsNoBody(scan: ScanContext): boolean {
-  for (let i = scan.frames.length - 1; i >= 0; i -= 1) {
-    const kind = scan.frames[i]?.kind;
-    if (kind === "expansion") return true;
-    if (kind === "substitution" || kind === "backtick") return false;
-  }
-  return false;
+  const body = scan.frames.at(-1)?.bodyAt ?? -1;
+  return body >= 0 && scan.frames[body]?.kind === "expansion";
 }
 
 /** The innermost substitution or backtick open at the operator, if any.
@@ -24,12 +20,8 @@ export function readsNoBody(scan: ScanContext): boolean {
  *  which substitution closing on the operator's own line ends the operator's
  *  heredoc. */
 export function enclosingSubstitution(frames: Frame[]): Frame | undefined {
-  for (let i = frames.length - 1; i >= 0; i -= 1) {
-    const frame = frames[i];
-    if (frame?.kind === "substitution" || frame?.kind === "backtick")
-      return frame;
-  }
-  return undefined;
+  const index = frames.at(-1)?.subst ?? -1;
+  return index < 0 ? undefined : frames[index];
 }
 
 /** The scan state the dropped starts are read from and written back to. */

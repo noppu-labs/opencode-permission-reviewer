@@ -104,7 +104,7 @@ export const PINNED_BLOBS = {
   "src/capability/heredoc-extractor.ts":
     "1f8842d8c0eb08251212c745314311a105905e95",
   "src/capability/heredoc-frame-starts.ts":
-    "f4e36609f083d8a586faa0fabc0ee20364088bf6",
+    "dfb86218caf3036456a6270e145c26c1c058cf54",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
   "src/system-one/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
@@ -150,15 +150,17 @@ export const PINNED_BLOBS = {
   "src/capability/ansi-c-quoting.ts":
     "d2f0eabf08316462275c01b7edd4ebac2ef98308",
   "src/capability/heredoc-scan-context.ts":
-    "c01357a4d8568e019ac74806f3f2a6b922252271",
+    "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/capability/heredoc-bodies.ts":
-    "32fd5ac8fe8803e8f45997e10da9de42937ee770",
+    "2fc1a65e1da5521654470f34e5f091eef8de0481",
   "src/capability/heredoc-body-records.ts":
-    "1805781f5923a3d4787787a366cb245008cd6cee",
+    "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
   "src/capability/heredoc-frame-bounds.ts":
-    "1384c73f3392ed517e9032bccbe948847c53f777",
+    "d0437e9529f655f03b6c5b2b91ad056cf22c6b81",
   "src/capability/heredoc-legacy.ts":
     "ede77c6222bd92143317e25f97d991b9bcd92178",
+  "src/capability/heredoc-frame-links.ts":
+    "ff27ca905447be7b9f36c446badd4dee6f4ac5d8",
   "src/capability/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
 };

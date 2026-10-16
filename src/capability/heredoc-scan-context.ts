@@ -7,6 +7,7 @@ import {
   isArithmeticSpan,
   parenCloses,
 } from "./heredoc-frame-bounds.ts";
+import { linkFrame, pushFrame } from "./heredoc-frame-links.ts";
 
 /** The quote the scan is inside, when it is inside one. */
 export type Quote = "'" | '"' | "$'" | undefined;
@@ -23,6 +24,16 @@ export interface Frame {
   kind: "group" | "substitution" | "expansion" | "backtick";
   fallback?: "group" | "substitution";
   limit?: number;
+  /** Stack index of the nearest substitution or backtick frame at or below
+   *  this one, or -1. Set when the frame is pushed, so the queries on the
+   *  scan's frames read the top frame instead of walking the stack. */
+  subst: number;
+  /** Stack index of the nearest frame at or below this one with a `limit`, or
+   *  -1. */
+  limitAt: number;
+  /** Stack index of the nearest expansion, substitution or backtick frame at
+   *  or below this one, or -1. */
+  bodyAt: number;
 }
 
 /** The constructs that may open, most specific first: `$((` is decided by
@@ -134,7 +145,7 @@ export function openFrame(scan: ScanContext): boolean {
   );
   if (opener === undefined) return false;
   const [text, close, kind, fallback] = opener;
-  scan.frames.push({
+  pushFrame(scan, {
     close,
     quote: scan.quote,
     kind,
@@ -151,13 +162,13 @@ function openDollarParen(scan: ScanContext): boolean {
   const { command, i } = scan;
   scan.parens ??= parenCloses(command);
   if (isArithmeticSpan(command, i, scan.parens)) {
-    scan.frames.push({ close: "))", quote: scan.quote, kind: "expansion" });
+    pushFrame(scan, { close: "))", quote: scan.quote, kind: "expansion" });
     scan.i += 3;
     return true;
   }
   const closed = scan.parens[i + 2] ?? -1;
   const limit = closed === -1 ? undefined : closed;
-  scan.frames.push({
+  pushFrame(scan, {
     close: ")",
     quote: scan.quote,
     kind: "substitution",
@@ -188,11 +199,12 @@ export function fallBackFromArithmetic(scan: ScanContext): boolean {
     scan.command.startsWith("))", scan.i)
   )
     return false;
-  scan.frames[scan.frames.length - 1] = {
+  const index = scan.frames.length - 1;
+  scan.frames[index] = linkFrame(scan.frames, index, {
     close: ")",
     quote: frame.quote,
     kind: frame.fallback,
-  };
+  });
   scan.i += 1;
   return true;
 }
@@ -203,7 +215,7 @@ export function fallBackFromArithmetic(scan: ScanContext): boolean {
 export function openBacktick(scan: ScanContext): void {
   const limit = closingBacktick(scan.command, scan.i + 1);
   scan.backtickAt = scan.frames.length;
-  scan.frames.push({
+  pushFrame(scan, {
     close: "`",
     quote: scan.quote,
     kind: "backtick",

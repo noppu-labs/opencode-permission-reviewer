@@ -87,11 +87,58 @@ export function readBody(
   };
 }
 
+/** The `<` marks of a start line, found once per line. The output-target
+ *  pattern cannot match a `<`, so a target always lies after the last `<` of
+ *  the window it is searched in: `lastLess` is the last `<` before the line's
+ *  end, and `tail` the target found after it. */
+export interface LineTargets {
+  lastLess: number;
+  tail: string | undefined;
+}
+
+export function lineTargets(command: string, lineEnd: number): LineTargets {
+  const lastLess = command.lastIndexOf("<", lineEnd - 1);
+  return {
+    lastLess,
+    tail:
+      lastLess < 0
+        ? undefined
+        : findOutputTarget(command.slice(lastLess + 1, lineEnd)),
+  };
+}
+
+/** The target before a start's operator: the window starts after the last `<`
+ *  before the operator, or at the line start, whichever is later. */
+function targetBefore(
+  command: string,
+  start: PendingStart,
+): string | undefined {
+  const lastLess =
+    start.opStart > 0 ? command.lastIndexOf("<", start.opStart - 1) : -1;
+  return findOutputTarget(
+    command.slice(Math.max(start.lineStart, lastLess + 1), start.opStart),
+  );
+}
+
+/** The target after a start's delimiter word, up to the line's end. When a `<`
+ *  lies after the word, the target is the line's shared `tail`; otherwise the
+ *  window holds no `<` and is searched directly. */
+function targetAfter(
+  command: string,
+  start: PendingStart,
+  lineEnd: number,
+  targets: LineTargets,
+): string | undefined {
+  if (targets.lastLess >= start.wordEnd) return targets.tail;
+  return findOutputTarget(command.slice(start.wordEnd, lineEnd));
+}
+
 export function bodyRecord(
   command: string,
   start: PendingStart,
   read: { body: string; truncated: boolean },
   lineEnd: number,
+  targets: LineTargets,
 ): BodyRecord {
   const sha256hex = createHash("sha256").update(read.body).digest("hex");
   const dynamic = start.resolved
@@ -102,8 +149,8 @@ export function bodyRecord(
   // or after the delimiter word (`cat <<EOF > /tmp/x`); both positions
   // redirect the same command's output.
   const outputTarget =
-    findOutputTarget(command.slice(start.lineStart, start.opStart)) ??
-    findOutputTarget(command.slice(start.wordEnd, lineEnd));
+    targetBefore(command, start) ??
+    targetAfter(command, start, lineEnd, targets);
   return {
     bounded,
     sha256: sha256hex,

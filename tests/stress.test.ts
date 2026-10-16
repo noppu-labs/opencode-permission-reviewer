@@ -187,6 +187,15 @@ describe("stress and adversarial robustness", () => {
     ["arithmetic openers with a term", "$((1)".repeat(26_000)],
     ["backtick-wrapped arithmetic openers", "`$((".repeat(32_000)],
     ["unclosed backticks", "`".repeat(120_000)],
+    ["heredoc operators on one line", "<<A ".repeat(30_000)],
+    [
+      "groups before heredoc operators",
+      "(".repeat(60_000) + "<<a ".repeat(15_000),
+    ],
+    [
+      "substitutions before heredoc operators",
+      "$(".repeat(40_000) + "<<a ".repeat(10_000),
+    ],
     [
       "escaped double quotes after an arithmetic opener",
       `$(( "${'\\"'.repeat(60_000)}`,

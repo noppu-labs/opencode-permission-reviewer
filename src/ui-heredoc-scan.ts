@@ -2,11 +2,8 @@
 // that tracks quoting and nesting, so a body is collapsed only for an
 // operator the shell reads as a redirect. Server only.
 
-import {
-  type Frame,
-  OPENERS,
-  type Quote,
-} from "./capability/heredoc-scan-context.ts";
+import type { FrameSpec } from "./capability/heredoc-frame-links.ts";
+import { OPENERS, type Quote } from "./capability/heredoc-scan-context.ts";
 
 /** An operator and its delimiter word in the sanitized command (`start` to
  *  `end`), and `next`, past the body placeholder that follows it. */
@@ -28,7 +25,7 @@ class OperatorScan {
   readonly operators: OperatorWord[] = [];
   private index = 0;
   private quote: Quote;
-  private readonly frames: Frame[] = [];
+  private readonly frames: FrameSpec[] = [];
   /** Operators on the current line, with the frames open at each. */
   private pending: number[] = [];
   /** Set by a construct the scan cannot follow: no operator may come after
@@ -142,7 +139,9 @@ class OperatorScan {
     }
     if (
       this.unsure ||
-      this.frames.some((frame: Frame): boolean => frame.kind === "expansion")
+      this.frames.some(
+        (frame: FrameSpec): boolean => frame.kind === "expansion",
+      )
     ) {
       this.failed = true;
       return;

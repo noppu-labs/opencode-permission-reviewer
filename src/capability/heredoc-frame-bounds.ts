@@ -113,21 +113,16 @@ export function closingBacktick(
 /** The closing index of the innermost frame that bounds a heredoc body, if
  *  any: a backtick, or a `$((` span bash reads as a command substitution. */
 export function innermostLimit(
-  frames: ReadonlyArray<{ limit?: number }>,
+  frames: ReadonlyArray<{ limit?: number; limitAt: number }>,
 ): number | undefined {
-  for (let i = frames.length - 1; i >= 0; i -= 1) {
-    const limit = frames[i]?.limit;
-    if (limit !== undefined) return limit;
-  }
-  return undefined;
+  const index = frames.at(-1)?.limitAt ?? -1;
+  return index < 0 ? undefined : frames[index]?.limit;
 }
 
 /** Whether a heredoc opened now sits inside a substitution or backtick. A
  *  top-level group does not count. */
 export function insideSubstitution(
-  frames: ReadonlyArray<{ kind: string }>,
+  frames: ReadonlyArray<{ subst: number }>,
 ): boolean {
-  return frames.some(
-    (frame) => frame.kind === "substitution" || frame.kind === "backtick",
-  );
+  return (frames.at(-1)?.subst ?? -1) >= 0;
 }
