@@ -107,6 +107,7 @@ export function extractHeredocs(
     pending: [],
     pieces: [],
     readAllOperators: options.readAllOperators === true,
+    legacy: false,
   };
   while (scan.i < command.length) scanCharacter(scan);
   if (scan.pending.length > 0) {
@@ -126,11 +127,13 @@ export function extractHeredocs(
 
 /** The scanner's state. Text from `cursor` on has not been copied to `out`
  *  yet. */
-interface HeredocScan extends ScanContext, PendingLine {
+export interface HeredocScan extends ScanContext, PendingLine {
   cursor: number;
   lineStart: number;
   readAllOperators: boolean;
   framed: boolean;
+  /** Read the previous release's delimiter words (a carriage return ends one). */
+  legacy: boolean;
 }
 
 /** Advance the scan past the character at `scan.i` (or the construct that
@@ -190,7 +193,7 @@ function scanBacktick(scan: HeredocScan): void {
   scan.i += 1;
 }
 
-function scanNewline(scan: HeredocScan): void {
+export function scanNewline(scan: HeredocScan): void {
   if (scan.pending.length === 0) {
     scan.lineStart = scan.i + 1;
     scan.i += 1;
@@ -206,7 +209,7 @@ function scanNewline(scan: HeredocScan): void {
   scan.lineStart = resume;
 }
 
-function scanHeredocOperator(scan: HeredocScan): void {
+export function scanHeredocOperator(scan: HeredocScan): void {
   const { command, i } = scan;
   let j = i + 2;
   const operator = command[j] === "-" ? "<<-" : "<<";
@@ -225,7 +228,10 @@ function scanHeredocOperator(scan: HeredocScan): void {
   while (j < command.length && (command[j] === " " || command[j] === "\t"))
     j += 1;
   const frame = enclosingSubstitution(scan.frames);
-  const word = parseDelimiterWord(command, j, frame?.kind === "backtick");
+  const word = parseDelimiterWord(command, j, {
+    stopAtBacktick: frame?.kind === "backtick",
+    stopAtCarriageReturn: scan.legacy,
+  });
   const limit = innermostLimit(scan.frames);
   if (insideSubstitution(scan.frames)) scan.framed = true;
   appendText(scan, command.slice(scan.cursor, i));

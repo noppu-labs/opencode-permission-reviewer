@@ -53,7 +53,8 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "d3cf4a61d4a701c4dc138c69628489070e0664b5",
+  "src/emergency-brake.ts": "1fa75eaa72365d2506016cf7b57515c23ec635a7",
+  "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/reviewed-command.ts": "d7f4893e9f590680cfc10d2e4b9ffc1743fb17b7",
   "src/brake-arguments.ts": "9e67d27ca7194e5dca9023a4e2265931263ed328",
   "src/brake-rm-flags.ts": "034adfcdccaf0c0f567c1c0f16ba7d1eff336a09",
@@ -101,7 +102,7 @@ export const PINNED_BLOBS = {
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
-    "5cfc603cd24d0792864c3c9bb8c0254b7d063ab6",
+    "ca5a3f27e43d0e6e401d3cb0d81447aa9adc946f",
   "src/capability/heredoc-frame-starts.ts":
     "3d6d5f3ff14db84ca4a5cdab9f65ed44f978c552",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
@@ -143,19 +144,21 @@ export const PINNED_BLOBS = {
     "7575566966af5a9bccac2a72dd336e9dadaa99e2",
   "src/git-global-options.ts": "35752e52090120b61ed4679fcc3b1f1566cd8f01",
   "src/capability/heredoc-delimiter.ts":
-    "c91aaeadc894206370bf5662bb6512bc21078e95",
+    "9d562f06e93e87b42ad6af008e5c77b057d477bd",
   "src/capability/heredoc-word-quotes.ts":
     "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
   "src/capability/ansi-c-quoting.ts":
     "d2f0eabf08316462275c01b7edd4ebac2ef98308",
   "src/capability/heredoc-scan-context.ts":
-    "f3c38ce71dadb062480db49ba9acd34a8633abbc",
+    "618e550ed7e846fe8a726ecd5d9539aa40b7c6f9",
   "src/capability/heredoc-bodies.ts":
     "32fd5ac8fe8803e8f45997e10da9de42937ee770",
   "src/capability/heredoc-body-records.ts":
     "1805781f5923a3d4787787a366cb245008cd6cee",
   "src/capability/heredoc-frame-bounds.ts":
     "8173a096cb5eaa5614c993049c6932d42ec852d1",
+  "src/capability/heredoc-legacy.ts":
+    "c6c4c5f4697d1da06ac9f2f6688e3ca43a8e9d51",
   "src/capability/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
 };

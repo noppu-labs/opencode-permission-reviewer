@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
 import { parseDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
@@ -166,6 +167,19 @@ describe("stress and adversarial robustness", () => {
       ).toBeUndefined();
     }
   });
+
+  test.each([
+    ["an escaped double-quoted run", `$(( "${'\\"'.repeat(60_000)}`],
+    ["an arithmetic-opener run", "$((x ".repeat(26_000)],
+  ])(
+    "reads %s under the previous release's reading in linear time",
+    (_, command) => {
+      const started = Date.now();
+      legacySanitizedCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
 
   test.each([
     ["nested arithmetic openers", "$((".repeat(43_000)],

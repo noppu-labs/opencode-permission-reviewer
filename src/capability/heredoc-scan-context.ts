@@ -65,13 +65,20 @@ export function scanInsideQuotes(scan: ScanContext, c: string): boolean {
   return false;
 }
 
-export function scanQuoteOrEscape(scan: ScanContext, c: string): boolean {
+/** Open a quote or skip an escape at `scan.i`. `ansiC` reads `$'…'` as one
+ *  quoted string; the previous release did not, and reads its `'` as opening
+ *  an ordinary single-quoted string. */
+export function scanQuoteOrEscape(
+  scan: ScanContext,
+  c: string,
+  ansiC = true,
+): boolean {
   if (c === "'" || c === '"') {
     scan.quote = c;
     scan.i += 1;
     return true;
   }
-  if (c === "$" && scan.command.charAt(scan.i + 1) === "'") {
+  if (ansiC && c === "$" && scan.command.charAt(scan.i + 1) === "'") {
     scan.quote = "$'";
     scan.i += 2;
     return true;
@@ -101,7 +108,7 @@ export function skipComment(scan: ScanContext, c: string): boolean {
 
 /** Whether the character at `i` starts a word: first in the command, or after
  *  whitespace or `;&|()`. */
-function atCommandBoundary(command: string, i: number): boolean {
+export function atCommandBoundary(command: string, i: number): boolean {
   return i === 0 || /[\s;&|()]/.test(command.charAt(i - 1));
 }
 

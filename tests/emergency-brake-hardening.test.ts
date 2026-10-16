@@ -744,3 +744,32 @@ describe("hardening batch 29", () => {
     ["git commit -m \"$(cat <<'EOF'\nfix things\nEOF\n)\""],
   );
 });
+
+describe("hardening batch 30", () => {
+  const next = "\nrm -rf /";
+  blocks("a heredoc after an arithmetic group does not hide the next line", [
+    `echo $((1)+(1<<2))\ncat <<EOF\nit's\nEOF${next}`,
+    `echo $((1)+(1<<2)) <<EOF\nit's\nEOF${next}`,
+  ]);
+  blocks(
+    "a heredoc inside a substitution nested in an outer heredoc does not hide the next line",
+    [
+      `cat <<A; x=$((cat)<<B\nb\n)\nit's\nA${next}`,
+      `cat <<A; x=$( cat <<B\nit's\nB\n)\nabody\nA${next}`,
+    ],
+  );
+  blocks(
+    "a heredoc whose body closes its substitution does not hide the next line",
+    [`cat <<A; x=$( cat <<B\nb\nB\n)\nabody\nA${next}`],
+  );
+  blocks(
+    "a line with a destructive command is blocked when a body's quote swallows the rest",
+    [
+      "echo $(cat <<EOF\nit's\n)\nrm -rf /",
+      "echo $(cat <<EOF\nit's\n)\nrm\\\n -rf /",
+    ],
+  );
+  allows("arithmetic with a parenthesized term reads a shift, not a heredoc", [
+    "echo $(( (1)+(1<<2) ))\ncat <<EOF\nit's\nEOF\nls",
+  ]);
+});

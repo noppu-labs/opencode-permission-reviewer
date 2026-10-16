@@ -9,10 +9,12 @@ import {
   type FindCommand,
   isRootFind,
 } from "./brake-find-root.ts";
+import { logicalLines } from "./brake-logical-lines.ts";
 import { commandExportsSecret } from "./brake-network-export.ts";
 import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
+import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import {
   analyzeSegmentRedirections,
@@ -177,6 +179,16 @@ function detectorReason(sanitizedCommand: string): string | undefined {
   if (isObviousSecretExport(analyzed)) return SECRET_EXPORT_REASON;
 }
 
+/** The first line of `command` whose detectors block on their own. A line
+ *  that exceeds the analysis budget alone is skipped: the whole command's
+ *  limit was already checked by the caller. */
+function linesReason(command: string): string | undefined {
+  for (const line of logicalLines(command)) {
+    const reason = detectorReason(line);
+    if (reason !== undefined && reason !== ANALYSIS_LIMIT_REASON) return reason;
+  }
+}
+
 export function emergencyBrakeReason(
   request: PermissionRequest,
 ): string | undefined {
@@ -190,27 +202,30 @@ export function emergencyBrakeReason(
   // Heredoc bodies are shell input data, not command segments. Analyze the
   // body-free form so quoted payloads cannot trigger false destructive-command
   // matches; dynamic expansions remain visible to the reviewer evidence.
-  // Text the scan leaves inline is lexed as commands, so a body read under the
-  // default reading and one read under the all-operators reading can each
-  // hide a later line from the other. The brake checks both readings.
+  // Text the scan leaves inline is lexed as commands, so a body read under one
+  // reading can hide a later line from another. The brake checks the default
+  // reading, the reading that collapses every operator, and the reading the
+  // previous release produced; each distinct text is checked once.
   const extraction = extractHeredocs(command);
-  const reason = detectorReason(extraction.sanitizedCommand);
-  if (reason !== undefined) return reason;
   const allOperators = extractHeredocs(command, { readAllOperators: true });
-  const allReason =
-    allOperators.sanitizedCommand === extraction.sanitizedCommand
-      ? undefined
-      : detectorReason(allOperators.sanitizedCommand);
-  if (allReason !== undefined) return allReason;
+  const readings = new Set([
+    extraction.sanitizedCommand,
+    allOperators.sanitizedCommand,
+    legacySanitizedCommand(command),
+  ]);
+  for (const text of readings) {
+    const reason = detectorReason(text);
+    if (reason !== undefined) return reason;
+  }
   // A body that never ends takes every later line with it, and a heredoc in a
   // substitution or backticks may end where the scan's reading and the
   // shell's differ. In either case the brake also checks the command as
-  // written.
+  // written, and each of its lines on its own.
   if (
     extraction.unterminated ||
     allOperators.unterminated ||
     extraction.framed ||
     allOperators.framed
   )
-    return detectorReason(command);
+    return detectorReason(command) ?? linesReason(command);
 }
