@@ -102,8 +102,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   only when its content starts with `(` and ends with `)`. A `<<` inside a parameter expansion or a
   valid arithmetic expression stays text. A delimiter word keeps a carriage return as part of the
   word, and ends at a closing backtick. The emergency brake also checks the reading that collapses
-  every heredoc operator, and checks the command as written when a heredoc body never ends or a
-  heredoc sits inside a substitution or backticks.
+  every heredoc operator, the reading the previous release used, and the command as written when a
+  heredoc body never ends or a heredoc sits inside a substitution or backticks. In that last case
+  each line is also checked on its own, with a backslash continuation joined to the line after it.
 
 ## [3.0.0] - 2026-10-12
 
