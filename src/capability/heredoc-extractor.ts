@@ -41,8 +41,9 @@ import {
  *
  * A body opened inside backticks or a `$((` substitution ends at that
  * construct's close, as in bash: the scan resumes there and walks the lines
- * after it. A closing backtick ends every construct still open inside it. A `$((` span is arithmetic only when the `)` matching its second
- * `(` is followed by `)`; otherwise it is a command substitution.
+ * after it. A closing backtick ends every construct still open inside it.
+ * A `$((` span is arithmetic only when the `)` matching its second `(` is
+ * followed by `)`; otherwise it is a command substitution.
  *
  * NOTE: the capability analyzer, the emergency brake, the substitution
  * re-lexer and the display all walk the sanitized command this extractor
@@ -73,8 +74,9 @@ export interface HeredocExtraction {
 
 /** Options for `extractHeredocs`. */
 export interface HeredocOptions {
-  /** Every `<<` outside quotes and comments opens a heredoc, and none is
-   *  dropped at a same-line close. */
+  /** Every `<<` outside quotes and comments opens a heredoc. Under this
+   *  reading a `$(` substitution that closes on the operator's line keeps its
+   *  starts; a closing backtick drops them under either reading. */
   readAllOperators?: boolean;
 }
 
@@ -131,7 +133,8 @@ export interface HeredocScan extends ScanContext, PendingLine {
   lineStart: number;
   readAllOperators: boolean;
   framed: boolean;
-  /** Read the previous release's delimiter words (a carriage return ends one). */
+  /** Read the previous release's delimiter words: a carriage return ends
+   *  one. */
   legacy: boolean;
 }
 
