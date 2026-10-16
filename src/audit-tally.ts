@@ -1,5 +1,6 @@
 // The per-record tallies of the audit summary: counts by field, timestamp
 // bounds, and the records missing a required field.
+import { isRecord } from "./is-record.ts";
 
 /** The required identity/decision fields every audit record must carry. Used
  *  by the report reader to flag truncated or malformed lines. */
@@ -35,6 +36,8 @@ export interface AuditTally {
   byRiskLevel: Record<string, number>;
   byDecisionSource: Record<string, number>;
   byPermission: Record<string, number>;
+  byHandoffTrigger: Record<string, number>;
+  byResolution: Record<string, number>;
   missingRequiredFields: AuditMissingFields[];
   firstTimestamp?: string;
   lastTimestamp?: string;
@@ -79,6 +82,14 @@ function countDecision(tally: AuditTally, record: AuditLine): void {
     bump(tally.byPermission, record.permission);
 }
 
+function countRouting(tally: AuditTally, record: AuditLine): void {
+  const from = record.reviewerEscalatedFrom;
+  if (isRecord(from) && typeof from.trigger === "string")
+    bump(tally.byHandoffTrigger, from.trigger);
+  if (typeof record.resolution === "string")
+    bump(tally.byResolution, record.resolution);
+}
+
 function trackTimestamps(tally: AuditTally, timestamp: unknown): void {
   if (typeof timestamp !== "string") return;
   if (tally.firstTimestamp === undefined || timestamp < tally.firstTimestamp) {
@@ -96,6 +107,7 @@ export function tallyRecord(
 ): void {
   countProvenance(tally, record);
   countDecision(tally, record);
+  countRouting(tally, record);
   trackTimestamps(tally, record.timestamp);
   const missing = REQUIRED_AUDIT_FIELDS.filter((f) => record[f] === undefined);
   if (missing.length > 0) tally.missingRequiredFields.push({ lineNo, missing });

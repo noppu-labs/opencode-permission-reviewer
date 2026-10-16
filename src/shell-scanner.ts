@@ -30,7 +30,7 @@ import {
 import { substitutionAt } from "./shell-substitution.ts";
 import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
 
-const SEPARATORS = new Set([";", "|", "&", "\n", "\r", "(", ")"]);
+const SEPARATORS = new Set([";", "|", "&", "\n", "(", ")"]);
 const WHITESPACE = new Set([" ", "\t"]);
 
 function appendUnquoted(lex: LexState, c: string): void {
@@ -41,14 +41,18 @@ function appendUnquoted(lex: LexState, c: string): void {
 }
 
 // Redirection operators may contain characters that are command separators
-// elsewhere. Keep `&>`, `2>&1`, and `>|file` inside the token so the
+// elsewhere. Keep `&>`, `2>&1`, `3<&0`, and `>|file` inside the token so the
 // redirection normalizer (shell-redirections.ts) can interpret them as one
 // shell construct instead of inventing extra commands.
 function gluesToRedirection(lex: LexState, c: string): boolean {
   if (c === "&" && lex.command[lex.index + 1] === ">") return true;
   if (c !== "&" && c !== "|") return false;
+  const last = lex.value.charAt(lex.value.length - 1);
+  // `&` continues an output or input duplication operator (`>&`, `<&`);
+  // `|` continues only an output redirection (`>|`).
+  if (last === "" || (c === "|" && last !== ">")) return false;
   return (
-    lex.value.endsWith(">") &&
+    (last === ">" || last === "<") &&
     !tokenCharIsQuoted(
       { raw: lex.raw, value: lex.value, spans: lex.spans },
       lex.value.length - 1,
@@ -57,11 +61,16 @@ function gluesToRedirection(lex: LexState, c: string): boolean {
 }
 
 function lexSeparator(lex: LexState, c: string): void {
-  // Capture the operator identity (including doubled `||`/`&&`) so
-  // evidence consumers can reason about how segments relate.
-  let endedBy = c === "\n" || c === "\r" ? ";" : c;
-  if ((c === "|" || c === "&") && lex.command[lex.index + 1] === c) {
+  // Capture the operator identity (including doubled `||`/`&&` and the
+  // two-character `|&` and `;&`) so evidence consumers can reason about
+  // how segments relate.
+  let endedBy = c === "\n" ? ";" : c;
+  const next = lex.command[lex.index + 1];
+  if ((c === "|" || c === "&") && next === c) {
     endedBy = `${c}${c}`;
+    lex.index += 1;
+  } else if ((c === "|" || c === ";") && next === "&") {
+    endedBy = `${c}&`;
     lex.index += 1;
   }
   flushSegment(lex, endedBy);
@@ -77,10 +86,14 @@ function skipComment(lex: LexState): void {
 
 function lexEscape(lex: LexState): void {
   const next = lex.command.charAt(lex.index + 1);
-  lex.raw += `\\${next}`;
   // Backslash-newline is a line continuation outside quotes: both
   // characters vanish, so `r\<newline>m` lexes as the token `rm`.
-  if (next !== "\n" && next !== "\r") {
+  if (next === "\n" || next === "\r") {
+    // A continuation with no token in progress belongs to no token,
+    // so it stays out of the next token's source text.
+    if (lex.hasToken) lex.raw += `\\${next}`;
+  } else {
+    lex.raw += `\\${next}`;
     appendValue(lex, next, true);
     lex.hasToken = true;
   }

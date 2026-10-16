@@ -117,6 +117,50 @@ describe("trust hardening — project config cannot weaken trusted layers", () =
     }
   });
 
+  test("trusted inline cannot undo a project that turns System One routing off", () => {
+    const projectDir = tempDir("reviewer-project-");
+    try {
+      isolateGlobal(projectDir);
+      writeProjectConfig(projectDir, {
+        systemOneEscalation: "standard",
+        systemOneDenialReview: false,
+      });
+      const loaded = loadResolvedConfig(
+        { systemOneEscalation: "reasoning-first", systemOneDenialReview: true },
+        projectDir,
+      );
+      expect(loaded.systemOneEscalation).toBe("standard");
+      expect(loaded.systemOneDenialReview).toBe(false);
+    } finally {
+      rmSync(projectDir, { recursive: true });
+    }
+  });
+
+  test("unknown inline options may turn System One routing off but never on", () => {
+    const globalDir = tempDir("reviewer-global-");
+    const projectDir = tempDir("reviewer-project-");
+    try {
+      useGlobalConfig(globalDir, { systemOneDenialReview: true });
+      writeProjectConfig(projectDir, {});
+      const enabling = loadResolvedConfig(
+        { systemOneEscalation: "reasoning-first" },
+        projectDir,
+        "unknown",
+      );
+      expect(enabling.systemOneEscalation).toBe("standard");
+      expect(enabling.systemOneDenialReview).toBe(true);
+      const disabling = loadResolvedConfig(
+        { systemOneDenialReview: false },
+        projectDir,
+        "unknown",
+      );
+      expect(disabling.systemOneDenialReview).toBe(false);
+    } finally {
+      rmSync(globalDir, { recursive: true });
+      rmSync(projectDir, { recursive: true });
+    }
+  });
+
   test("project cannot choose the reviewer variant, output format, or retention", () => {
     const globalDir = tempDir("reviewer-global-");
     const projectDir = tempDir("reviewer-project-");

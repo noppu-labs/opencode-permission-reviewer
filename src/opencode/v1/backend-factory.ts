@@ -1,6 +1,9 @@
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
-import { SystemOneReviewerBackend } from "../../system-one/backend.ts";
+import {
+  type OnHandoff,
+  SystemOneReviewerBackend,
+} from "../../system-one/backend.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,
@@ -14,6 +17,7 @@ export interface V1ReviewBackend {
   review(
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
+    onHandoff?: OnHandoff,
   ): Promise<ReviewExecutionResult>;
   waitForIdle(): Promise<void>;
 }
@@ -56,8 +60,11 @@ export function createV1ReviewerBackend(
   );
   return {
     owns: (sessionID: string) => secondary?.owns(sessionID) ?? false,
-    review: (envelope: ReviewEnvelope, attempt: ReviewAttempt) =>
-      primary.review(envelope, attempt),
+    review: (
+      envelope: ReviewEnvelope,
+      attempt: ReviewAttempt,
+      onHandoff?: OnHandoff,
+    ) => primary.review(envelope, attempt, undefined, onHandoff),
     waitForIdle: async () => {
       await Promise.all([primary.waitForIdle(), secondary?.waitForIdle()]);
     },

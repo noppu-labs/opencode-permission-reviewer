@@ -1,5 +1,10 @@
 import { ACTOR_PROFILES } from "./config-rule-condition.ts";
-import type { ActorProfile, EscalationMode, RepositoryTrust } from "./types.ts";
+import type {
+  ActorProfile,
+  EscalationMode,
+  RepositoryTrust,
+  ReviewerConfig,
+} from "./types.ts";
 
 /** Parse a trusted name→profile mapping. Invalid entries are dropped. */
 export function resolveActorProfiles(
@@ -22,6 +27,21 @@ export function resolveActorProfiles(
 
 export function resolveEscalationMode(value: unknown): EscalationMode {
   return value === "deny" ? "deny" : "manual";
+}
+
+/** An invalid value falls back to the default, which adds no hand-off to the
+ *  escalation reviewer, so system-one-routing.ts reports it as a config
+ *  warning, never degradation. */
+export function systemOneRoutingFields(
+  source: Record<string, unknown>,
+): Pick<ReviewerConfig, "systemOneEscalation" | "systemOneDenialReview"> {
+  return {
+    systemOneEscalation:
+      source.systemOneEscalation === "reasoning-first"
+        ? "reasoning-first"
+        : "standard",
+    systemOneDenialReview: source.systemOneDenialReview === true,
+  };
 }
 
 export function resolveRepositoryTrust(value: unknown): RepositoryTrust {

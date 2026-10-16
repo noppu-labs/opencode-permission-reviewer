@@ -16,6 +16,7 @@ export interface Layers {
   project?: unknown;
   inline?: Record<string, unknown>;
   trust?: InlineOptionsTrust;
+  printConfigWarnings?: boolean;
 }
 
 export interface Loaded {
@@ -42,7 +43,9 @@ export function loadLayers(layers: Layers): Loaded {
     if (layers.project !== undefined) {
       write(projectConfigPath(dir), layers.project);
     }
-    const config = loadResolvedConfig(layers.inline, dir, layers.trust);
+    const config = loadResolvedConfig(layers.inline, dir, layers.trust, {
+      printConfigWarnings: layers.printConfigWarnings ?? true,
+    });
     return { config, warnings };
   } finally {
     restore();

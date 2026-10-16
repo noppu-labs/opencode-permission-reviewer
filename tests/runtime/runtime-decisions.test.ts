@@ -87,6 +87,19 @@ describe("runtime decisions", () => {
       expected: 120_000,
     },
     {
+      budget: "room for a slower escalation reviewer",
+      overrides: {
+        timeoutMs: 30_000,
+        escalationReviewer: {
+          model: "openai/gpt-6-luna",
+          variant: "high",
+          outputFormat: "json_schema" as const,
+          timeoutMs: 200_000,
+        },
+      },
+      expected: 290_000,
+    },
+    {
       budget: "an explicit reviewBudgetMs",
       overrides: { timeoutMs: 30_000, reviewBudgetMs: 90_000 },
       expected: 90_000,

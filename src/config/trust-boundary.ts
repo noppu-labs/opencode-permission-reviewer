@@ -33,6 +33,7 @@ export function mergeWithTrustBoundary(
   clampEnforcementMode(clamped, trusted);
   clampProjectRiskPolicy(clamped, trusted);
   clampEscalationMode(clamped, trusted);
+  clampSystemOneRouting(clamped);
   combinePolicyRules(clamped, trusted);
   return { ...trusted, ...clamped };
 }
@@ -105,6 +106,18 @@ function clampEscalationMode(
   const invalid = mode !== "manual" && mode !== "deny";
   const relaxes = mode === "manual" && trusted.escalationMode === "deny";
   if (invalid || relaxes) delete clamped.escalationMode;
+}
+
+/** systemOneEscalation and systemOneDenialReview: a repository may keep Jev's
+ *  escalations and denials with the human ("standard", false) but can never
+ *  turn either hand-off on. Any other value, including null, is dropped. */
+function clampSystemOneRouting(clamped: Record<string, unknown>): void {
+  if (clamped.systemOneEscalation !== "standard") {
+    delete clamped.systemOneEscalation;
+  }
+  if (clamped.systemOneDenialReview !== false) {
+    delete clamped.systemOneDenialReview;
+  }
 }
 
 /** policyRules: the project layer ADDS rules (which can only tighten — its

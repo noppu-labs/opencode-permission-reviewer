@@ -1,8 +1,9 @@
 # Development
 
 Guide for developing and maintaining the plugin: how `dist/` is built, the quality gates, the live
-end-to-end tests against real OpenCode hosts, and the synthetic model benchmark. Setup, the `check` scripts, and
-pull request rules are in [CONTRIBUTING](../CONTRIBUTING.md#before-opening-a-pull-request).
+end-to-end tests against real OpenCode hosts, the synthetic model benchmark, and the TUI screens
+in the docs. Setup, the `check` scripts, and pull request rules are in
+[CONTRIBUTING](../CONTRIBUTING.md#before-opening-a-pull-request).
 
 ## Build output (`dist/`)
 
@@ -242,3 +243,53 @@ development tool and is not part of the npm package or the plugin runtime. It do
 OpenCode conversations or execute fixture actions. See its
 [evaluation protocol](../benchmarks/permission-reviewer/docs/METHODOLOGY.md) and
 [results table](../benchmarks/permission-reviewer/RESULTS.md).
+
+## TUI screens
+
+The images in `docs/images/`, shown in the README and the [TUI guide](TUI.md), are rendered from
+the plugin's TUI components rather than drawn by hand. `scripts/capture-tui.ts <screen>` renders
+one screen with OpenTUI's test renderer from sample statuses and OpenCode's default dark theme,
+and prints it as truecolor ANSI. Charm's [freeze](https://github.com/charmbracelet/freeze) turns
+that output into an SVG. freeze is a contributor tool, not a package dependency, and CI does not
+run it. Install it once:
+
+```sh
+brew install charmbracelet/tap/freeze   # other package managers: see the freeze README
+```
+
+After changing a TUI component or a screen's samples, regenerate every image and commit the
+result:
+
+```sh
+git fetch --tags        # long-command-before renders the v3.0.0 release (in a fork, from the upstream repository)
+bun run docs:screens
+```
+
+To look at one screen in the terminal, run `bun scripts/capture-tui.ts <screen>`. The screens are
+`handoff-progress`, `result-attribution`, `v1-overlay-handoff`, `result-triggers`,
+`manual-toasts`, `config-warnings`, `long-command-before` and `long-command-after`.
+
+- The sample statuses live in `scripts/capture/samples.ts` and `scripts/capture/host-samples.ts`
+  (`scripts/capture/host-content.ts` holds the warning strings). The statuses the current server
+  would send go through the status wire codec, so a sample the TUI would reject fails the capture;
+  the v3.0.0 statuses are built by that release's own code.
+- Toasts and the sidebar are drawn by OpenCode. Their screens show the text and variant the plugin
+  sends, computed by the plugin's own toast and sidebar helpers, under a caption that says so.
+- `long-command-before` extracts `src/` at the `v3.0.0` tag into a temporary directory with
+  `git archive` and renders that release's components, the last ones that cut long actions at the
+  end.
+- The script pins the clock so elapsed times do not change between runs, and the freeze flags
+  live in `scripts/capture-tui.ts`: no window controls, a system monospace font stack instead of
+  an embedded font (an embedded font adds about 360 KB per image), OpenCode's dark background. The
+  committed images were made with freeze v0.2.2; the script warns when another version is
+  installed.
+- `docs:screens` first checks that the `v3.0.0` tag exists and stops before writing any image if
+  not. It also writes each image's `<title>` from `scripts/capture/titles.ts`. The alt text of an
+  image in the docs should say the same things as its title.
+- `tests/capture-tui.test.ts` renders every screen except `long-command-before`, checks the text
+  the docs quote and checks that every committed image carries its title, so a component change
+  that drops or rewords quoted text fails `bun test`. Nothing compares the committed images with a
+  fresh render, so regenerate them after any change to a component, the theme or a sample.
+- `docs/images/` is not in the package `files`, so the images never ship. The README links them by
+  absolute `raw.githubusercontent.com` URLs on `main`, because npm does not resolve relative image
+  paths.

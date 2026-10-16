@@ -1,6 +1,11 @@
 import { isRecord } from "./is-record.ts";
-import type { ReviewDecision } from "./types.ts";
-import type { ReviewUiStatus } from "./ui-protocol.ts";
+import type { HandoffInfo } from "./system-one/backend.ts";
+import type {
+  HandoffTrigger,
+  ManualResolution,
+  ReviewDecision,
+} from "./types.ts";
+import type { ActionSegment, ReviewUiStatus } from "./ui-protocol.ts";
 
 // Structural checks for a decoded UI status payload. A payload passes only
 // when every field holds a value the protocol defines; it is then returned
@@ -41,6 +46,53 @@ function isDecision(value: unknown): value is ReviewDecision {
   return isRecord(value) && fieldsPass(value, DECISION_CHECKS);
 }
 
+// Keyed records, so a trigger or resolution added to the union without a
+// check here fails to compile.
+const HANDOFF_TRIGGERS: Record<HandoffTrigger, true> = {
+  "jev-escalate": true,
+  "jev-uncertain-allow": true,
+  "jev-gate": true,
+  "jev-invalid": true,
+  "jev-failure": true,
+  "jev-uncertain-deny": true,
+};
+
+const RESOLUTIONS: Record<ManualResolution, true> = {
+  reviewer: true,
+  "reasoning-escalated": true,
+  "reasoning-unavailable": true,
+  "budget-exhausted": true,
+};
+
+const isStringList: Check = (value: unknown): boolean =>
+  Array.isArray(value) && value.every((entry) => typeof entry === "string");
+
+const HANDOFF_CHECKS: Record<keyof HandoffInfo, Check> = {
+  from: isString,
+  to: isString,
+  trigger: oneOf(Object.keys(HANDOFF_TRIGGERS)),
+  failureKind: optional(isString),
+};
+
+const isHandoff: Check = (value: unknown): boolean =>
+  isRecord(value) && fieldsPass(value, HANDOFF_CHECKS);
+
+const SEGMENT_CHECKS: Record<keyof ActionSegment, Check> = {
+  text: isString,
+  separator: optional(oneOf(["|", "||", "&&", ";", "&"])),
+  heredocLines: optional(
+    (value: unknown): boolean =>
+      isFiniteNumber(value) && Number.isInteger(value) && value >= 0,
+  ),
+};
+
+const isActionSegments: Check = (value: unknown): boolean =>
+  Array.isArray(value) &&
+  value.every(
+    (segment: unknown): boolean =>
+      isRecord(segment) && fieldsPass(segment, SEGMENT_CHECKS),
+  );
+
 const STATUS_CHECKS: Record<keyof ReviewUiStatus, Check> = {
   version: (value: unknown): boolean => value === 1,
   requestID: isString,
@@ -66,6 +118,12 @@ const STATUS_CHECKS: Record<keyof ReviewUiStatus, Check> = {
       "unknown",
     ]),
   ),
+  handoff: optional(isHandoff),
+  resolution: optional(oneOf(Object.keys(RESOLUTIONS))),
+  decidedBy: optional(isString),
+  configWarnings: optional(isStringList),
+  configDegraded: optional(isStringList),
+  actionSegments: optional(isActionSegments),
 };
 
 export function parseUiStatus(value: unknown): ReviewUiStatus | undefined {

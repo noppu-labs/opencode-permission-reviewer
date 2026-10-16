@@ -4,6 +4,7 @@
 import { assembleEvidence } from "../context/evidence-assembler.ts";
 import { invariant } from "../invariant.ts";
 import { createV1ContextReader } from "../opencode/v1/context-reader.ts";
+import type { HandoffInfo } from "../system-one/backend.ts";
 import type {
   PermissionRequest,
   ReviewEnvelope,
@@ -18,7 +19,7 @@ import {
 import { ATTEMPT_REGISTERED } from "./review-coordinator-support.ts";
 import { applyDisposition } from "./review-disposition.ts";
 import { evaluateReview } from "./review-engine.ts";
-import { publishReviewStatus } from "./review-status.ts";
+import { publishHandoffStatus, publishReviewStatus } from "./review-status.ts";
 
 export async function processRequest(
   state: CoordinatorState,
@@ -105,5 +106,7 @@ function runReviewer(
 ): Promise<ReviewExecutionResult> {
   const attempt = state.attempts.get(envelope.request.id);
   invariant(attempt, ATTEMPT_REGISTERED);
-  return state.backend.review(envelope, attempt);
+  return state.backend.review(envelope, attempt, (handoff: HandoffInfo) =>
+    publishHandoffStatus(state, envelope.request, handoff),
+  );
 }

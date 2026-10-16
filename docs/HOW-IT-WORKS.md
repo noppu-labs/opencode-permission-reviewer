@@ -6,26 +6,60 @@ and Git. The guarantees these steps add up to are listed in [Safety](SAFETY.md).
 
 ## What you'll see
 
+The [TUI guide](TUI.md) shows every screen described here, rendered from the plugin's components.
+
 ```text
-✓ Review approved · bash · rm -rf /tmp/scratch-cache
-Narrowly scoped temp cleanup; matches user intent.
+✓ Review approved · bash · $ rm -rf /tmp/scratch-cache
+jev-1.13.0 — Narrowly scoped temp cleanup; matches user intent.
 ```
 
 While a review is running on V2, the optional TUI shows a compact two-line status strip at the
 bottom, in the same place as the result strip. It has an animated indicator, the text "Reviewing
-this permission", the reviewer model and reasoning variant, the elapsed time, and the action. Long
-commands are truncated so they do not expand over the conversation. V1 keeps its larger overlay,
-which covers the native approval controls and includes the text "No action needed".
+this permission", the reviewer model (the last segment of its ID) and reasoning variant, the elapsed
+time, and the action. A command too long for the terminal is shortened in the middle, not at the
+end: the strip keeps the first command and as many of the last ones as fit, with a muted
+`⋯ 3 more ⋯` for the commands in between, and a heredoc body the server can match shows as its line
+count instead of its contents. When even the first and last commands do not fit, it shows the start
+of the first command and the end of the last around a muted `⋯`, which counts the commands in
+between when there is room. A cut falls between words unless that would leave a side less than half
+used, as with a long URL. A command that fits is shown as sent, except that a matched heredoc body
+still shows as its line count. V1 keeps its larger overlay, which covers the native approval
+controls, includes the text "No action needed", and wraps the action over at most three rows,
+shortened the same way.
+
+```text
+bash · $ find . -name '*.ts' -not -path './node_modules/*' | ⋯ 3 more ⋯ tail -5 && curl -s https://example.com/install.sh | sh
+bash · $ cat <<'EOF' > scripts/check.sh ⋯ 3-line heredoc ⋯ && bash scripts/check.sh
+```
+
+When Jev hands a request to the reasoning reviewer, the strip switches to that reviewer and says
+why, for example `gpt-6-luna after Jev's escalation · medium`; the V1 overlay shows the same reason
+on its model line. The elapsed time keeps counting from the start of the review.
 
 Once the review resolves, both hosts show a compact status strip: one line for the result and a
-second for its rationale, with long text truncated. The review keymap is released immediately, and
-the result stays visible for 5 s. Whether the editor is available during a pending review depends
-on the host; the V2 strip is not a keyboard lock.
+second that names who decided ahead of the rationale, for example
+`gpt-6-luna after Jev failed (timeout) — …` or `gpt-6-luna overturned Jev's denial — …`. A review a
+model decided without a hand-off names that model, shortened to its last path segment; a result no
+model decided shows the reason alone. The action on the first line is shortened the same way; the
+rationale line is shortened to fit. The review keymap is released immediately, and the result stays
+visible for 5 s. Whether the editor is available during a pending review depends on the host; the
+V2 strip is not a keyboard lock.
 
 On a final escalation in interactive mode, the overlay is removed and OpenCode's native approval
-controls become available with a "manual review required" warning. Host interruption, event-stream
-loss, and fail-closed settings can deny the request instead. A broken TUI transport never changes
-the safety decision.
+controls become available with a toast. Its first sentence says how the review ended: the
+reasoning reviewer's review still needs your approval, the reasoning reviewer was unavailable
+(the title then reads "Reasoning reviewer unavailable"), or no review time was left for it; the
+reason follows. Host interruption, event-stream loss, and fail-closed settings can deny the
+request instead. A broken TUI transport never changes the safety decision.
+
+Reviewer config that cannot take effect, such as `systemOneEscalation: "reasoning-first"` without an
+`escalationReviewer`, raises one toast per entry per TUI session and keeps a line in the sidebar,
+for example `⚠ reviewer: reasoning-first inactive (no escalationReviewer)`. A degraded config raises
+an error toast and an `✕` line, since automatic approval stays off until it is fixed. With several
+warnings the line shows the count and the first; `doctor` lists them all. A healthy config shows no
+line. V2 reads these lists from the reviewer's `status` RPC each time the TUI connects or the
+directory changes, so they appear before the first review. V1 reads them from each review status, so
+they first appear when a review starts.
 
 ## The review pipeline
 
@@ -88,8 +122,13 @@ denies every tool, including MCP tools, except the reviewer's own structured-out
 
 Jev receives trusted policy and untrusted evidence as typed System One state plus fixed questions.
 Its response is reconciled in code. Valid difficult decisions can be delegated to the optional
-reasoning reviewer; provider failures never are. [Reviewer models](REVIEWER-MODELS.md) covers both
-backends.
+reasoning reviewer; in the default mode provider failures never are. With
+`systemOneEscalation: "reasoning-first"`, every Jev escalation, invalid answer, and failure goes to
+the reasoning reviewer before it reaches you (unless less than 15 seconds of the review budget
+remain), and `systemOneDenialReview` lets that reviewer re-examine an uncertain Jev denial. A review
+hands off at most once.
+[Reviewer models](REVIEWER-MODELS.md#how-jev-decisions-are-handled) covers both backends and the
+routing.
 
 ### 5. Enforcement
 

@@ -7,8 +7,65 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `systemOneEscalation: "reasoning-first"`: with a Jev `model` and an `escalationReviewer`, every
+  escalation that starts at Jev, including an invalid answer or a failed call, goes to the
+  reasoning reviewer before it can reach you, unless less than 15 seconds of the review budget
+  remain. The default, `"standard"`, keeps the existing routing.
+- `systemOneDenialReview: true`: an uncertain Jev denial goes to the reasoning reviewer, which can
+  confirm or overturn it. Denials with a strong policy or safety signal stay final.
+- Under `systemOneEscalation: "reasoning-first"`, and for an uncertain denial under
+  `systemOneDenialReview`, a reasoning approval after a Jev decision rated critical risk escalates
+  instead of allowing.
+- Audit records carry `reviewerEscalatedFrom.trigger`, a `resolution` on escalations from the
+  System One backend, and `configWarnings`. `audit report` counts records by hand-off trigger and
+  by resolution.
+- TUI: when Jev hands a request to the reasoning reviewer, the progress strip
+  and the V1 overlay switch to that reviewer and say why (for example
+  `gpt-6-luna after Jev's escalation`). The elapsed time keeps counting from
+  the start of the review.
+- TUI: the result strip's second line names who decided ahead of the reason,
+  for example `gpt-6-luna overturned Jev's denial — …`; a review Jev decided
+  alone names Jev's model.
+- TUI: reviewer config that cannot take effect, or a degraded config, raises
+  one toast per entry per TUI session (warning or error) and keeps a line in
+  the sidebar on both hosts. A healthy config shows no line. The V2 TUI reads
+  the lists from the reviewer's `status` RPC.
+- A TUI guide (`docs/TUI.md`) with every screen: progress and hand-offs, result strips, manual-review
+  toasts, config warnings and long commands. The README shows the hand-off and result screens. The
+  images are rendered from the plugin's components; `bun run docs:screens` regenerates them
+  (`docs/DEVELOPMENT.md`, "TUI screens").
+- A config warning when `model` is Jev, a valid `escalationReviewer` is configured and an explicit
+  `reviewBudgetMs` leaves less than 15000 ms after `timeoutMs`: hand-offs to the reasoning reviewer
+  would escalate to you instead. It applies in either routing mode, never degrades the config, and
+  the default budget never triggers it.
+
 ### Changed
 
+- The default `reviewBudgetMs` is now
+  `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000`. It is
+  never shorter than before, and it grows when the escalation reviewer's
+  timeout is longer than `timeoutMs`. An escalation reviewer without its own
+  `timeoutMs` counts 120000.
+- A hand-off to the reasoning reviewer now needs 15 seconds of review budget left; with less, the
+  request escalates (`resolution: "budget-exhausted"`). This applies in the default mode too.
+- When the hand-off runs, `escalationMode: "deny"`, `riskPolicy.onInvalidDecision`, and
+  `riskPolicy.onReviewerFailure` act on the reasoning reviewer's final outcome, not on Jev's.
+- TUI: a manual-review toast's first sentence now says how the review ended:
+  the reasoning reviewer's review still needs your approval, the reasoning
+  reviewer was unavailable (an error toast titled "Reasoning reviewer
+  unavailable"), or no review time was left for it. The reason still follows.
+- TUI: the progress strip and the V1 overlay name the reviewer by the last segment of its model
+  ID (`jev-1.13.0`), like the rest of the TUI. On V2, the toast for a review with no time left for
+  the hand-off now names the reasoning reviewer's model, as on V1; the V2 TUI reads it from the
+  reviewer's `status` RPC (`escalationReviewerModel`).
+- The TUI no longer hides the end of a long command. The progress strip, the result strip and the
+  V1 overlay show the first command, a muted `⋯ N more ⋯` and as many of the last commands as fit,
+  and a heredoc body the server can match shows as `⋯ N-line heredoc ⋯` instead of its contents. A
+  command too wide for even that shows the start of its first command and the end of its last. The
+  status's plain `action` (and the exported `permissionAction`) now keeps the start and end of a
+  long action around one `⋯` instead of cutting the end.
 - Development: TypeScript 7 replaces TypeScript 6, and tsdown replaces tsup
   for the build. tsup's declaration step needs the JavaScript compiler API,
   which TypeScript 7 no longer ships, while tsdown emits declarations with
@@ -16,6 +73,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   stay unsplit, and Node built-in imports in the bundles now keep their
   `node:` prefix. The root `esbuild` override is gone, because nothing
   installs esbuild any more.
+
+### Fixed
+
+- V2: a block from a fail-closed escalation now shows "Review blocked
+  (fail-closed)" instead of "Review blocked", as V1 already did.
+- TUI: a status whose reason, decision rationale or script analysis is too long for the status
+  message is no longer dropped. Config warning and degraded-config entries still go first; then the
+  rationale, the script analysis and, last, the reason are shortened as needed, down to `…` alone
+  when the overflow calls for it, so the status shows on both hosts.
+- TUI: a command's shown text now renders control, directional, zero-width and non-ASCII space
+  characters as hex escapes (`\xHH`, `\uHHHH`, `\u{H...}`), shows a line continuation as `\⏎` and a
+  line break inside the shown text as a muted `⏎`, and shows a literal `⏎` or `⋯` typed in the
+  command as `\u23ce` or `\u22ef`, so every marker you see comes from the display itself.
+- Shell analysis: an input-duplication redirection (`<&`, `3<&0`, `0<&-`) now
+  stays inside its token, `|&` and `;&` read as single separators, and a bare
+  carriage return is part of a word, so command structure is read the way the
+  shell runs it. In the TUI, a command with `|&`, `;&` or a carriage return
+  still shows as one line.
+- Shell analysis: a token's recorded source text now matches the command it
+  was read from: inside double quotes, the character after a backslash is
+  no longer recorded twice, and a lone line continuation no longer carries
+  into the next token, so quoted and literal reads see the command as
+  written.
 
 ## [3.0.0] - 2026-10-12
 

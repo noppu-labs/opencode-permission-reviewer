@@ -131,6 +131,52 @@ describe("monotonic fields", () => {
       ),
     ).toEqual(["deny", "deny", "deny"]);
   });
+
+  test("System One routing can be turned off but never on by the project", () => {
+    const on = {
+      systemOneEscalation: "reasoning-first",
+      systemOneDenialReview: true,
+    };
+    expect(field("systemOneEscalation", "reasoning-first")).toBe("standard");
+    expect(field("systemOneDenialReview", true)).toBe(false);
+    expect(field("systemOneEscalation", "standard", on)).toBe("standard");
+    expect(field("systemOneDenialReview", false, on)).toBe(false);
+    expect(
+      ["bogus", null, 1].map((value) =>
+        field("systemOneEscalation", value, on),
+      ),
+    ).toEqual(["reasoning-first", "reasoning-first", "reasoning-first"]);
+    expect(
+      ["true", null, 1].map((value) =>
+        field("systemOneDenialReview", value, on),
+      ),
+    ).toEqual([true, true, true]);
+  });
+
+  test("a dropped project routing value is not reported as invalid", () => {
+    const loaded = loadConfig({
+      project: { systemOneEscalation: "bogus", systemOneDenialReview: "yes" },
+    });
+    expect(loaded.configWarnings).toBeUndefined();
+  });
+
+  test.each([null, 1, "reasoning-firts"])(
+    "a trusted routing value survives project %p without a warning",
+    (bad) => {
+      const loaded = loadConfig({
+        global: {
+          model: "opencode/jev-1",
+          escalationReviewer: { model: "openai/gpt-6-luna" },
+          systemOneEscalation: "reasoning-first",
+          systemOneDenialReview: true,
+        },
+        project: { systemOneEscalation: bad, systemOneDenialReview: bad },
+      });
+      expect(loaded.systemOneEscalation).toBe("reasoning-first");
+      expect(loaded.systemOneDenialReview).toBe(true);
+      expect(loaded.configWarnings).toBeUndefined();
+    },
+  );
 });
 
 describe("project policy rules are added after the trusted rules", () => {

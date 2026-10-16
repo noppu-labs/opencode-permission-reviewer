@@ -1,10 +1,14 @@
 /** @jsxImportSource @opentui/solid */
 
 import type { ColorInput } from "@opentui/core";
+import { useTerminalDimensions } from "@opentui/solid";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
 import type { ReviewUiStatus } from "../ui-protocol.ts";
-import { type ReviewTheme, singleLine } from "./components.tsx";
+import { type ActionFitPart, fitAction, singleLine } from "./action-fit.ts";
+import { ActionSpans, stripActionColumns } from "./action-spans.tsx";
+import { resultDetail } from "./attribution.ts";
+import type { ReviewTheme } from "./components.tsx";
 
 export function ReviewResult(props: {
   theme: () => ReviewTheme;
@@ -32,9 +36,19 @@ export function ReviewResult(props: {
     }
     return { color: theme().error, icon: "✕", title: "Review blocked" };
   };
+  const terminal = useTerminalDimensions();
+  const action = (): ActionFitPart[] =>
+    fitAction(
+      props.status,
+      stripActionColumns(
+        terminal().width,
+        `${appearance().icon} ${appearance().title} · ${props.status.permission} · `,
+      ),
+    );
+  const detail = (): string | undefined => resultDetail(props.status);
   return (
     <box
-      height={props.status.reason ? 2 : 1}
+      height={detail() ? 2 : 1}
       flexShrink={0}
       overflow="hidden"
       backgroundColor={theme().backgroundPanel}
@@ -44,11 +58,15 @@ export function ReviewResult(props: {
     >
       <text fg={appearance().color} wrapMode="none" truncate>
         {appearance().icon} {appearance().title} · {props.status.permission} ·{" "}
-        {singleLine(props.status.action)}
+        <ActionSpans
+          parts={action()}
+          color={appearance().color}
+          muted={theme().textMuted}
+        />
       </text>
-      <Show when={props.status.reason}>
+      <Show when={detail()}>
         <text fg={theme().textMuted} wrapMode="none" truncate>
-          {singleLine(props.status.reason ?? "")}
+          {singleLine(detail() ?? "")}
         </text>
       </Show>
     </box>

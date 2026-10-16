@@ -26,6 +26,8 @@ export type EvidenceSufficiency =
 export type EscalationMode = "manual" | "deny";
 /** Effective disposition applied to an internal escalate result. */
 export type EscalationDisposition = "manual" | "deny";
+/** Where an escalation that starts at Jev goes; `reasoning-first` sends every one to the escalation reviewer. */
+export type SystemOneEscalationMode = "standard" | "reasoning-first";
 
 export interface ReviewDecision {
   /** Structured-decision schema version. Always 2 for the current schema. */
@@ -165,6 +167,10 @@ export interface ReviewerConfig {
   /** Minimum combined non-escalate probability for routing an explicit
    *  System One escalation to the optional reasoning reviewer. */
   systemOneReasoningThreshold: number;
+  /** Read through resolveSystemOneRouting, which applies the Jev and escalationReviewer conditions. */
+  systemOneEscalation: SystemOneEscalationMode;
+  /** Send uncertain Jev denials to the escalation reviewer. Read through resolveSystemOneRouting. */
+  systemOneDenialReview: boolean;
   timeoutMs: number;
   /** Total review budget, including context, queueing, and retries. */
   reviewBudgetMs?: number;
@@ -213,6 +219,9 @@ export interface ReviewerConfig {
    *  or rules dropped by validation). Degraded configs block automatic
    *  approval: restrictions may have been lost, so requests escalate instead. */
   configDegraded?: string[];
+  /** Non-empty when a setting was invalid and fell back to its default, or is
+   *  on but inert. Informational only: never affects a decision. */
+  configWarnings?: string[];
 }
 
 export interface ReviewEnvelope {
@@ -267,6 +276,30 @@ export interface ApprovedAnnotation {
   decision: ReviewDecision;
 }
 
+/** Why a System One (Jev) result was handed to the reasoning reviewer. */
+export type HandoffTrigger =
+  | "jev-escalate"
+  | "jev-uncertain-allow"
+  | "jev-gate"
+  | "jev-invalid"
+  | "jev-failure"
+  | "jev-uncertain-deny";
+
+/** The primary model, routing reason and hand-off trigger of a review a
+ *  second reviewer decided. */
+export interface EscalatedFrom {
+  model: string;
+  reason: string;
+  trigger?: HandoffTrigger;
+}
+
+/** How an escalation that left the System One backend was reached. */
+export type ManualResolution =
+  | "reviewer"
+  | "reasoning-escalated"
+  | "reasoning-unavailable"
+  | "budget-exhausted";
+
 export interface ReviewExecutionResult {
   kind: "allow" | "deny" | "escalate";
   decision?: ReviewDecision;
@@ -276,8 +309,9 @@ export interface ReviewExecutionResult {
   decisionSource?: DecisionSource;
   /** Actual model that produced the final reviewer decision. */
   reviewerModel?: string;
-  /** Primary model and routing reason when a second reviewer was used. */
-  reviewerEscalatedFrom?: { model: string; reason: string };
+  /** Primary model, routing reason and hand-off trigger when a second
+   *  reviewer was used. */
+  reviewerEscalatedFrom?: EscalatedFrom;
   /** Jev's scores whenever it returned a parsed decision. */
   systemOne?: SystemOneScores;
   /**
@@ -291,6 +325,9 @@ export interface ReviewExecutionResult {
    * the request was already answered manually (`manual-superseded`).
    */
   escalationDisposition?: EscalationDisposition;
+  /** Set only by the System One backend, on escalations; kept when a
+   *  disposition turns one into a deny. */
+  resolution?: ManualResolution;
 }
 
 /** Generic policy templates, NOT automatic trust levels. */

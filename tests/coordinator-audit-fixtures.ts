@@ -7,7 +7,7 @@ import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import { writeReviewAudit } from "../src/core/review-coordinator-support.ts";
 import { probeCapabilities } from "../src/opencode/capability-detection.ts";
 import type { RuntimeContext } from "../src/opencode/types.ts";
-import type { ReviewExecutionResult } from "../src/types.ts";
+import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
 import { decision, MockClient, request } from "./helpers.ts";
 import { actor, capability } from "./policy-fixtures.ts";
 
@@ -21,6 +21,8 @@ export interface AuditCall {
   logs: unknown[][];
   /** Request IDs looked up in the manual-reply set, in order. */
   supersededChecks: string[];
+  /** The resolved config the writer sees; DEFAULT_CONFIG when absent. */
+  config?: ReviewerConfig;
 }
 
 /** A manual-reply set that records each lookup, so a test sees whether and
@@ -44,7 +46,7 @@ export function writeAudit(
   return writeReviewAudit(
     {
       ctx: call.ctx,
-      config: DEFAULT_CONFIG,
+      config: call.config ?? DEFAULT_CONFIG,
       generation: "gen_1",
       attempts: new Map(call.attempts.map((attempt) => [pending.id, attempt])),
       stopped: call.superseded,
@@ -174,7 +176,12 @@ export const FULL_RESULT: ReviewExecutionResult = {
   escalationDisposition: "deny",
   reviewSessionID: "ses_review",
   reviewerModel: "openai/reasoner",
-  reviewerEscalatedFrom: { model: "opencode/jev", reason: "hard" },
+  reviewerEscalatedFrom: {
+    model: "opencode/jev",
+    reason: "hard",
+    trigger: "jev-uncertain-deny",
+  },
+  resolution: "reasoning-escalated",
 };
 
 /** The record for FULL_EVIDENCE and FULL_RESULT, in the writer's key order,
@@ -201,7 +208,11 @@ export function fullRecord(
     decisionSource: "llm-reviewer",
     actionHash: computed.actionHash,
     reviewerModel: "openai/reasoner",
-    reviewerEscalatedFrom: { model: "opencode/jev", reason: "hard" },
+    reviewerEscalatedFrom: {
+      model: "opencode/jev",
+      reason: "hard",
+      trigger: "jev-uncertain-deny",
+    },
     requestID: "per_1",
     sessionID: "ses_main",
     permission: "bash",
@@ -213,6 +224,7 @@ export function fullRecord(
     verifiedScript: { sha256: "a".repeat(64), status: "full", bytes: 42 },
     reviewerOutcome: "deny",
     escalationDisposition: "deny",
+    resolution: "reasoning-escalated",
     riskLevel: denied.risk_level,
     userAuthorization: denied.user_authorization,
     scopeAlignment: denied.scope_alignment,

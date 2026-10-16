@@ -111,6 +111,9 @@ function deniedResult(
       ? {}
       : { reviewerEscalatedFrom: result.reviewerEscalatedFrom }),
     ...(result.systemOne === undefined ? {} : { systemOne: result.systemOne }),
+    ...(result.resolution === undefined
+      ? {}
+      : { resolution: result.resolution }),
     escalationDisposition: "deny",
   };
 }

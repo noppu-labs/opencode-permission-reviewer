@@ -4,7 +4,9 @@ import type { EvidenceConfidence } from "./actor-context-types.ts";
 import type { SystemOneScores } from "./system-one/system-one-types.ts";
 import type {
   ActorProfile,
+  EscalatedFrom,
   EscalationDisposition,
+  ManualResolution,
   ReviewExecutionResult,
   ReviewOutcome,
   RiskLevel,
@@ -83,8 +85,14 @@ export interface ReviewAuditRecord {
   escalationDisposition?: EscalationDisposition;
   /** The model that produced the final reviewer decision. */
   reviewerModel?: string;
-  /** Present when a System One result was handed to a reasoning reviewer. */
-  reviewerEscalatedFrom?: { model: string; reason: string };
+  /** Present when a System One result was handed to a reasoning reviewer;
+   *  `trigger` says why. */
+  reviewerEscalatedFrom?: EscalatedFrom;
+  /** How an escalation from the System One backend was reached. */
+  resolution?: ManualResolution;
+  /** Warnings on the resolved config (inert or invalid settings); present
+   *  only when there are any. Not the evidence `warnings` below. */
+  configWarnings?: string[];
   /** Jev's scores whenever it returned a parsed decision, including when a
    *  reasoning reviewer made the final call. */
   systemOne?: SystemOneScores;

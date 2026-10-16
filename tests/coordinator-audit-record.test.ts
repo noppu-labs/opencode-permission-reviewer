@@ -51,6 +51,27 @@ describe("writeReviewAudit", () => {
     expect(JSON.stringify(stable)).toBe(JSON.stringify(fullRecord(stable)));
   });
 
+  test("config warnings follow the config hash, and an empty list leaves no key", async () => {
+    const records: ReviewAuditRecord[] = [];
+    await writeAudit({
+      ...auditCall(sinkContext(records), [attemptWith({})], ALLOW),
+      config: { ...DEFAULT_CONFIG, configWarnings: ["fixture warning"] },
+    });
+    await writeAudit({
+      ...auditCall(sinkContext(records), [attemptWith({})], ALLOW),
+      config: { ...DEFAULT_CONFIG, configWarnings: [] },
+    });
+    const warned = defined(records[0], "warned record");
+    const keys = Object.keys(warned);
+    expect(warned.configWarnings).toEqual(["fixture warning"]);
+    expect(keys[keys.indexOf("effectiveConfigHash") + 1]).toBe(
+      "configWarnings",
+    );
+    expect(
+      Object.hasOwn(defined(records[1], "quiet record"), "configWarnings"),
+    ).toBe(false);
+  });
+
   test("a result without a decision source or decision records failure-safe; empty facts drop their keys", async () => {
     const records: ReviewAuditRecord[] = [];
     const bare = actor("unknown");

@@ -1,17 +1,17 @@
 # dependencies
 node_modules/
 
-# personal / machine-specific hardening helper — NOT part of the reusable plugin
-scripts/harden-opencode-v1.jq
-
 # local-only agent guardrails (private to this checkout, never publish)
 AGENTS.md
 
 # local agent plans and reports (kept in the checkout, never published)
 /docs/superpowers/
 
-# local implementation plan (private to this checkout, never publish)
-opencode-permission-reviewer-v1.0.0-plan.md
+# local tool state (OpenCode, agent workflows, code indexes)
+.opencode/
+.superpowers/
+.gitnexus/
+.codegraph/
 
 # audit logs (never commit)
 approval-reviewer-audit.jsonl

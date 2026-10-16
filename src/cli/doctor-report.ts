@@ -18,6 +18,8 @@ export interface DoctorReport {
     repositoryTrust: ReviewerConfig["repositoryTrust"];
     policyRuleCount: number;
     effectivePolicyHash: string;
+    configWarnings: string[];
+    configDegraded: string[];
   };
   audit: { path: string; writable: boolean; error?: string };
 }
@@ -48,11 +50,20 @@ export function printDoctorHuman(report: DoctorReport): void {
   console.error(
     `  rules:      ${config.policyRuleCount} (effectivePolicyHash: ${config.effectivePolicyHash})`,
   );
+  printEntries("warning", config.configWarnings);
+  printEntries("degraded", config.configDegraded);
   console.error(`audit`);
   console.error(`  path:       ${audit.path}`);
   console.error(
     `  writable:   ${audit.writable ? "yes" : "no"}${audit.error ? ` (${audit.error})` : ""}`,
   );
+}
+
+/** One labelled line per entry, so a healthy config prints none. */
+function printEntries(label: string, entries: string[]): void {
+  for (const entry of entries) {
+    console.error(`  ${`${label}:`.padEnd(12)}${entry}`);
+  }
 }
 
 function fmtSource(s: SourceInfo): string {
