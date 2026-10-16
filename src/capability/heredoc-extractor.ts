@@ -6,6 +6,7 @@ import {
   type PendingLine,
 } from "./heredoc-bodies.ts";
 import { parseDelimiterWord } from "./heredoc-delimiter.ts";
+import { enclosingSubstitution, readsNoBody } from "./heredoc-frame-starts.ts";
 import {
   closingFrame,
   type Frame,
@@ -193,29 +194,6 @@ function scanHeredocOperator(scan: HeredocScan): void {
   scan.pieces.push({ pendingIndex: scan.pending.length - 1 });
   scan.cursor = word.wordEnd;
   scan.i = word.wordEnd;
-}
-
-/** Whether the shell reads no heredoc body at this `<<`: the operator sits
- *  in an expansion (literal or shift text), or in a construct the scan
- *  cannot follow (unsure text, or backticks). */
-function readsNoBody(scan: HeredocScan): boolean {
-  return (
-    scan.unsure ||
-    scan.frames.some(
-      (frame) => frame.kind === "expansion" || frame.kind === "backtick",
-    )
-  );
-}
-
-/** The innermost substitution open at the operator, if any. Frames between
- *  it and the operator (groups, expansions) do not change which substitution
- *  closing on the operator's own line ends the operator's heredoc. */
-function enclosingSubstitution(frames: Frame[]): Frame | undefined {
-  for (let i = frames.length - 1; i >= 0; i -= 1) {
-    const frame = frames[i];
-    if (frame?.kind === "substitution") return frame;
-  }
-  return undefined;
 }
 
 /** Drop the starts opened inside `frame`, whose close the shell reads on
