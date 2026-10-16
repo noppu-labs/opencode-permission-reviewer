@@ -36,9 +36,11 @@ import {
  *
  * NOTE: the capability analyzer, the emergency brake, the substitution
  * re-lexer and the display all walk the sanitized command this extractor
- * returns, so a body it collapses is hidden from them, and text it leaves
- * inline may read as commands. That cuts both ways, which is why the scan
- * only opens a heredoc where the shell reads a body.
+ * returns, so a body it collapses is hidden from them. Text it leaves inline
+ * is lexed as commands, so a real body left inline can hide the lines after
+ * it: an apostrophe in the body opens a quote that swallows them. The scan
+ * therefore reads a body wherever the shell may, and the emergency brake also
+ * checks the reading that collapses every operator (`readAllOperators`).
  *
  * This is a bounded static parser, not a shell executor: it never expands the
  * body, never runs anything, and marks bodies with unresolvable expansions as

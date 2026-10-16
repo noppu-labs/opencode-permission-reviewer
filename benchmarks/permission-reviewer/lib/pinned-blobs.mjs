@@ -101,7 +101,7 @@ export const PINNED_BLOBS = {
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
-    "3bbaf1a194d284171a6fa8d3aadc3ad43ccbbdd7",
+    "0bc01c4718c3e9de7371c6ff58c7d54d2547b243",
   "src/capability/heredoc-frame-starts.ts":
     "3e90a85309f8f448ca6e1e4be78d97a17681315d",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",

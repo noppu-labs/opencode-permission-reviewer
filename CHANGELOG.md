@@ -96,10 +96,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer recorded twice, and a lone line continuation no longer carries
   into the next token, so quoted and literal reads see the command as
   written.
-- Shell analysis: a heredoc body now collapses only where the shell reads it
-  as one, so command substitutions, parameter expansions, arithmetic
-  expansions, backticks, and delimiters ended by a carriage return no longer
-  swallow lines the shell runs.
+- Shell analysis: a heredoc is read where the shell reads one: inside an open
+  command substitution or backtick, and after an arithmetic form the shell
+  re-reads as groups. A `<<` inside a parameter expansion or a valid
+  arithmetic expression stays text. A delimiter word keeps a carriage return as part of the word, and ends
+  at a closing backtick. The emergency brake also checks the reading that
+  collapses every heredoc operator.
 
 ## [3.0.0] - 2026-10-12
 
