@@ -232,12 +232,8 @@ export function emergencyBrakeReason(
   // A body that never ends takes every later line with it, and a heredoc in a
   // substitution or backticks may end where the scan's reading and the
   // shell's differ. In either case the brake also checks the command as
-  // written, and each of its lines on its own.
-  if (
-    extraction.unterminated ||
-    allOperators.unterminated ||
-    extraction.framed ||
-    allOperators.framed
-  )
+  // written, and each of its lines on its own. Only the default reading decides
+  // this: the all-operators reading opens starts the shell does not read.
+  if (extraction.unterminated || extraction.framed)
     return detectorReason(command) ?? linesReason(command);
 }

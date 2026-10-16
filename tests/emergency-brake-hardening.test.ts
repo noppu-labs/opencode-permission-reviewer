@@ -783,4 +783,12 @@ describe("hardening batch 31", () => {
     "a heredoc inside a double-quoted backtick substitution does not hide the next line",
     ['echo "`$((<<-EOF)}${#|)|\nrm -rf /`"'],
   );
+  allows(
+    "an arithmetic shift before a heredoc whose body holds destructive text is data",
+    [
+      "echo $((1<<3)); cat <<EOF\nrm -rf / text\nEOF",
+      "(( n = 1 << 3 )); cat <<EOF\nrm -rf / text\nEOF",
+      "echo $[1<<3]; cat <<EOF\nrm -rf / text\nEOF",
+    ],
+  );
 });
