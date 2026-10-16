@@ -21,7 +21,9 @@ export function lexSingleQuoted(lex: LexState, c: string): void {
 /** Records the unquoted `$` run that ends at the unquoted character `c`, and
  *  reports whether `c` opens a quote: `'`, `"`, or an ANSI-C `$'…'`. */
 export function opensQuote(lex: LexState, c: string): boolean {
-  lex.dollarRun = c === "$" ? lex.dollarRun + 1 : 0;
+  const continuation = c === "\\" && lex.command[lex.index + 1] === "\n";
+  if (c === "$") lex.dollarRun += 1;
+  else if (!continuation) lex.dollarRun = 0;
   return c === "'" || c === '"' || opensAnsiC(lex);
 }
 

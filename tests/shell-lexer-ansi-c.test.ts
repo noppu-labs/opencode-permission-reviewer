@@ -188,6 +188,42 @@ describe("ANSI-C quoted words", () => {
     expect(segments[0]?.tokens[1]).toMatchObject({ value: "\u0024{x}$a\\'b" });
   });
 
+  test("keeps a `$` run across a backslash-newline before a quote", () => {
+    const segments = scan("printf '[%s]\\n' $\\\n$'a\\'b''; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[2]).toMatchObject({ value: "$$a\\b" });
+    expect(words(segments.slice(1))).toEqual([
+      [
+        ["echo", "echo"],
+        ["RAN", "RAN"],
+      ],
+    ]);
+  });
+
+  test("keeps a `$` run across several backslash-newlines before a quote", () => {
+    const segments = scan("printf '[%s]\\n' $\\\n\\\n$'a\\'b''; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[2]).toMatchObject({ value: "$$a\\b" });
+    expect(words(segments.slice(1))).toEqual([
+      [
+        ["echo", "echo"],
+        ["RAN", "RAN"],
+      ],
+    ]);
+  });
+
+  test("resets a `$` run at a backslash-carriage-return before a quote", () => {
+    const segments = scan("printf '[%s]\\n' $\\\r$'a\\'b'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens).toHaveLength(3);
+    expect(words(segments.slice(1))).toEqual([
+      [
+        ["echo", "echo"],
+        ["RAN", "RAN"],
+      ],
+    ]);
+  });
+
   test("lexes `$'…'` after an empty quote as a plain quote under the previous reading", () => {
     expect(words(scan("echo $''$'a\\'b'; ls", "previous"))).toEqual([
       [
