@@ -32,11 +32,11 @@ import {
  * bounded+redacted body, sha256 of the full body, output target when a `> path`
  * precedes the heredoc, dynamic flag).
  *
- * NOTE: this protects the capability analyzer and evidence providers only.
- * The emergency brake operates on the RAW command independently and does NOT
- * use this extractor — heredoc bodies may still appear as tokens the brake
- * sees. This is a known conservative limitation (the brake may false-positive
- * on destructive text inside a heredoc body, but never false-negative).
+ * NOTE: the capability analyzer, the emergency brake, the substitution
+ * re-lexer and the display all walk the sanitized command this extractor
+ * returns, so a body it collapses is hidden from them, and text it leaves
+ * inline may read as commands. That cuts both ways, which is why the scan
+ * only opens a heredoc where the shell reads a body.
  *
  * This is a bounded static parser, not a shell executor: it never expands the
  * body, never runs anything, and marks bodies with unresolvable expansions as

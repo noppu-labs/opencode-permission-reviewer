@@ -96,6 +96,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer recorded twice, and a lone line continuation no longer carries
   into the next token, so quoted and literal reads see the command as
   written.
+- Shell analysis: a heredoc body now collapses only where the shell reads it
+  as one, so command substitutions, parameter expansions, arithmetic
+  expansions, backticks, and delimiters ended by a carriage return no longer
+  swallow lines the shell runs.
 
 ## [3.0.0] - 2026-10-12
 
