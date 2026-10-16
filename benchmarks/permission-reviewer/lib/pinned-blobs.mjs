@@ -89,7 +89,7 @@ export const PINNED_BLOBS = {
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/shell-lexer-tables.ts": "d962f14223b70f233fcc11c637f1c0f817d3757d",
   "src/shell-token.ts": "b3b12c1046ff0b94a41d9a175a5475dc19a17865",
-  "src/shell-redirections.ts": "8cb0fd65e22202d460d9d917a5e92b338a194445",
+  "src/shell-redirections.ts": "56b6c554d745464d699663a7342140fca30773f3",
   "src/shell-redirection-operators.ts":
     "579703335deab3052f2b1f8b39d34cea10266ba2",
   "src/shell-lex-state.ts": "c84a9df37d8a87c75efa66d2c72f40d95319ebea",

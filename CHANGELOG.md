@@ -106,6 +106,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   operator, the reading the previous release used, and the command as written when a heredoc body
   never ends or a heredoc sits inside a substitution or backticks. In that last case each line is
   also checked on its own, with a backslash continuation joined to the line after it.
+- Shell analysis: a command string the shell runs (`bash -c`, `sh -c`, `watch`, `ssh`, `find -exec
+  sh -c`, and the wrappers around them) gets the same brake readings as the top-level command. A
+  heredoc written before the command no longer hides the command: its placeholder is not a command
+  word.
 
 ## [3.0.0] - 2026-10-12
 

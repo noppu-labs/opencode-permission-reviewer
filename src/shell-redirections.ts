@@ -79,9 +79,10 @@ function splitWord(
   token: ShellToken,
   split: RedirectionSplit,
 ): string | undefined {
-  const found = HEREDOC_MARKER.test(token.value)
-    ? undefined
-    : nextRedirection(token, 0);
+  // The marker is evidence metadata: it is neither a command word nor a
+  // redirection, so it leaves the words and the redirection list alone.
+  if (HEREDOC_MARKER.test(token.value)) return undefined;
+  const found = nextRedirection(token, 0);
   if (found === undefined) {
     split.words.push(token);
     return undefined;
