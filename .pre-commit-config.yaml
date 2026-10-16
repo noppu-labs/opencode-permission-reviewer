@@ -16,7 +16,7 @@ repos:
       - id: check-added-large-files
       - id: check-executables-have-shebangs
       - id: check-shebang-scripts-are-executable
-        # Run through an interpreter (bun, node, python) or compiled by tsup, never executed in place.
+        # Run through an interpreter (bun, node, python) or compiled by tsdown, never executed in place.
         exclude: ^(benchmarks/permission-reviewer/(cli\.mjs|scripts/build-dataset\.py|tests/plugin-parity\.mjs)|src/cli/explain\.ts)$
       - id: end-of-file-fixer
       - id: trailing-whitespace

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Development: TypeScript 7 replaces TypeScript 6, and tsdown replaces tsup
+  for the build. tsup's declaration step needs the JavaScript compiler API,
+  which TypeScript 7 no longer ships, while tsdown emits declarations with
+  TypeScript 7's native compiler. The shipped files keep their names and
+  stay unsplit, and Node built-in imports in the bundles now keep their
+  `node:` prefix. The root `esbuild` override is gone, because nothing
+  installs esbuild any more.
+
 ## [3.0.0] - 2026-10-12
 
 ### Changed

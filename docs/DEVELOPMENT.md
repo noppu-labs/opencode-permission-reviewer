@@ -6,7 +6,7 @@ pull request rules are in [CONTRIBUTING](../CONTRIBUTING.md#before-opening-a-pul
 
 ## Build output (`dist/`)
 
-`bun run build` runs tsup to bundle the server, the CLI, and the RPC protocol into
+`bun run build` runs tsdown to bundle the server, the CLI, and the RPC protocol into
 `dist/index.js`, `dist/explain.js`, and `dist/rpc.js`, then runs `bun scripts/copy-tui.ts` to copy
 the slim TUI source graph into `dist/tui/` as raw TSX. The package exports map onto those files:
 
