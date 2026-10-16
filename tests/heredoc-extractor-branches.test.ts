@@ -384,3 +384,53 @@ describe("extractHeredocs reads a body where the shell reads one", () => {
     });
   });
 });
+
+// A body that reaches the end of input without its terminator line is flagged
+// as unterminated. The length bound alone is not an unterminated body.
+describe("extractHeredocs unterminated bodies", () => {
+  test.each([
+    "`<<EOF\n`\nls",
+    "cat <<EOF\nx",
+    "cat <<EOF",
+    "cat <<\nx",
+    "$(()<<EOF\n)\nls",
+  ])("%p is unterminated", (command) => {
+    expect(extractHeredocs(command).unterminated).toBe(true);
+  });
+
+  test.each(["cat <<EOF\nx\nEOF\nls", "echo `cat <<EOF`\nls"])(
+    "%p is terminated",
+    (command) => {
+      expect(extractHeredocs(command).unterminated).toBe(false);
+    },
+  );
+
+  test("a body cut by the length bound alone is not unterminated", () => {
+    const command = `cat <<EOF\n${"a".repeat(5000)}\nEOF\nls`;
+    const result = extractHeredocs(command);
+    expect(result.heredocs[0]?.truncated).toBe(true);
+    expect(result.unterminated).toBe(false);
+  });
+});
+
+// Under the all-operators reading a `<<` inside `$((…))` opens a heredoc; the
+// default reading treats it as a shift.
+describe("extractHeredocs all-operators reading inside arithmetic", () => {
+  test("the all-operators reading opens a heredoc inside arithmetic", () => {
+    expect(
+      extraction("echo $((1<<2))\nx\n2\nls", { readAllOperators: true }),
+    ).toEqual({
+      sanitized: "echo $((1<<2 <#>))\nls",
+      heredocs: [bare("2", "x\n")],
+      dynamic: false,
+    });
+  });
+
+  test("the default reading keeps a shift inside arithmetic as text", () => {
+    expect(extraction("echo $((1<<2))\nx\n2\nls")).toEqual({
+      sanitized: "echo $((1<<2))\nx\n2\nls",
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+});

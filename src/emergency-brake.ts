@@ -193,12 +193,18 @@ export function emergencyBrakeReason(
   // Text the scan leaves inline is lexed as commands, so a body read under the
   // default reading and one read under the all-operators reading can each
   // hide a later line from the other. The brake checks both readings.
-  const sanitizedCommand = extractHeredocs(command).sanitizedCommand;
-  const reason = detectorReason(sanitizedCommand);
+  const extraction = extractHeredocs(command);
+  const reason = detectorReason(extraction.sanitizedCommand);
   if (reason !== undefined) return reason;
-  const allOperators = extractHeredocs(command, {
-    readAllOperators: true,
-  }).sanitizedCommand;
-  if (allOperators === sanitizedCommand) return;
-  return detectorReason(allOperators);
+  const allOperators = extractHeredocs(command, { readAllOperators: true });
+  const allReason =
+    allOperators.sanitizedCommand === extraction.sanitizedCommand
+      ? undefined
+      : detectorReason(allOperators.sanitizedCommand);
+  if (allReason !== undefined) return allReason;
+  // A body that never ends takes every later line with it, so the scan's
+  // reading and the shell's may differ there. The brake also checks the
+  // command as written.
+  if (extraction.unterminated || allOperators.unterminated)
+    return detectorReason(command);
 }

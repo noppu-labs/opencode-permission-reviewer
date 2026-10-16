@@ -32,10 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one toast per entry per TUI session (warning or error) and keeps a line in
   the sidebar on both hosts. A healthy config shows no line. The V2 TUI reads
   the lists from the reviewer's `status` RPC.
-- A TUI guide (`docs/TUI.md`) with every screen: progress and hand-offs, result strips, manual-review
-  toasts, config warnings and long commands. The README shows the hand-off and result screens. The
-  images are rendered from the plugin's components; `bun run docs:screens` regenerates them
-  (`docs/DEVELOPMENT.md`, "TUI screens").
+- A TUI guide (`docs/TUI.md`) with every screen: progress and hand-offs, result strips,
+  manual-review toasts, config warnings and long commands. The README shows the hand-off and result
+  screens. The images are rendered from the plugin's components; `bun run docs:screens` regenerates
+  them (`docs/DEVELOPMENT.md`, "TUI screens").
 - A config warning when `model` is Jev, a valid `escalationReviewer` is configured and an explicit
   `reviewBudgetMs` leaves less than 15000 ms after `timeoutMs`: hand-offs to the reasoning reviewer
   would escalate to you instead. It applies in either routing mode, never degrades the config, and
@@ -96,12 +96,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no longer recorded twice, and a lone line continuation no longer carries
   into the next token, so quoted and literal reads see the command as
   written.
-- Shell analysis: a heredoc is read where the shell reads one: inside an open
-  command substitution or backtick, and after an arithmetic form the shell
-  re-reads as groups. A `<<` inside a parameter expansion or a valid
-  arithmetic expression stays text. A delimiter word keeps a carriage return as part of the word, and ends
-  at a closing backtick. The emergency brake also checks the reading that
-  collapses every heredoc operator.
+- Shell analysis: a heredoc is read where the shell reads one: inside an open command substitution
+  or backtick, and after an arithmetic form the shell re-reads as groups. A `<<` inside a parameter
+  expansion or a valid arithmetic expression stays text. A delimiter word keeps a carriage return as
+  part of the word, and ends at a closing backtick. The emergency brake also checks the reading that
+  collapses every heredoc operator, and the command as written when a heredoc body never ends.
 
 ## [3.0.0] - 2026-10-12
 

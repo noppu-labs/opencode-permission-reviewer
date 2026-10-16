@@ -700,3 +700,22 @@ describe("hardening batch 27", () => {
     ["echo $(cat <<EOF\r)\nrm -rf /"],
   );
 });
+
+describe("hardening batch 28", () => {
+  blocks(
+    "a heredoc in arithmetic inside a substitution does not hide the next line",
+    ["$(()<<EOF\n)\nrm -rf /"],
+  );
+  blocks(
+    "a heredoc opened in backticks after a substitution does not hide the next line",
+    ["` <<EOF;$((\nrm -rf /"],
+  );
+  blocks(
+    "a heredoc whose backtick comes before an arithmetic close does not hide the next line",
+    ["`<<EOF));((\nrm -rf /"],
+  );
+  blocks(
+    "a heredoc whose body never ends inside backticks does not hide the next line",
+    ["`<<EOF\n`\nrm -rf /"],
+  );
+});

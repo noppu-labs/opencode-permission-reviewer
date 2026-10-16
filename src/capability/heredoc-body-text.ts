@@ -29,7 +29,12 @@ export function collectBody(
   start: number,
   delimiter: string,
   tabStripped: boolean,
-): { body: string; endIndex: number; truncated: boolean } {
+): {
+  body: string;
+  endIndex: number;
+  truncated: boolean;
+  unterminated: boolean;
+} {
   let i = start;
   let body = "";
   let truncated = false;
@@ -41,15 +46,14 @@ export function collectBody(
     if (candidate === delimiter) {
       // Preserve the trailing newline in the stream so the lexer still splits
       // the command that follows the heredoc into its own segment.
-      return { body, endIndex: lineEnd, truncated };
+      return { body, endIndex: lineEnd, truncated, unterminated: false };
     }
     body += `${line}\n`;
     if (body.length > MAX_BODY_BYTES * 4) truncated = true;
     i = lineEnd + 1;
   }
   // Unterminated heredoc: treat the remainder as the body (partial).
-  truncated = true;
-  return { body, endIndex: source.length, truncated };
+  return { body, endIndex: source.length, truncated: true, unterminated: true };
 }
 
 export function boundBody(

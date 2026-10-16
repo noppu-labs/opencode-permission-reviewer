@@ -40,7 +40,12 @@ export function readBody(
   command: string,
   position: number,
   start: PendingStart,
-): { body: string; truncated: boolean; position: number } {
+): {
+  body: string;
+  truncated: boolean;
+  unterminated: boolean;
+  position: number;
+} {
   if (start.resolved) {
     const collected = collectBody(
       command,
@@ -51,6 +56,7 @@ export function readBody(
     return {
       body: collected.body,
       truncated: collected.truncated,
+      unterminated: collected.unterminated,
       position: collected.endIndex + 1,
     };
   }
@@ -60,6 +66,7 @@ export function readBody(
   return {
     body: command.slice(position),
     truncated: true,
+    unterminated: true,
     position: command.length,
   };
 }

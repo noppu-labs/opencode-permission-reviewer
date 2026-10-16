@@ -36,11 +36,10 @@ import {
  *
  * NOTE: the capability analyzer, the emergency brake, the substitution
  * re-lexer and the display all walk the sanitized command this extractor
- * returns, so a body it collapses is hidden from them. Text it leaves inline
- * is lexed as commands, so a real body left inline can hide the lines after
- * it: an apostrophe in the body opens a quote that swallows them. The scan
- * therefore reads a body wherever the shell may, and the emergency brake also
- * checks the reading that collapses every operator (`readAllOperators`).
+ * returns, so a body it collapses is hidden from them. Text left inline is
+ * lexed as commands, so leaving a real body inline can hide later lines. The
+ * scan therefore reads a body wherever the shell may, and the emergency brake
+ * also checks the reading that collapses every operator (`readAllOperators`).
  *
  * This is a bounded static parser, not a shell executor: it never expands the
  * body, never runs anything, and marks bodies with unresolvable expansions as
@@ -49,6 +48,9 @@ import {
 
 /** Result of extracting heredocs from a raw command. */
 export interface HeredocExtraction {
+  /** Whether a body read reached the end of input without its terminator
+   *  line. Length bounding does not set it. */
+  unterminated: boolean;
   /** Command with heredoc bodies replaced by placeholder tokens. */
   sanitizedCommand: string;
   /** Structured heredoc records. */
@@ -59,9 +61,8 @@ export interface HeredocExtraction {
 
 /** Options for `extractHeredocs`. */
 export interface HeredocOptions {
-  /** Read every `<<` outside quotes and comments as a heredoc start, whatever
-   *  the frames around it, and keep every start when a substitution closes on
-   *  its line. This is the reading that collapses every candidate operator. */
+  /** Every `<<` outside quotes and comments opens a heredoc, and none is
+   *  dropped at a same-line close. */
   readAllOperators?: boolean;
 }
 
@@ -81,6 +82,7 @@ export function extractHeredocs(
     command,
     heredocs: [],
     hasDynamicConstructs: false,
+    unterminated: false,
     out: "",
     cursor: 0,
     i: 0,
@@ -99,6 +101,7 @@ export function extractHeredocs(
   }
   scan.out += command.slice(scan.cursor);
   return {
+    unterminated: scan.unterminated,
     sanitizedCommand: scan.out,
     heredocs: scan.heredocs,
     hasDynamicConstructs: scan.hasDynamicConstructs,

@@ -17,6 +17,9 @@ export interface PendingLine {
   heredocs: HeredocRecord[];
   hasDynamicConstructs: boolean;
   out: string;
+  /** Set when a body read reaches the end of input without its terminator
+   *  line, or its delimiter word cannot be known. */
+  unterminated: boolean;
   pending: PendingStart[];
   pieces: Array<{ text: string } | { pendingIndex: number }>;
 }
@@ -42,6 +45,7 @@ export function consumeBodies(
   for (const start of scan.pending) {
     const read = readBody(scan.command, position, start);
     position = read.position;
+    if (read.unterminated) scan.unterminated = true;
     const record = bodyRecord(scan.command, start, read, lineEnd);
     if (record.dynamic) scan.hasDynamicConstructs = true;
     records.push(record);
