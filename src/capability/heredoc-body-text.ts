@@ -23,33 +23,70 @@ function stripQuotes(token: string): string {
 }
 
 /** Collect the heredoc body until the delimiter line. Returns the body text and
- *  the index just past the closing delimiter line. */
+ *  the index just past the closing delimiter line. With `limit` below the end
+ *  of `source`, the body ends there: only lines wholly before `limit` are
+ *  searched, and the unterminated body ends at `limit`, which is returned as
+ *  `endIndex`. */
 export function collectBody(
   source: string,
   start: number,
   delimiter: string,
   tabStripped: boolean,
-): { body: string; endIndex: number; truncated: boolean } {
+  limit: number = source.length,
+): {
+  body: string;
+  endIndex: number;
+  truncated: boolean;
+  unterminated: boolean;
+} {
+  const bounded = limit < source.length;
   let i = start;
   let body = "";
   let truncated = false;
-  while (i < source.length) {
+  while (i < limit) {
     let lineEnd = source.indexOf("\n", i);
     if (lineEnd === -1) lineEnd = source.length;
+    if (bounded && lineEnd > limit) break;
     const line = source.slice(i, lineEnd);
     const candidate = tabStripped ? line.replace(/^\t+/, "") : line;
     if (candidate === delimiter) {
       // Preserve the trailing newline in the stream so the lexer still splits
       // the command that follows the heredoc into its own segment.
-      return { body, endIndex: lineEnd, truncated };
+      return { body, endIndex: lineEnd, truncated, unterminated: false };
     }
     body += `${line}\n`;
     if (body.length > MAX_BODY_BYTES * 4) truncated = true;
     i = lineEnd + 1;
   }
-  // Unterminated heredoc: treat the remainder as the body (partial).
-  truncated = true;
-  return { body, endIndex: source.length, truncated };
+  return unterminatedBody(source, body, i, limit);
+}
+
+/** The body of a heredoc whose terminator line is never found: the remainder
+ *  up to `limit`, which is the end of `source` unless a bound cut it. */
+function unterminatedBody(
+  source: string,
+  body: string,
+  i: number,
+  limit: number,
+): {
+  body: string;
+  endIndex: number;
+  truncated: boolean;
+  unterminated: boolean;
+} {
+  if (limit >= source.length)
+    return {
+      body,
+      endIndex: source.length,
+      truncated: true,
+      unterminated: true,
+    };
+  return {
+    body: body + source.slice(i, limit),
+    endIndex: limit,
+    truncated: true,
+    unterminated: true,
+  };
 }
 
 export function boundBody(

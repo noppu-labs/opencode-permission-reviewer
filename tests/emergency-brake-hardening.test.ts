@@ -645,3 +645,150 @@ describe("hardening batch 25", () => {
 
   allows("allows each command, case %#", ["watch -x FOO=1 rm -rf /"]);
 });
+
+describe("hardening batch 26", () => {
+  blocks("a `<<` inside a parameter expansion does not hide the next line", [
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+    "x=hello; echo ${x#<<A}\nrm -rf /",
+  ]);
+  blocks("a `<<` inside legacy arithmetic does not hide the next line", [
+    "echo $[1<<2]\nrm -rf /",
+  ]);
+  blocks("a heredoc inside a closed substitution does not hide the next line", [
+    "echo $(cat <<EOF)\nrm -rf /",
+  ]);
+  blocks("a heredoc inside backticks does not hide the next line", [
+    "echo `cat <<EOF`\nrm -rf /",
+  ]);
+  blocks("a CRLF heredoc terminator does not hide an LF-ended line after it", [
+    "cat <<EOF\r\nhi\r\nEOF\r\nrm -rf /\n",
+  ]);
+
+  allows("a CRLF-ended line after a CRLF heredoc reads a path with a CR", [
+    "cat <<EOF\r\nhi\r\nEOF\r\nrm -rf /\r",
+  ]);
+});
+
+describe("hardening batch 27", () => {
+  blocks("a heredoc read inside an open backtick does not hide the next line", [
+    "x=`cat <<EOF\nit's\nEOF\n`\nrm -rf /",
+  ]);
+  blocks(
+    "a heredoc read inside a substitution nested in a parameter default does not hide the next line",
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-$(cat <<EOF\nit's\nEOF\n)}\nrm -rf /",
+    ],
+  );
+  blocks(
+    "a heredoc read inside a substitution nested in arithmetic does not hide the next line",
+    ["echo $(( $(cat <<EOF\nit's\nEOF\n) ))\nrm -rf /"],
+  );
+  blocks(
+    "a lone close paren inside a double-parenthesis group does not hide the next heredoc body",
+    [
+      "((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+      "x=$((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+    ],
+  );
+  blocks(
+    "a heredoc in a substitution closed on its own line does not hide the next line",
+    ["echo $(cat <<EOF)\nit's\nEOF\nrm -rf /"],
+  );
+  blocks(
+    "a carriage return in a heredoc word inside a substitution does not hide the next line",
+    ["echo $(cat <<EOF\r)\nrm -rf /"],
+  );
+});
+
+describe("hardening batch 28", () => {
+  blocks(
+    "a heredoc in arithmetic inside a substitution does not hide the next line",
+    ["$(()<<EOF\n)\nrm -rf /"],
+  );
+  blocks(
+    "a heredoc opened in backticks after a substitution does not hide the next line",
+    ["` <<EOF;$((\nrm -rf /"],
+  );
+  blocks(
+    "a heredoc whose backtick comes before an arithmetic close does not hide the next line",
+    ["`<<EOF));((\nrm -rf /"],
+  );
+  blocks(
+    "a heredoc whose body never ends inside backticks does not hide the next line",
+    ["`<<EOF\n`\nrm -rf /"],
+  );
+});
+
+describe("hardening batch 29", () => {
+  blocks("a heredoc in a `$((` substitution does not hide the next line", [
+    "x=$((cat)<<EOF\n)\nrm -rf /\nEOF",
+    "$(()<<EOF\n)\nrm -rf /\nEOF",
+    "echo $((1)+(1<<2\n))\nrm -rf /\n2",
+  ]);
+  blocks("a heredoc in backticks does not hide the next line", [
+    "x=`cat <<EOF\n`\nrm -rf /\nEOF",
+    "x=`cat <<EOF\nit's\n`\nrm -rf /\nEOF",
+  ]);
+  blocks(
+    "a heredoc in a command substitution closed in its body does not hide the next line",
+    ["echo $(cat <<EOF\n)\nrm -rf /\nEOF\n)"],
+  );
+  blocks(
+    "a heredoc opened in backticks after an arithmetic opener does not hide the next line",
+    ["` <<EOF;$((`\nrm -rf /", "`<<EOF));((`\nrm -rf /"],
+  );
+  allows("a top-level heredoc body is data", ["cat <<EOF\nrm -rf /\nEOF"]);
+  allows(
+    "a quoted heredoc inside a double-quoted command substitution is data",
+    ["git commit -m \"$(cat <<'EOF'\nfix things\nEOF\n)\""],
+  );
+});
+
+describe("hardening batch 30", () => {
+  const next = "\nrm -rf /";
+  blocks("a heredoc after an arithmetic group does not hide the next line", [
+    `echo $((1)+(1<<2))\ncat <<EOF\nit's\nEOF${next}`,
+    `echo $((1)+(1<<2)) <<EOF\nit's\nEOF${next}`,
+  ]);
+  blocks(
+    "a heredoc inside a substitution nested in an outer heredoc does not hide the next line",
+    [
+      `cat <<A; x=$((cat)<<B\nb\n)\nit's\nA${next}`,
+      `cat <<A; x=$( cat <<B\nit's\nB\n)\nabody\nA${next}`,
+    ],
+  );
+  blocks(
+    "a heredoc whose body closes its substitution does not hide the next line",
+    [`cat <<A; x=$( cat <<B\nb\nB\n)\nabody\nA${next}`],
+  );
+  blocks(
+    "a line with a destructive command is blocked when a body's quote swallows the rest",
+    [
+      "echo $(cat <<EOF\nit's\n)\nrm -rf /",
+      "echo $(cat <<EOF\nit's\n)\nrm\\\n -rf /",
+    ],
+  );
+  allows("arithmetic with a parenthesized term reads a shift, not a heredoc", [
+    "echo $(( (1)+(1<<2) ))\ncat <<EOF\nit's\nEOF\nls",
+  ]);
+});
+
+describe("hardening batch 31", () => {
+  blocks(
+    "a heredoc operator with a carriage return inside a double-quoted substitution does not hide the command",
+    ['echo "$(<<EOF\rx rm -rf /)"', 'echo "`<<EOF\rx rm -rf /`"'],
+  );
+  blocks(
+    "a heredoc inside a double-quoted backtick substitution does not hide the next line",
+    ['echo "`$((<<-EOF)}${#|)|\nrm -rf /`"'],
+  );
+  allows(
+    "an arithmetic shift before a heredoc whose body holds destructive text is data",
+    [
+      "echo $((1<<3)); cat <<EOF\nrm -rf / text\nEOF",
+      "(( n = 1 << 3 )); cat <<EOF\nrm -rf / text\nEOF",
+      "echo $[1<<3]; cat <<EOF\nrm -rf / text\nEOF",
+    ],
+  );
+});

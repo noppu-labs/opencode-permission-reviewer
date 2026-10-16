@@ -5,9 +5,19 @@ import {
   type PendingLine,
 } from "./heredoc-bodies.ts";
 import { parseDelimiterWord } from "./heredoc-delimiter.ts";
+import { innermostLimit, insideSubstitution } from "./heredoc-frame-bounds.ts";
 import {
+  closeBacktickFrames,
+  dropSubstitutedStarts,
+  enclosingSubstitution,
+  readsNoBody,
+} from "./heredoc-frame-starts.ts";
+import {
+  closingFrame,
+  fallBackFromArithmetic,
+  openBacktick,
+  openFrame,
   type ScanContext,
-  scanArithmetic,
   scanInsideQuotes,
   scanQuoteOrEscape,
   skipComment,
@@ -29,11 +39,18 @@ import {
  * bounded+redacted body, sha256 of the full body, output target when a `> path`
  * precedes the heredoc, dynamic flag).
  *
- * NOTE: this protects the capability analyzer and evidence providers only.
- * The emergency brake operates on the RAW command independently and does NOT
- * use this extractor — heredoc bodies may still appear as tokens the brake
- * sees. This is a known conservative limitation (the brake may false-positive
- * on destructive text inside a heredoc body, but never false-negative).
+ * A body opened inside backticks or a `$((` substitution ends at that
+ * construct's close, as in bash: the scan resumes there and walks the lines
+ * after it. A closing backtick ends every construct still open inside it.
+ * A `$((` span is arithmetic only when the `)` matching its second `(` is
+ * followed by `)`; otherwise it is a command substitution.
+ *
+ * NOTE: the capability analyzer, the emergency brake, the substitution
+ * re-lexer and the display all walk the sanitized command this extractor
+ * returns, so a body it collapses is hidden from them. Text left inline is
+ * lexed as commands, so leaving a real body inline can hide later lines. The
+ * scan therefore reads a body wherever the shell may, and the emergency brake
+ * also checks the reading that collapses every operator (`readAllOperators`).
  *
  * This is a bounded static parser, not a shell executor: it never expands the
  * body, never runs anything, and marks bodies with unresolvable expansions as
@@ -42,12 +59,25 @@ import {
 
 /** Result of extracting heredocs from a raw command. */
 export interface HeredocExtraction {
+  /** Whether a body read reached the end of input without its terminator
+   *  line. Length bounding does not set it. */
+  unterminated: boolean;
+  /** Whether a heredoc opened inside a substitution or backticks. */
+  framed: boolean;
   /** Command with heredoc bodies replaced by placeholder tokens. */
   sanitizedCommand: string;
   /** Structured heredoc records. */
   heredocs: HeredocRecord[];
   /** Whether any dynamic construct was detected inside a body. */
   hasDynamicConstructs: boolean;
+}
+
+/** Options for `extractHeredocs`. */
+export interface HeredocOptions {
+  /** Every `<<` outside quotes and comments opens a heredoc. Under this
+   *  reading a `$(` substitution that closes on the operator's line keeps its
+   *  starts; a closing backtick drops them under either reading. */
+  readAllOperators?: boolean;
 }
 
 /**
@@ -58,20 +88,27 @@ export interface HeredocExtraction {
  * here-string operator `<<<`, are not heredoc starts. Several heredocs may
  * open on one line; their bodies follow in operator order, as in bash.
  */
-export function extractHeredocs(command: string): HeredocExtraction {
+export function extractHeredocs(
+  command: string,
+  options: HeredocOptions = {},
+): HeredocExtraction {
   const scan: HeredocScan = {
     command,
     heredocs: [],
     hasDynamicConstructs: false,
+    unterminated: false,
+    framed: false,
     out: "",
     cursor: 0,
     i: 0,
     lineStart: 0,
-    inSingle: false,
-    inDouble: false,
-    arithmeticDepth: 0,
+    quote: undefined,
+    frames: [],
+    backtickAt: -1,
     pending: [],
     pieces: [],
+    readAllOperators: options.readAllOperators === true,
+    legacy: false,
   };
   while (scan.i < command.length) scanCharacter(scan);
   if (scan.pending.length > 0) {
@@ -81,6 +118,8 @@ export function extractHeredocs(command: string): HeredocExtraction {
   }
   scan.out += command.slice(scan.cursor);
   return {
+    unterminated: scan.unterminated,
+    framed: scan.framed,
     sanitizedCommand: scan.out,
     heredocs: scan.heredocs,
     hasDynamicConstructs: scan.hasDynamicConstructs,
@@ -89,32 +128,62 @@ export function extractHeredocs(command: string): HeredocExtraction {
 
 /** The scanner's state. Text from `cursor` on has not been copied to `out`
  *  yet. */
-interface HeredocScan extends ScanContext, PendingLine {
+export interface HeredocScan extends ScanContext, PendingLine {
   cursor: number;
   lineStart: number;
+  readAllOperators: boolean;
+  framed: boolean;
+  /** Read the previous release's delimiter words: a carriage return ends
+   *  one. */
+  legacy: boolean;
 }
 
 /** Advance the scan past the character at `scan.i` (or the construct that
  *  starts there). */
 function scanCharacter(scan: HeredocScan): void {
-  const { command } = scan;
-  const c = command.charAt(scan.i);
+  if (closeBacktickFrames(scan)) return;
+  const c = scan.command.charAt(scan.i);
   if (scanInsideQuotes(scan, c)) return;
   if (scanQuoteOrEscape(scan, c)) return;
   if (skipComment(scan, c)) return;
-  if (scanArithmetic(scan, c)) return;
+  if (openFrame(scan)) return;
+  if (closeFrame(scan)) return;
   if (c === "\n") {
     scanNewline(scan);
     return;
   }
-  if (c === "<" && command[scan.i + 1] === "<") {
+  if (c === "`") {
+    openBacktick(scan);
+    return;
+  }
+  if (c === "<" && scan.command[scan.i + 1] === "<") {
     scanHeredocOperator(scan);
     return;
   }
   scan.i += 1;
 }
 
-function scanNewline(scan: HeredocScan): void {
+/** Close the construct ending at `scan.i`, or fall back a lone `)` out of
+ *  arithmetic. A substitution or backtick that ends on the operator's own
+ *  line ends no heredoc: the shell reads the close before any body line, so
+ *  the starts opened inside it are dropped and their operator text stays in
+ *  the command. */
+function closeFrame(scan: HeredocScan): boolean {
+  const frame = closingFrame(scan);
+  if (frame === undefined) return fallBackFromArithmetic(scan);
+  scan.frames.pop();
+  if (frame.kind === "backtick") scan.backtickAt = -1;
+  scan.quote = frame.quote;
+  scan.i += frame.close.length;
+  if (
+    !scan.readAllOperators &&
+    (frame.kind === "substitution" || frame.kind === "backtick")
+  )
+    dropSubstitutedStarts(scan, frame);
+  return true;
+}
+
+export function scanNewline(scan: HeredocScan): void {
   if (scan.pending.length === 0) {
     scan.lineStart = scan.i + 1;
     scan.i += 1;
@@ -125,10 +194,12 @@ function scanNewline(scan: HeredocScan): void {
   scan.out += "\n";
   scan.cursor = resume;
   scan.i = resume;
+  // The resume is where the text the scan reads next begins; a body cut at a
+  // close resumes mid-line, and the skipped body text is not part of the line.
   scan.lineStart = resume;
 }
 
-function scanHeredocOperator(scan: HeredocScan): void {
+export function scanHeredocOperator(scan: HeredocScan): void {
   const { command, i } = scan;
   let j = i + 2;
   const operator = command[j] === "-" ? "<<-" : "<<";
@@ -138,9 +209,21 @@ function scanHeredocOperator(scan: HeredocScan): void {
     scan.i = j + 1;
     return;
   }
+  if (!scan.readAllOperators && readsNoBody(scan)) {
+    // Inside an expansion the shell reads `<<` as literal or shift text: no
+    // heredoc opens and no body is read.
+    scan.i += 2;
+    return;
+  }
   while (j < command.length && (command[j] === " " || command[j] === "\t"))
     j += 1;
-  const word = parseDelimiterWord(command, j);
+  const frame = enclosingSubstitution(scan.frames);
+  const word = parseDelimiterWord(command, j, {
+    stopAtBacktick: frame?.kind === "backtick",
+    stopAtCarriageReturn: scan.legacy,
+  });
+  const limit = innermostLimit(scan.frames);
+  if (insideSubstitution(scan.frames)) scan.framed = true;
   appendText(scan, command.slice(scan.cursor, i));
   scan.pending.push({
     operator,
@@ -151,6 +234,8 @@ function scanHeredocOperator(scan: HeredocScan): void {
     opStart: i,
     wordEnd: word.wordEnd,
     lineStart: scan.lineStart,
+    ...(frame === undefined ? {} : { frame }),
+    ...(limit === undefined ? {} : { limit }),
   });
   scan.pieces.push({ pendingIndex: scan.pending.length - 1 });
   scan.cursor = word.wordEnd;

@@ -1,6 +1,7 @@
 // Lexing entry points: per-request analysis budgets, the bounded lexing pass, and token-value segments for evidence consumers.
 
 import {
+  type HeredocReading,
   MAX_SUBSTITUTION_CHARS,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
@@ -55,12 +56,18 @@ const MAX_REANALYSIS_CHARS = 262_144;
 export interface AnalysisBudget {
   remainingCommands: number;
   remainingReanalysisChars: number;
+  /** Heredoc reading for every command string and substitution this budget
+   *  covers. Absent means the default reading. */
+  reading?: HeredocReading;
 }
 
-export function newAnalysisBudget(): AnalysisBudget {
+export function newAnalysisBudget(
+  reading: HeredocReading = "default",
+): AnalysisBudget {
   return {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
+    reading,
   };
 }
 
@@ -77,13 +84,17 @@ export interface LexAnalysis {
   truncated: boolean;
 }
 
-export function lexSegmentsBounded(command: string): LexAnalysis {
+export function lexSegmentsBounded(
+  command: string,
+  reading: HeredocReading = "default",
+): LexAnalysis {
   if (command.length > MAX_ANALYSIS_INPUT_CHARS)
     return { segments: [], truncated: true };
   const state: SubstitutionBudget = {
     tokensRemaining: MAX_LEX_TOKENS,
     substitutions: "lex",
     substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
+    reading,
   };
   const segments = lexSegments(command, state);
   return { segments, truncated: state.tokensRemaining <= 0 };

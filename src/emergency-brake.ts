@@ -9,15 +9,18 @@ import {
   type FindCommand,
   isRootFind,
 } from "./brake-find-root.ts";
+import { logicalLines } from "./brake-logical-lines.ts";
 import { commandExportsSecret } from "./brake-network-export.ts";
 import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
+import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import {
   analyzeSegmentRedirections,
   type SegmentRedirectionsAnalysis,
 } from "./shell-effective-commands.ts";
+import type { HeredocReading } from "./shell-lex-state.ts";
 import {
   type AnalysisBudget,
   lexSegmentsBounded,
@@ -107,10 +110,13 @@ function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
 
 /** Lexes the command and resolves every segment's effective commands under
  *  one shared budget, or returns `undefined` when any limit is hit. */
-function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
-  const lex = lexSegmentsBounded(command);
+function analyzeSegments(
+  command: string,
+  reading: HeredocReading = "default",
+): AnalyzedSegment[] | undefined {
+  const lex = lexSegmentsBounded(command, reading);
   if (lex.truncated) return undefined;
-  const budget = newAnalysisBudget();
+  const budget = newAnalysisBudget(reading);
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
     const analysis = analyzeSegment(segment, budget);
@@ -163,23 +169,13 @@ function analyzeFinds(
   return finds;
 }
 
-export function emergencyBrakeReason(
-  request: PermissionRequest,
+/** The first destructive or secret-export reason among the detectors, run on
+ *  one body-free reading of the command. */
+function detectorReason(
+  sanitizedCommand: string,
+  reading: HeredocReading = "default",
 ): string | undefined {
-  if (request.permission !== "bash") return;
-  const command = reviewedCommand(request);
-
-  // Resource limits come first and are their own outcome: an input the static
-  // analysis cannot finish is rejected for THAT reason, before any lexing or
-  // detector runs, and is never described as detected destruction. The whole
-  // command is lexed and resolved exactly once here; detectors share the
-  // result instead of re-analyzing the same text once per detector.
-  if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  // Heredoc bodies are shell input data, not command segments. Analyze the
-  // body-free form so quoted payloads cannot trigger false destructive-command
-  // matches; dynamic expansions remain visible to the reviewer evidence.
-  const { sanitizedCommand } = extractHeredocs(command);
-  const analyzed = analyzeSegments(sanitizedCommand);
+  const analyzed = analyzeSegments(sanitizedCommand, reading);
   if (analyzed === undefined) return ANALYSIS_LIMIT_REASON;
 
   if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
@@ -188,4 +184,56 @@ export function emergencyBrakeReason(
   if (ROOT_DESTRUCTION_REGEX.some((pattern) => pattern.test(sanitizedCommand)))
     return ROOT_DESTRUCTION_REASON;
   if (isObviousSecretExport(analyzed)) return SECRET_EXPORT_REASON;
+}
+
+/** The first line of `command` whose detectors block on their own. A line
+ *  that exceeds the analysis budget alone is skipped: the whole command's
+ *  limit was already checked by the caller. */
+function linesReason(command: string): string | undefined {
+  for (const line of logicalLines(command)) {
+    const reason = detectorReason(line);
+    if (reason !== undefined && reason !== ANALYSIS_LIMIT_REASON) return reason;
+  }
+}
+
+export function emergencyBrakeReason(
+  request: PermissionRequest,
+): string | undefined {
+  if (request.permission !== "bash") return;
+  const command = reviewedCommand(request);
+
+  // Resource limits come first and are their own outcome: an input the static
+  // analysis cannot finish is rejected for THAT reason, before any lexing or
+  // detector runs, and is never described as detected destruction.
+  if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
+  // Heredoc bodies are shell input data, not command segments. Analyze the
+  // body-free form so quoted payloads cannot trigger false destructive-command
+  // matches; dynamic expansions remain visible to the reviewer evidence.
+  // Text the scan leaves inline is lexed as commands, so a body read under one
+  // reading can hide a later line from another. The brake checks the default
+  // reading, the reading that collapses every operator, and the reading the
+  // previous release produced; each distinct text is checked once.
+  const extraction = extractHeredocs(command);
+  const allOperators = extractHeredocs(command, { readAllOperators: true });
+  const readings = new Set([
+    extraction.sanitizedCommand,
+    allOperators.sanitizedCommand,
+  ]);
+  for (const text of readings) {
+    const reason = detectorReason(text);
+    if (reason !== undefined) return reason;
+  }
+  // The previous release's reading, its substitutions re-lexed the same way.
+  const legacyReason = detectorReason(
+    legacySanitizedCommand(command),
+    "legacy",
+  );
+  if (legacyReason !== undefined) return legacyReason;
+  // A body that never ends takes every later line with it, and a heredoc in a
+  // substitution or backticks may end where the scan's reading and the
+  // shell's differ. In either case the brake also checks the command as
+  // written, and each of its lines on its own. Only the default reading decides
+  // this: the all-operators reading opens starts the shell does not read.
+  if (extraction.unterminated || extraction.framed)
+    return detectorReason(command) ?? linesReason(command);
 }

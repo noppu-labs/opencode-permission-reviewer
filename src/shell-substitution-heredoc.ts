@@ -3,6 +3,7 @@
 import type { PendingStart } from "./capability/heredoc-body-records.ts";
 import { collectBody } from "./capability/heredoc-body-text.ts";
 import { parseDelimiterWord } from "./capability/heredoc-delimiter.ts";
+import type { HeredocReading } from "./shell-lex-state.ts";
 
 export type PendingHeredoc = Pick<PendingStart, "delimiter" | "resolved"> & {
   tabStripped: boolean;
@@ -13,13 +14,16 @@ export type PendingHeredoc = Pick<PendingStart, "delimiter" | "resolved"> & {
 export function heredocOperatorAt(
   text: string,
   index: number,
+  reading: HeredocReading = "default",
 ): { heredoc?: PendingHeredoc; end: number } {
   let j = index + 2;
   if (text[j] === "<") return { end: j + 1 };
   const tabStripped = text[j] === "-";
   if (tabStripped) j += 1;
   while (text[j] === " " || text[j] === "\t") j += 1;
-  const word = parseDelimiterWord(text, j);
+  const word = parseDelimiterWord(text, j, {
+    stopAtCarriageReturn: reading === "legacy",
+  });
   return {
     heredoc: {
       delimiter: word.delimiter,

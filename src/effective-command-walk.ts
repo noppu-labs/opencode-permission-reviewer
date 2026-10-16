@@ -148,6 +148,7 @@ function reanalyze(text: string, level: WalkLevel): void {
     tokensRemaining: Number.POSITIVE_INFINITY,
     substitutions: "lex",
     substitutionCharsRemaining: sink.budget.remainingReanalysisChars,
+    reading: sink.budget.reading ?? "default",
   };
   const segments = lexSegments(text, lexBudget);
   sink.budget.remainingReanalysisChars = lexBudget.substitutionCharsRemaining;

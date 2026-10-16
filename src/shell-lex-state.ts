@@ -8,9 +8,16 @@ interface TokenBudget {
   tokensRemaining: number;
 }
 
+/** Which heredoc reading a substitution's body is sanitized with before it is
+ *  lexed: the current extractor (`default`), or the previous release's
+ *  (`legacy`), which the emergency brake also checks. */
+export type HeredocReading = "default" | "legacy";
+
 /** A budget that lexes command substitutions into segments of their own. */
 export interface SubstitutionBudget extends TokenBudget {
   substitutions: "lex";
+  /** Heredoc reading for the substitution bodies this scan lexes. */
+  reading?: HeredocReading;
   /** Command-substitution text the scan may still lex a second time, nested
    *  substitutions included. Past zero the scan stops as if out of tokens. */
   substitutionCharsRemaining: number;

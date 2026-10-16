@@ -1,5 +1,6 @@
 // Where a command substitution's body ends: the `)` or backtick the shell pairs with its opener.
 
+import type { HeredocReading } from "./shell-lex-state.ts";
 import {
   heredocBodiesEnd,
   heredocOperatorAt,
@@ -17,6 +18,7 @@ interface BodyScan {
   heredocs: PendingHeredoc[];
   /** Whether the next word sits where a command (or `case`/`esac`) can start. */
   commandPosition: boolean;
+  reading: HeredocReading;
 }
 
 /** Words after which a command can still start. */
@@ -42,6 +44,7 @@ export function substitutionBodyEnd(
   text: string,
   start: number,
   opener: "command" | "backtick",
+  reading: HeredocReading = "default",
 ): number {
   const scan: BodyScan = {
     text,
@@ -49,6 +52,7 @@ export function substitutionBodyEnd(
     frames: [opener],
     heredocs: [],
     commandPosition: true,
+    reading,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;
@@ -162,7 +166,7 @@ function skipNewline(scan: BodyScan): void {
 }
 
 function readHeredocOperator(scan: BodyScan): void {
-  const operator = heredocOperatorAt(scan.text, scan.index);
+  const operator = heredocOperatorAt(scan.text, scan.index, scan.reading);
   if (operator.heredoc !== undefined) scan.heredocs.push(operator.heredoc);
   scan.index = operator.end;
   scan.commandPosition = false;

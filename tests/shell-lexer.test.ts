@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
 import {
   analyzeEffectiveCommands,
   effectiveCommands,
@@ -557,10 +558,7 @@ describe("analyzer hardening batch 10", () => {
     ["echo `a \\`b\\``", [["echo", "`a", "`b``"], ["a", "`b`"], ["b"]]],
     [
       'echo "$(cat <<EOF\n)\nEOF\n)"',
-      [
-        ["echo", "$(cat <<EOF\n)\nEOF\n)"],
-        ["cat", "<HEREDOC:sha256:fafba0527c39>"],
-      ],
+      [["echo", "$(cat <<EOF\n)\nEOF\n)"], ["cat"]],
     ],
     ["echo '`a`' \\`b\\` \"\\$(c)\"", [["echo", "`a`", "`b`", "$(c)"]]],
     ['echo "$((1 + 2))"', [["echo", "$((1 + 2))"]]],
@@ -590,5 +588,14 @@ describe("analyzer hardening batch 15", () => {
     const command = `${'"$('.repeat(1000)} ; ssh h 'x'`;
     const segments = commandSegments(command);
     expect(segments.some((segment) => segment.tokens[0] === "ssh")).toBe(true);
+  });
+});
+
+describe("heredoc placeholder in the analyzer", () => {
+  test("a heredoc before the command word leaves the command as the head", () => {
+    const { sanitizedCommand } = extractHeredocs("<<EOF rm -rf /tmp/x\nEOF");
+    expect(firstExecutables(sanitizedCommand)).toEqual([
+      ["rm", "-rf", "/tmp/x"],
+    ]);
   });
 });

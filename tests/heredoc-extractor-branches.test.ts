@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { HeredocRecord } from "../src/capability/capability-types.ts";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import {
+  extractHeredocs,
+  type HeredocOptions,
+} from "../src/capability/heredoc-extractor.ts";
 
 // Characterisation of extractHeredocs branches: the scanner's quoting, comment
 // and arithmetic states, every delimiter-word form and the ANSI-C escapes. Each
@@ -10,13 +13,18 @@ import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
  *  is first checked against its record's body digest, in order. */
 type ExtractedRecord = Omit<HeredocRecord, "bodySha256">;
 
-function extraction(command: string): {
+function extraction(
+  command: string,
+  options?: HeredocOptions,
+): {
   sanitized: string;
   heredocs: ExtractedRecord[];
   dynamic: boolean;
 } {
-  const { sanitizedCommand, heredocs, hasDynamicConstructs } =
-    extractHeredocs(command);
+  const { sanitizedCommand, heredocs, hasDynamicConstructs } = extractHeredocs(
+    command,
+    options,
+  );
   const hashes = [...sanitizedCommand.matchAll(/<HEREDOC:sha256:(\w+)>/g)].map(
     (match) => match[1],
   );
@@ -147,11 +155,128 @@ describe("extractHeredocs delimiter words", () => {
   });
 });
 
+// A carriage return is a word character in the delimiter word: a CRLF script
+// line leaves the CR in the word, and the terminator line carries the same
+// CR, so the exact line comparison still closes the body.
+describe("extractHeredocs carriage returns in the delimiter word", () => {
+  test.each([
+    [
+      "cat <<EOF\r\nBODY\r\nEOF\r\necho AFTER\r\n",
+      "cat <<'EOF\r' <#>\necho AFTER\r\n",
+      [bare("EOF\r", "BODY\r\n")],
+    ],
+    [
+      "cat <<E\rOF\nBODY\nE\rOF\nls",
+      "cat <<'E\rOF' <#>\nls",
+      [bare("E\rOF", "BODY\n")],
+    ],
+    [
+      "cat <<'EOF'\r\nBODY\r\nEOF\r\necho AFTER\r\n",
+      "cat <<'EOF\r' <#>\necho AFTER\r\n",
+      [{ ...quoted("EOF\r"), bodyBounded: "BODY\r\n" }],
+    ],
+    [
+      "cat <<-EOF\r\n\tBODY\r\nEOF\r\nls",
+      "cat <<-'EOF\r' <#>\nls",
+      [{ ...bare("EOF\r", "\tBODY\r\n"), operator: "<<-" }],
+    ],
+  ])("%p", (command, sanitized, heredocs) => {
+    expect(extraction(command)).toEqual({
+      sanitized,
+      heredocs,
+      dynamic: false,
+    });
+  });
+});
+
 test("three heredocs opened on one line close in operator order", () => {
   expect(extraction("cat <<A <<B <<C\na\nA\nb\nB\nc\nC\nls")).toEqual({
     sanitized: "cat <<A <#> <<B <#> <<C <#>\nls",
     heredocs: [bare("A", "a\n"), bare("B", "b\n"), bare("C", "c\n")],
     dynamic: false,
+  });
+});
+
+// Constructs where the shell reads `<<` as literal text, or reads the
+// substitution's end before any body line: bash reads no heredoc body for
+// them, so nothing collapses and the following lines stay in the command as
+// ordinary text.
+describe("extractHeredocs shell constructs around the operator", () => {
+  test.each([
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "x=hello; echo ${x#<<A}\nprintf run\nA}",
+      "reads no heredoc inside a parameter expansion pattern",
+    ],
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-<<EOF}\nprintf run\nEOF}",
+      "reads no heredoc inside a parameter expansion default",
+    ],
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x/<<EOF/b}\nprintf run\nEOF}",
+      "reads no heredoc inside a parameter expansion replacement",
+    ],
+    ["echo $[1<<2]\nprintf run", "reads no heredoc inside legacy arithmetic"],
+    [
+      "echo $(cat <<EOF)\nprintf run",
+      "reads no heredoc when the substitution closes on the operator's line",
+    ],
+    [
+      "echo `cat <<EOF`\nprintf run",
+      "reads no heredoc inside backticks that close on the operator's line",
+    ],
+    [
+      "echo $( (cat <<EOF) )\nprintf run\nEOF",
+      "reads no heredoc when the substitution closes around a group on the operator's line",
+    ],
+  ])("%p: %s", (command) => {
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  // A substitution still open across the newline does read its body from
+  // the following lines, up to the terminator; the close follows the
+  // placeholder.
+  test("reads a heredoc inside a substitution open across the newline", () => {
+    expect(extraction("x=$(cat <<EOF\nbody\nEOF\n)\nls")).toEqual({
+      sanitized: "x=$(cat <<EOF <#>\n)\nls",
+      heredocs: [bare("EOF", "body\n")],
+      dynamic: false,
+    });
+  });
+
+  test("reads a heredoc body inside a group that stays open", () => {
+    expect(extraction("(cat <<EOF)\nprintf run\nEOF\nls")).toEqual({
+      sanitized: "(cat <<EOF <#>)\nls",
+      heredocs: [bare("EOF", "printf run\n")],
+      dynamic: false,
+    });
+  });
+});
+
+// The shell ends a `$'…'` string at the first unescaped `'`, so a `<<` inside
+// it is text, while a `<<` after the string opens a heredoc.
+describe("extractHeredocs quoted strings", () => {
+  test("a `<<` inside an ANSI-C string with an escaped quote is text", () => {
+    const command = "echo $'a\\' <<EOF'\nprintf run\nEOF";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a `<<` after an ANSI-C string with an escaped quote opens a heredoc", () => {
+    expect(extraction("echo $'\\'' <<EOF\nbody\nEOF\nls")).toEqual({
+      sanitized: "echo $'\\'' <<EOF <#>\nls",
+      heredocs: [bare("EOF", "body\n")],
+      dynamic: false,
+    });
   });
 });
 
@@ -177,5 +302,276 @@ describe("extractHeredocs body bound", () => {
         truncated: true,
       },
     ]);
+  });
+});
+
+// The shell reads a body after an operator inside an open substitution or
+// backtick. An operator whose substitution closes on its own line has no body
+// there, and the close is read before any body line.
+describe("extractHeredocs reads a body where the shell reads one", () => {
+  test.each([
+    ["x=`cat <<EOF\nit's\nEOF\n`\nrm -rf /", "x=`cat <<EOF <#>\n`\nrm -rf /"],
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-$(cat <<EOF\nit's\nEOF\n)}\nrm -rf /",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-$(cat <<EOF <#>\n)}\nrm -rf /",
+    ],
+    [
+      "echo $(( $(cat <<EOF\nit's\nEOF\n) ))\nrm -rf /",
+      "echo $(( $(cat <<EOF <#>\n) ))\nrm -rf /",
+    ],
+    [
+      "((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+      "((echo a) )\ncat <<EOF <#>\nrm -rf /",
+    ],
+    [
+      "x=$((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+      "x=$((echo a) )\ncat <<EOF <#>\nrm -rf /",
+    ],
+  ])("%p reads its body and keeps the next line", (command, sanitized) => {
+    expect(extraction(command)).toEqual({
+      sanitized,
+      heredocs: [bare("EOF", "it's\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc in a substitution closed on its own line has no body", () => {
+    const command = "echo $(cat <<EOF)\nit's\nEOF\nrm -rf /";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("the all-operators reading keeps a heredoc in a substitution closed on its own line", () => {
+    expect(
+      extraction("echo $(cat <<EOF)\nit's\nEOF\nrm -rf /", {
+        readAllOperators: true,
+      }),
+    ).toEqual({
+      sanitized: "echo $(cat <<EOF <#>)\nrm -rf /",
+      heredocs: [bare("EOF", "it's\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a carriage return in a heredoc word closed on its own line has no body", () => {
+    const command = "echo $(cat <<EOF\r)\nls";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a backtick closed on the operator's line has no body", () => {
+    const command = "echo `cat <<EOF`\nls";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a comment inside backticks ends at the closing backtick", () => {
+    expect(extraction("x=`echo hi # c`\ncat <<EOF\nit's\nEOF\nls")).toEqual({
+      sanitized: "x=`echo hi # c`\ncat <<EOF <#>\nls",
+      heredocs: [bare("EOF", "it's\n")],
+      dynamic: false,
+    });
+  });
+});
+
+// A body that reaches the end of input without its terminator line is flagged
+// as unterminated. The length bound alone is not an unterminated body.
+describe("extractHeredocs unterminated bodies", () => {
+  test.each([
+    "`<<EOF\n`\nls",
+    "cat <<EOF\nx",
+    "cat <<EOF",
+    "cat <<\nx",
+    "$(()<<EOF\n)\nls",
+  ])("%p is unterminated", (command) => {
+    expect(extractHeredocs(command).unterminated).toBe(true);
+  });
+
+  test.each(["cat <<EOF\nx\nEOF\nls", "echo `cat <<EOF`\nls"])(
+    "%p is terminated",
+    (command) => {
+      expect(extractHeredocs(command).unterminated).toBe(false);
+    },
+  );
+
+  test("a body cut by the length bound alone is not unterminated", () => {
+    const command = `cat <<EOF\n${"a".repeat(5000)}\nEOF\nls`;
+    const result = extractHeredocs(command);
+    expect(result.heredocs[0]?.truncated).toBe(true);
+    expect(result.unterminated).toBe(false);
+  });
+});
+
+// Under the all-operators reading a `<<` inside `$((…))` opens a heredoc; the
+// default reading treats it as a shift.
+describe("extractHeredocs all-operators reading inside arithmetic", () => {
+  test("the all-operators reading opens a heredoc inside arithmetic", () => {
+    expect(
+      extraction("echo $((1<<2))\nx\n2\nls", { readAllOperators: true }),
+    ).toEqual({
+      sanitized: "echo $((1<<2 <#>))\nls",
+      heredocs: [bare("2", "x\n")],
+      dynamic: false,
+    });
+  });
+
+  test("the default reading keeps a shift inside arithmetic as text", () => {
+    expect(extraction("echo $((1<<2))\nx\n2\nls")).toEqual({
+      sanitized: "echo $((1<<2))\nx\n2\nls",
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+});
+
+// Bodies end where bash ends them: a backtick or `$((` substitution bounds the
+// heredoc body it opens, and an arithmetic-looking `$((` span is decided once.
+describe("extractHeredocs bodies bounded by their construct", () => {
+  test("a heredoc in backticks ends its body at the closing backtick", () => {
+    const command = "x=`cat <<EOF\n`\nls\nEOF";
+    expect(extraction(command)).toEqual({
+      sanitized: "x=`cat <<EOF <#>\n`\nls\nEOF",
+      heredocs: [{ ...bare("EOF", ""), truncated: true }],
+      dynamic: false,
+    });
+    expect(extractHeredocs(command).unterminated).toBe(true);
+  });
+
+  test("a heredoc in a `$((` substitution ends its body at the close", () => {
+    expect(extraction("x=$((cat)<<EOF\n)\nls\nEOF")).toEqual({
+      sanitized: "x=$((cat)<<EOF <#>\n)\nls\nEOF",
+      heredocs: [{ ...bare("EOF", ""), truncated: true }],
+      dynamic: false,
+    });
+  });
+
+  // bash cannot parse the substitution (the `+` ends it early), so nothing in
+  // it runs; the lines after its close do run.
+  test("the lines after a substitution bash cannot parse stay in the command", () => {
+    const { sanitized } = extraction("echo $((1)+(1<<2\n))\nls\n2");
+    expect(sanitized.endsWith("\nls\n2")).toBe(true);
+  });
+
+  test("a lone `)` in `((` reads a body as the shell does", () => {
+    expect(extraction("((echo a)<<EOF\nx\nEOF\n)\nls")).toEqual({
+      sanitized: "((echo a)<<EOF <#>\n)\nls",
+      heredocs: [bare("EOF", "x\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc in a group inside a plain substitution reads a body past a `)`", () => {
+    expect(extraction("x=$( (cat <<EOF\na ) b\nEOF\n) )\nls")).toEqual({
+      sanitized: "x=$( (cat <<EOF <#>\n) )\nls",
+      heredocs: [bare("EOF", "a ) b\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc inside a substitution is framed", () => {
+    expect(extractHeredocs("echo $(cat <<EOF\nx\nEOF\n)").framed).toBe(true);
+  });
+
+  test("a top-level heredoc and a heredoc in a top-level group are not framed", () => {
+    expect(extractHeredocs("cat <<EOF\nx\nEOF").framed).toBe(false);
+    expect(extractHeredocs("(cat <<EOF\nx\nEOF\n)").framed).toBe(false);
+  });
+});
+
+test("a heredoc after a backtick body keeps its output target and the next line", () => {
+  expect(
+    extraction("x=`cat <<EOF\n`; cat > /tmp/out <<B\nbody\nB\nls"),
+  ).toEqual({
+    sanitized: "x=`cat <<EOF <#>\n`; cat > /tmp/out <<B <#>\nls",
+    heredocs: [
+      { ...bare("EOF", ""), truncated: true },
+      { ...bare("B", "body\n"), outputTarget: "/tmp/out" },
+    ],
+    dynamic: false,
+  });
+});
+
+// A start opened after a body cut at a backtick takes its output target from
+// the text after that backtick only, never from the skipped body.
+describe("extractHeredocs output targets after a bounded body", () => {
+  test("a start after a backtick-bounded body does not take a target from the body", () => {
+    const { heredocs } = extraction(
+      "x=`cat <<EOF\nfoo > /tmp/x`; cat <<B\nb\nB\nls",
+    );
+    expect(heredocs[1]?.outputTarget).toBeUndefined();
+  });
+
+  test("a start directly after a backtick-bounded body does not take a target from the body", () => {
+    const { heredocs } = extraction("x=`cat <<EOF\nfoo > /tmp/x`<<B\nb\nB\nls");
+    expect(heredocs[1]?.outputTarget).toBeUndefined();
+  });
+
+  test("a redirection after the backtick still sets the target", () => {
+    const { heredocs } = extraction(
+      "x=`cat <<EOF\nfoo > /tmp/x`>/tmp/y <<B\nb\nB\nls",
+    );
+    expect(heredocs[1]?.outputTarget).toBe("/tmp/y");
+  });
+});
+
+// A `$((` span whose matching `)` is followed by `)` is arithmetic: `<<` is a
+// shift there. Otherwise the span is a command substitution.
+describe("extractHeredocs arithmetic reading", () => {
+  test("a parenthesized term inside arithmetic is a shift, and the next line runs", () => {
+    const command = "echo $(( (1)+(1<<2) ))\nls";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("the next line stays in the command after an unparsable substitution on one line", () => {
+    const { sanitized } = extraction("echo $((1)+(1<<2))\nls");
+    expect(sanitized.endsWith("\nls")).toBe(true);
+  });
+});
+
+// A closing backtick ends every construct opened inside its backtick text, so
+// a `$((` left open there does not carry on past the backtick.
+describe("extractHeredocs closing backtick", () => {
+  test("the line after a backtick that closes an open arithmetic span runs", () => {
+    expect(extraction("x=`cat <<EOF;$((`\nls")).toEqual({
+      sanitized: "x=`cat <<EOF;$((`\nls",
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a backtick closes an open `$((` and the next heredoc reads its own body", () => {
+    expect(
+      extraction("x=`cat <<EOF;$((\nit's\n`\ncat <<B\nb\nB\necho RAN"),
+    ).toEqual({
+      sanitized: "x=`cat <<EOF <#>;$((\n`\ncat <<B <#>\necho RAN",
+      heredocs: [
+        { ...bare("EOF", "it's\n"), truncated: true },
+        bare("B", "b\n"),
+      ],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc bounded by a backtick closes its body there and the next line runs", () => {
+    expect(extraction("x=`cat <<EOF;$((\nit's\n`\necho RAN")).toEqual({
+      sanitized: "x=`cat <<EOF <#>;$((\n`\necho RAN",
+      heredocs: [{ ...bare("EOF", "it's\n"), truncated: true }],
+      dynamic: false,
+    });
   });
 });

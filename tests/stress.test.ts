@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
 import { parseDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
@@ -166,6 +167,52 @@ describe("stress and adversarial robustness", () => {
       ).toBeUndefined();
     }
   });
+
+  test.each([
+    ["an escaped double-quoted run", `$(( "${'\\"'.repeat(60_000)}`],
+    ["an arithmetic-opener run", "$((x ".repeat(26_000)],
+  ])(
+    "reads %s under the previous release's reading in linear time",
+    (_, command) => {
+      const started = Date.now();
+      legacySanitizedCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["nested arithmetic openers", "$((".repeat(43_000)],
+    ["arithmetic openers with words", "$((x ".repeat(26_000)],
+    ["arithmetic openers with a term", "$((1)".repeat(26_000)],
+    ["backtick-wrapped arithmetic openers", "`$((".repeat(32_000)],
+    ["unclosed backticks", "`".repeat(120_000)],
+    ["heredoc operators on one line", "<<A ".repeat(30_000)],
+    [
+      "groups before heredoc operators",
+      "(".repeat(60_000) + "<<a ".repeat(15_000),
+    ],
+    [
+      "substitutions before heredoc operators",
+      "$(".repeat(40_000) + "<<a ".repeat(10_000),
+    ],
+    [
+      "escaped double quotes after an arithmetic opener",
+      `$(( "${'\\"'.repeat(60_000)}`,
+    ],
+    [
+      "escaped single quotes after an arithmetic opener",
+      `$(( '${"\\'".repeat(60_000)}`,
+    ],
+  ])(
+    "reads %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      emergencyBrakeReason(request({ metadata: { command } }));
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
 
   test("survives 10,000 encoded TUI transitions without cross-request corruption", () => {
     const state = new ReviewUiState({

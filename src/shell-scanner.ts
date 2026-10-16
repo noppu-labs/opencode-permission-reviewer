@@ -139,6 +139,7 @@ function lexSubstitution(lex: LexState, budget: SubstitutionBudget): void {
     lex.index,
     lex.inDouble,
     lex.index < lex.arithmeticEnd,
+    budget.reading ?? "default",
   );
   if (body === undefined) return;
   if (body.kind === "arithmetic") {
