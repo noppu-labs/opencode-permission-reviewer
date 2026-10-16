@@ -108,4 +108,92 @@ describe("ANSI-C quoted words", () => {
     scan(command);
     expect(performance.now() - start).toBeLessThan(1000);
   });
+
+  test("lexes a long run of empty quotes before a `$` in linear time", () => {
+    const command = "$$''".repeat(50000);
+    const start = performance.now();
+    scan(command);
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+
+  test("ends an ANSI-C string after an empty `$''` quote", () => {
+    const segments = scan("echo $''$'a\\'b'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({
+      raw: "$''$'a\\'b'",
+      value: "$$a\\'b",
+    });
+    expect(words(segments.slice(1))).toEqual([
+      [
+        ["echo", "echo"],
+        ["RAN", "RAN"],
+      ],
+    ]);
+  });
+
+  test('ends an ANSI-C string after an empty `$""` quote', () => {
+    const segments = scan("echo $\"\"$'a\\'b'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({ value: "$$a\\'b" });
+    expect(words(segments.slice(1))).toEqual([
+      [
+        ["echo", "echo"],
+        ["RAN", "RAN"],
+      ],
+    ]);
+  });
+
+  test("ends an ANSI-C string after an empty plain quote", () => {
+    const segments = scan("echo ''$'a\\'b'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({
+      raw: "''$'a\\'b'",
+      value: "$a\\'b",
+    });
+  });
+
+  test("reads an odd run of `$` before a quote as ANSI-C", () => {
+    const segments = scan("echo $$$'x\\'y'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({ value: "$$$x\\'y" });
+  });
+
+  test("reads an odd run of five `$` before a quote as ANSI-C", () => {
+    const segments = scan("echo $$$$$'x\\'y'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({ value: "$$$$$x\\'y" });
+  });
+
+  test("keeps an even run of `$` before a quote as a plain quote", () => {
+    const segments = scan("echo $$$$'x'y'z'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({ value: "$$$$xyz" });
+  });
+
+  test("ends an ANSI-C string after an arithmetic expansion", () => {
+    const segments = scan("echo x$((1))$'a\\'b'; echo RAN");
+    const last = segments.at(-2)?.tokens.at(-1);
+    expect(last).toMatchObject({ value: "$a\\'b" });
+    expect(words(segments.slice(-1))).toEqual([
+      [
+        ["echo", "echo"],
+        ["RAN", "RAN"],
+      ],
+    ]);
+  });
+
+  test("ends an ANSI-C string after a braced parameter", () => {
+    const segments = scan("echo \u0024{x}$'a\\'b'; echo RAN");
+    expect(segments).toHaveLength(2);
+    expect(segments[0]?.tokens[1]).toMatchObject({ value: "\u0024{x}$a\\'b" });
+  });
+
+  test("lexes `$'…'` after an empty quote as a plain quote under the previous reading", () => {
+    expect(words(scan("echo $''$'a\\'b'; ls", "previous"))).toEqual([
+      [
+        ["echo", "echo"],
+        ["$''$'a\\'b'; ls", "$$a\\b; ls"],
+      ],
+    ]);
+  });
 });

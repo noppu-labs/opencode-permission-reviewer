@@ -26,7 +26,7 @@ import {
   lexDoubleQuoted,
   lexSingleQuoted,
   openQuote,
-  opensAnsiC,
+  opensQuote,
 } from "./shell-quote-scan.ts";
 import { substitutionAt } from "./shell-substitution.ts";
 import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
@@ -102,7 +102,7 @@ function lexEscape(lex: LexState): void {
 }
 
 function lexUnquoted(lex: LexState, c: string): void {
-  if (c === "'" || c === '"' || opensAnsiC(lex)) {
+  if (opensQuote(lex, c)) {
     openQuote(lex, c);
     return;
   }
@@ -188,6 +188,7 @@ export function lexSegments(
     spans: [],
     inSingle: false,
     ansiC: false,
+    dollarRun: 0,
     inDouble: false,
     lastSeparator: undefined,
     outOfTokens: false,

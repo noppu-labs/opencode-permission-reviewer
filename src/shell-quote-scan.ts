@@ -18,26 +18,21 @@ export function lexSingleQuoted(lex: LexState, c: string): void {
   lex.index += 1;
 }
 
-// The `$` run that ends at the current character, counting only unquoted
-// dollars: an escaped `\$` or one inside quotes does not join the run.
-function unquotedDollarRun(lex: LexState): number {
-  const last = lex.spans.at(-1);
-  let run = 1;
-  if (last === undefined || last.quoted) return run;
-  for (let i = last.text.length - 1; i >= 0 && last.text[i] === "$"; i--)
-    run += 1;
-  return run;
+/** Records the unquoted `$` run that ends at the unquoted character `c`, and
+ *  reports whether `c` opens a quote: `'`, `"`, or an ANSI-C `$'…'`. */
+export function opensQuote(lex: LexState, c: string): boolean {
+  lex.dollarRun = c === "$" ? lex.dollarRun + 1 : 0;
+  return c === "'" || c === '"' || opensAnsiC(lex);
 }
 
 /** True when the `$` at the current index opens an ANSI-C `$'…'` string:
- *  the next character is `'`, the scan reads bash's quoting, and the `$`
- *  run it ends is odd (so `$$'…'` stays a plain quote after the first `$`). */
-export function opensAnsiC(lex: LexState): boolean {
+ *  the next character is `'`, the scan reads bash's quoting, and the run of
+ *  unquoted `$` ending here is odd (so `$$'…'` stays a plain quote). */
+function opensAnsiC(lex: LexState): boolean {
   if (lex.command[lex.index] !== "$" || lex.command[lex.index + 1] !== "'")
     return false;
-  if ("quoting" in lex.budget && lex.budget.quoting === "previous")
-    return false;
-  return unquotedDollarRun(lex) % 2 === 1;
+  if (lex.budget.quoting === "previous") return false;
+  return lex.dollarRun % 2 === 1;
 }
 
 function openAnsiC(lex: LexState): void {
@@ -46,6 +41,7 @@ function openAnsiC(lex: LexState): void {
   lex.index += 1;
   openQuote(lex, "'");
   lex.ansiC = true;
+  lex.dollarRun = 0;
 }
 
 function lexDoubleQuotedEscape(lex: LexState): void {

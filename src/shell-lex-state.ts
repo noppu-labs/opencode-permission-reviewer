@@ -32,7 +32,7 @@ export interface SubstitutionBudget extends TokenBudget {
 /** `skip` leaves command substitutions unlexed: no body segments and no
  *  substitution budget is charged. */
 export type LexBudget =
-  | (TokenBudget & { substitutions: "skip" })
+  | (TokenBudget & { substitutions: "skip"; quoting?: ShellQuoting })
   | SubstitutionBudget;
 
 /** Ceiling on the substitution text one scan re-lexes by default: nested
@@ -63,6 +63,9 @@ export interface LexState {
   /** The open single quote is an ANSI-C `$'…'` string, where `\` escapes
    *  the next character. */
   ansiC: boolean;
+  /** Unquoted, unescaped `$` characters ending at the current character. Any
+   *  other unquoted character, and any quote open, resets it to 0. */
+  dollarRun: number;
   inDouble: boolean;
   lastSeparator: string | undefined;
   outOfTokens: boolean;
