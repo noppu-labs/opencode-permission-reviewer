@@ -101,7 +101,7 @@ export const PINNED_BLOBS = {
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
-    "8db082b16ec9ad879f3c6e1271748761a1fbc3c1",
+    "a3aa96c4d856cce9fdc185a1011a62ba8bedc958",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
   "src/system-one/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
@@ -147,11 +147,11 @@ export const PINNED_BLOBS = {
   "src/capability/ansi-c-quoting.ts":
     "d2f0eabf08316462275c01b7edd4ebac2ef98308",
   "src/capability/heredoc-scan-context.ts":
-    "f70b351151236060ff9746f8ed766d3f94a4a9df",
+    "84d5fa683ccfe5c73696557656aa25abb5c7683d",
   "src/capability/heredoc-bodies.ts":
     "d766923e0629d09e4bba8867d0e27d6739f19d98",
   "src/capability/heredoc-body-records.ts":
-    "1a1f75eabf46123da6efe46e7e0df5cabe824ebb",
+    "dd80e0f91f7f46ebb4f28dff1dbcb0e3137420d9",
   "src/capability/heredoc-body-text.ts":
     "a2fc69df649d7e71bf683008fbae3c2036b7640b",
 };

@@ -2,22 +2,18 @@
 // that tracks quoting and nesting, so a body is collapsed only for an
 // operator the shell reads as a redirect. Server only.
 
+import {
+  type Frame,
+  OPENERS,
+  type Quote,
+} from "./capability/heredoc-scan-context.ts";
+
 /** An operator and its delimiter word in the sanitized command (`start` to
  *  `end`), and `next`, past the body placeholder that follows it. */
 export interface OperatorWord {
   start: number;
   end: number;
   next: number;
-}
-
-type Quote = "'" | '"' | "$'" | undefined;
-
-/** An open construct: its closing text, the quote it opened in, and whether
- *  a heredoc inside it reads its body from the following lines. */
-interface Frame {
-  close: string;
-  quote: Quote;
-  kind: "group" | "substitution" | "expansion";
 }
 
 const PLACEHOLDER = /<HEREDOC:sha256:[0-9a-f]{12}>/g;
@@ -27,14 +23,6 @@ const OPERATOR =
   /^(<<-?(?:[A-Za-z0-9_][A-Za-z0-9_.-]*|'(?:[^']|'\\'')*')) <HEREDOC:sha256:[0-9a-f]{12}>/;
 /** What may precede a `#` that starts a comment. */
 const WORD_BREAK = /[ \t\n;&|()<>]/;
-const OPENERS: ReadonlyArray<[string, Frame["close"], Frame["kind"]]> = [
-  ["$((", "))", "expansion"],
-  ["((", "))", "expansion"],
-  ["$(", ")", "substitution"],
-  ["${", "}", "expansion"],
-  ["$[", "]", "expansion"],
-  ["(", ")", "group"],
-];
 
 class OperatorScan {
   readonly operators: OperatorWord[] = [];

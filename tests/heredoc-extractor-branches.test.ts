@@ -155,6 +155,60 @@ test("three heredocs opened on one line close in operator order", () => {
   });
 });
 
+// Constructs where the shell reads `<<` as literal text, or reads the
+// substitution's end before any body line: bash reads no heredoc body for
+// them, so nothing collapses and the following lines stay in the command as
+// ordinary text.
+describe("extractHeredocs shell constructs around the operator", () => {
+  test.each([
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "x=hello; echo ${x#<<A}\nprintf run\nA}",
+      "reads no heredoc inside a parameter expansion pattern",
+    ],
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-<<EOF}\nprintf run\nEOF}",
+      "reads no heredoc inside a parameter expansion default",
+    ],
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x/<<EOF/b}\nprintf run\nEOF}",
+      "reads no heredoc inside a parameter expansion replacement",
+    ],
+    ["echo $[1<<2]\nprintf run", "reads no heredoc inside legacy arithmetic"],
+    [
+      "echo $(cat <<EOF)\nprintf run",
+      "reads no heredoc when the substitution closes on the operator's line",
+    ],
+    [
+      "echo `cat <<EOF`\nprintf run",
+      "reads no heredoc inside backticks that close on the operator's line",
+    ],
+    [
+      "echo $( (cat <<EOF) )\nprintf run\nEOF",
+      "reads no heredoc when the substitution closes around a group on the operator's line",
+    ],
+  ])("%p: %s", (command) => {
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  // A substitution still open across the newline does read its body from
+  // the following lines, up to the terminator; the close follows the
+  // placeholder.
+  test("reads a heredoc inside a substitution open across the newline", () => {
+    expect(extraction("x=$(cat <<EOF\nbody\nEOF\n)\nls")).toEqual({
+      sanitized: "x=$(cat <<EOF <#>\n)\nls",
+      heredocs: [bare("EOF", "body\n")],
+      dynamic: false,
+    });
+  });
+});
+
 describe("extractHeredocs body bound", () => {
   test("a terminated body over the byte cap is cut and marked truncated", () => {
     const { heredocs } = extraction(

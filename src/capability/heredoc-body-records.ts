@@ -7,6 +7,7 @@ import {
   containsDynamic,
   findOutputTarget,
 } from "./heredoc-body-text.ts";
+import type { Frame } from "./heredoc-scan-context.ts";
 
 /** A heredoc operator whose body has not been read yet. */
 export interface PendingStart {
@@ -18,6 +19,10 @@ export interface PendingStart {
   opStart: number;
   wordEnd: number;
   lineStart: number;
+  /** The substitution the operator sits inside, if any — directly or under
+   *  nested groups. A substitution that closes on the operator's own line
+   *  drops the start: the shell reads the close before any body line. */
+  frame?: Frame;
 }
 
 /** One read body, bounded for the record. */

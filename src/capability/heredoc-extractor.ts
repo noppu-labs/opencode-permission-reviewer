@@ -1,3 +1,4 @@
+import { elementAt } from "../element-at.ts";
 import type { HeredocRecord } from "./capability-types.ts";
 import {
   appendText,
@@ -6,8 +7,10 @@ import {
 } from "./heredoc-bodies.ts";
 import { parseDelimiterWord } from "./heredoc-delimiter.ts";
 import {
+  closingFrame,
+  type Frame,
+  openFrame,
   type ScanContext,
-  scanArithmetic,
   scanInsideQuotes,
   scanQuoteOrEscape,
   skipComment,
@@ -67,9 +70,9 @@ export function extractHeredocs(command: string): HeredocExtraction {
     cursor: 0,
     i: 0,
     lineStart: 0,
-    inSingle: false,
-    inDouble: false,
-    arithmeticDepth: 0,
+    quote: undefined,
+    frames: [],
+    unsure: false,
     pending: [],
     pieces: [],
   };
@@ -97,20 +100,46 @@ interface HeredocScan extends ScanContext, PendingLine {
 /** Advance the scan past the character at `scan.i` (or the construct that
  *  starts there). */
 function scanCharacter(scan: HeredocScan): void {
-  const { command } = scan;
-  const c = command.charAt(scan.i);
+  const c = scan.command.charAt(scan.i);
   if (scanInsideQuotes(scan, c)) return;
   if (scanQuoteOrEscape(scan, c)) return;
   if (skipComment(scan, c)) return;
-  if (scanArithmetic(scan, c)) return;
+  if (openFrame(scan)) return;
+  if (closeFrame(scan)) return;
   if (c === "\n") {
     scanNewline(scan);
     return;
   }
-  if (c === "<" && command[scan.i + 1] === "<") {
+  if (c === "`") {
+    scanBacktick(scan);
+    return;
+  }
+  if (c === "<" && scan.command[scan.i + 1] === "<") {
     scanHeredocOperator(scan);
     return;
   }
+  scan.i += 1;
+}
+
+/** Close the construct ending at `scan.i`. A substitution that ends on the
+ *  operator's own line ends no heredoc: the shell reads the close before
+ *  any body line, so the starts opened inside it are dropped and their
+ *  operator text stays in the command. */
+function closeFrame(scan: HeredocScan): boolean {
+  const frame = closingFrame(scan);
+  if (frame === undefined) return false;
+  scan.frames.pop();
+  scan.quote = frame.quote;
+  scan.i += frame.close.length;
+  if (frame.kind === "substitution") dropSubstitutedStarts(scan, frame);
+  return true;
+}
+
+/** A backtick opens a substitution whose end the scan cannot bind to a
+ *  construct: a heredoc operator inside it is unsure, and no body is read
+ *  for it. */
+function scanBacktick(scan: HeredocScan): void {
+  scan.frames.push({ close: "`", quote: scan.quote, kind: "backtick" });
   scan.i += 1;
 }
 
@@ -138,9 +167,17 @@ function scanHeredocOperator(scan: HeredocScan): void {
     scan.i = j + 1;
     return;
   }
+  if (readsNoBody(scan)) {
+    // Inside an expansion, or a construct the scan cannot follow, the
+    // shell reads `<<` as literal or shift text: no heredoc opens and no
+    // body is read.
+    scan.i += 2;
+    return;
+  }
   while (j < command.length && (command[j] === " " || command[j] === "\t"))
     j += 1;
   const word = parseDelimiterWord(command, j);
+  const frame = enclosingSubstitution(scan.frames);
   appendText(scan, command.slice(scan.cursor, i));
   scan.pending.push({
     operator,
@@ -151,8 +188,57 @@ function scanHeredocOperator(scan: HeredocScan): void {
     opStart: i,
     wordEnd: word.wordEnd,
     lineStart: scan.lineStart,
+    ...(frame === undefined ? {} : { frame }),
   });
   scan.pieces.push({ pendingIndex: scan.pending.length - 1 });
   scan.cursor = word.wordEnd;
   scan.i = word.wordEnd;
+}
+
+/** Whether the shell reads no heredoc body at this `<<`: the operator sits
+ *  in an expansion (literal or shift text), or in a construct the scan
+ *  cannot follow (unsure text, or backticks). */
+function readsNoBody(scan: HeredocScan): boolean {
+  return (
+    scan.unsure ||
+    scan.frames.some(
+      (frame) => frame.kind === "expansion" || frame.kind === "backtick",
+    )
+  );
+}
+
+/** The innermost substitution open at the operator, if any. Frames between
+ *  it and the operator (groups, expansions) do not change which substitution
+ *  closing on the operator's own line ends the operator's heredoc. */
+function enclosingSubstitution(frames: Frame[]): Frame | undefined {
+  for (let i = frames.length - 1; i >= 0; i -= 1) {
+    const frame = frames[i];
+    if (frame?.kind === "substitution") return frame;
+  }
+  return undefined;
+}
+
+/** Drop the starts opened inside `frame`, whose close the shell reads on
+ *  the operator's own line: no body follows them, so each operator and its
+ *  delimiter word return to the command as text. */
+function dropSubstitutedStarts(scan: HeredocScan, frame: Frame): void {
+  let first = scan.pending.length;
+  while (first > 0 && scan.pending[first - 1]?.frame === frame) first -= 1;
+  const dropped = scan.pending.splice(first);
+  if (dropped.length === 0) return;
+  scan.pieces = scan.pieces.map((piece) => {
+    if (!("pendingIndex" in piece) || piece.pendingIndex < first) return piece;
+    const start = elementAt(dropped, piece.pendingIndex - first, "dropped");
+    return { text: scan.command.slice(start.opStart, start.wordEnd) };
+  });
+  if (scan.pending.length === 0) {
+    // No start remains, so no placeholder is owed: the pieces hold the
+    // line's own text again, and the scan passes text through from here.
+    for (const piece of scan.pieces) {
+      if ("text" in piece) scan.out += piece.text;
+    }
+    scan.out += scan.command.slice(scan.cursor, scan.i);
+    scan.cursor = scan.i;
+    scan.pieces = [];
+  }
 }
