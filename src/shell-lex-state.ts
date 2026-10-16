@@ -89,6 +89,13 @@ export function lastCharIsQuoted(lex: LexState): boolean {
   return lex.spans.at(-1)?.quoted === true;
 }
 
+/** The last character of `lex.value`, read from the last span so the growing
+ *  value string is never flattened; "" when the value is empty. */
+export function lastValueChar(lex: LexState): string {
+  const last = lex.spans.at(-1);
+  return last === undefined ? "" : last.text.charAt(last.text.length - 1);
+}
+
 export function flushToken(lex: LexState): void {
   if (!lex.hasToken) return;
   lex.tokens.push({ raw: lex.raw, value: lex.value, spans: lex.spans });

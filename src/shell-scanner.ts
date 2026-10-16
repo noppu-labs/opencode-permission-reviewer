@@ -20,6 +20,7 @@ import {
   type LexBudget,
   type LexState,
   lastCharIsQuoted,
+  lastValueChar,
   MAX_SUBSTITUTION_CHARS,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
@@ -49,7 +50,7 @@ function appendUnquoted(lex: LexState, c: string): void {
 function gluesToRedirection(lex: LexState, c: string): boolean {
   if (c === "&" && lex.command[lex.index + 1] === ">") return true;
   if (c !== "&" && c !== "|") return false;
-  const last = lex.value.charAt(lex.value.length - 1);
+  const last = lastValueChar(lex);
   // `&` continues an output or input duplication operator (`>&`, `<&`);
   // `|` continues only an output redirection (`>|`).
   if (last === "" || (c === "|" && last !== ">")) return false;

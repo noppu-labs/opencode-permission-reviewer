@@ -10,6 +10,7 @@ import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
+import { lexSegments } from "../src/shell-scanner.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import {
   createUiStatus,
@@ -227,6 +228,15 @@ describe("stress and adversarial robustness", () => {
     },
     60_000,
   );
+
+  test("lexes a quoted-redirection run well past the input cap in linear time", () => {
+    // Eight times the input cap: the lexer alone has no cap, and the brake
+    // lexes its input several times, so the lexer's own growth must stay linear.
+    const command = "'a'>&".repeat(209_712);
+    const started = Date.now();
+    lexSegments(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  }, 60_000);
 
   // The analyzer already finishes the third shape under the bound, so only
   // the first two are regression rows for it.
