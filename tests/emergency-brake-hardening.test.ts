@@ -645,3 +645,26 @@ describe("hardening batch 25", () => {
 
   allows("allows each command, case %#", ["watch -x FOO=1 rm -rf /"]);
 });
+
+describe("hardening batch 26", () => {
+  blocks("a `<<` inside a parameter expansion does not hide the next line", [
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+    "x=hello; echo ${x#<<A}\nrm -rf /",
+  ]);
+  blocks("a `<<` inside legacy arithmetic does not hide the next line", [
+    "echo $[1<<2]\nrm -rf /",
+  ]);
+  blocks("a heredoc inside a closed substitution does not hide the next line", [
+    "echo $(cat <<EOF)\nrm -rf /",
+  ]);
+  blocks("a heredoc inside backticks does not hide the next line", [
+    "echo `cat <<EOF`\nrm -rf /",
+  ]);
+  blocks("a CRLF heredoc terminator does not hide an LF-ended line after it", [
+    "cat <<EOF\r\nhi\r\nEOF\r\nrm -rf /\n",
+  ]);
+
+  allows("a CRLF-ended line after a CRLF heredoc reads a path with a CR", [
+    "cat <<EOF\r\nhi\r\nEOF\r\nrm -rf /\r",
+  ]);
+});

@@ -251,6 +251,27 @@ describe("extractHeredocs shell constructs around the operator", () => {
   });
 });
 
+// The shell ends a `$'…'` string at the first unescaped `'`, so a `<<` inside
+// it is text, while a `<<` after the string opens a heredoc.
+describe("extractHeredocs quoted strings", () => {
+  test("a `<<` inside an ANSI-C string with an escaped quote is text", () => {
+    const command = "echo $'a\\' <<EOF'\nprintf run\nEOF";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a `<<` after an ANSI-C string with an escaped quote opens a heredoc", () => {
+    expect(extraction("echo $'\\'' <<EOF\nbody\nEOF\nls")).toEqual({
+      sanitized: "echo $'\\'' <<EOF <#>\nls",
+      heredocs: [bare("EOF", "body\n")],
+      dynamic: false,
+    });
+  });
+});
+
 describe("extractHeredocs body bound", () => {
   test("a terminated body over the byte cap is cut and marked truncated", () => {
     const { heredocs } = extraction(
