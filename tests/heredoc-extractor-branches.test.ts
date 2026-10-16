@@ -1,6 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import type { HeredocRecord } from "../src/capability/capability-types.ts";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import {
+  extractHeredocs,
+  type HeredocOptions,
+} from "../src/capability/heredoc-extractor.ts";
 
 // Characterisation of extractHeredocs branches: the scanner's quoting, comment
 // and arithmetic states, every delimiter-word form and the ANSI-C escapes. Each
@@ -10,13 +13,18 @@ import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
  *  is first checked against its record's body digest, in order. */
 type ExtractedRecord = Omit<HeredocRecord, "bodySha256">;
 
-function extraction(command: string): {
+function extraction(
+  command: string,
+  options?: HeredocOptions,
+): {
   sanitized: string;
   heredocs: ExtractedRecord[];
   dynamic: boolean;
 } {
-  const { sanitizedCommand, heredocs, hasDynamicConstructs } =
-    extractHeredocs(command);
+  const { sanitizedCommand, heredocs, hasDynamicConstructs } = extractHeredocs(
+    command,
+    options,
+  );
   const hashes = [...sanitizedCommand.matchAll(/<HEREDOC:sha256:(\w+)>/g)].map(
     (match) => match[1],
   );
@@ -334,6 +342,18 @@ describe("extractHeredocs reads a body where the shell reads one", () => {
     expect(extraction(command)).toEqual({
       sanitized: command,
       heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("the all-operators reading keeps a heredoc in a substitution closed on its own line", () => {
+    expect(
+      extraction("echo $(cat <<EOF)\nit's\nEOF\nrm -rf /", {
+        readAllOperators: true,
+      }),
+    ).toEqual({
+      sanitized: "echo $(cat <<EOF <#>)\nrm -rf /",
+      heredocs: [bare("EOF", "it's\n")],
       dynamic: false,
     });
   });

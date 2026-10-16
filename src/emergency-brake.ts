@@ -163,22 +163,9 @@ function analyzeFinds(
   return finds;
 }
 
-export function emergencyBrakeReason(
-  request: PermissionRequest,
-): string | undefined {
-  if (request.permission !== "bash") return;
-  const command = reviewedCommand(request);
-
-  // Resource limits come first and are their own outcome: an input the static
-  // analysis cannot finish is rejected for THAT reason, before any lexing or
-  // detector runs, and is never described as detected destruction. The whole
-  // command is lexed and resolved exactly once here; detectors share the
-  // result instead of re-analyzing the same text once per detector.
-  if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  // Heredoc bodies are shell input data, not command segments. Analyze the
-  // body-free form so quoted payloads cannot trigger false destructive-command
-  // matches; dynamic expansions remain visible to the reviewer evidence.
-  const { sanitizedCommand } = extractHeredocs(command);
+/** The first destructive or secret-export reason among the detectors, run on
+ *  one body-free reading of the command. */
+function detectorReason(sanitizedCommand: string): string | undefined {
   const analyzed = analyzeSegments(sanitizedCommand);
   if (analyzed === undefined) return ANALYSIS_LIMIT_REASON;
 
@@ -188,4 +175,30 @@ export function emergencyBrakeReason(
   if (ROOT_DESTRUCTION_REGEX.some((pattern) => pattern.test(sanitizedCommand)))
     return ROOT_DESTRUCTION_REASON;
   if (isObviousSecretExport(analyzed)) return SECRET_EXPORT_REASON;
+}
+
+export function emergencyBrakeReason(
+  request: PermissionRequest,
+): string | undefined {
+  if (request.permission !== "bash") return;
+  const command = reviewedCommand(request);
+
+  // Resource limits come first and are their own outcome: an input the static
+  // analysis cannot finish is rejected for THAT reason, before any lexing or
+  // detector runs, and is never described as detected destruction.
+  if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
+  // Heredoc bodies are shell input data, not command segments. Analyze the
+  // body-free form so quoted payloads cannot trigger false destructive-command
+  // matches; dynamic expansions remain visible to the reviewer evidence.
+  // Text the scan leaves inline is lexed as commands, so a body read under the
+  // default reading and one read under the all-operators reading can each
+  // hide a later line from the other. The brake checks both readings.
+  const sanitizedCommand = extractHeredocs(command).sanitizedCommand;
+  const reason = detectorReason(sanitizedCommand);
+  if (reason !== undefined) return reason;
+  const allOperators = extractHeredocs(command, {
+    readAllOperators: true,
+  }).sanitizedCommand;
+  if (allOperators === sanitizedCommand) return;
+  return detectorReason(allOperators);
 }

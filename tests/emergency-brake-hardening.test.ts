@@ -692,6 +692,10 @@ describe("hardening batch 27", () => {
     ],
   );
   blocks(
+    "a heredoc in a substitution closed on its own line does not hide the next line",
+    ["echo $(cat <<EOF)\nit's\nEOF\nrm -rf /"],
+  );
+  blocks(
     "a carriage return in a heredoc word inside a substitution does not hide the next line",
     ["echo $(cat <<EOF\r)\nrm -rf /"],
   );

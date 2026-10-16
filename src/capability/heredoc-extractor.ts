@@ -55,6 +55,14 @@ export interface HeredocExtraction {
   hasDynamicConstructs: boolean;
 }
 
+/** Options for `extractHeredocs`. */
+export interface HeredocOptions {
+  /** Read every `<<` outside quotes and comments as a heredoc start, whatever
+   *  the frames around it, and keep every start when a substitution closes on
+   *  its line. This is the reading that collapses every candidate operator. */
+  readAllOperators?: boolean;
+}
+
 /**
  * Extract every heredoc in `command`, replacing each body with a placeholder
  * `<HEREDOC:sha256:xxxxxxxx>` so the downstream lexer never sees the content.
@@ -63,7 +71,10 @@ export interface HeredocExtraction {
  * here-string operator `<<<`, are not heredoc starts. Several heredocs may
  * open on one line; their bodies follow in operator order, as in bash.
  */
-export function extractHeredocs(command: string): HeredocExtraction {
+export function extractHeredocs(
+  command: string,
+  options: HeredocOptions = {},
+): HeredocExtraction {
   const scan: HeredocScan = {
     command,
     heredocs: [],
@@ -76,6 +87,7 @@ export function extractHeredocs(command: string): HeredocExtraction {
     frames: [],
     pending: [],
     pieces: [],
+    readAllOperators: options.readAllOperators === true,
   };
   while (scan.i < command.length) scanCharacter(scan);
   if (scan.pending.length > 0) {
@@ -96,6 +108,7 @@ export function extractHeredocs(command: string): HeredocExtraction {
 interface HeredocScan extends ScanContext, PendingLine {
   cursor: number;
   lineStart: number;
+  readAllOperators: boolean;
 }
 
 /** Advance the scan past the character at `scan.i` (or the construct that
@@ -133,7 +146,10 @@ function closeFrame(scan: HeredocScan): boolean {
   scan.frames.pop();
   scan.quote = frame.quote;
   scan.i += frame.close.length;
-  if (frame.kind === "substitution" || frame.kind === "backtick")
+  if (
+    !scan.readAllOperators &&
+    (frame.kind === "substitution" || frame.kind === "backtick")
+  )
     dropSubstitutedStarts(scan, frame);
   return true;
 }
@@ -169,7 +185,7 @@ function scanHeredocOperator(scan: HeredocScan): void {
     scan.i = j + 1;
     return;
   }
-  if (readsNoBody(scan)) {
+  if (!scan.readAllOperators && readsNoBody(scan)) {
     // Inside an expansion the shell reads `<<` as literal or shift text: no
     // heredoc opens and no body is read.
     scan.i += 2;
