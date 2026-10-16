@@ -61,64 +61,23 @@ describe("ANSI-C quoted words", () => {
     expect(bodies).toContain("id");
   });
 
-  const wordCases: [string, string, [string, string][][]][] = [
-    [
-      "keeps escape sequences verbatim in the value",
-      "printf $'a\\tb\\n'",
-      [
-        [
-          ["printf", "printf"],
-          ["$'a\\tb\\n'", "$a\\tb\\n"],
-        ],
-      ],
-    ],
-    [
-      "keeps `$'` literal inside double quotes",
-      "echo \"$'a\\'\" b",
-      [
-        [
-          ["echo", "echo"],
-          ["\"$'a\\'\"", "$'a\\'"],
-          ["b", "b"],
-        ],
-      ],
-    ],
-    [
-      "treats an escaped dollar as ordinary text before a plain quote",
-      "echo \\$'a\\' b",
-      [
-        [
-          ["echo", "echo"],
-          ["\\$'a\\'", "$a\\"],
-          ["b", "b"],
-        ],
-      ],
-    ],
-    [
-      "splits `$$'…'` the way a plain quote does",
-      "echo $$'a\\' b",
-      [
-        [
-          ["echo", "echo"],
-          ["$$'a\\'", "$$a\\"],
-          ["b", "b"],
-        ],
-      ],
-    ],
-    [
-      "reads `$$$'…'` as one word",
-      "echo $$$'a\\'b'",
-      [
-        [
-          ["echo", "echo"],
-          ["$$$'a\\'b'", "$$$a\\'b"],
-        ],
-      ],
-    ],
-  ];
-  test.each(wordCases)("%s", (_, command, expected) => {
-    expect(words(scan(command))).toEqual(expected);
-  });
+  const wordValues: Record<string, string[]> = {
+    "printf $'a\\tb\\n'": ["printf", "$a\\tb\\n"],
+    "echo \"$'a\\'\" b": ["echo", "$'a\\'", "b"],
+    "echo \\$'a\\' b": ["echo", "$a\\", "b"],
+    "echo $$'a\\' b": ["echo", "$$a\\", "b"],
+    "echo $$$'a\\'b'": ["echo", "$$$a\\'b"],
+  };
+  test.each(Object.entries(wordValues))(
+    "reads the words of %s",
+    (command, values) => {
+      const segments = scan(command);
+      expect(segments).toHaveLength(1);
+      const tokens = segments[0]?.tokens ?? [];
+      expect(tokens.map((token) => token.raw)).toEqual(command.split(" "));
+      expect(tokens.map((token) => token.value)).toEqual(values);
+    },
+  );
 
   test("reads an unterminated `$'…` as quoted to the end", () => {
     expect(scan("$'a\\' ; ls")).toHaveLength(1);
