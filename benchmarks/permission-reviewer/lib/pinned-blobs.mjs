@@ -155,7 +155,7 @@ export const PINNED_BLOBS = {
   "src/capability/heredoc-body-records.ts":
     "1805781f5923a3d4787787a366cb245008cd6cee",
   "src/capability/heredoc-frame-bounds.ts":
-    "5e910364ea1060301693cfb0cde9833139b1acd3",
+    "8173a096cb5eaa5614c993049c6932d42ec852d1",
   "src/capability/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
 };

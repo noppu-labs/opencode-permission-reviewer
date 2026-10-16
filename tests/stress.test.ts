@@ -173,6 +173,14 @@ describe("stress and adversarial robustness", () => {
     ["arithmetic openers with a term", "$((1)".repeat(26_000)],
     ["backtick-wrapped arithmetic openers", "`$((".repeat(32_000)],
     ["unclosed backticks", "`".repeat(120_000)],
+    [
+      "escaped double quotes after an arithmetic opener",
+      `$(( "${'\\"'.repeat(60_000)}`,
+    ],
+    [
+      "escaped single quotes after an arithmetic opener",
+      `$(( '${"\\'".repeat(60_000)}`,
+    ],
   ])(
     "reads %s in linear time",
     (_, command) => {
