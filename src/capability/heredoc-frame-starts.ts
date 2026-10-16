@@ -60,3 +60,23 @@ export function dropSubstitutedStarts(scan: DropScan, frame: Frame): void {
     scan.pieces = [];
   }
 }
+
+/** At the closing backtick of the innermost backtick frame, the shell ends the
+ *  backtick text first: every construct still open inside it closes as well,
+ *  and the quote it opened in is cleared. The starts opened inside the closed
+ *  constructs drop as on a same-line close. Returns false when `scan.i` is
+ *  not that closing backtick. */
+export function closeBacktickFrames(scan: DropScan & ScanContext): boolean {
+  const frame = scan.frames[scan.backtickAt];
+  if (scan.backtickAt < 0 || frame === undefined || frame.limit !== scan.i)
+    return false;
+  const closed = scan.frames.splice(scan.backtickAt);
+  scan.backtickAt = -1;
+  scan.quote = frame.quote;
+  scan.i += 1;
+  for (const closedFrame of closed.reverse()) {
+    if (closedFrame.kind === "substitution" || closedFrame.kind === "backtick")
+      dropSubstitutedStarts(scan, closedFrame);
+  }
+  return true;
+}

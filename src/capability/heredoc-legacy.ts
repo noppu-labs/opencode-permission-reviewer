@@ -35,6 +35,7 @@ export function legacySanitizedCommand(command: string): string {
     lineStart: 0,
     quote: undefined,
     frames: [],
+    backtickAt: -1,
     readAllOperators: false,
     legacy: true,
     depth: 0,

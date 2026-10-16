@@ -2,7 +2,11 @@
 // the nesting of expansions, substitutions and groups, where `<<` opens no
 // heredoc or reads its body from a different place.
 
-import { isArithmeticSpan, parenCloses } from "./heredoc-frame-bounds.ts";
+import {
+  closingBacktick,
+  isArithmeticSpan,
+  parenCloses,
+} from "./heredoc-frame-bounds.ts";
 
 /** The quote the scan is inside, when it is inside one. */
 export type Quote = "'" | '"' | "$'" | undefined;
@@ -47,6 +51,9 @@ export interface ScanContext {
   quote: Quote;
   /** Open constructs, innermost last. */
   frames: Frame[];
+  /** The index in `frames` of the open backtick substitution, or -1. At most
+   *  one is open: a backtick inside one is its closing backtick. */
+  backtickAt: number;
   /** The `parenCloses` table of `command`, built on the first `$((`. */
   parens?: Int32Array;
 }
@@ -91,16 +98,17 @@ export function scanQuoteOrEscape(
 }
 
 /** A comment hides the rest of its line from the shell, so it can hide no
- *  heredoc either. Stops at the newline, or at the closing backtick when the
- *  comment sits inside backticks: the shell ends the substitution there. */
+ *  heredoc either. Stops at the newline, or at the closing backtick of an
+ *  enclosing backtick substitution: the shell cuts that text there first. */
 export function skipComment(scan: ScanContext, c: string): boolean {
   const { command } = scan;
   if (c !== "#" || !atCommandBoundary(command, scan.i)) return false;
-  const inBackticks = scan.frames.at(-1)?.kind === "backtick";
+  const backtick =
+    scan.backtickAt < 0 ? undefined : scan.frames[scan.backtickAt]?.limit;
   while (
     scan.i < command.length &&
     command[scan.i] !== "\n" &&
-    !(inBackticks && command[scan.i] === "`")
+    scan.i !== backtick
   )
     scan.i += 1;
   return true;
@@ -187,4 +195,19 @@ export function fallBackFromArithmetic(scan: ScanContext): boolean {
   };
   scan.i += 1;
   return true;
+}
+
+/** A backtick opens a substitution frame, read like `$(`: a heredoc operator
+ *  inside it reads a body while the backtick stays open across the newline,
+ *  and that body ends at the closing backtick. */
+export function openBacktick(scan: ScanContext): void {
+  const limit = closingBacktick(scan.command, scan.i + 1);
+  scan.backtickAt = scan.frames.length;
+  scan.frames.push({
+    close: "`",
+    quote: scan.quote,
+    kind: "backtick",
+    ...(limit === undefined ? {} : { limit }),
+  });
+  scan.i += 1;
 }

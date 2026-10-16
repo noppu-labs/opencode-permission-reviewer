@@ -5,12 +5,9 @@ import {
   type PendingLine,
 } from "./heredoc-bodies.ts";
 import { parseDelimiterWord } from "./heredoc-delimiter.ts";
+import { innermostLimit, insideSubstitution } from "./heredoc-frame-bounds.ts";
 import {
-  closingBacktick,
-  innermostLimit,
-  insideSubstitution,
-} from "./heredoc-frame-bounds.ts";
-import {
+  closeBacktickFrames,
   dropSubstitutedStarts,
   enclosingSubstitution,
   readsNoBody,
@@ -18,6 +15,7 @@ import {
 import {
   closingFrame,
   fallBackFromArithmetic,
+  openBacktick,
   openFrame,
   type ScanContext,
   scanInsideQuotes,
@@ -43,7 +41,7 @@ import {
  *
  * A body opened inside backticks or a `$((` substitution ends at that
  * construct's close, as in bash: the scan resumes there and walks the lines
- * after it. A `$((` span is arithmetic only when the `)` matching its second
+ * after it. A closing backtick ends every construct still open inside it. A `$((` span is arithmetic only when the `)` matching its second
  * `(` is followed by `)`; otherwise it is a command substitution.
  *
  * NOTE: the capability analyzer, the emergency brake, the substitution
@@ -104,6 +102,7 @@ export function extractHeredocs(
     lineStart: 0,
     quote: undefined,
     frames: [],
+    backtickAt: -1,
     pending: [],
     pieces: [],
     readAllOperators: options.readAllOperators === true,
@@ -139,6 +138,7 @@ export interface HeredocScan extends ScanContext, PendingLine {
 /** Advance the scan past the character at `scan.i` (or the construct that
  *  starts there). */
 function scanCharacter(scan: HeredocScan): void {
+  if (closeBacktickFrames(scan)) return;
   const c = scan.command.charAt(scan.i);
   if (scanInsideQuotes(scan, c)) return;
   if (scanQuoteOrEscape(scan, c)) return;
@@ -150,7 +150,7 @@ function scanCharacter(scan: HeredocScan): void {
     return;
   }
   if (c === "`") {
-    scanBacktick(scan);
+    openBacktick(scan);
     return;
   }
   if (c === "<" && scan.command[scan.i + 1] === "<") {
@@ -169,6 +169,7 @@ function closeFrame(scan: HeredocScan): boolean {
   const frame = closingFrame(scan);
   if (frame === undefined) return fallBackFromArithmetic(scan);
   scan.frames.pop();
+  if (frame.kind === "backtick") scan.backtickAt = -1;
   scan.quote = frame.quote;
   scan.i += frame.close.length;
   if (
@@ -177,20 +178,6 @@ function closeFrame(scan: HeredocScan): boolean {
   )
     dropSubstitutedStarts(scan, frame);
   return true;
-}
-
-/** A backtick opens a substitution frame, read like `$(`: a heredoc operator
- *  inside it reads a body while the backtick stays open across the newline,
- *  and that body ends at the closing backtick. */
-function scanBacktick(scan: HeredocScan): void {
-  const limit = closingBacktick(scan.command, scan.i + 1);
-  scan.frames.push({
-    close: "`",
-    quote: scan.quote,
-    kind: "backtick",
-    ...(limit === undefined ? {} : { limit }),
-  });
-  scan.i += 1;
 }
 
 export function scanNewline(scan: HeredocScan): void {

@@ -542,3 +542,36 @@ describe("extractHeredocs arithmetic reading", () => {
     expect(sanitized.endsWith("\nls")).toBe(true);
   });
 });
+
+// A closing backtick ends every construct opened inside its backtick text, so
+// a `$((` left open there does not carry on past the backtick.
+describe("extractHeredocs closing backtick", () => {
+  test("the line after a backtick that closes an open arithmetic span runs", () => {
+    expect(extraction("x=`cat <<EOF;$((`\nls")).toEqual({
+      sanitized: "x=`cat <<EOF;$((`\nls",
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a backtick closes an open `$((` and the next heredoc reads its own body", () => {
+    expect(
+      extraction("x=`cat <<EOF;$((\nit's\n`\ncat <<B\nb\nB\necho RAN"),
+    ).toEqual({
+      sanitized: "x=`cat <<EOF <#>;$((\n`\ncat <<B <#>\necho RAN",
+      heredocs: [
+        { ...bare("EOF", "it's\n"), truncated: true },
+        bare("B", "b\n"),
+      ],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc bounded by a backtick closes its body there and the next line runs", () => {
+    expect(extraction("x=`cat <<EOF;$((\nit's\n`\necho RAN")).toEqual({
+      sanitized: "x=`cat <<EOF <#>;$((\n`\necho RAN",
+      heredocs: [{ ...bare("EOF", "it's\n"), truncated: true }],
+      dynamic: false,
+    });
+  });
+});
