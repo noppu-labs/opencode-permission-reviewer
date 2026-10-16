@@ -1,6 +1,8 @@
 // Frame queries that decide whether a heredoc operator opens a start, and which
 // substitution a start belongs to.
 
+import { elementAt } from "../element-at.ts";
+import type { PendingLine } from "./heredoc-bodies.ts";
 import type { Frame, ScanContext } from "./heredoc-scan-context.ts";
 
 /** Whether the shell reads no heredoc body at this `<<`. The nearest
@@ -27,4 +29,33 @@ export function enclosingSubstitution(frames: Frame[]): Frame | undefined {
       return frame;
   }
   return undefined;
+}
+
+/** The scan state the dropped starts are read from and written back to. */
+export type DropScan = PendingLine &
+  Pick<ScanContext, "command" | "i"> & { cursor: number; out: string };
+
+/** Drop the starts opened inside `frame`, whose close the shell reads on
+ *  the operator's own line: no body follows them, so each operator and its
+ *  delimiter word return to the command as text. */
+export function dropSubstitutedStarts(scan: DropScan, frame: Frame): void {
+  let first = scan.pending.length;
+  while (first > 0 && scan.pending[first - 1]?.frame === frame) first -= 1;
+  const dropped = scan.pending.splice(first);
+  if (dropped.length === 0) return;
+  scan.pieces = scan.pieces.map((piece) => {
+    if (!("pendingIndex" in piece) || piece.pendingIndex < first) return piece;
+    const start = elementAt(dropped, piece.pendingIndex - first, "dropped");
+    return { text: scan.command.slice(start.opStart, start.wordEnd) };
+  });
+  if (scan.pending.length === 0) {
+    // No start remains, so no placeholder is owed: the pieces hold the
+    // line's own text again, and the scan passes text through from here.
+    for (const piece of scan.pieces) {
+      if ("text" in piece) scan.out += piece.text;
+    }
+    scan.out += scan.command.slice(scan.cursor, scan.i);
+    scan.cursor = scan.i;
+    scan.pieces = [];
+  }
 }

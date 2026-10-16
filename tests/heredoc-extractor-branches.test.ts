@@ -434,3 +434,72 @@ describe("extractHeredocs all-operators reading inside arithmetic", () => {
     });
   });
 });
+
+// Bodies end where bash ends them: a backtick or `$((` substitution bounds the
+// heredoc body it opens, and an arithmetic-looking `$((` span is decided once.
+describe("extractHeredocs bodies bounded by their construct", () => {
+  test("a heredoc in backticks ends its body at the closing backtick", () => {
+    const command = "x=`cat <<EOF\n`\nls\nEOF";
+    expect(extraction(command)).toEqual({
+      sanitized: "x=`cat <<EOF <#>\n`\nls\nEOF",
+      heredocs: [{ ...bare("EOF", ""), truncated: true }],
+      dynamic: false,
+    });
+    expect(extractHeredocs(command).unterminated).toBe(true);
+  });
+
+  test("a heredoc in a `$((` substitution ends its body at the close", () => {
+    expect(extraction("x=$((cat)<<EOF\n)\nls\nEOF")).toEqual({
+      sanitized: "x=$((cat)<<EOF <#>\n)\nls\nEOF",
+      heredocs: [{ ...bare("EOF", ""), truncated: true }],
+      dynamic: false,
+    });
+  });
+
+  test("an arithmetic `$((` span with a parenthesized term has no heredoc", () => {
+    const command = "echo $((1)+(1<<2\n))\nls\n2";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a lone `)` in `((` reads a body as the shell does", () => {
+    expect(extraction("((echo a)<<EOF\nx\nEOF\n)\nls")).toEqual({
+      sanitized: "((echo a)<<EOF <#>\n)\nls",
+      heredocs: [bare("EOF", "x\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc in a group inside a plain substitution reads a body past a `)`", () => {
+    expect(extraction("x=$( (cat <<EOF\na ) b\nEOF\n) )\nls")).toEqual({
+      sanitized: "x=$( (cat <<EOF <#>\n) )\nls",
+      heredocs: [bare("EOF", "a ) b\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc inside a substitution is framed", () => {
+    expect(extractHeredocs("echo $(cat <<EOF\nx\nEOF\n)").framed).toBe(true);
+  });
+
+  test("a top-level heredoc and a heredoc in a top-level group are not framed", () => {
+    expect(extractHeredocs("cat <<EOF\nx\nEOF").framed).toBe(false);
+    expect(extractHeredocs("(cat <<EOF\nx\nEOF\n)").framed).toBe(false);
+  });
+});
+
+test("a heredoc after a backtick body keeps its output target and the next line", () => {
+  expect(
+    extraction("x=`cat <<EOF\n`; cat > /tmp/out <<B\nbody\nB\nls"),
+  ).toEqual({
+    sanitized: "x=`cat <<EOF <#>\n`; cat > /tmp/out <<B <#>\nls",
+    heredocs: [
+      { ...bare("EOF", ""), truncated: true },
+      { ...bare("B", "body\n"), outputTarget: "/tmp/out" },
+    ],
+    dynamic: false,
+  });
+});

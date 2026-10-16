@@ -23,6 +23,9 @@ export interface PendingStart {
    *  nested groups. A substitution that closes on the operator's own line
    *  drops the start: the shell reads the close before any body line. */
   frame?: Frame;
+  /** The index where the innermost bounded construct (a backtick, or a `$((`
+   *  substitution) closes; the body ends there. */
+  limit?: number;
 }
 
 /** One read body, bounded for the record. */
@@ -34,12 +37,14 @@ export interface BodyRecord {
   outputTarget?: string;
 }
 
-/** Read one pending heredoc's body from `position`; returns it with the
- *  index just past its terminator line. */
+/** Read one pending heredoc's body from `position`, bounded by `limit` when
+ *  given. Returns it with the index the next text is read from: just past its
+ *  terminator line, or the bound itself when the body is cut there. */
 export function readBody(
   command: string,
   position: number,
   start: PendingStart,
+  limit?: number,
 ): {
   body: string;
   truncated: boolean;
@@ -52,12 +57,23 @@ export function readBody(
       position,
       start.delimiter,
       start.operator === "<<-",
+      limit,
     );
     return {
       body: collected.body,
       truncated: collected.truncated,
       unterminated: collected.unterminated,
-      position: collected.endIndex + 1,
+      position: collected.unterminated
+        ? collected.endIndex
+        : collected.endIndex + 1,
+    };
+  }
+  if (limit !== undefined) {
+    return {
+      body: command.slice(position, limit),
+      truncated: true,
+      unterminated: true,
+      position: limit,
     };
   }
   // The terminator line cannot be known statically, so no line of the

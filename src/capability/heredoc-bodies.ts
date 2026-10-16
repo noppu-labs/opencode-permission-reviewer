@@ -43,7 +43,13 @@ export function consumeBodies(
   let position = bodyStart;
   const records: BodyRecord[] = [];
   for (const start of scan.pending) {
-    const read = readBody(scan.command, position, start);
+    // A bound counts only past the start line's newline: a close the scan
+    // passed over on that line bounds nothing.
+    const bound =
+      start.limit !== undefined && start.limit > lineEnd
+        ? start.limit
+        : undefined;
+    const read = readBody(scan.command, position, start, bound);
     position = read.position;
     if (read.unterminated) scan.unterminated = true;
     const record = bodyRecord(scan.command, start, read, lineEnd);
