@@ -101,9 +101,9 @@ export const PINNED_BLOBS = {
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
-    "3f64a74256ed7b05f372692a60081b0250bc1c0d",
+    "76ccdace898706f3f5a5632106f97165f5a6995b",
   "src/capability/heredoc-frame-starts.ts":
-    "8ee6b4f40419175958dd33989b8bc2b086bcc4c1",
+    "3e90a85309f8f448ca6e1e4be78d97a17681315d",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
   "src/system-one/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
@@ -143,13 +143,13 @@ export const PINNED_BLOBS = {
     "7575566966af5a9bccac2a72dd336e9dadaa99e2",
   "src/git-global-options.ts": "35752e52090120b61ed4679fcc3b1f1566cd8f01",
   "src/capability/heredoc-delimiter.ts":
-    "00cecfdb88d89810ec418166077b056507ff89e1",
+    "c91aaeadc894206370bf5662bb6512bc21078e95",
   "src/capability/heredoc-word-quotes.ts":
     "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
   "src/capability/ansi-c-quoting.ts":
     "d2f0eabf08316462275c01b7edd4ebac2ef98308",
   "src/capability/heredoc-scan-context.ts":
-    "84d5fa683ccfe5c73696557656aa25abb5c7683d",
+    "72627014d934c7389e3c17f95810f5a978877ea7",
   "src/capability/heredoc-bodies.ts":
     "d766923e0629d09e4bba8867d0e27d6739f19d98",
   "src/capability/heredoc-body-records.ts":

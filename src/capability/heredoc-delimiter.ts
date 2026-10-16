@@ -50,11 +50,15 @@ interface DelimiterWord {
  *      backslash), disables body expansion
  *    - `$'...'`: ANSI-C unescaping, disables body expansion
  *    - `\x` outside quotes: literal `x`, disables body expansion
+ *  A `` ` `` ends the word when `stopAtBacktick` is set: the operator sits
+ *  inside a backtick substitution, which the shell cuts out before it reads
+ *  the operator's word.
  *  The word is `resolved: false` only when its quoting never terminates or
  *  the word is empty: then no line can be proven to be the terminator. */
 export function parseDelimiterWord(
   command: string,
   start: number,
+  stopAtBacktick = false,
 ): DelimiterWord {
   const scan: WordScan = {
     index: start,
@@ -64,6 +68,7 @@ export function parseDelimiterWord(
     sawAny: false,
   };
   while (scan.index < command.length) {
+    if (stopAtBacktick && command.charAt(scan.index) === "`") break;
     if (!scanDelimiterPart(command, scan)) break;
   }
   if (!scan.sawAny)

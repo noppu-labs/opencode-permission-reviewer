@@ -668,3 +668,31 @@ describe("hardening batch 26", () => {
     "cat <<EOF\r\nhi\r\nEOF\r\nrm -rf /\r",
   ]);
 });
+
+describe("hardening batch 27", () => {
+  blocks("a heredoc read inside an open backtick does not hide the next line", [
+    "x=`cat <<EOF\nit's\nEOF\n`\nrm -rf /",
+  ]);
+  blocks(
+    "a heredoc read inside a substitution nested in a parameter default does not hide the next line",
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-$(cat <<EOF\nit's\nEOF\n)}\nrm -rf /",
+    ],
+  );
+  blocks(
+    "a heredoc read inside a substitution nested in arithmetic does not hide the next line",
+    ["echo $(( $(cat <<EOF\nit's\nEOF\n) ))\nrm -rf /"],
+  );
+  blocks(
+    "a lone close paren inside a double-parenthesis group does not hide the next heredoc body",
+    [
+      "((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+      "x=$((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+    ],
+  );
+  blocks(
+    "a carriage return in a heredoc word inside a substitution does not hide the next line",
+    ["echo $(cat <<EOF\r)\nrm -rf /"],
+  );
+});

@@ -10,6 +10,7 @@ import { enclosingSubstitution, readsNoBody } from "./heredoc-frame-starts.ts";
 import {
   closingFrame,
   type Frame,
+  fallBackFromArithmetic,
   openFrame,
   type ScanContext,
   scanInsideQuotes,
@@ -73,7 +74,6 @@ export function extractHeredocs(command: string): HeredocExtraction {
     lineStart: 0,
     quote: undefined,
     frames: [],
-    unsure: false,
     pending: [],
     pieces: [],
   };
@@ -122,23 +122,24 @@ function scanCharacter(scan: HeredocScan): void {
   scan.i += 1;
 }
 
-/** Close the construct ending at `scan.i`. A substitution that ends on the
- *  operator's own line ends no heredoc: the shell reads the close before
- *  any body line, so the starts opened inside it are dropped and their
- *  operator text stays in the command. */
+/** Close the construct ending at `scan.i`, or fall back a lone `)` out of
+ *  arithmetic. A substitution or backtick that ends on the operator's own
+ *  line ends no heredoc: the shell reads the close before any body line, so
+ *  the starts opened inside it are dropped and their operator text stays in
+ *  the command. */
 function closeFrame(scan: HeredocScan): boolean {
   const frame = closingFrame(scan);
-  if (frame === undefined) return false;
+  if (frame === undefined) return fallBackFromArithmetic(scan);
   scan.frames.pop();
   scan.quote = frame.quote;
   scan.i += frame.close.length;
-  if (frame.kind === "substitution") dropSubstitutedStarts(scan, frame);
+  if (frame.kind === "substitution" || frame.kind === "backtick")
+    dropSubstitutedStarts(scan, frame);
   return true;
 }
 
-/** A backtick opens a substitution whose end the scan cannot bind to a
- *  construct: a heredoc operator inside it is unsure, and no body is read
- *  for it. */
+/** A backtick opens a substitution frame, read like `$(`: a heredoc operator
+ *  inside it reads a body while the backtick stays open across the newline. */
 function scanBacktick(scan: HeredocScan): void {
   scan.frames.push({ close: "`", quote: scan.quote, kind: "backtick" });
   scan.i += 1;
@@ -169,16 +170,15 @@ function scanHeredocOperator(scan: HeredocScan): void {
     return;
   }
   if (readsNoBody(scan)) {
-    // Inside an expansion, or a construct the scan cannot follow, the
-    // shell reads `<<` as literal or shift text: no heredoc opens and no
-    // body is read.
+    // Inside an expansion the shell reads `<<` as literal or shift text: no
+    // heredoc opens and no body is read.
     scan.i += 2;
     return;
   }
   while (j < command.length && (command[j] === " " || command[j] === "\t"))
     j += 1;
-  const word = parseDelimiterWord(command, j);
   const frame = enclosingSubstitution(scan.frames);
+  const word = parseDelimiterWord(command, j, frame?.kind === "backtick");
   appendText(scan, command.slice(scan.cursor, i));
   scan.pending.push({
     operator,

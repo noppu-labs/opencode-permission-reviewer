@@ -296,3 +296,71 @@ describe("extractHeredocs body bound", () => {
     ]);
   });
 });
+
+// The shell reads a body after an operator inside an open substitution or
+// backtick. An operator whose substitution closes on its own line has no body
+// there, and the close is read before any body line.
+describe("extractHeredocs reads a body where the shell reads one", () => {
+  test.each([
+    ["x=`cat <<EOF\nit's\nEOF\n`\nrm -rf /", "x=`cat <<EOF <#>\n`\nrm -rf /"],
+    [
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-$(cat <<EOF\nit's\nEOF\n)}\nrm -rf /",
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: a literal shell parameter expansion in the command under test, not a template
+      "echo ${x:-$(cat <<EOF <#>\n)}\nrm -rf /",
+    ],
+    [
+      "echo $(( $(cat <<EOF\nit's\nEOF\n) ))\nrm -rf /",
+      "echo $(( $(cat <<EOF <#>\n) ))\nrm -rf /",
+    ],
+    [
+      "((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+      "((echo a) )\ncat <<EOF <#>\nrm -rf /",
+    ],
+    [
+      "x=$((echo a) )\ncat <<EOF\nit's\nEOF\nrm -rf /",
+      "x=$((echo a) )\ncat <<EOF <#>\nrm -rf /",
+    ],
+  ])("%p reads its body and keeps the next line", (command, sanitized) => {
+    expect(extraction(command)).toEqual({
+      sanitized,
+      heredocs: [bare("EOF", "it's\n")],
+      dynamic: false,
+    });
+  });
+
+  test("a heredoc in a substitution closed on its own line has no body", () => {
+    const command = "echo $(cat <<EOF)\nit's\nEOF\nrm -rf /";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a carriage return in a heredoc word closed on its own line has no body", () => {
+    const command = "echo $(cat <<EOF\r)\nls";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a backtick closed on the operator's line has no body", () => {
+    const command = "echo `cat <<EOF`\nls";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("a comment inside backticks ends at the closing backtick", () => {
+    expect(extraction("x=`echo hi # c`\ncat <<EOF\nit's\nEOF\nls")).toEqual({
+      sanitized: "x=`echo hi # c`\ncat <<EOF <#>\nls",
+      heredocs: [bare("EOF", "it's\n")],
+      dynamic: false,
+    });
+  });
+});
