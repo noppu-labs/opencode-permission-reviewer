@@ -202,9 +202,15 @@ export function emergencyBrakeReason(
       ? undefined
       : detectorReason(allOperators.sanitizedCommand);
   if (allReason !== undefined) return allReason;
-  // A body that never ends takes every later line with it, so the scan's
-  // reading and the shell's may differ there. The brake also checks the
-  // command as written.
-  if (extraction.unterminated || allOperators.unterminated)
+  // A body that never ends takes every later line with it, and a heredoc in a
+  // substitution or backticks may end where the scan's reading and the
+  // shell's differ. In either case the brake also checks the command as
+  // written.
+  if (
+    extraction.unterminated ||
+    allOperators.unterminated ||
+    extraction.framed ||
+    allOperators.framed
+  )
     return detectorReason(command);
 }

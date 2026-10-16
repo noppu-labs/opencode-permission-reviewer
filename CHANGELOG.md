@@ -97,10 +97,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   into the next token, so quoted and literal reads see the command as
   written.
 - Shell analysis: a heredoc is read where the shell reads one: inside an open command substitution
-  or backtick, and after an arithmetic form the shell re-reads as groups. A `<<` inside a parameter
-  expansion or a valid arithmetic expression stays text. A delimiter word keeps a carriage return as
-  part of the word, and ends at a closing backtick. The emergency brake also checks the reading that
-  collapses every heredoc operator, and the command as written when a heredoc body never ends.
+  or backtick, and after a bare `((` that the shell re-reads as groups. A heredoc body opened inside
+  backticks or a `$((` substitution ends at that construct's close, and a `$((` span is arithmetic
+  only when its content starts with `(` and ends with `)`. A `<<` inside a parameter expansion or a
+  valid arithmetic expression stays text. A delimiter word keeps a carriage return as part of the
+  word, and ends at a closing backtick. The emergency brake also checks the reading that collapses
+  every heredoc operator, and checks the command as written when a heredoc body never ends or a
+  heredoc sits inside a substitution or backticks.
 
 ## [3.0.0] - 2026-10-12
 

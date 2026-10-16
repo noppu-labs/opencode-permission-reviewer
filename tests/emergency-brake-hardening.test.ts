@@ -719,3 +719,28 @@ describe("hardening batch 28", () => {
     ["`<<EOF\n`\nrm -rf /"],
   );
 });
+
+describe("hardening batch 29", () => {
+  blocks("a heredoc in a `$((` substitution does not hide the next line", [
+    "x=$((cat)<<EOF\n)\nrm -rf /\nEOF",
+    "$(()<<EOF\n)\nrm -rf /\nEOF",
+    "echo $((1)+(1<<2\n))\nrm -rf /\n2",
+  ]);
+  blocks("a heredoc in backticks does not hide the next line", [
+    "x=`cat <<EOF\n`\nrm -rf /\nEOF",
+    "x=`cat <<EOF\nit's\n`\nrm -rf /\nEOF",
+  ]);
+  blocks(
+    "a heredoc in a command substitution closed in its body does not hide the next line",
+    ["echo $(cat <<EOF\n)\nrm -rf /\nEOF\n)"],
+  );
+  blocks(
+    "a heredoc opened in backticks after an arithmetic opener does not hide the next line",
+    ["` <<EOF;$((`\nrm -rf /", "`<<EOF));((`\nrm -rf /"],
+  );
+  allows("a top-level heredoc body is data", ["cat <<EOF\nrm -rf /\nEOF"]);
+  allows(
+    "a quoted heredoc inside a double-quoted command substitution is data",
+    ["git commit -m \"$(cat <<'EOF'\nfix things\nEOF\n)\""],
+  );
+});
