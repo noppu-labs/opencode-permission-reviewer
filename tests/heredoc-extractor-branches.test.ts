@@ -503,3 +503,26 @@ test("a heredoc after a backtick body keeps its output target and the next line"
     dynamic: false,
   });
 });
+
+// A start opened after a body cut at a backtick takes its output target from
+// the text after that backtick only, never from the skipped body.
+describe("extractHeredocs output targets after a bounded body", () => {
+  test("a start after a backtick-bounded body does not take a target from the body", () => {
+    const { heredocs } = extraction(
+      "x=`cat <<EOF\nfoo > /tmp/x`; cat <<B\nb\nB\nls",
+    );
+    expect(heredocs[1]?.outputTarget).toBeUndefined();
+  });
+
+  test("a start directly after a backtick-bounded body does not take a target from the body", () => {
+    const { heredocs } = extraction("x=`cat <<EOF\nfoo > /tmp/x`<<B\nb\nB\nls");
+    expect(heredocs[1]?.outputTarget).toBeUndefined();
+  });
+
+  test("a redirection after the backtick still sets the target", () => {
+    const { heredocs } = extraction(
+      "x=`cat <<EOF\nfoo > /tmp/x`>/tmp/y <<B\nb\nB\nls",
+    );
+    expect(heredocs[1]?.outputTarget).toBe("/tmp/y");
+  });
+});

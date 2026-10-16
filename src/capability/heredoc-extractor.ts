@@ -201,9 +201,9 @@ function scanNewline(scan: HeredocScan): void {
   scan.out += "\n";
   scan.cursor = resume;
   scan.i = resume;
-  // A body bounded by a close resumes mid-line: the line starts where the
-  // resume's physical line does, not after it.
-  scan.lineStart = scan.command.lastIndexOf("\n", resume - 1) + 1;
+  // The resume is where the text the scan reads next begins; a body cut at a
+  // close resumes mid-line, and the skipped body text is not part of the line.
+  scan.lineStart = resume;
 }
 
 function scanHeredocOperator(scan: HeredocScan): void {
