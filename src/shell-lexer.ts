@@ -3,6 +3,7 @@
 import {
   type HeredocReading,
   MAX_SUBSTITUTION_CHARS,
+  type ShellQuoting,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
 import { normalizeShellRedirections } from "./shell-redirections.ts";
@@ -59,15 +60,20 @@ export interface AnalysisBudget {
   /** Heredoc reading for every command string and substitution this budget
    *  covers. Absent means the default reading. */
   reading?: HeredocReading;
+  /** Quote reading for every command string and substitution this budget
+   *  covers. Absent means bash's reading. */
+  quoting?: ShellQuoting;
 }
 
 export function newAnalysisBudget(
   reading: HeredocReading = "default",
+  quoting: ShellQuoting = "bash",
 ): AnalysisBudget {
   return {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
     reading,
+    quoting,
   };
 }
 
@@ -87,6 +93,7 @@ export interface LexAnalysis {
 export function lexSegmentsBounded(
   command: string,
   reading: HeredocReading = "default",
+  quoting: ShellQuoting = "bash",
 ): LexAnalysis {
   if (command.length > MAX_ANALYSIS_INPUT_CHARS)
     return { segments: [], truncated: true };
@@ -95,6 +102,7 @@ export function lexSegmentsBounded(
     substitutions: "lex",
     substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
     reading,
+    quoting,
   };
   const segments = lexSegments(command, state);
   return { segments, truncated: state.tokensRemaining <= 0 };
