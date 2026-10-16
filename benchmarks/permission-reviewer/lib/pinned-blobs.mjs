@@ -53,7 +53,7 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "5b7569c8b9dafd35857a01af2b1df93c55cd4880",
+  "src/emergency-brake.ts": "2a838121aa454b5c07ff74448619df76d27d4875",
   "src/brake-readings.ts": "b2ace4767813a68ea030eae74a0500998070cde8",
   "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/reviewed-command.ts": "d7f4893e9f590680cfc10d2e4b9ffc1743fb17b7",

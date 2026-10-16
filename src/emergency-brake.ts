@@ -25,7 +25,7 @@ import type { PermissionRequest } from "./types.ts";
  * heredocs. Those remain the reviewer's job; the brake only catches literal,
  * unambiguous `rm -rf /`-style root destruction (target resolves to `/`).
  *
- * Each reading of the command is lexed and destructured under a shared
+ * Each reading of the command is lexed and destructured under its own
  * analysis budget (input size, tokens, depth, re-lexed text, and total
  * effective commands). When any limit is hit, the brake rejects with a
  * resource-limit reason of its own: the command was NOT proven destructive,
