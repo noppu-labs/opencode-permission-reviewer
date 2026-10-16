@@ -8,7 +8,8 @@ import type { Frame, ScanContext } from "./heredoc-scan-context.ts";
 /** Whether the shell reads no heredoc body at this `<<`. The nearest
  *  expansion, substitution or backtick open at the operator decides: an
  *  expansion reads `<<` as literal or shift text, while a substitution or
- *  backtick reads a body from the lines after it. No such frame reads a body. */
+ *  backtick reads a body from the lines after it. No such frame reads a
+ *  body. */
 export function readsNoBody(scan: ScanContext): boolean {
   for (let i = scan.frames.length - 1; i >= 0; i -= 1) {
     const kind = scan.frames[i]?.kind;

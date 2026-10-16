@@ -167,6 +167,22 @@ describe("stress and adversarial robustness", () => {
     }
   });
 
+  test.each([
+    ["nested arithmetic openers", "$((".repeat(43_000)],
+    ["arithmetic openers with words", "$((x ".repeat(26_000)],
+    ["arithmetic openers with a term", "$((1)".repeat(26_000)],
+    ["backtick-wrapped arithmetic openers", "`$((".repeat(32_000)],
+    ["unclosed backticks", "`".repeat(120_000)],
+  ])(
+    "reads %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      emergencyBrakeReason(request({ metadata: { command } }));
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
   test("survives 10,000 encoded TUI transitions without cross-request corruption", () => {
     const state = new ReviewUiState({
       model: "openai/gpt-5.6-luna",

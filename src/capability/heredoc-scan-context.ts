@@ -1,8 +1,8 @@
-import { isArithmeticSpan, matchingParen } from "./heredoc-frame-bounds.ts";
-
 // The shell context the heredoc scan tracks: quoting, escapes, comments and
 // the nesting of expansions, substitutions and groups, where `<<` opens no
 // heredoc or reads its body from a different place.
+
+import { isArithmeticSpan, parenCloses } from "./heredoc-frame-bounds.ts";
 
 /** The quote the scan is inside, when it is inside one. */
 export type Quote = "'" | '"' | "$'" | undefined;
@@ -47,6 +47,8 @@ export interface ScanContext {
   quote: Quote;
   /** Open constructs, innermost last. */
   frames: Frame[];
+  /** The `parenCloses` table of `command`, built on the first `$((`. */
+  parens?: Int32Array;
 }
 
 export function scanInsideQuotes(scan: ScanContext, c: string): boolean {
@@ -132,12 +134,14 @@ export function openFrame(scan: ScanContext): boolean {
  *  command substitution that ends at the matched `)`. */
 function openDollarParen(scan: ScanContext): boolean {
   const { command, i } = scan;
-  if (isArithmeticSpan(command, i)) {
+  scan.parens ??= parenCloses(command);
+  if (isArithmeticSpan(command, i, scan.parens)) {
     scan.frames.push({ close: "))", quote: scan.quote, kind: "expansion" });
     scan.i += 3;
     return true;
   }
-  const limit = matchingParen(command, i);
+  const closed = scan.parens[i + 2] ?? -1;
+  const limit = closed === -1 ? undefined : closed;
   scan.frames.push({
     close: ")",
     quote: scan.quote,
@@ -159,8 +163,8 @@ export function closingFrame(scan: ScanContext): Frame | undefined {
 
 /** A lone `)` where a bare `((` frame's `))` would close it: bash reads the
  *  opener as its fallback instead, so the frame becomes a group and this `)`
- *  closes the inner group the fallback opened. Consumes the `)`, leaves the frame open,
- *  and returns true; false when no such close sits at `scan.i`. */
+ *  closes the inner group the fallback opened. Consumes the `)`, leaves the
+ *  frame open, and returns true; false when no such close sits at `scan.i`. */
 export function fallBackFromArithmetic(scan: ScanContext): boolean {
   const frame = scan.frames.at(-1);
   if (

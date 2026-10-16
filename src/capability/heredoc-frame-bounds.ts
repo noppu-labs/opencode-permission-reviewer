@@ -2,28 +2,26 @@
 // backtick's closing backtick, and the matching `)` of a `$((` span the shell
 // reads as a command substitution rather than as arithmetic.
 
-/** The index of the `)` that closes the `$(` at `open` (the first `$` of
- *  `$((`), counting parentheses and skipping quotes and backslash escapes, or
- *  `undefined` when the text ends first. */
-export function matchingParen(
-  command: string,
-  open: number,
-): number | undefined {
-  let depth = 0;
-  for (let i = open + 1; i < command.length; i += 1) {
-    const next = skipQuotedOrEscape(command, i);
-    if (next !== i) {
-      i = next - 1;
-      continue;
-    }
-    const c = command.charAt(i);
-    if (c === "(") depth += 1;
-    else if (c === ")") {
-      depth -= 1;
-      if (depth === 0) return i;
-    }
-  }
-  return undefined;
+/** For each index `p`, the index of the `)` that closes a `(` placed just
+ *  before `p`: scanning from `p`, the first `)` that leaves no `(` open,
+ *  skipping quotes and backslash escapes; `-1` when the text ends first.
+ *  One right-to-left pass, so each `$((` reads its match in constant time. */
+export function parenCloses(command: string): Int32Array {
+  const closes = new Int32Array(command.length + 1).fill(-1);
+  for (let p = command.length - 1; p >= 0; p -= 1)
+    closes[p] = closeFrom(command, closes, p);
+  return closes;
+}
+
+/** The `parenCloses` entry for `p`, given the entries after it. */
+function closeFrom(command: string, closes: Int32Array, p: number): number {
+  const next = skipQuotedOrEscape(command, p);
+  if (next !== p) return closes[next] ?? -1;
+  const c = command.charAt(p);
+  if (c === ")") return p;
+  if (c !== "(") return closes[p + 1] ?? -1;
+  const inner = closes[p + 1] ?? -1;
+  return inner === -1 ? -1 : (closes[inner + 1] ?? -1);
 }
 
 /** The index just past the quoted string or backslash escape starting at `i`,
@@ -41,12 +39,20 @@ function skipQuotedOrEscape(command: string, i: number): number {
 
 /** Whether the `$((` opened at `open` is arithmetic: its matched span's
  *  content starts with `(` and ends with `)`. Otherwise bash reads the span as
- *  a command substitution that ends at the matched `)`. */
-export function isArithmeticSpan(command: string, open: number): boolean {
-  const close = matchingParen(command, open);
-  if (close === undefined) return true;
-  const content = command.slice(open + 2, close);
-  return content.startsWith("(") && content.endsWith(")");
+ *  a command substitution that ends at the matched `)`. `closes` is the
+ *  `parenCloses` table of `command`. */
+export function isArithmeticSpan(
+  command: string,
+  open: number,
+  closes: Int32Array,
+): boolean {
+  const close = closes[open + 2] ?? -1;
+  if (close === -1) return true;
+  return (
+    close > open + 2 &&
+    command.charAt(open + 2) === "(" &&
+    command.charAt(close - 1) === ")"
+  );
 }
 
 /** The index of the backtick that closes the backtick substitution opened
