@@ -14,7 +14,6 @@ const BARE_WORD_STOP = new Set([
   " ",
   "\t",
   "\n",
-  "\r",
   "|",
   "&",
   ";",

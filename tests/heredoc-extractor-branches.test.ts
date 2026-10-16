@@ -147,6 +147,40 @@ describe("extractHeredocs delimiter words", () => {
   });
 });
 
+// A carriage return is a word character in the delimiter word: a CRLF script
+// line leaves the CR in the word, and the terminator line carries the same
+// CR, so the exact line comparison still closes the body.
+describe("extractHeredocs carriage returns in the delimiter word", () => {
+  test.each([
+    [
+      "cat <<EOF\r\nBODY\r\nEOF\r\necho AFTER\r\n",
+      "cat <<'EOF\r' <#>\necho AFTER\r\n",
+      [bare("EOF\r", "BODY\r\n")],
+    ],
+    [
+      "cat <<E\rOF\nBODY\nE\rOF\nls",
+      "cat <<'E\rOF' <#>\nls",
+      [bare("E\rOF", "BODY\n")],
+    ],
+    [
+      "cat <<'EOF'\r\nBODY\r\nEOF\r\necho AFTER\r\n",
+      "cat <<'EOF\r' <#>\necho AFTER\r\n",
+      [{ ...quoted("EOF\r"), bodyBounded: "BODY\r\n" }],
+    ],
+    [
+      "cat <<-EOF\r\n\tBODY\r\nEOF\r\nls",
+      "cat <<-'EOF\r' <#>\nls",
+      [{ ...bare("EOF\r", "\tBODY\r\n"), operator: "<<-" }],
+    ],
+  ])("%p", (command, sanitized, heredocs) => {
+    expect(extraction(command)).toEqual({
+      sanitized,
+      heredocs,
+      dynamic: false,
+    });
+  });
+});
+
 test("three heredocs opened on one line close in operator order", () => {
   expect(extraction("cat <<A <<B <<C\na\nA\nb\nB\nc\nC\nls")).toEqual({
     sanitized: "cat <<A <#> <<B <#> <<C <#>\nls",
@@ -204,6 +238,14 @@ describe("extractHeredocs shell constructs around the operator", () => {
     expect(extraction("x=$(cat <<EOF\nbody\nEOF\n)\nls")).toEqual({
       sanitized: "x=$(cat <<EOF <#>\n)\nls",
       heredocs: [bare("EOF", "body\n")],
+      dynamic: false,
+    });
+  });
+
+  test("reads a heredoc body inside a group that stays open", () => {
+    expect(extraction("(cat <<EOF)\nprintf run\nEOF\nls")).toEqual({
+      sanitized: "(cat <<EOF <#>)\nls",
+      heredocs: [bare("EOF", "printf run\n")],
       dynamic: false,
     });
   });

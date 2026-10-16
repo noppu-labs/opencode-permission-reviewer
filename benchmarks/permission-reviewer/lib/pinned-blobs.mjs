@@ -141,7 +141,7 @@ export const PINNED_BLOBS = {
     "7575566966af5a9bccac2a72dd336e9dadaa99e2",
   "src/git-global-options.ts": "35752e52090120b61ed4679fcc3b1f1566cd8f01",
   "src/capability/heredoc-delimiter.ts":
-    "abae24b0e331469527d25e6c3719ceea81a8932e",
+    "00cecfdb88d89810ec418166077b056507ff89e1",
   "src/capability/heredoc-word-quotes.ts":
     "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
   "src/capability/ansi-c-quoting.ts":
