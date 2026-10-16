@@ -92,9 +92,9 @@ export const PINNED_BLOBS = {
   "src/shell-redirections.ts": "56b6c554d745464d699663a7342140fca30773f3",
   "src/shell-redirection-operators.ts":
     "579703335deab3052f2b1f8b39d34cea10266ba2",
-  "src/shell-lex-state.ts": "c84a9df37d8a87c75efa66d2c72f40d95319ebea",
-  "src/shell-quote-scan.ts": "4381d682749bf462455ea907f2b1234816525d96",
-  "src/shell-scanner.ts": "dc7a8cc2b454a9b67ce7e594bf9f5444c02041cc",
+  "src/shell-lex-state.ts": "3cc6c0e04ea33a022123a2c625d43d5220bfba2b",
+  "src/shell-quote-scan.ts": "90a7247a6bfc73d39c06d27d56c9d012c5649fd9",
+  "src/shell-scanner.ts": "6e81b064e0080355b8a2b5d18118bbdc5bddbdf3",
   "src/shell-substitution.ts": "cc113e1bca9c932fe519aae82e2558701c85a4c3",
   "src/shell-substitution-end.ts": "f4fb757d4a16fda50788d31492c8c33fc7213f5f",
   "src/shell-substitution-heredoc.ts":

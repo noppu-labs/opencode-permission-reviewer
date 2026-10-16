@@ -1,6 +1,6 @@
 /*
  * Minimal shell-aware tokenizer, NOT a full shell interpreter:
- *   - grouping of single/double quotes (so separators inside quotes do not
+ *   - grouping of quotes, `$'…'` included (so separators inside quotes do not
  *     split a token, and `printf "a; sudo rm -rf /"` stays one argument),
  *   - splitting on logical command separators (`;`, `|`, `&`, newlines),
  *   - stripping `#` comments when they begin a token.
@@ -26,6 +26,7 @@ import {
   lexDoubleQuoted,
   lexSingleQuoted,
   openQuote,
+  opensAnsiC,
 } from "./shell-quote-scan.ts";
 import { substitutionAt } from "./shell-substitution.ts";
 import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
@@ -101,7 +102,7 @@ function lexEscape(lex: LexState): void {
 }
 
 function lexUnquoted(lex: LexState, c: string): void {
-  if (c === "'" || c === '"') {
+  if (c === "'" || c === '"' || opensAnsiC(lex)) {
     openQuote(lex, c);
     return;
   }
@@ -186,6 +187,7 @@ export function lexSegments(
     hasToken: false,
     spans: [],
     inSingle: false,
+    ansiC: false,
     inDouble: false,
     lastSeparator: undefined,
     outOfTokens: false,

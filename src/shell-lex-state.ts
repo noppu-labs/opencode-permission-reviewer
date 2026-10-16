@@ -13,11 +13,17 @@ interface TokenBudget {
  *  (`legacy`), which the emergency brake also checks. */
 export type HeredocReading = "default" | "legacy";
 
+/** Which quote reading the scan applies: bash's (`bash`, the default), or the
+ *  previous release's, which ends a `$'…'` string at its first `'`. */
+export type ShellQuoting = "bash" | "previous";
+
 /** A budget that lexes command substitutions into segments of their own. */
 export interface SubstitutionBudget extends TokenBudget {
   substitutions: "lex";
   /** Heredoc reading for the substitution bodies this scan lexes. */
   reading?: HeredocReading;
+  /** Quote reading for this scan and the substitution bodies it lexes. */
+  quoting?: ShellQuoting;
   /** Command-substitution text the scan may still lex a second time, nested
    *  substitutions included. Past zero the scan stops as if out of tokens. */
   substitutionCharsRemaining: number;
@@ -54,6 +60,9 @@ export interface LexState {
   hasToken: boolean;
   spans: ShellSpan[];
   inSingle: boolean;
+  /** The open single quote is an ANSI-C `$'…'` string, where `\` escapes
+   *  the next character. */
+  ansiC: boolean;
   inDouble: boolean;
   lastSeparator: string | undefined;
   outOfTokens: boolean;
