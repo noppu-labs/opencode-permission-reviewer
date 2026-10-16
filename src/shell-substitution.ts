@@ -1,6 +1,8 @@
 // The command a command substitution runs when the enclosing word keeps its text: a backtick form, or `$(` inside double quotes.
 
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
+import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
+import type { HeredocReading } from "./shell-lex-state.ts";
 import { substitutionBodyEnd } from "./shell-substitution-end.ts";
 
 /** The command text a substitution runs, and the index just past its
@@ -20,12 +22,20 @@ export function substitutionAt(
   index: number,
   inDouble: boolean,
   inArithmetic: boolean,
+  reading: HeredocReading = "default",
 ): SubstitutionBody | undefined {
   const c = command.charAt(index);
-  if (c === "`") return backtickBody(command, index + 1, inDouble);
+  if (c === "`") return backtickBody(command, index + 1, inDouble, reading);
   if (!inDouble || c !== "$" || command[index + 1] !== "(") return undefined;
   if (inArithmetic && command[index + 2] === "(") return undefined;
-  return dollarParenBody(command, index + 2);
+  return dollarParenBody(command, index + 2, reading);
+}
+
+/** The body with its heredoc bodies collapsed, under the chosen reading. */
+function sanitizeBody(text: string, reading: HeredocReading): string {
+  return reading === "legacy"
+    ? legacySanitizedCommand(text)
+    : extractHeredocs(text).sanitizedCommand;
 }
 
 /** Inside backticks a backslash escapes only `$`, a backtick and itself
@@ -34,27 +44,32 @@ function backtickBody(
   command: string,
   start: number,
   inDouble: boolean,
+  reading: HeredocReading,
 ): SubstitutionBody {
-  const close = substitutionBodyEnd(command, start, "backtick");
+  const close = substitutionBodyEnd(command, start, "backtick", reading);
   const escaped = inDouble ? /\\([$`\\"])/g : /\\([$`\\])/g;
   const text = command.slice(start, close).replace(escaped, "$1");
   return {
     kind: "command",
-    text: inDouble ? extractHeredocs(text).sanitizedCommand : text,
+    text: inDouble ? sanitizeBody(text, reading) : text,
     end: close + 1,
   };
 }
 
-function dollarParenBody(command: string, start: number): SubstitutionBody {
-  const close = substitutionBodyEnd(command, start, "command");
+function dollarParenBody(
+  command: string,
+  start: number,
+  reading: HeredocReading,
+): SubstitutionBody {
+  const close = substitutionBodyEnd(command, start, "command", reading);
   if (
     command[start] === "(" &&
-    substitutionBodyEnd(command, start + 1, "command") === close - 1
+    substitutionBodyEnd(command, start + 1, "command", reading) === close - 1
   )
     return { kind: "arithmetic", end: close + 1 };
   return {
     kind: "command",
-    text: extractHeredocs(command.slice(start, close)).sanitizedCommand,
+    text: sanitizeBody(command.slice(start, close), reading),
     end: close + 1,
   };
 }

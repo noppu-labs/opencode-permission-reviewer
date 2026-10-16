@@ -773,3 +773,14 @@ describe("hardening batch 30", () => {
     "echo $(( (1)+(1<<2) ))\ncat <<EOF\nit's\nEOF\nls",
   ]);
 });
+
+describe("hardening batch 31", () => {
+  blocks(
+    "a heredoc operator with a carriage return inside a double-quoted substitution does not hide the command",
+    ['echo "$(<<EOF\rx rm -rf /)"', 'echo "`<<EOF\rx rm -rf /`"'],
+  );
+  blocks(
+    "a heredoc inside a double-quoted backtick substitution does not hide the next line",
+    ['echo "`$((<<-EOF)}${#|)|\nrm -rf /`"'],
+  );
+});

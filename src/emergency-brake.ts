@@ -20,6 +20,7 @@ import {
   analyzeSegmentRedirections,
   type SegmentRedirectionsAnalysis,
 } from "./shell-effective-commands.ts";
+import type { HeredocReading } from "./shell-lex-state.ts";
 import {
   type AnalysisBudget,
   lexSegmentsBounded,
@@ -109,8 +110,11 @@ function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
 
 /** Lexes the command and resolves every segment's effective commands under
  *  one shared budget, or returns `undefined` when any limit is hit. */
-function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
-  const lex = lexSegmentsBounded(command);
+function analyzeSegments(
+  command: string,
+  reading: HeredocReading = "default",
+): AnalyzedSegment[] | undefined {
+  const lex = lexSegmentsBounded(command, reading);
   if (lex.truncated) return undefined;
   const budget = newAnalysisBudget();
   const analyzed: AnalyzedSegment[] = [];
@@ -167,8 +171,11 @@ function analyzeFinds(
 
 /** The first destructive or secret-export reason among the detectors, run on
  *  one body-free reading of the command. */
-function detectorReason(sanitizedCommand: string): string | undefined {
-  const analyzed = analyzeSegments(sanitizedCommand);
+function detectorReason(
+  sanitizedCommand: string,
+  reading: HeredocReading = "default",
+): string | undefined {
+  const analyzed = analyzeSegments(sanitizedCommand, reading);
   if (analyzed === undefined) return ANALYSIS_LIMIT_REASON;
 
   if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
@@ -211,12 +218,17 @@ export function emergencyBrakeReason(
   const readings = new Set([
     extraction.sanitizedCommand,
     allOperators.sanitizedCommand,
-    legacySanitizedCommand(command),
   ]);
   for (const text of readings) {
     const reason = detectorReason(text);
     if (reason !== undefined) return reason;
   }
+  // The previous release's reading, its substitutions re-lexed the same way.
+  const legacyReason = detectorReason(
+    legacySanitizedCommand(command),
+    "legacy",
+  );
+  if (legacyReason !== undefined) return legacyReason;
   // A body that never ends takes every later line with it, and a heredoc in a
   // substitution or backticks may end where the scan's reading and the
   // shell's differ. In either case the brake also checks the command as
