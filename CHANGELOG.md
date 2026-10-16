@@ -110,6 +110,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sh -c`, and the wrappers around them) gets the same brake readings as the top-level command. A
   heredoc written before the command no longer hides the command: its placeholder is not a command
   word.
+- Shell analysis: a `$'…'` string ends where the shell ends it, so a backslash-escaped quote inside it no longer ends it early and the text after it is read as the shell reads it.
 
 ## [3.0.0] - 2026-10-12
 

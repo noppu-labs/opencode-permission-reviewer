@@ -25,17 +25,18 @@ import type { PermissionRequest } from "./types.ts";
  * heredocs. Those remain the reviewer's job; the brake only catches literal,
  * unambiguous `rm -rf /`-style root destruction (target resolves to `/`).
  *
- * The whole command, including the commands that find exec actions run, is
- * lexed and destructured exactly once per request under a shared analysis
- * budget (input size, tokens, depth, re-lexed text, and total effective
- * commands). When any limit is hit, the brake rejects with a resource-limit
- * reason of its own: the command was NOT proven destructive, only
- * unanalyzable within bounds, and downstream gates must not confuse the two.
+ * Each reading of the command is lexed and destructured under a shared
+ * analysis budget (input size, tokens, depth, re-lexed text, and total
+ * effective commands). When any limit is hit, the brake rejects with a
+ * resource-limit reason of its own: the command was NOT proven destructive,
+ * only unanalyzable within bounds, and downstream gates must not confuse the
+ * two.
  *
  * The checks in brake-readings.ts run under two quote readings. The bash
- * reading is the lexer's own. The previous release's reading ends a `$'…'`
- * string at its first `'`, so the brake also runs under it, and the previous
- * release's verdict is never lost.
+ * quote reading is the lexer's own. The previous release's quote reading ends
+ * a `$'…'` string at its first `'`. The brake runs each heredoc reading under
+ * both quote readings, so a command the previous release blocked stays
+ * blocked.
  */
 
 export function emergencyBrakeReason(
@@ -48,8 +49,9 @@ export function emergencyBrakeReason(
   // analysis cannot finish is rejected for THAT reason, before any lexing or
   // detector runs, and is never described as detected destruction.
   if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  // Every check runs under the previous reading too, even without a `$'` in
-  // the text: a command string the wrappers re-lex can get one from escapes.
+  // Every check also runs under the previous quote reading, even without a
+  // `$'` in the text: a command string the wrappers re-lex can get one from
+  // escapes.
   return (
     brakeReadingsReason(command, "bash") ??
     brakeReadingsReason(command, "previous")

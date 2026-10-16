@@ -21,6 +21,13 @@ const wrappers = (body: string): [string, string][] => [
   ["find -exec sh -c", `find . -exec sh -c ${dq(body)} \\;`],
 ];
 
+const commandStringWrappers = (body: string): [string, string][] => [
+  ["env -S", `env -S ${sq(body)}`],
+  ["watch", `watch ${sq(body)}`],
+  ["ssh host", `ssh host ${sq(body)}`],
+  ["su -c", `su -c ${sq(body)}`],
+];
+
 const newlyBlocked = "echo $'\\'' \"$(rm -rf /)\"";
 const newlyBlockedPrintf = "printf $'a\\'b'; rm -rf /";
 const previousOnly = "echo $'a\\' ; rm -rf / #'";
@@ -70,6 +77,22 @@ describe("ANSI-C strings end where the shell ends them", () => {
     "allows an ordinary or look-alike ANSI-C word: %s",
     (command) => {
       expect(brake(command)).toBeUndefined();
+    },
+  );
+});
+
+describe("command-string wrappers of the previous-only body", () => {
+  test.each(commandStringWrappers(previousOnly))(
+    "blocks a command after a `$'…'` string that ends at its first `'` (%s)",
+    (_, command) => {
+      expect(brake(command)).toBe(blocked);
+    },
+  );
+
+  test.each(commandStringWrappers(previousOnly))(
+    "the bash reading allows the same command string (%s)",
+    (_, command) => {
+      expect(brakeReadingsReason(command, "bash")).toBeUndefined();
     },
   );
 });

@@ -174,8 +174,8 @@ function linesReason(
 /** The brake's checks on every reading of `command`, lexed under `quoting`.
  *  Text the scan leaves inline is lexed as commands, so a body read under one
  *  reading can hide a later line from another. The brake checks the default
- *  reading, the reading that collapses every operator, and the reading the
- *  previous release produced; each distinct text is checked once. */
+ *  reading, the reading that collapses every operator, and the heredoc
+ *  reading the previous release used; each distinct text is checked once. */
 export function brakeReadingsReason(
   command: string,
   quoting: ShellQuoting,
@@ -193,7 +193,7 @@ export function brakeReadingsReason(
     const reason = detectorReason(text, "default", quoting);
     if (reason !== undefined) return reason;
   }
-  // The previous release's reading, its substitutions re-lexed the same way.
+  // The previous release's heredoc reading, its substitutions re-lexed the same way.
   const legacyReason = detectorReason(
     legacySanitizedCommand(command),
     "legacy",
