@@ -51,21 +51,25 @@ const allowed = [
 const brake = (command: string): string | undefined =>
   emergencyBrakeReason(request({ metadata: { command } }));
 
+function expectBlocked(_: string, command: string): void {
+  expect(brake(command)).toBe(blocked);
+}
+
+function expectBashAllows(_: string, command: string): void {
+  expect(brakeReadingsReason(command, "bash")).toBeUndefined();
+}
+
 describe("ANSI-C strings end where the shell ends them", () => {
   test.each(
     [newlyBlocked, newlyBlockedPrintf].flatMap((body) => wrappers(body)),
   )(
     "blocks a substitution or command after an escaped quote (%s)",
-    (_, command) => {
-      expect(brake(command)).toBe(blocked);
-    },
+    expectBlocked,
   );
 
   test.each(wrappers(previousOnly))(
     "blocks a command after a `$'…'` string that ends at its first `'` (%s)",
-    (_, command) => {
-      expect(brake(command)).toBe(blocked);
-    },
+    expectBlocked,
   );
 
   test("blocks a `$'…'` body built from escapes, with no `$'` in the text", () => {
@@ -84,16 +88,12 @@ describe("ANSI-C strings end where the shell ends them", () => {
 describe("command-string wrappers of the previous-only body", () => {
   test.each(commandStringWrappers(previousOnly))(
     "blocks a command-string wrapper of a `$'…'` string that ends at its first `'` (%s)",
-    (_, command) => {
-      expect(brake(command)).toBe(blocked);
-    },
+    expectBlocked,
   );
 
   test.each(commandStringWrappers(previousOnly))(
     "the bash reading allows the same command string (%s)",
-    (_, command) => {
-      expect(brakeReadingsReason(command, "bash")).toBeUndefined();
-    },
+    expectBashAllows,
   );
 });
 

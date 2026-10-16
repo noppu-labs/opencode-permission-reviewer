@@ -53,15 +53,6 @@ describe("ANSI-C quoted words", () => {
     });
   });
 
-  test("keeps escape sequences verbatim in the value", () => {
-    expect(words(scan("printf $'a\\tb\\n'"))).toEqual([
-      [
-        ["printf", "printf"],
-        ["$'a\\tb\\n'", "$a\\tb\\n"],
-      ],
-    ]);
-  });
-
   test("lexes the command substitution that follows an escaped quote", () => {
     const segments = scan("echo $'\\'' \"$(id)\"");
     const bodies = segments.map((segment) =>
@@ -70,43 +61,63 @@ describe("ANSI-C quoted words", () => {
     expect(bodies).toContain("id");
   });
 
-  test("keeps `$'` literal inside double quotes", () => {
-    expect(words(scan("echo \"$'a\\'\" b"))).toEqual([
+  const wordCases: [string, string, [string, string][][]][] = [
+    [
+      "keeps escape sequences verbatim in the value",
+      "printf $'a\\tb\\n'",
       [
-        ["echo", "echo"],
-        ["\"$'a\\'\"", "$'a\\'"],
-        ["b", "b"],
+        [
+          ["printf", "printf"],
+          ["$'a\\tb\\n'", "$a\\tb\\n"],
+        ],
       ],
-    ]);
-  });
-
-  test("treats an escaped dollar as ordinary text before a plain quote", () => {
-    expect(words(scan("echo \\$'a\\' b"))).toEqual([
+    ],
+    [
+      "keeps `$'` literal inside double quotes",
+      "echo \"$'a\\'\" b",
       [
-        ["echo", "echo"],
-        ["\\$'a\\'", "$a\\"],
-        ["b", "b"],
+        [
+          ["echo", "echo"],
+          ["\"$'a\\'\"", "$'a\\'"],
+          ["b", "b"],
+        ],
       ],
-    ]);
-  });
-
-  test("splits `$$'…'` the way a plain quote does", () => {
-    expect(words(scan("echo $$'a\\' b"))).toEqual([
+    ],
+    [
+      "treats an escaped dollar as ordinary text before a plain quote",
+      "echo \\$'a\\' b",
       [
-        ["echo", "echo"],
-        ["$$'a\\'", "$$a\\"],
-        ["b", "b"],
+        [
+          ["echo", "echo"],
+          ["\\$'a\\'", "$a\\"],
+          ["b", "b"],
+        ],
       ],
-    ]);
-  });
-
-  test("reads `$$$'…'` as one word", () => {
-    expect(words(scan("echo $$$'a\\'b'"))).toEqual([
+    ],
+    [
+      "splits `$$'…'` the way a plain quote does",
+      "echo $$'a\\' b",
       [
-        ["echo", "echo"],
-        ["$$$'a\\'b'", "$$$a\\'b"],
+        [
+          ["echo", "echo"],
+          ["$$'a\\'", "$$a\\"],
+          ["b", "b"],
+        ],
       ],
-    ]);
+    ],
+    [
+      "reads `$$$'…'` as one word",
+      "echo $$$'a\\'b'",
+      [
+        [
+          ["echo", "echo"],
+          ["$$$'a\\'b'", "$$$a\\'b"],
+        ],
+      ],
+    ],
+  ];
+  test.each(wordCases)("%s", (_, command, expected) => {
+    expect(words(scan(command))).toEqual(expected);
   });
 
   test("reads an unterminated `$'…` as quoted to the end", () => {
