@@ -70,9 +70,24 @@ export function sliceToken(
   return { raw: value, value, spans };
 }
 
-export function hasQuotedChar(token: ShellToken): boolean {
-  for (let index = 0; index < token.value.length; index += 1) {
-    if (tokenCharIsQuoted(token, index)) return true;
+/** `tokenCharIsQuoted` for every character of `token.value`, in one pass. */
+export function quotedChars(token: ShellToken): boolean[] {
+  const quoted: boolean[] = [];
+  const spans = token.spans ?? [
+    { text: token.value, quoted: token.raw !== token.value },
+  ];
+  for (const span of spans) {
+    for (
+      let index = 0;
+      index < span.text.length && quoted.length < token.value.length;
+      index += 1
+    )
+      quoted.push(span.quoted);
   }
-  return false;
+  while (quoted.length < token.value.length) quoted.push(false);
+  return quoted;
+}
+
+export function hasQuotedChar(token: ShellToken): boolean {
+  return quotedChars(token).includes(true);
 }

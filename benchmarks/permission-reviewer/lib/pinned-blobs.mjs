@@ -89,10 +89,10 @@ export const PINNED_BLOBS = {
   "src/shell-lexer.ts": "82ccb7c998c0723a4e278d89e5e0e5daec06a3c1",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/shell-lexer-tables.ts": "d962f14223b70f233fcc11c637f1c0f817d3757d",
-  "src/shell-token.ts": "b3b12c1046ff0b94a41d9a175a5475dc19a17865",
-  "src/shell-redirections.ts": "56b6c554d745464d699663a7342140fca30773f3",
+  "src/shell-token.ts": "cb9f28d2e02fa232022bada5d5b037ee8c15fdf5",
+  "src/shell-redirections.ts": "7341b08b0d3d7e6adb69868df03a19a923deb3ae",
   "src/shell-redirection-operators.ts":
-    "579703335deab3052f2b1f8b39d34cea10266ba2",
+    "cd6278e27b9a39682c09141a0b101fc31fd8b915",
   "src/shell-lex-state.ts": "c818b120edad9ca83cfbc5c4fed25a9d6fe1f20b",
   "src/shell-quote-scan.ts": "36e0200ea68a001866fe855e7b6ae6c43055552b",
   "src/shell-scanner.ts": "e4c1eb4018e462efa51bebc168785e32c06f169d",

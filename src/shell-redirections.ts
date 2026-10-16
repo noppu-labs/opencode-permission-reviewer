@@ -1,7 +1,7 @@
 // Splits shell redirections (`2>log`, `cmd>out`, `<<<word`) away from command words.
 
 import { elementAt } from "./element-at.ts";
-import { nextRedirection } from "./shell-redirection-operators.ts";
+import { redirectionsIn } from "./shell-redirection-operators.ts";
 import { hasQuotedChar, type ShellToken, sliceToken } from "./shell-token.ts";
 
 export interface ShellRedirection {
@@ -53,23 +53,21 @@ function splitLeadingWord(
  *  it, so the caller can take the next word as its target. */
 function splitWordRedirections(
   token: ShellToken,
-  first: { index: number; operator: string },
+  operators: { index: number; operator: string }[],
   split: RedirectionSplit,
 ): string | undefined {
-  let found: { index: number; operator: string } | undefined = first;
   let cursor = 0;
   let dangling: string | undefined;
-  while (found !== undefined) {
+  operators.forEach((found, position) => {
+    const following = operators[position + 1];
     const operator = splitLeadingWord(token, cursor, found, split.words);
     const targetStart = found.index + found.operator.length;
-    const following = nextRedirection(token, targetStart);
     const end = following?.index ?? token.value.length;
     if (targetStart < end)
       pushRedirection(split, operator, sliceToken(token, targetStart, end));
     else if (following === undefined) dangling = operator;
     cursor = end;
-    found = following;
-  }
+  });
   return dangling;
 }
 
@@ -82,12 +80,12 @@ function splitWord(
   // The marker is evidence metadata: it is neither a command word nor a
   // redirection, so it leaves the words and the redirection list alone.
   if (HEREDOC_MARKER.test(token.value)) return undefined;
-  const found = nextRedirection(token, 0);
-  if (found === undefined) {
+  const operators = redirectionsIn(token);
+  if (operators.length === 0) {
     split.words.push(token);
     return undefined;
   }
-  return splitWordRedirections(token, found, split);
+  return splitWordRedirections(token, operators, split);
 }
 
 /**
@@ -105,7 +103,7 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
     const dangling = splitWord(elementAt(tokens, tokenIndex, "tokens"), split);
     if (dangling === undefined) continue;
     const candidate = tokens[tokenIndex + 1];
-    if (candidate === undefined || nextRedirection(candidate, 0)?.index === 0)
+    if (candidate === undefined || redirectionsIn(candidate)[0]?.index === 0)
       continue;
     pushRedirection(split, dangling, candidate);
     tokenIndex += 1;

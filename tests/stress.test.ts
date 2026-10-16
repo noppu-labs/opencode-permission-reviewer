@@ -204,6 +204,11 @@ describe("stress and adversarial robustness", () => {
       "escaped single quotes after an arithmetic opener",
       `$(( '${"\\'".repeat(60_000)}`,
     ],
+    ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
+    [
+      "backtick-wrapped dollar-quoted escapes at the input cap",
+      "`$'\\'`".repeat(21_845),
+    ],
   ])(
     "reads %s in linear time",
     (_, command) => {
