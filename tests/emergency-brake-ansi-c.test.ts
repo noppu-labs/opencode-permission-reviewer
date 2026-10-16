@@ -83,7 +83,7 @@ describe("ANSI-C strings end where the shell ends them", () => {
 
 describe("command-string wrappers of the previous-only body", () => {
   test.each(commandStringWrappers(previousOnly))(
-    "blocks a command after a `$'…'` string that ends at its first `'` (%s)",
+    "blocks a command-string wrapper of a `$'…'` string that ends at its first `'` (%s)",
     (_, command) => {
       expect(brake(command)).toBe(blocked);
     },
