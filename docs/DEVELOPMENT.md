@@ -7,7 +7,7 @@ in the docs. Setup, the `check` scripts, and pull request rules are in
 
 ## Build output (`dist/`)
 
-`bun run build` runs tsup to bundle the server, the CLI, and the RPC protocol into
+`bun run build` runs tsdown to bundle the server, the CLI, and the RPC protocol into
 `dist/index.js`, `dist/explain.js`, and `dist/rpc.js`, then runs `bun scripts/copy-tui.ts` to copy
 the slim TUI source graph into `dist/tui/` as raw TSX. The package exports map onto those files:
 

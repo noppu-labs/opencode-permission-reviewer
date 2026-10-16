@@ -96,12 +96,11 @@
     "@types/semver": "7.8.0",
     "fta-cli": "3.1.0",
     "knip": "6.41.0",
-    "tsup": "^8.0.0",
-    "typescript": "6.0.3"
+    "tsdown": "0.23.1",
+    "typescript": "7.0.2"
   },
   "overrides": {
-    "@babel/core": "7.29.7",
-    "esbuild": "^0.28.2"
+    "@babel/core": "7.29.7"
   },
   "scripts": {
     "lint": "biome check --error-on-warnings .",
@@ -111,7 +110,7 @@
     "fta": "fta .",
     "knip": "knip",
     "audit": "bun audit --ignore GHSA-ch52-4w7c-c8xp --ignore GHSA-p6vx-979v-rg4c --ignore GHSA-jp82-f5mq-hwhp",
-    "build": "tsup && bun scripts/copy-tui.ts",
+    "build": "rm -rf dist && tsdown && bun scripts/copy-tui.ts",
     "test": "bun test",
     "test:stress": "bun test tests/stress.test.ts --timeout 30000",
     "test:package": "bun test tests/package-smoke.test.ts --timeout 120000",
