@@ -116,7 +116,7 @@ function analyzeSegments(
 ): AnalyzedSegment[] | undefined {
   const lex = lexSegmentsBounded(command, reading);
   if (lex.truncated) return undefined;
-  const budget = newAnalysisBudget();
+  const budget = newAnalysisBudget(reading);
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
     const analysis = analyzeSegment(segment, budget);

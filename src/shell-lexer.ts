@@ -56,12 +56,18 @@ const MAX_REANALYSIS_CHARS = 262_144;
 export interface AnalysisBudget {
   remainingCommands: number;
   remainingReanalysisChars: number;
+  /** Heredoc reading for every command string and substitution this budget
+   *  covers. Absent means the default reading. */
+  reading?: HeredocReading;
 }
 
-export function newAnalysisBudget(): AnalysisBudget {
+export function newAnalysisBudget(
+  reading: HeredocReading = "default",
+): AnalysisBudget {
   return {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
+    reading,
   };
 }
 
