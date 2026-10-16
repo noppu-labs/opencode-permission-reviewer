@@ -83,6 +83,12 @@ export function appendValue(
   lex.value += text;
 }
 
+/** Whether the last character of `lex.value` is quoted. That character lies
+ *  in the last span, since `value` is the spans' text in order. */
+export function lastCharIsQuoted(lex: LexState): boolean {
+  return lex.spans.at(-1)?.quoted === true;
+}
+
 export function flushToken(lex: LexState): void {
   if (!lex.hasToken) return;
   lex.tokens.push({ raw: lex.raw, value: lex.value, spans: lex.spans });

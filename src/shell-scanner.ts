@@ -19,6 +19,7 @@ import {
   flushToken,
   type LexBudget,
   type LexState,
+  lastCharIsQuoted,
   MAX_SUBSTITUTION_CHARS,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
@@ -29,7 +30,7 @@ import {
   opensQuote,
 } from "./shell-quote-scan.ts";
 import { substitutionAt } from "./shell-substitution.ts";
-import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
+import type { ShellSegment } from "./shell-token.ts";
 
 const SEPARATORS = new Set([";", "|", "&", "\n", "(", ")"]);
 const WHITESPACE = new Set([" ", "\t"]);
@@ -52,13 +53,7 @@ function gluesToRedirection(lex: LexState, c: string): boolean {
   // `&` continues an output or input duplication operator (`>&`, `<&`);
   // `|` continues only an output redirection (`>|`).
   if (last === "" || (c === "|" && last !== ">")) return false;
-  return (
-    (last === ">" || last === "<") &&
-    !tokenCharIsQuoted(
-      { raw: lex.raw, value: lex.value, spans: lex.spans },
-      lex.value.length - 1,
-    )
-  );
+  return (last === ">" || last === "<") && !lastCharIsQuoted(lex);
 }
 
 function lexSeparator(lex: LexState, c: string): void {

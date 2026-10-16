@@ -2,7 +2,12 @@
 
 import { elementAt } from "./element-at.ts";
 import { redirectionsIn } from "./shell-redirection-operators.ts";
-import { hasQuotedChar, type ShellToken, sliceToken } from "./shell-token.ts";
+import {
+  hasQuotedChar,
+  indexSpans,
+  type ShellToken,
+  sliceIndexed,
+} from "./shell-token.ts";
 
 export interface ShellRedirection {
   operator: string;
@@ -40,11 +45,12 @@ function splitLeadingWord(
   cursor: number,
   found: { index: number; operator: string },
   words: ShellToken[],
+  slice: (start: number, end: number) => ShellToken,
 ): string {
   const prefix = token.value.slice(cursor, found.index);
   if (cursor === 0 && /^[0-9]+$/.test(prefix))
     return `${prefix}${found.operator}`;
-  if (found.index > cursor) words.push(sliceToken(token, cursor, found.index));
+  if (found.index > cursor) words.push(slice(cursor, found.index));
   return found.operator;
 }
 
@@ -56,15 +62,18 @@ function splitWordRedirections(
   operators: { index: number; operator: string }[],
   split: RedirectionSplit,
 ): string | undefined {
+  const spans = indexSpans(token);
+  const slice = (start: number, end: number): ShellToken =>
+    sliceIndexed(token, spans, start, end);
   let cursor = 0;
   let dangling: string | undefined;
   operators.forEach((found, position) => {
     const following = operators[position + 1];
-    const operator = splitLeadingWord(token, cursor, found, split.words);
+    const operator = splitLeadingWord(token, cursor, found, split.words, slice);
     const targetStart = found.index + found.operator.length;
     const end = following?.index ?? token.value.length;
     if (targetStart < end)
-      pushRedirection(split, operator, sliceToken(token, targetStart, end));
+      pushRedirection(split, operator, slice(targetStart, end));
     else if (following === undefined) dangling = operator;
     cursor = end;
   });

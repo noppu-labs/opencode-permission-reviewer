@@ -4,6 +4,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
+import { analyzeBashCommand } from "../src/context/command-evidence.ts";
 import { parseDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
@@ -19,6 +20,13 @@ import { ReviewUiState } from "../src/ui-state.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
+
+// Commands whose tokens are dense with quoted redirections, at the input cap.
+const quotedRedirectionShapes: [string, string][] = [
+  ["quoted redirections", "'a'>&".repeat(26_214)],
+  ["quoted word redirections", "a'b'>&".repeat(21_845)],
+  ["dollar-quoted redirections", "$'\\'>&".repeat(21_845)],
+];
 
 // /tmp/opencode is one of the plugin's approved enrichment roots. Ensure it
 // exists on a fresh CI runner or a clean clone before mkdtemp uses it.
@@ -209,11 +217,27 @@ describe("stress and adversarial robustness", () => {
       "backtick-wrapped dollar-quoted escapes at the input cap",
       "`$'\\'`".repeat(21_845),
     ],
+    ...quotedRedirectionShapes,
   ])(
     "reads %s in linear time",
     (_, command) => {
       const started = Date.now();
       emergencyBrakeReason(request({ metadata: { command } }));
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  // The analyzer already finishes the third shape under the bound, so only
+  // the first two are regression rows for it.
+  test.each(quotedRedirectionShapes.slice(0, 2))(
+    "analyzes %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      analyzeBashCommand(request({ metadata: { command } }), {
+        directory: "/tmp",
+        worktree: "/tmp",
+      });
       expect(Date.now() - started).toBeLessThan(1_000);
     },
     60_000,
