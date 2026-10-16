@@ -136,9 +136,9 @@ export function openFrame(scan: ScanContext): boolean {
   return true;
 }
 
-/** Open a `$((` span. Bash decides it once, from the span's matched close:
- *  arithmetic when its content starts with `(` and ends with `)`, otherwise a
- *  command substitution that ends at the matched `)`. */
+/** Open a `$((` span. Bash decides it once: arithmetic when the `)` matching
+ *  the second `(` is followed by `)`, otherwise a command substitution that
+ *  ends at the `)` matching the first `(`. */
 function openDollarParen(scan: ScanContext): boolean {
   const { command, i } = scan;
   scan.parens ??= parenCloses(command);

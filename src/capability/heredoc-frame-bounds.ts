@@ -82,22 +82,18 @@ function skipEndAt(
   return i;
 }
 
-/** Whether the `$((` opened at `open` is arithmetic: its matched span's
- *  content starts with `(` and ends with `)`. Otherwise bash reads the span as
- *  a command substitution that ends at the matched `)`. `closes` is the
- *  `parenCloses` table of `command`. */
+/** Whether the `$((` opened at `open` is arithmetic. Bash reads it as
+ *  arithmetic when the `)` matching the second `(` is immediately followed by
+ *  `)`; otherwise the span is a command substitution that closes at the `)`
+ *  matching the first `(`. `closes` is the `parenCloses` table of `command`. */
 export function isArithmeticSpan(
   command: string,
   open: number,
   closes: Int32Array,
 ): boolean {
-  const close = closes[open + 2] ?? -1;
-  if (close === -1) return true;
-  return (
-    close > open + 2 &&
-    command.charAt(open + 2) === "(" &&
-    command.charAt(close - 1) === ")"
-  );
+  const match = closes[open + 3] ?? -1;
+  if (match === -1) return true;
+  return command.charAt(match + 1) === ")";
 }
 
 /** The index of the backtick that closes the backtick substitution opened

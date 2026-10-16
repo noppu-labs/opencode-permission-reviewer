@@ -43,8 +43,8 @@ import {
  *
  * A body opened inside backticks or a `$((` substitution ends at that
  * construct's close, as in bash: the scan resumes there and walks the lines
- * after it. A `$((` span is arithmetic only when its content starts with `(`
- * and ends with `)`, decided once from its matched close.
+ * after it. A `$((` span is arithmetic only when the `)` matching its second
+ * `(` is followed by `)`; otherwise it is a command substitution.
  *
  * NOTE: the capability analyzer, the emergency brake, the substitution
  * re-lexer and the display all walk the sanitized command this extractor

@@ -102,7 +102,7 @@ export const PINNED_BLOBS = {
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
-    "ca5a3f27e43d0e6e401d3cb0d81447aa9adc946f",
+    "db6bd48166f1852d8c1e4b3514a1c908e04cb122",
   "src/capability/heredoc-frame-starts.ts":
     "3d6d5f3ff14db84ca4a5cdab9f65ed44f978c552",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
@@ -150,13 +150,13 @@ export const PINNED_BLOBS = {
   "src/capability/ansi-c-quoting.ts":
     "d2f0eabf08316462275c01b7edd4ebac2ef98308",
   "src/capability/heredoc-scan-context.ts":
-    "618e550ed7e846fe8a726ecd5d9539aa40b7c6f9",
+    "3ee9cd61c90b091191467a6caeb792aa1c0b4c66",
   "src/capability/heredoc-bodies.ts":
     "32fd5ac8fe8803e8f45997e10da9de42937ee770",
   "src/capability/heredoc-body-records.ts":
     "1805781f5923a3d4787787a366cb245008cd6cee",
   "src/capability/heredoc-frame-bounds.ts":
-    "8173a096cb5eaa5614c993049c6932d42ec852d1",
+    "1384c73f3392ed517e9032bccbe948847c53f777",
   "src/capability/heredoc-legacy.ts":
     "c6c4c5f4697d1da06ac9f2f6688e3ca43a8e9d51",
   "src/capability/heredoc-body-text.ts":

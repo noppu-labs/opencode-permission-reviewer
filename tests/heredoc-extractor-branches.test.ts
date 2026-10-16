@@ -456,13 +456,11 @@ describe("extractHeredocs bodies bounded by their construct", () => {
     });
   });
 
-  test("an arithmetic `$((` span with a parenthesized term has no heredoc", () => {
-    const command = "echo $((1)+(1<<2\n))\nls\n2";
-    expect(extraction(command)).toEqual({
-      sanitized: command,
-      heredocs: [],
-      dynamic: false,
-    });
+  // bash cannot parse the substitution (the `+` ends it early), so nothing in
+  // it runs; the lines after its close do run.
+  test("the lines after a substitution bash cannot parse stay in the command", () => {
+    const { sanitized } = extraction("echo $((1)+(1<<2\n))\nls\n2");
+    expect(sanitized.endsWith("\nls\n2")).toBe(true);
   });
 
   test("a lone `)` in `((` reads a body as the shell does", () => {
@@ -524,5 +522,23 @@ describe("extractHeredocs output targets after a bounded body", () => {
       "x=`cat <<EOF\nfoo > /tmp/x`>/tmp/y <<B\nb\nB\nls",
     );
     expect(heredocs[1]?.outputTarget).toBe("/tmp/y");
+  });
+});
+
+// A `$((` span whose matching `)` is followed by `)` is arithmetic: `<<` is a
+// shift there. Otherwise the span is a command substitution.
+describe("extractHeredocs arithmetic reading", () => {
+  test("a parenthesized term inside arithmetic is a shift, and the next line runs", () => {
+    const command = "echo $(( (1)+(1<<2) ))\nls";
+    expect(extraction(command)).toEqual({
+      sanitized: command,
+      heredocs: [],
+      dynamic: false,
+    });
+  });
+
+  test("the next line stays in the command after an unparsable substitution on one line", () => {
+    const { sanitized } = extraction("echo $((1)+(1<<2))\nls");
+    expect(sanitized.endsWith("\nls")).toBe(true);
   });
 });
