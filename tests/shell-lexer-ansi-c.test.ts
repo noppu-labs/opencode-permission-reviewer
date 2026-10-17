@@ -396,4 +396,20 @@ describe("dollar-quoted word values", () => {
       expect(performance.now() - start).toBeLessThan(1000);
     },
   );
+  test.each([
+    ["a''", "bash"],
+    ['a""', "bash"],
+    ["a$''", "bash"],
+    ["ab''", "bash"],
+    [">''|", "undecoded"],
+    [">''|", "previous"],
+  ] as const)(
+    "lexes many %s words under the %s reading in linear time",
+    (unit, quoting) => {
+      const command = unit.repeat(Math.floor(1_048_576 / unit.length));
+      const start = performance.now();
+      scan(command, quoting);
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
 });

@@ -86,6 +86,22 @@ describe("an empty quote after a long word", () => {
     expect(normalize(command).redirections).toEqual([]);
     expect(performance.now() - start).toBeLessThan(1000);
   });
+  test.each([
+    ["a''", "bash"],
+    ['a""', "bash"],
+    ["a$''", "bash"],
+    ["ab''", "bash"],
+    [">''|", "undecoded"],
+    [">''|", "previous"],
+  ] as const)(
+    "many %s words under the %s reading are read in linear time",
+    (unit, quoting) => {
+      const command = unit.repeat(Math.floor(1_048_576 / unit.length));
+      const start = performance.now();
+      normalize(command, quoting);
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
 });
 
 // The previous readings keep the earlier tokens, so they read these as before.

@@ -60,6 +60,9 @@ export interface LexState {
   arithmeticEnd: number;
   tokens: ShellToken[];
   value: string;
+  /** The last character `appendValue` added; the last span's last character
+   *  whenever that span has text. */
+  lastChar?: string;
   raw: string;
   hasToken: boolean;
   spans: ShellSpan[];
@@ -88,6 +91,7 @@ export function appendValue(
   if (last !== undefined && last.quoted === quoted) last.text += text;
   else lex.spans.push({ text, quoted });
   lex.value += text;
+  lex.lastChar = text.charAt(text.length - 1);
 }
 
 /** Whether the last character of `lex.value` is quoted. That character lies
@@ -114,11 +118,13 @@ export function endQuote(lex: LexState): void {
     lex.spans.push({ text: "", quoted: true });
 }
 
-/** The last character of `lex.value`, read from the last span so the growing
- *  value string is never flattened; "" when the value is empty. */
+/** The last character of `lex.value`, kept by `appendValue` so the growing
+ *  value and span strings are never flattened; "" when the value is empty or
+ *  ends in an empty quoted span. */
 export function lastValueChar(lex: LexState): string {
   const last = lex.spans.at(-1);
-  return last === undefined ? "" : last.text.charAt(last.text.length - 1);
+  if (last === undefined || last.text.length === 0) return "";
+  return lex.lastChar ?? "";
 }
 
 /** Ends the open `$'…'` string: its text, decoded the way the shell does,
