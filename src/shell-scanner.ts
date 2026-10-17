@@ -184,6 +184,7 @@ export function lexSegments(
     spans: [],
     inSingle: false,
     ansiC: false,
+    ansiCText: "",
     dollarRun: 0,
     inDouble: false,
     lastSeparator: undefined,

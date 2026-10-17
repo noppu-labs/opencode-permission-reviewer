@@ -97,6 +97,15 @@ function splitWord(
   return splitWordRedirections(token, operators, split);
 }
 
+/** Whether the word's text ends in an empty quote (`<<<''`, `>$""`): the
+ *  lexer leaves an empty quoted span there under bash's reading. */
+function endsInEmptyQuote(token: ShellToken): boolean {
+  const last = token.spans?.at(-1);
+  return last?.quoted === true && last.text === "";
+}
+
+const EMPTY_TARGET: ShellToken = { raw: "", value: "", spans: [] };
+
 /**
  * Split shell redirections away from command words. Shell accepts them before,
  * after, or glued to the executable and its arguments (`2>log cmd`,
@@ -109,8 +118,13 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
 } {
   const split: RedirectionSplit = { words: [], redirections: [] };
   for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-    const dangling = splitWord(elementAt(tokens, tokenIndex, "tokens"), split);
+    const token = elementAt(tokens, tokenIndex, "tokens");
+    const dangling = splitWord(token, split);
     if (dangling === undefined) continue;
+    if (endsInEmptyQuote(token)) {
+      pushRedirection(split, dangling, EMPTY_TARGET);
+      continue;
+    }
     const candidate = tokens[tokenIndex + 1];
     if (candidate === undefined || redirectionsIn(candidate)[0]?.index === 0)
       continue;

@@ -77,7 +77,12 @@ function segmentHasDynamic(tokens: ShellToken[]): boolean {
   );
 }
 
+/** A word made only of `'…'` and `$'…'` parts. `$'…'` text is literal too:
+ *  its value is the decoded text, and a `$`, `*` or `?` that an escape
+ *  produces is quoted data, not an expansion or a glob. */
+const ALL_LITERAL = /^(?:'[^']*'|\$'(?:[^'\\]|\\[\s\S])*')+$/;
+
 function isAllLiteral(raw: string): boolean {
-  // Single-quoted regions are literal; anything else with $ or glob chars is dynamic.
-  return /^'[^']*'$/.test(raw);
+  // Anything else with $ or glob chars is dynamic.
+  return ALL_LITERAL.test(raw);
 }
