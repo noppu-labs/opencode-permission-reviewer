@@ -111,3 +111,53 @@ describe("each quote reading on its own", () => {
     },
   );
 });
+
+/** Every wrapper of a body, as command strings: the plain body, its
+ *  command-string wrappers, and `env -S`. */
+const wrappedForms = (body: string): string[] =>
+  [...wrappers(body), ...commandStringWrappers(body).slice(0, 1)].map(
+    ([, command]) => command,
+  );
+
+const decodedWordBodies = [
+  "$'\\x72m' -rf /",
+  "$'\\162m' -rf /",
+  "$'\\u0072m' -rf /",
+  '$"rm" -rf /',
+  "r$'m' -rf /",
+  "rm $'-rf' /",
+  "rm -rf $'/'",
+  "rm -rf $'/\\0tmp'",
+];
+
+const decodedBlockedForms = decodedWordBodies.flatMap(wrappedForms);
+
+const decodedAllowed = [
+  "printf $'a\\tb\\n'",
+  "read -d $'\\0' x",
+  "git commit -m $'x\\ny'",
+  'echo $"Hello"',
+  "echo $'it\\'s'",
+  "echo $'\\x3b rm -rf /'",
+  "echo $'\\x7c' x",
+  "echo $'\\x2a'",
+  "echo $'\\x24HOME'",
+];
+
+describe("decoded command words are judged like their plain spelling", () => {
+  test.each(decodedBlockedForms)("blocks %s", (command) => {
+    expect(brake(command)).toBe(blocked);
+  });
+
+  test.each(decodedAllowed)("allows %s", (command) => {
+    expect(brake(command)).toBeUndefined();
+  });
+});
+
+describe("the undecoded reading is its own pass", () => {
+  test("the bash reading blocks a decoded command word that the undecoded reading allows", () => {
+    const command = "$'\\x72m' -rf /";
+    expect(brakeReadingsReason(command, "bash")).toBe(blocked);
+    expect(brakeReadingsReason(command, "undecoded")).toBeUndefined();
+  });
+});
