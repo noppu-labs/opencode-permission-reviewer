@@ -115,9 +115,10 @@ describe("each quote reading on its own", () => {
 /** Every wrapper of a body, as command strings: the plain body, its
  *  command-string wrappers, and `env -S`. */
 const wrappedForms = (body: string): string[] =>
-  [...wrappers(body), ...commandStringWrappers(body).slice(0, 1)].map(
-    ([, command]) => command,
-  );
+  [
+    ...wrappers(body),
+    ...commandStringWrappers(body).filter(([label]) => label === "env -S"),
+  ].map(([, command]) => command);
 
 const decodedWordBodies = [
   "$'\\x72m' -rf /",
@@ -154,10 +155,34 @@ describe("decoded command words are judged like their plain spelling", () => {
   });
 });
 
-describe("the undecoded reading is its own pass", () => {
+describe("the readings split on a decoded command word", () => {
   test("the bash reading blocks a decoded command word that the undecoded reading allows", () => {
     const command = "$'\\x72m' -rf /";
     expect(brakeReadingsReason(command, "bash")).toBe(blocked);
     expect(brakeReadingsReason(command, "undecoded")).toBeUndefined();
+  });
+});
+
+/** Blocked only under the undecoded reading: the bash reading decodes the
+ *  `--` and ends options, and the previous reading ends `$'…'` at its first
+ *  `'`, so `rm` falls inside a quote there. */
+const undecodedOnlyBodies = [
+  "echo $'\\'' ; rm $'--' -rf /",
+  "echo $'\\'' ; rm $'--' -r -f /",
+];
+
+describe("a word only the undecoded reading blocks", () => {
+  test.each(undecodedOnlyBodies.flatMap(wrappedForms))(
+    "blocks %s",
+    (command) => {
+      expect(brake(command)).toBe(blocked);
+    },
+  );
+
+  test("the bash and previous readings allow it, and the undecoded reading blocks it", () => {
+    const command = "echo $'\\'' ; rm $'--' -rf /";
+    expect(brakeReadingsReason(command, "bash")).toBeUndefined();
+    expect(brakeReadingsReason(command, "previous")).toBeUndefined();
+    expect(brakeReadingsReason(command, "undecoded")).toBe(blocked);
   });
 });
