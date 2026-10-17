@@ -74,10 +74,6 @@ export interface LexState {
    *  other unquoted character, and any quote open, resets it to 0. */
   dollarRun: number;
   inDouble: boolean;
-  /** A quote, empty or not, closed after the last character appended to the
-   *  value. Under bash's reading it ends a redirection operator that
-   *  character began, as in `>''|next`. */
-  quoteClosed?: boolean;
   lastSeparator: string | undefined;
   outOfTokens: boolean;
 }
@@ -88,7 +84,6 @@ export function appendValue(
   quoted: boolean,
 ): void {
   if (text.length === 0) return;
-  lex.quoteClosed = false;
   const last = lex.spans.at(-1);
   if (last !== undefined && last.quoted === quoted) last.text += text;
   else lex.spans.push({ text, quoted });
@@ -101,20 +96,27 @@ export function lastCharIsQuoted(lex: LexState): boolean {
   return lex.spans.at(-1)?.quoted === true;
 }
 
-/** Notes that a quote just closed. The `undecoded` and `previous` readings
- *  keep the previous release's tokens, which let an operator continue across
- *  an empty quote. */
+/** Characters a redirection operator can end in. */
+const OPERATOR_END = /[<>&|-]$/;
+
+/** Notes that a quote just closed. Under bash's reading an empty quote right
+ *  after unquoted text that ends like a redirection operator leaves an empty
+ *  quoted span, so the word still shows that its text ended in a quote: the
+ *  operator has an empty target and takes no more of the command. The
+ *  `undecoded` and `previous` readings keep the previous release's spans,
+ *  which leave it out. */
 export function endQuote(lex: LexState): void {
-  lex.quoteClosed = (lex.budget.quoting ?? "bash") === "bash";
+  if ((lex.budget.quoting ?? "bash") !== "bash") return;
+  const last = lex.spans.at(-1);
+  if (last?.quoted === false && OPERATOR_END.test(last.text))
+    lex.spans.push({ text: "", quoted: true });
 }
 
-/** The last character of `lex.value` that a following character can continue
- *  as an operator, read from the last span so the growing value string is
- *  never flattened; "" when the value is empty or a quote closed after it. */
+/** The last character of `lex.value`, read from the last span so the growing
+ *  value string is never flattened; "" when the value is empty. */
 export function lastValueChar(lex: LexState): string {
   const last = lex.spans.at(-1);
-  if (last === undefined || lex.quoteClosed === true) return "";
-  return last.text.charAt(last.text.length - 1);
+  return last === undefined ? "" : last.text.charAt(last.text.length - 1);
 }
 
 /** Ends the open `$'…'` string: its text, decoded the way the shell does,

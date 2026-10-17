@@ -95,3 +95,24 @@ describe("a command after an empty redirection target is still read", () => {
     expect(result.capability?.actionClass.value).toBe("destruction");
   });
 });
+
+// A here-string with an empty word is valid, and the next word is the command
+// (or an argument of the command before it).
+const AFTER_EMPTY_HERE_STRING: Record<string, CapabilityActionClass> = {
+  "<<<$'' rm -rf /": "destruction",
+  '<<<$"" rm -rf /': "destruction",
+  "<<<$'\\0' rm -rf /": "destruction",
+  "<<<'' rm -rf /": "destruction",
+  '<<<"" rm -rf /': "destruction",
+  "echo hi <<<$'' rm -rf /": "read-only",
+  "echo hi <<<'' rm -rf /": "read-only",
+};
+
+describe("the word after an empty here-string word keeps its role", () => {
+  test.each(Object.entries(AFTER_EMPTY_HERE_STRING))(
+    "%s",
+    (command, action) => {
+      expect(analyze(command).capability?.actionClass.value).toBe(action);
+    },
+  );
+});
