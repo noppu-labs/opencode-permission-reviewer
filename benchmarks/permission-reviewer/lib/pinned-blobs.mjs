@@ -93,8 +93,8 @@ export const PINNED_BLOBS = {
   "src/shell-redirections.ts": "0ca034d17963a6ff5e87bfa928130d3187230589",
   "src/shell-redirection-operators.ts":
     "cd6278e27b9a39682c09141a0b101fc31fd8b915",
-  "src/shell-lex-state.ts": "b88c9de735d7ae482cc2f9110656acd1d4ba8b2b",
-  "src/shell-quote-scan.ts": "1a567cf780bcb9c3800d71182af367e2abe85e21",
+  "src/shell-lex-state.ts": "817f6518407429e187d80b329290413e9053588c",
+  "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "d7082d1704875f2be7a251971ca084c4affd0264",
   "src/shell-substitution.ts": "cc113e1bca9c932fe519aae82e2558701c85a4c3",
   "src/shell-substitution-end.ts": "f4fb757d4a16fda50788d31492c8c33fc7213f5f",

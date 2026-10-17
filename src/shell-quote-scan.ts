@@ -1,6 +1,11 @@
 // Character handlers that open single and double quotes and scan their inside.
 
-import { appendValue, closeAnsiC, type LexState } from "./shell-lex-state.ts";
+import {
+  appendValue,
+  closeAnsiC,
+  endQuote,
+  type LexState,
+} from "./shell-lex-state.ts";
 
 /** Adds text of the open single quote to the value; an ANSI-C string keeps
  *  its text as written until it closes, unless the scan reads it undecoded. */
@@ -21,6 +26,7 @@ export function lexSingleQuoted(lex: LexState, c: string): void {
   if (c === "'") {
     lex.inSingle = false;
     if (lex.ansiC) closeAnsiC(lex);
+    endQuote(lex);
   } else appendQuoted(lex, c);
   lex.index += 1;
 }
@@ -88,6 +94,7 @@ export function lexDoubleQuoted(lex: LexState, c: string): void {
   lex.raw += c;
   if (c === '"') {
     lex.inDouble = false;
+    endQuote(lex);
     lex.index += 1;
   } else if (c === "\\" && lex.index + 1 < lex.command.length) {
     lexDoubleQuotedEscape(lex);

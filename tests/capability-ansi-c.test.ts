@@ -76,3 +76,22 @@ describe("dollar-quoted words and dynamic constructs", () => {
     expect(analyze("echo $'\\x3b rm -rf /'").parsed?.segments).toHaveLength(1);
   });
 });
+
+// A redirection whose target is an empty word ends at the pipe or the
+// background operator, so the command after it is still read.
+describe("a command after an empty redirection target is still read", () => {
+  test.each([
+    "echo hi >$''|rm -rf /",
+    "echo hi <$''&rm -rf /",
+    'echo hi >$""|rm -rf /',
+    "echo hi >$'\\0'|rm -rf /",
+    "echo hi >''|rm -rf /",
+    "echo hi <''&rm -rf /",
+    'echo hi >""|rm -rf /',
+    "echo hi >''|&rm -rf /",
+  ])("%s", (command) => {
+    const result = analyze(command);
+    expect(result.parsed?.segments).toHaveLength(2);
+    expect(result.capability?.actionClass.value).toBe("destruction");
+  });
+});
