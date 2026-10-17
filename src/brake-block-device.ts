@@ -1,5 +1,5 @@
 import type { Redirection } from "./capability/capability-types.ts";
-import { type ShellToken, tokenCharIsQuoted } from "./shell-token.ts";
+import { quotedChars, type ShellToken } from "./shell-token.ts";
 
 /**
  * Whitelist of real block-device path prefixes so that pseudo-devices
@@ -69,11 +69,11 @@ function redirectTarget(
 function unquotedRedirectOperators(token: ShellToken): RedirectOperator[] {
   const out: RedirectOperator[] = [];
   const value = token.value;
+  const quoted = quotedChars(token);
   for (let index = 0; index < value.length; index += 1) {
     if (value[index] !== ">") continue;
-    if (tokenCharIsQuoted(token, index)) continue;
-    const doubled =
-      value[index + 1] === ">" && !tokenCharIsQuoted(token, index + 1);
+    if (quoted[index]) continue;
+    const doubled = value[index + 1] === ">" && !quoted[index + 1];
     out.push({ start: index, length: doubled ? 2 : 1 });
     index += doubled ? 1 : 0;
   }

@@ -13,11 +13,17 @@ interface TokenBudget {
  *  (`legacy`), which the emergency brake also checks. */
 export type HeredocReading = "default" | "legacy";
 
+/** Which quote reading the scan applies: bash's (`bash`, the default), or the
+ *  previous release's, which ends a `$'…'` string at its first `'`. */
+export type ShellQuoting = "bash" | "previous";
+
 /** A budget that lexes command substitutions into segments of their own. */
 export interface SubstitutionBudget extends TokenBudget {
   substitutions: "lex";
   /** Heredoc reading for the substitution bodies this scan lexes. */
   reading?: HeredocReading;
+  /** Quote reading for this scan and the substitution bodies it lexes. */
+  quoting?: ShellQuoting;
   /** Command-substitution text the scan may still lex a second time, nested
    *  substitutions included. Past zero the scan stops as if out of tokens. */
   substitutionCharsRemaining: number;
@@ -26,7 +32,7 @@ export interface SubstitutionBudget extends TokenBudget {
 /** `skip` leaves command substitutions unlexed: no body segments and no
  *  substitution budget is charged. */
 export type LexBudget =
-  | (TokenBudget & { substitutions: "skip" })
+  | (TokenBudget & { substitutions: "skip"; quoting?: ShellQuoting })
   | SubstitutionBudget;
 
 /** Ceiling on the substitution text one scan re-lexes by default: nested
@@ -54,6 +60,12 @@ export interface LexState {
   hasToken: boolean;
   spans: ShellSpan[];
   inSingle: boolean;
+  /** The open single quote is an ANSI-C `$'…'` string, where `\` escapes
+   *  the next character. */
+  ansiC: boolean;
+  /** Unquoted, unescaped `$` characters ending at the current character. Any
+   *  other unquoted character, and any quote open, resets it to 0. */
+  dollarRun: number;
   inDouble: boolean;
   lastSeparator: string | undefined;
   outOfTokens: boolean;
@@ -69,6 +81,19 @@ export function appendValue(
   if (last !== undefined && last.quoted === quoted) last.text += text;
   else lex.spans.push({ text, quoted });
   lex.value += text;
+}
+
+/** Whether the last character of `lex.value` is quoted. That character lies
+ *  in the last span, since `value` is the spans' text in order. */
+export function lastCharIsQuoted(lex: LexState): boolean {
+  return lex.spans.at(-1)?.quoted === true;
+}
+
+/** The last character of `lex.value`, read from the last span so the growing
+ *  value string is never flattened; "" when the value is empty. */
+export function lastValueChar(lex: LexState): string {
+  const last = lex.spans.at(-1);
+  return last === undefined ? "" : last.text.charAt(last.text.length - 1);
 }
 
 export function flushToken(lex: LexState): void {

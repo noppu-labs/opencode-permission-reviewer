@@ -1,6 +1,6 @@
 /*
  * Minimal shell-aware tokenizer, NOT a full shell interpreter:
- *   - grouping of single/double quotes (so separators inside quotes do not
+ *   - grouping of quotes, `$'…'` included (so separators inside quotes do not
  *     split a token, and `printf "a; sudo rm -rf /"` stays one argument),
  *   - splitting on logical command separators (`;`, `|`, `&`, newlines),
  *   - stripping `#` comments when they begin a token.
@@ -19,6 +19,8 @@ import {
   flushToken,
   type LexBudget,
   type LexState,
+  lastCharIsQuoted,
+  lastValueChar,
   MAX_SUBSTITUTION_CHARS,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
@@ -26,9 +28,10 @@ import {
   lexDoubleQuoted,
   lexSingleQuoted,
   openQuote,
+  opensQuote,
 } from "./shell-quote-scan.ts";
 import { substitutionAt } from "./shell-substitution.ts";
-import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
+import type { ShellSegment } from "./shell-token.ts";
 
 const SEPARATORS = new Set([";", "|", "&", "\n", "(", ")"]);
 const WHITESPACE = new Set([" ", "\t"]);
@@ -47,17 +50,11 @@ function appendUnquoted(lex: LexState, c: string): void {
 function gluesToRedirection(lex: LexState, c: string): boolean {
   if (c === "&" && lex.command[lex.index + 1] === ">") return true;
   if (c !== "&" && c !== "|") return false;
-  const last = lex.value.charAt(lex.value.length - 1);
+  const last = lastValueChar(lex);
   // `&` continues an output or input duplication operator (`>&`, `<&`);
   // `|` continues only an output redirection (`>|`).
   if (last === "" || (c === "|" && last !== ">")) return false;
-  return (
-    (last === ">" || last === "<") &&
-    !tokenCharIsQuoted(
-      { raw: lex.raw, value: lex.value, spans: lex.spans },
-      lex.value.length - 1,
-    )
-  );
+  return (last === ">" || last === "<") && !lastCharIsQuoted(lex);
 }
 
 function lexSeparator(lex: LexState, c: string): void {
@@ -101,7 +98,7 @@ function lexEscape(lex: LexState): void {
 }
 
 function lexUnquoted(lex: LexState, c: string): void {
-  if (c === "'" || c === '"') {
+  if (opensQuote(lex, c)) {
     openQuote(lex, c);
     return;
   }
@@ -186,6 +183,8 @@ export function lexSegments(
     hasToken: false,
     spans: [],
     inSingle: false,
+    ansiC: false,
+    dollarRun: 0,
     inDouble: false,
     lastSeparator: undefined,
     outOfTokens: false,
