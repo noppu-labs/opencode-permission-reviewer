@@ -74,7 +74,7 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "51b07f1137833796f26e45dc2156adaff4433609",
+    "8a7dac86fbe3f7d4fef91a4806f02ae511ba2ce7",
   "src/capability/bash-analyzer.ts": "74fc89978ba4f023c9238d662933c4d2a987edea",
   "src/capability/bash-command-tables.ts":
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
@@ -93,9 +93,9 @@ export const PINNED_BLOBS = {
   "src/shell-redirections.ts": "0ca034d17963a6ff5e87bfa928130d3187230589",
   "src/shell-redirection-operators.ts":
     "cd6278e27b9a39682c09141a0b101fc31fd8b915",
-  "src/shell-lex-state.ts": "9ed9e35e6d8057db0e08d5645aaec85aa0dffbcf",
-  "src/shell-quote-scan.ts": "36e0200ea68a001866fe855e7b6ae6c43055552b",
-  "src/shell-scanner.ts": "9b81027bbdb1f11d9b914cd15dc02e0f8c809822",
+  "src/shell-lex-state.ts": "b88c9de735d7ae482cc2f9110656acd1d4ba8b2b",
+  "src/shell-quote-scan.ts": "1a567cf780bcb9c3800d71182af367e2abe85e21",
+  "src/shell-scanner.ts": "d7082d1704875f2be7a251971ca084c4affd0264",
   "src/shell-substitution.ts": "cc113e1bca9c932fe519aae82e2558701c85a4c3",
   "src/shell-substitution-end.ts": "f4fb757d4a16fda50788d31492c8c33fc7213f5f",
   "src/shell-substitution-heredoc.ts":
