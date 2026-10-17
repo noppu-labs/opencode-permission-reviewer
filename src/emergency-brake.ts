@@ -35,9 +35,10 @@ import type { PermissionRequest } from "./types.ts";
  * The checks in brake-readings.ts run under three quote readings. The bash
  * quote reading is the lexer's own and decodes `$'…'` and `$"…"` words to the
  * values the shell gives them. The undecoded reading keeps those words as
- * written, as the previous default did. The previous release's quote reading
- * ends a `$'…'` string at its first `'`. The brake runs each heredoc reading
- * under all three, so a command any earlier reading blocked stays blocked.
+ * written, as the default reading did before this change. The previous
+ * release's quote reading ends a `$'…'` string at its first `'`. The brake
+ * runs each heredoc reading under all three, so a command any earlier quote
+ * reading blocked stays blocked.
  */
 
 export function emergencyBrakeReason(

@@ -105,7 +105,7 @@ describe("an empty quote after a long word", () => {
 });
 
 // The previous readings keep the earlier tokens, so they read these as before.
-const UNDECODED_READING: Record<string, string> = {
+const EARLIER_READINGS: Record<string, string> = {
   "echo hi <<<'' echo RAN": "echo hi RAN | <<<:echo",
   "echo hi <<<$'' echo RAN": "echo hi echo RAN | <<<:$",
   "<<<$'' rm -rf /": "rm -rf / | <<<:$",
@@ -116,7 +116,7 @@ const UNDECODED_READING: Record<string, string> = {
 describe.each(["undecoded", "previous"] as const)(
   "the %s reading of an empty redirection word",
   (quoting) => {
-    test.each(Object.entries(UNDECODED_READING))(
+    test.each(Object.entries(EARLIER_READINGS))(
       "reads %s",
       (command, shape) => {
         const { words, redirections } = normalize(command, quoting);
