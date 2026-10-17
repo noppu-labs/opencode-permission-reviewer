@@ -79,6 +79,15 @@ describe("a redirection whose word is an empty quote", () => {
   });
 });
 
+describe("an empty quote after a long word", () => {
+  test.each(["''", '""', "$''"])("%s is read in linear time", (quote) => {
+    const command = `${"a".repeat(400000)}${quote.repeat(400000 / quote.length)}`;
+    const start = performance.now();
+    expect(normalize(command).redirections).toEqual([]);
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+});
+
 // The previous readings keep the earlier tokens, so they read these as before.
 const UNDECODED_READING: Record<string, string> = {
   "echo hi <<<'' echo RAN": "echo hi RAN | <<<:echo",

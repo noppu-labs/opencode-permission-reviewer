@@ -97,7 +97,7 @@ export function lastCharIsQuoted(lex: LexState): boolean {
 }
 
 /** Characters a redirection operator can end in. */
-const OPERATOR_END = /[<>&|-]$/;
+const OPERATOR_END = "<>&|-";
 
 /** Notes that a quote just closed. Under bash's reading an empty quote right
  *  after unquoted text that ends like a redirection operator leaves an empty
@@ -107,8 +107,10 @@ const OPERATOR_END = /[<>&|-]$/;
  *  which leave it out. */
 export function endQuote(lex: LexState): void {
   if ((lex.budget.quoting ?? "bash") !== "bash") return;
-  const last = lex.spans.at(-1);
-  if (last?.quoted === false && OPERATOR_END.test(last.text))
+  if (
+    lex.spans.at(-1)?.quoted === false &&
+    OPERATOR_END.includes(lastValueChar(lex))
+  )
     lex.spans.push({ text: "", quoted: true });
 }
 

@@ -387,4 +387,13 @@ describe("dollar-quoted word values", () => {
     scan(command);
     expect(performance.now() - start).toBeLessThan(1000);
   });
+  test.each(["''", '""', "$''"])(
+    "lexes a long word followed by many empty quotes %s in linear time",
+    (quote) => {
+      const command = "a".repeat(400000) + quote.repeat(400000 / quote.length);
+      const start = performance.now();
+      scan(command);
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
 });

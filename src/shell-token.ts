@@ -9,7 +9,10 @@ export interface ShellToken {
    *  in exactly one span, marked `quoted` when it came from inside quotes
    *  or from a backslash escape. An operator character (`>`, `*`, …) only
    *  acts as an operator while it sits in an UNQUOTED span: a glued, partly
-   *  quoted `>"/dev/sda"` still redirects, while `'>/dev/sda'` is data. */
+   *  quoted `>"/dev/sda"` still redirects, while `'>/dev/sda'` is data.
+   *  A zero-width quoted span can end a word: it marks an empty quote right
+   *  after text that ends like a redirection operator (`<<<''`), and holds no
+   *  character of `value`. */
   spans?: Array<{ text: string; quoted: boolean }>;
 }
 
