@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
@@ -204,125 +206,24 @@ function render(segments: ShellSegment[]): string {
 }
 
 // Each token's spans, the quoted ones wrapped in « », tokens joined by ¦ and
-// segments by ¶.
-const BASH_READING: Record<string, string> = {
-  "printf $'a\\nb'": "printf ¦ «a\nb»",
-  "echo $'it\\'s'": "echo ¦ «it's»",
-  'echo $"x"': "echo ¦ «x»",
-  "r$'m'": "r«m»",
-  "echo $'\\x3b' ls": "echo ¦ «;» ¦ ls",
-  '$$"b"': "$$«b»",
-  '"$"x""': "«$»x",
-  "echo $'\\x7c' x": "echo ¦ «|» ¦ x",
-  "echo $'\\x24HOME'": "echo ¦ «$HOME»",
-  "read -d $'\\0' x": "read ¦ -d ¦  ¦ x",
-  "echo $'a\\' ; ls": "echo ¦ «a' ; ls»",
-  "echo $'a\\x41": "echo ¦ «aA»",
-  'echo $$$"b"': "echo ¦ $$«b»",
-  "echo ''$\"x\"": "echo ¦ «x»",
-  'echo \\$"x"': "echo ¦ «$x»",
-  "echo $'a'>$'b'": "echo ¦ «a»>«b»",
-  "echo $'\\x3e'x": "echo ¦ «>»x",
-  'echo $"a\\"b"': 'echo ¦ «a"b»',
-  "echo $'a'$\"b\"$'\\n'": "echo ¦ «ab\n»",
-  "echo hi >$''|rm -rf /": "echo ¦ hi ¦ >«» ¶ rm ¦ -rf ¦ /",
-  "echo hi <$''&rm -rf /": "echo ¦ hi ¦ <«» ¶ rm ¦ -rf ¦ /",
-  'echo >$""|printf RAN': "echo ¦ >«» ¶ printf ¦ RAN",
-  "echo hi >$'\\0'|echo RAN": "echo ¦ hi ¦ >«» ¶ echo ¦ RAN",
-  "echo hi >''|echo RAN": "echo ¦ hi ¦ >«» ¶ echo ¦ RAN",
-  "echo hi <''&echo RAN": "echo ¦ hi ¦ <«» ¶ echo ¦ RAN",
-  'echo hi >""|echo RAN': "echo ¦ hi ¦ >«» ¶ echo ¦ RAN",
-  "echo hi >''|&echo RAN": "echo ¦ hi ¦ >«» ¶ echo ¦ RAN",
-  "echo hi >|x|echo RAN": "echo ¦ hi ¦ >|x ¶ echo ¦ RAN",
-  "echo hi >\\\n|x": "echo ¦ hi ¦ >|x",
-  "echo hi >&2|echo RAN": "echo ¦ hi ¦ >&2 ¶ echo ¦ RAN",
-  "echo hi 2>&1|echo RAN": "echo ¦ hi ¦ 2>&1 ¶ echo ¦ RAN",
-  "echo hi &>x|echo RAN": "echo ¦ hi ¦ &>x ¶ echo ¦ RAN",
-  "echo hi >'>'|echo RAN": "echo ¦ hi ¦ >«>» ¶ echo ¦ RAN",
-  "$''|echo RAN": " ¶ echo ¦ RAN",
-  "$'';echo RAN": " ¶ echo ¦ RAN",
-};
+// segments by ¶. The expected renders are in tests/fixtures/dollar-quoted-readings.json.
+interface DollarQuotedReadings {
+  bash: Record<string, string>;
+  undecoded: Record<string, string>;
+  previous: Record<string, string>;
+}
 
-const UNDECODED_READING: Record<string, string> = {
-  "printf $'a\\nb'": "printf ¦ $«a\\nb»",
-  "echo $'it\\'s'": "echo ¦ $«it\\'s»",
-  'echo $"x"': "echo ¦ $«x»",
-  "r$'m'": "r$«m»",
-  "echo $'\\x3b' ls": "echo ¦ $«\\x3b» ¦ ls",
-  '$$"b"': "$$«b»",
-  '"$"x""': "«$»x",
-  "echo $'\\x7c' x": "echo ¦ $«\\x7c» ¦ x",
-  "echo $'\\x24HOME'": "echo ¦ $«\\x24HOME»",
-  "read -d $'\\0' x": "read ¦ -d ¦ $«\\0» ¦ x",
-  "echo $'a\\' ; ls": "echo ¦ $«a\\' ; ls»",
-  "echo $'a\\x41": "echo ¦ $«a\\x41»",
-  'echo $$$"b"': "echo ¦ $$$«b»",
-  "echo ''$\"x\"": "echo ¦ $«x»",
-  'echo \\$"x"': "echo ¦ «$x»",
-  "echo $'a'>$'b'": "echo ¦ $«a»>$«b»",
-  "echo $'\\x3e'x": "echo ¦ $«\\x3e»x",
-  'echo $"a\\"b"': 'echo ¦ $«a"b»',
-  "echo $'a'$\"b\"$'\\n'": "echo ¦ $«a»$«b»$«\\n»",
-  "echo hi >$''|rm -rf /": "echo ¦ hi ¦ >$ ¶ rm ¦ -rf ¦ /",
-  "echo hi <$''&rm -rf /": "echo ¦ hi ¦ <$ ¶ rm ¦ -rf ¦ /",
-  'echo >$""|printf RAN': "echo ¦ >$ ¶ printf ¦ RAN",
-  "echo hi >$'\\0'|echo RAN": "echo ¦ hi ¦ >$«\\0» ¶ echo ¦ RAN",
-  "echo hi >''|echo RAN": "echo ¦ hi ¦ >|echo ¦ RAN",
-  "echo hi <''&echo RAN": "echo ¦ hi ¦ <&echo ¦ RAN",
-  'echo hi >""|echo RAN': "echo ¦ hi ¦ >|echo ¦ RAN",
-  "echo hi >''|&echo RAN": "echo ¦ hi ¦ >| ¶ echo ¦ RAN",
-  "echo hi >|x|echo RAN": "echo ¦ hi ¦ >|x ¶ echo ¦ RAN",
-  "echo hi >\\\n|x": "echo ¦ hi ¦ >|x",
-  "echo hi >&2|echo RAN": "echo ¦ hi ¦ >&2 ¶ echo ¦ RAN",
-  "echo hi 2>&1|echo RAN": "echo ¦ hi ¦ 2>&1 ¶ echo ¦ RAN",
-  "echo hi &>x|echo RAN": "echo ¦ hi ¦ &>x ¶ echo ¦ RAN",
-  "echo hi >'>'|echo RAN": "echo ¦ hi ¦ >«>» ¶ echo ¦ RAN",
-  "$''|echo RAN": "$ ¶ echo ¦ RAN",
-  "$'';echo RAN": "$ ¶ echo ¦ RAN",
-};
-
-const PREVIOUS_READING: Record<string, string> = {
-  "printf $'a\\nb'": "printf ¦ $«a\\nb»",
-  "echo $'it\\'s'": "echo ¦ $«it\\»s",
-  'echo $"x"': "echo ¦ $«x»",
-  "r$'m'": "r$«m»",
-  "echo $'\\x3b' ls": "echo ¦ $«\\x3b» ¦ ls",
-  '$$"b"': "$$«b»",
-  '"$"x""': "«$»x",
-  "echo $'\\x7c' x": "echo ¦ $«\\x7c» ¦ x",
-  "echo $'\\x24HOME'": "echo ¦ $«\\x24HOME»",
-  "read -d $'\\0' x": "read ¦ -d ¦ $«\\0» ¦ x",
-  "echo $'a\\' ; ls": "echo ¦ $«a\\» ¶ ls",
-  "echo $'a\\x41": "echo ¦ $«a\\x41»",
-  'echo $$$"b"': "echo ¦ $$$«b»",
-  "echo ''$\"x\"": "echo ¦ $«x»",
-  'echo \\$"x"': "echo ¦ «$x»",
-  "echo $'a'>$'b'": "echo ¦ $«a»>$«b»",
-  "echo $'\\x3e'x": "echo ¦ $«\\x3e»x",
-  'echo $"a\\"b"': 'echo ¦ $«a"b»',
-  "echo $'a'$\"b\"$'\\n'": "echo ¦ $«a»$«b»$«\\n»",
-  "echo hi >$''|rm -rf /": "echo ¦ hi ¦ >$ ¶ rm ¦ -rf ¦ /",
-  "echo hi <$''&rm -rf /": "echo ¦ hi ¦ <$ ¶ rm ¦ -rf ¦ /",
-  'echo >$""|printf RAN': "echo ¦ >$ ¶ printf ¦ RAN",
-  "echo hi >$'\\0'|echo RAN": "echo ¦ hi ¦ >$«\\0» ¶ echo ¦ RAN",
-  "echo hi >''|echo RAN": "echo ¦ hi ¦ >|echo ¦ RAN",
-  "echo hi <''&echo RAN": "echo ¦ hi ¦ <&echo ¦ RAN",
-  'echo hi >""|echo RAN': "echo ¦ hi ¦ >|echo ¦ RAN",
-  "echo hi >''|&echo RAN": "echo ¦ hi ¦ >| ¶ echo ¦ RAN",
-  "echo hi >|x|echo RAN": "echo ¦ hi ¦ >|x ¶ echo ¦ RAN",
-  "echo hi >\\\n|x": "echo ¦ hi ¦ >|x",
-  "echo hi >&2|echo RAN": "echo ¦ hi ¦ >&2 ¶ echo ¦ RAN",
-  "echo hi 2>&1|echo RAN": "echo ¦ hi ¦ 2>&1 ¶ echo ¦ RAN",
-  "echo hi &>x|echo RAN": "echo ¦ hi ¦ &>x ¶ echo ¦ RAN",
-  "echo hi >'>'|echo RAN": "echo ¦ hi ¦ >«>» ¶ echo ¦ RAN",
-  "$''|echo RAN": "$ ¶ echo ¦ RAN",
-  "$'';echo RAN": "$ ¶ echo ¦ RAN",
-};
+const READINGS = JSON.parse(
+  readFileSync(
+    join(import.meta.dir, "fixtures/dollar-quoted-readings.json"),
+    "utf8",
+  ),
+) as DollarQuotedReadings;
 
 describe.each([
-  ["bash", BASH_READING],
-  ["undecoded", UNDECODED_READING],
-  ["previous", PREVIOUS_READING],
+  ["bash", READINGS.bash],
+  ["undecoded", READINGS.undecoded],
+  ["previous", READINGS.previous],
 ] as const)("the %s reading of dollar-quoted words", (quoting, table) => {
   test.each(Object.entries(table))("lexes %s", (command, expected) => {
     expect(render(scan(command, quoting))).toBe(expected);
@@ -331,7 +232,7 @@ describe.each([
 
 describe("dollar-quoted word values", () => {
   test("reads the default reading as bash's", () => {
-    for (const command of Object.keys(BASH_READING))
+    for (const command of Object.keys(READINGS.bash))
       expect(render(scan(command))).toBe(render(scan(command, "bash")));
   });
 
