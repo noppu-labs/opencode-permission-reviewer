@@ -111,6 +111,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   heredoc written before the command no longer hides the command: its placeholder is not a command
   word.
 - Shell analysis: a `$'…'` string ends where the shell ends it, so a backslash-escaped quote inside it no longer ends it early and the text after it is read as the shell reads it.
+- Shell analysis: a `$'…'` word is read with its escapes decoded and a `$"…"` word as a
+  double-quoted string, the way the shell reads them, so a command or argument written that way
+  is judged like its plain spelling.
+- Shell analysis: an empty quoted redirection target such as `>''` or `<<<''` no longer takes
+  the following word or pipeline as part of the redirection.
 
 ## [3.0.0] - 2026-10-12
 
