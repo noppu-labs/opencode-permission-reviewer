@@ -7,7 +7,7 @@ export type Prefix = "time" | "coproc" | "function";
 
 /** After a `coproc` name, the start of the compound command it runs. */
 const COMPOUND_START =
-  /[ \t]+(?:(?:case|if|while|until|for|select)(?!\w)|\{|\(|\[\[)/y;
+  /(?:(?:case|if|while|until|for|select)(?!\w)|\{|\(|\[\[)/y;
 const TIME_OPTION = /(?:-p|--)(?=[ \t\n]|$)/y;
 const HEADER = /\((?:[ \t]|\\\n)*\)/y;
 /** A character that ends a function name, and one that cannot start it. */
@@ -28,13 +28,19 @@ export function keepsCommandPosition(
   const pending = scan.prefix;
   scan.prefix = undefined;
   if (!scan.commandPosition) return false;
-  if (pending === "coproc") {
-    COMPOUND_START.lastIndex = end;
-    return COMPOUND_START.test(scan.text);
-  }
+  if (pending === "coproc") return compoundStartsAfterBlanks(scan.text, end);
   if (word === "time" && !followsPipe(scan.text, start)) scan.prefix = "time";
   else if (word === "coproc" || word === "function") scan.prefix = word;
   return scan.prefix !== undefined;
+}
+
+/** Whether a compound command starts after at least one blank at `from`. */
+function compoundStartsAfterBlanks(text: string, from: number): boolean {
+  let at = from;
+  while (text[at] === " " || text[at] === "\t") at += 1;
+  if (at === from) return false;
+  COMPOUND_START.lastIndex = at;
+  return COMPOUND_START.test(text);
 }
 
 function followsPipe(text: string, start: number): boolean {

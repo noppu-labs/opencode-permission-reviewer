@@ -100,7 +100,7 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-end.ts": "4a81c02737fe461c24e10516b0da96f19035bbfa",
   "src/shell-substitution-brace.ts": "be3a6959c86277ccc879ddba875bc87dfb2e8d5f",
   "src/shell-substitution-prefix.ts":
-    "9a8a86a71c329cd72511a8d424f05f45d914c90d",
+    "b3c9ead3d967e4262e6e27d2911cf6621c96b979",
   "src/shell-substitution-words.ts": "ee012917a63da958246081ef821af8d5ac52c264",
   "src/shell-substitution-groups.ts":
     "a81777fbf25ba1b7177410826ee278eff0779ad7",
