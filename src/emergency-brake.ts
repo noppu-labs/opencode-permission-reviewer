@@ -42,9 +42,12 @@ import type { PermissionRequest } from "./types.ts";
  * only unanalyzable within bounds, and downstream gates must not confuse the
  * two.
  *
- * The checks in brake-readings.ts run under four quote readings. The bash
- * quote reading is the lexer's own: it decodes `$'…'` and `$"…"` words to the
- * values the shell gives them, and steps over a substitution body as one unit.
+ * The checks in brake-readings.ts run under four quote readings. The first
+ * is the lexer's own bash reading in its finder form: it decodes `$'…'` and
+ * `$"…"` words to the values the shell gives them, and steps over a
+ * substitution body as one unit, keeping the end the end-finder gives even
+ * where the plain bash reading reads a heredoc in a double parenthesis the
+ * previous way.
  * The rescan reading decodes quotes the same way but scans a substitution
  * body's text in place, as the release before that step did. The undecoded
  * reading keeps those words as written, as the default reading did before
@@ -93,7 +96,7 @@ function readingsReason(
   bodies: BodyCommands,
 ): string | undefined {
   return (
-    brakeReadingsReason(command, "bash", bodies) ??
+    brakeReadingsReason(command, "finder", bodies) ??
     brakeReadingsReason(command, "rescan", bodies) ??
     brakeReadingsReason(command, "undecoded", bodies) ??
     brakeReadingsReason(command, "previous", bodies)

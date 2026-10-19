@@ -20,8 +20,17 @@ export type HeredocReading = "default" | "legacy";
  *  ends a `$'…'` string where bash does but keeps its text and its `$` as
  *  written (`undecoded`); or the previous release's, which ends a `$'…'`
  *  string at its first `'` (`previous`). `rescan` reads quotes as `bash`
- *  does and scans a substitution's body the way the previous release did. */
-export type ShellQuoting = "bash" | "rescan" | "undecoded" | "previous";
+ *  does and scans a substitution's body the way the previous release did.
+ *  `finder` reads as `bash` does, except that it keeps every substitution
+ *  end the end-finder gives where `bash` reads a heredoc in a double
+ *  parenthesis the previous way; the emergency brake checks it in place of
+ *  `bash`. */
+export type ShellQuoting =
+  | "bash"
+  | "rescan"
+  | "undecoded"
+  | "previous"
+  | "finder";
 
 /** Which end the scan gives a command substitution's body: where the shell
  *  ends it (`bash`), or where the previous release did (`previous`), which
@@ -30,16 +39,16 @@ export type SubstitutionScan = "bash" | "previous";
 
 /** Whether the reading decodes quotes the way bash does. */
 function readsBashQuotes(quoting: ShellQuoting = "bash"): boolean {
-  return quoting === "bash" || quoting === "rescan";
+  return quoting === "bash" || quoting === "rescan" || quoting === "finder";
 }
 
-/** The substitution scan a reading uses. Only `bash` ends a body where the
- *  shell does, and its outer scan then jumps past the body; every other
- *  reading ends it where the previous release did and walks it again. */
+/** The substitution scan a reading uses. Only `bash` and `finder` end a body
+ *  where the shell does, and their outer scan then jumps past the body; every
+ *  other reading ends it where the previous release did and walks it again. */
 export function substitutionScanOf(
   quoting: ShellQuoting = "bash",
 ): SubstitutionScan {
-  return quoting === "bash" ? "bash" : "previous";
+  return quoting === "bash" || quoting === "finder" ? "bash" : "previous";
 }
 
 /** What the substitution end-finder keeps for the whole command it reads:

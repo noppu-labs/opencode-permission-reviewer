@@ -11,14 +11,20 @@ const blocked =
 
 /** `block` and `allow` are plain commands; `rescanOnly` are commands that,
  *  of the previous release's readings, only the rescan reading of a
- *  substitution body blocks. One row per line in
+ *  substitution body blocks; `finderOnly` are commands that only the finder
+ *  reading blocks. One row per line in
  *  tests/fixtures/emergency-brake-substitution-rows.json. */
 const ROWS = JSON.parse(
   readFileSync(
     join(import.meta.dir, "fixtures/emergency-brake-substitution-rows.json"),
     "utf8",
   ),
-) as { block: string[]; allow: string[]; rescanOnly: string[] };
+) as {
+  block: string[];
+  allow: string[];
+  rescanOnly: string[];
+  finderOnly: string[];
+};
 
 const brake = (command: string): string | undefined =>
   emergencyBrakeReason(request({ metadata: { command } }));
@@ -71,4 +77,17 @@ describe("the reading reaches each command-string wrapper", () => {
       },
     );
   }
+});
+
+describe("the finder reading", () => {
+  const others: ShellQuoting[] = ["bash", "rescan", "undecoded", "previous"];
+  test.each(ROWS.finderOnly)(
+    "blocks %j when no other reading does",
+    (command) => {
+      expect(brake(command)).toBe(blocked);
+      expect(brakeReadingsReason(command, "finder")).toBe(blocked);
+      for (const reading of others)
+        expect(brakeReadingsReason(command, reading)).toBeUndefined();
+    },
+  );
 });

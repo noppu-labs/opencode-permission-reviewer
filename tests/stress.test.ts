@@ -213,6 +213,16 @@ describe("stress and adversarial robustness", () => {
       "escaped single quotes after an arithmetic opener",
       `$(( '${"\\'".repeat(60_000)}`,
     ],
+    [
+      "double parentheses holding heredocs in substitutions",
+      'echo "$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo "; echo x ; echo " ) "\n'.repeat(
+        2_400,
+      ),
+    ],
+    [
+      "double parentheses before a late heredoc operator",
+      `${"echo $(true) (( (a) ) ) ; ".repeat(5_000)}<<E\n`,
+    ],
     ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
     [
       "backtick-wrapped dollar-quoted escapes at the input cap",
@@ -233,6 +243,15 @@ describe("stress and adversarial robustness", () => {
     // Eight times the input cap: the lexer alone has no cap, and the brake
     // lexes its input several times, so the lexer's own growth must stay linear.
     const command = "'a'>&".repeat(209_712);
+    const started = Date.now();
+    lexSegments(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  }, 60_000);
+
+  test("lexes double parentheses holding heredocs well past the input cap in linear time", () => {
+    const unit =
+      'echo "$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo "; echo x ; echo " ) "\n';
+    const command = unit.repeat(Math.floor((8 * 131_072) / unit.length));
     const started = Date.now();
     lexSegments(command);
     expect(Date.now() - started).toBeLessThan(1_000);

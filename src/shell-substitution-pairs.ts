@@ -37,9 +37,18 @@ export function closesAsArithmetic(
   index: number,
   cache: ProbeCache,
 ): boolean {
-  const table = pairTable(text, cache);
-  const close = table[(index + 2) * KINDS + Kind.Group] ?? -1;
+  const close = groupCloseFrom(text, index + 2, cache);
   return close >= 0 && text[close + 1] === ")";
+}
+
+/** The index of the `)` that closes the parenthesis group the shell is in
+ *  when its reading is at `index`, or -1. */
+export function groupCloseFrom(
+  text: string,
+  index: number,
+  cache: ProbeCache,
+): number {
+  return pairTable(text, cache)[index * KINDS + Kind.Group] ?? -1;
 }
 
 function pairTable(text: string, cache: ProbeCache): Int32Array {

@@ -53,7 +53,7 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "ef4d8d81688b8d4177397d7db70f63410e82bffb",
+  "src/emergency-brake.ts": "0d97a7c5400b19df038370085dc3862742e1bbea",
   "src/brake-body-commands.ts": "4a57031be83469dad826e470c756c7199ff31da3",
   "src/brake-heredoc-texts.ts": "912e96820c37ee43c4221ef5a1ada0e6db5b2f66",
   "src/brake-readings.ts": "bae113215d4781498d2bd55c58d80a95d3cb2147",
@@ -95,7 +95,7 @@ export const PINNED_BLOBS = {
   "src/shell-redirections.ts": "5cd7793d8d30af5a6b1c70d4e015cba5655f444f",
   "src/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
-  "src/shell-lex-state.ts": "f07c9a37badcd22173db310f685c2519b846d04c",
+  "src/shell-lex-state.ts": "affce06885979fd37307d4aea063f55acfaec3c3",
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
   "src/shell-substitution.ts": "af143457fc09f6eccf87b3363c363098cff0d98c",
@@ -112,8 +112,8 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-lex.ts": "74f9c7ff9c9dd14be711e1941906fbd41cd7ac79",
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
-  "src/shell-substitution-pairs.ts": "97466dbc0ef33effc7ee686398c25586656ff6ac",
-  "src/shell-substitution-trust.ts": "2d67c27e763e2b110130cfcd71df5781b2ad5007",
+  "src/shell-substitution-pairs.ts": "0680bc2448e940ae0660dce3640bfde59461322b",
+  "src/shell-substitution-trust.ts": "e48c540191812ff467672668f54474d2b073001e",
   "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",

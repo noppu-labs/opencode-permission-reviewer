@@ -708,6 +708,42 @@
     "echo \"$(( $((echo RAN8) ) ))\" ; echo RAN": [
       "echo ¦ «$(( $((echo RAN8) ) ))» ¶  ¶ echo ¦ RAN8 ¶ echo ¦ RAN",
       "echo ¦ \"$(( $((echo RAN8) ) ))\" ¶  ¶ echo ¦ RAN8 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN1 ; echo » ¶ echo ¦ RAN1 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN1 ; echo \" ¶ echo ¦ RAN1 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$( (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN2 ; echo \" ) \"": [
+      "echo ¦ «$( (( $(: <<E\n)\nE\n) ) ) ; echo » ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN2 ; echo » ¶ echo ¦ RAN2 ¶ echo ¦ « ) »",
+      "echo ¦ \"$( (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN2 ; echo \" ¶ echo ¦ RAN2 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN3 ; echo \" ) \"": [
+      "echo ¦ «$( (( echo $(: <<E\n)\nE\n) ) ) ; echo » ¶  ¶  ¶ echo ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN3 ; echo » ¶ echo ¦ RAN3 ¶ echo ¦ « ) »",
+      "echo ¦ \"$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \" ¶  ¶  ¶ echo ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN3 ; echo \" ¶ echo ¦ RAN3 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \"; echo RAN4 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<-E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN4 ; echo » ¶ echo ¦ RAN4 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<-E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN4 ; echo \" ¶ echo ¦ RAN4 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \"; echo RAN5 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN5 ; echo » ¶ echo ¦ RAN5 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN5 ; echo \" ¶ echo ¦ RAN5 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN6 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ 1 ¦ + ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN6 ; echo » ¶ echo ¦ RAN6 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ 1 ¦ + ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN6 ; echo \" ¶ echo ¦ RAN6 ¶ echo ¦ \" ) \""
+    ],
+    "x=\"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN7 ; echo \" ) \"": [
+      "x=«$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN7 ; echo » ¶ echo ¦ RAN7 ¶ echo ¦ « ) »",
+      "x=\"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN7 ; echo \" ¶ echo ¦ RAN7 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN8": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ echo ¦ RAN8",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ echo ¦ RAN8"
+    ],
+    "echo \"$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN9": [
+      "echo ¦ «$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ echo ¦ RAN9",
+      "echo ¦ \"$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ echo ¦ RAN9"
     ]
   },
   "outer": {
@@ -1517,6 +1553,14 @@
     "echo \"$(( $((echo RAN8) ) ))\" ; echo RAN": [
       "echo ¦ «$(( $((echo RAN8) ) ))» ¶ echo ¦ RAN",
       "echo ¦ \"$(( $((echo RAN8) ) ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN1 ; echo » ¶ echo ¦ RAN1 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN1 ; echo \" ¶ echo ¦ RAN1 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN8": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ « ; echo RAN8» ¶ echo ¦ RAN8",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ \" ; echo RAN8 ¶ echo ¦ RAN8"
     ]
   },
   "undecoded": {
@@ -1652,6 +1696,14 @@
     "echo \"${x:-\"a b\"}\" \"${x:-\"c d\"}\" ; echo RAN": [
       "echo ¦ «${x:-»a ¦ b«}» ¦ «${x:-»c ¦ d«}» ¶ echo ¦ RAN",
       "echo ¦ \"${x:-\"a ¦ b\"}\" ¦ \"${x:-\"c ¦ d\"}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN1 ; echo » ¶ echo ¦ RAN1 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN1 ; echo \" ¶ echo ¦ RAN1 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN8": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ « ; echo RAN8» ¶ echo ¦ RAN8",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ \" ; echo RAN8 ¶ echo ¦ RAN8"
     ]
   },
   "previous": {
@@ -1787,6 +1839,72 @@
     "echo \"${x:-\"a b\"}\" \"${x:-\"c d\"}\" ; echo RAN": [
       "echo ¦ «${x:-»a ¦ b«}» ¦ «${x:-»c ¦ d«}» ¶ echo ¦ RAN",
       "echo ¦ \"${x:-\"a ¦ b\"}\" ¦ \"${x:-\"c ¦ d\"}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN1 ; echo » ¶ echo ¦ RAN1 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN1 ; echo \" ¶ echo ¦ RAN1 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$( (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN2 ; echo \" ) \"": [
+      "echo ¦ «$( (( $(: <<E\n)\nE\n) ) ) ; echo » ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN2 ; echo » ¶ echo ¦ RAN2 ¶ echo ¦ « ) »",
+      "echo ¦ \"$( (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN2 ; echo \" ¶ echo ¦ RAN2 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN3 ; echo \" ) \"": [
+      "echo ¦ «$( (( echo $(: <<E\n)\nE\n) ) ) ; echo » ¶  ¶  ¶ echo ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN3 ; echo » ¶ echo ¦ RAN3 ¶ echo ¦ « ) »",
+      "echo ¦ \"$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \" ¶  ¶  ¶ echo ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN3 ; echo \" ¶ echo ¦ RAN3 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \"; echo RAN4 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<-E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN4 ; echo » ¶ echo ¦ RAN4 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<-E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN4 ; echo \" ¶ echo ¦ RAN4 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \"; echo RAN5 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN5 ; echo » ¶ echo ¦ RAN5 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN5 ; echo \" ¶ echo ¦ RAN5 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN6 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ 1 ¦ + ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN6 ; echo » ¶ echo ¦ RAN6 ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ 1 ¦ + ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN6 ; echo \" ¶ echo ¦ RAN6 ¶ echo ¦ \" ) \""
+    ],
+    "x=\"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN7 ; echo \" ) \"": [
+      "x=«$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN7 ; echo » ¶ echo ¦ RAN7 ¶ echo ¦ « ) »",
+      "x=\"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN7 ; echo \" ¶ echo ¦ RAN7 ¶ echo ¦ \" ) \""
+    ],
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN8": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ « ; echo RAN8» ¶ echo ¦ RAN8",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ \" ; echo RAN8 ¶ echo ¦ RAN8"
+    ],
+    "echo \"$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN9": [
+      "echo ¦ «$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ « ; echo RAN9» ¶ echo ¦ RAN9",
+      "echo ¦ \"$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ \" ; echo RAN9 ¶ echo ¦ RAN9"
+    ]
+  },
+  "finder": {
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN1 ; echo »",
+      "echo ¦ \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN1 ; echo \" ) \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN1 ; echo \""
+    ],
+    "echo \"$( (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN2 ; echo \" ) \"": [
+      "echo ¦ «$( (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN2 ; echo \" ) » ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN2 ; echo »",
+      "echo ¦ \"$( (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN2 ; echo \" ) \" ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN2 ; echo \""
+    ],
+    "echo \"$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN3 ; echo \" ) \"": [
+      "echo ¦ «$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN3 ; echo \" ) » ¶  ¶  ¶ echo ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN3 ; echo »",
+      "echo ¦ \"$( (( echo $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN3 ; echo \" ) \" ¶  ¶  ¶ echo ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN3 ; echo \""
+    ],
+    "echo \"$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \"; echo RAN4 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \"; echo RAN4 ; echo \" ) » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<-E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN4 ; echo »",
+      "echo ¦ \"$(: ; (( $(: <<-E\n)\nE\n) ) ) ; echo \"; echo RAN4 ; echo \" ) \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<-E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN4 ; echo \""
+    ],
+    "echo \"$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \"; echo RAN5 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \"; echo RAN5 ; echo \" ) » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN5 ; echo »",
+      "echo ¦ \"$(: ; (( $(: <<'E'\n)\nE\n) ) ) ; echo \"; echo RAN5 ; echo \" ) \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN5 ; echo \""
+    ],
+    "echo \"$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN6 ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN6 ; echo \" ) » ¶ : ¶  ¶  ¶ 1 ¦ + ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN6 ; echo »",
+      "echo ¦ \"$(: ; (( 1 + $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN6 ; echo \" ) \" ¶ : ¶  ¶  ¶ 1 ¦ + ¦ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN6 ; echo \""
+    ],
+    "x=\"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN7 ; echo \" ) \"": [
+      "x=«$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN7 ; echo \" ) » ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ «; echo RAN7 ; echo »",
+      "x=\"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; echo RAN7 ; echo \" ) \" ¶ : ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶  ¶  ¶ echo ¦ \"; echo RAN7 ; echo \""
     ]
   },
   "blockDevice": {
@@ -1891,7 +2009,8 @@
     "echo \"$(( $((rm -rf /); (true)) + 1 ))\"": "rm -rf /",
     "echo \"${x:-$(( 1 + $((rm -rf /) ) ))}\"": "rm -rf /",
     "bash -c 'echo \"${x:-$((rm -rf /) )}\"'": "rm -rf /",
-    "echo \"${x:-$((rm -rf /) )}\" ; true": "rm -rf /"
+    "echo \"${x:-$((rm -rf /) )}\" ; true": "rm -rf /",
+    "echo \"$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo \"; rm -rf ~/x ; echo \" ) \"": "rm -rf ~/x"
   },
   "everyday": {
     "echo \"$(date)\"": "read-only",
