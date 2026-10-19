@@ -111,3 +111,78 @@ describe("each quote reading on its own", () => {
     },
   );
 });
+
+/** Every wrapper of a body, as command strings: the plain body, its
+ *  command-string wrappers, and `env -S`. */
+const wrappedForms = (body: string): string[] =>
+  [
+    ...wrappers(body),
+    ...commandStringWrappers(body).filter(([label]) => label === "env -S"),
+  ].map(([, command]) => command);
+
+const decodedWordBodies = [
+  "$'\\x72m' -rf /",
+  "$'\\162m' -rf /",
+  "$'\\u0072m' -rf /",
+  '$"rm" -rf /',
+  "r$'m' -rf /",
+  "rm $'-rf' /",
+  "rm -rf $'/'",
+  "rm -rf $'/\\0tmp'",
+];
+
+const decodedBlockedForms = decodedWordBodies.flatMap(wrappedForms);
+
+const decodedAllowed = [
+  "printf $'a\\tb\\n'",
+  "read -d $'\\0' x",
+  "git commit -m $'x\\ny'",
+  'echo $"Hello"',
+  "echo $'it\\'s'",
+  "echo $'\\x3b rm -rf /'",
+  "echo $'\\x7c' x",
+  "echo $'\\x2a'",
+  "echo $'\\x24HOME'",
+];
+
+describe("decoded command words are judged like their plain spelling", () => {
+  test.each(decodedBlockedForms)("blocks %s", (command) => {
+    expect(brake(command)).toBe(blocked);
+  });
+
+  test.each(decodedAllowed)("allows %s", (command) => {
+    expect(brake(command)).toBeUndefined();
+  });
+});
+
+describe("the readings split on a decoded command word", () => {
+  test("the bash reading blocks a decoded command word that the undecoded reading allows", () => {
+    const command = "$'\\x72m' -rf /";
+    expect(brakeReadingsReason(command, "bash")).toBe(blocked);
+    expect(brakeReadingsReason(command, "undecoded")).toBeUndefined();
+  });
+});
+
+/** Blocked only under the undecoded reading: the bash reading decodes the
+ *  `--` and ends options, and the previous reading ends `$'…'` at its first
+ *  `'`, so `rm` falls inside a quote there. */
+const undecodedOnlyBodies = [
+  "echo $'\\'' ; rm $'--' -rf /",
+  "echo $'\\'' ; rm $'--' -r -f /",
+];
+
+describe("a word only the undecoded reading blocks", () => {
+  test.each(undecodedOnlyBodies.flatMap(wrappedForms))(
+    "blocks %s",
+    (command) => {
+      expect(brake(command)).toBe(blocked);
+    },
+  );
+
+  test("the bash and previous readings allow it, and the undecoded reading blocks it", () => {
+    const command = "echo $'\\'' ; rm $'--' -rf /";
+    expect(brakeReadingsReason(command, "bash")).toBeUndefined();
+    expect(brakeReadingsReason(command, "previous")).toBeUndefined();
+    expect(brakeReadingsReason(command, "undecoded")).toBe(blocked);
+  });
+});

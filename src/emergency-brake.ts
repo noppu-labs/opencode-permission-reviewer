@@ -32,11 +32,13 @@ import type { PermissionRequest } from "./types.ts";
  * only unanalyzable within bounds, and downstream gates must not confuse the
  * two.
  *
- * The checks in brake-readings.ts run under two quote readings. The bash
- * quote reading is the lexer's own. The previous release's quote reading ends
- * a `$'…'` string at its first `'`. The brake runs each heredoc reading under
- * both quote readings, so a command the previous release blocked stays
- * blocked.
+ * The checks in brake-readings.ts run under three quote readings. The bash
+ * quote reading is the lexer's own and decodes `$'…'` and `$"…"` words to the
+ * values the shell gives them. The undecoded reading keeps those words as
+ * written, as the default reading did before this change. The previous
+ * release's quote reading ends a `$'…'` string at its first `'`. The brake
+ * runs each heredoc reading under all three, so a command any earlier quote
+ * reading blocked stays blocked.
  */
 
 export function emergencyBrakeReason(
@@ -49,11 +51,13 @@ export function emergencyBrakeReason(
   // analysis cannot finish is rejected for THAT reason, before any lexing or
   // detector runs, and is never described as detected destruction.
   if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  // Every check also runs under the previous quote reading, even without a
-  // `$'` in the text: a command string the wrappers re-lex can get one from
-  // escapes.
+  // Every check also runs under the undecoded and previous quote readings,
+  // even without a `$'` in the text: a command string the wrappers re-lex can
+  // get one from escapes. The undecoded reading keeps the brake at least as
+  // strict as the previous release on every input.
   return (
     brakeReadingsReason(command, "bash") ??
+    brakeReadingsReason(command, "undecoded") ??
     brakeReadingsReason(command, "previous")
   );
 }

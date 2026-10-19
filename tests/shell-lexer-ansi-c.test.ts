@@ -1,4 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
@@ -49,7 +51,7 @@ describe("ANSI-C quoted words", () => {
     expect(segments).toHaveLength(2);
     expect(segments[0]?.tokens[1]).toMatchObject({
       raw: "$'a\\'b'",
-      value: "$a\\'b",
+      value: "a'b",
     });
   });
 
@@ -62,11 +64,11 @@ describe("ANSI-C quoted words", () => {
   });
 
   const wordValues: Record<string, string[]> = {
-    "printf $'a\\tb\\n'": ["printf", "$a\\tb\\n"],
+    "printf $'a\\tb\\n'": ["printf", "a\tb\n"],
     "echo \"$'a\\'\" b": ["echo", "$'a\\'", "b"],
     "echo \\$'a\\' b": ["echo", "$a\\", "b"],
     "echo $$'a\\' b": ["echo", "$$a\\", "b"],
-    "echo $$$'a\\'b'": ["echo", "$$$a\\'b"],
+    "echo $$$'a\\'b'": ["echo", "$$a'b"],
   };
   test.each(Object.entries(wordValues))(
     "reads the words of %s",
@@ -111,31 +113,31 @@ describe("ANSI-C quoted words", () => {
       "ends an ANSI-C string after an empty `$''` quote",
       "echo $''$'a\\'b'; echo RAN",
       1,
-      { raw: "$''$'a\\'b'", value: "$$a\\'b" },
+      { raw: "$''$'a\\'b'", value: "a'b" },
     ],
     [
       'ends an ANSI-C string after an empty `$""` quote',
       "echo $\"\"$'a\\'b'; echo RAN",
       1,
-      { value: "$$a\\'b" },
+      { value: "a'b" },
     ],
     [
       "ends an ANSI-C string after an empty plain quote",
       "echo ''$'a\\'b'; echo RAN",
       1,
-      { raw: "''$'a\\'b'", value: "$a\\'b" },
+      { raw: "''$'a\\'b'", value: "a'b" },
     ],
     [
       "reads an odd run of `$` before a quote as ANSI-C",
       "echo $$$'x\\'y'; echo RAN",
       1,
-      { value: "$$$x\\'y" },
+      { value: "$$x'y" },
     ],
     [
       "reads an odd run of five `$` before a quote as ANSI-C",
       "echo $$$$$'x\\'y'; echo RAN",
       1,
-      { value: "$$$$$x\\'y" },
+      { value: "$$$$x'y" },
     ],
     [
       "keeps an even run of `$` before a quote as a plain quote",
@@ -147,7 +149,7 @@ describe("ANSI-C quoted words", () => {
       "ends an ANSI-C string after a braced parameter",
       "echo \u0024{x}$'a\\'b'; echo RAN",
       1,
-      { value: "\u0024{x}$a\\'b" },
+      { value: "\u0024{x}a'b" },
     ],
     [
       "keeps a `$` run across a backslash-newline before a quote",
@@ -168,7 +170,7 @@ describe("ANSI-C quoted words", () => {
   test("ends an ANSI-C string after an arithmetic expansion", () => {
     const segments = scan("echo x$((1))$'a\\'b'; echo RAN");
     const last = segments.at(-2)?.tokens.at(-1);
-    expect(last).toMatchObject({ value: "$a\\'b" });
+    expect(last).toMatchObject({ value: "a'b" });
     expectEchoRan(segments);
   });
 
@@ -187,4 +189,128 @@ describe("ANSI-C quoted words", () => {
       ],
     ]);
   });
+});
+
+function render(segments: ShellSegment[]): string {
+  return segments
+    .map((segment) =>
+      segment.tokens
+        .map((token) =>
+          (token.spans ?? [])
+            .map(({ text, quoted }) => (quoted ? `«${text}»` : text))
+            .join(""),
+        )
+        .join(" ¦ "),
+    )
+    .join(" ¶ ");
+}
+
+// Each token's spans, the quoted ones wrapped in « », tokens joined by ¦ and
+// segments by ¶. The expected renders are in tests/fixtures/dollar-quoted-readings.json.
+interface DollarQuotedReadings {
+  bash: Record<string, string>;
+  undecoded: Record<string, string>;
+  previous: Record<string, string>;
+}
+
+const READINGS = JSON.parse(
+  readFileSync(
+    join(import.meta.dir, "fixtures/dollar-quoted-readings.json"),
+    "utf8",
+  ),
+) as DollarQuotedReadings;
+
+describe.each([
+  ["bash", READINGS.bash],
+  ["undecoded", READINGS.undecoded],
+  ["previous", READINGS.previous],
+] as const)("the %s reading of dollar-quoted words", (quoting, table) => {
+  test.each(Object.entries(table))("lexes %s", (command, expected) => {
+    expect(render(scan(command, quoting))).toBe(expected);
+  });
+});
+
+describe("dollar-quoted word values", () => {
+  test("reads the default reading as bash's", () => {
+    for (const command of Object.keys(READINGS.bash))
+      expect(render(scan(command))).toBe(render(scan(command, "bash")));
+  });
+
+  test("keeps `r$'m'` as an unquoted and a quoted span", () => {
+    expect(scan("r$'m'")[0]?.tokens[0]).toEqual({
+      raw: "r$'m'",
+      value: "rm",
+      spans: [
+        { text: "r", quoted: false },
+        { text: "m", quoted: true },
+      ],
+    });
+  });
+
+  test("keeps the source text of a decoded word as written", () => {
+    const token = scan("echo $'\\x3b'")[0]?.tokens[1];
+    expect(token).toMatchObject({ raw: "$'\\x3b'", value: ";" });
+  });
+
+  test("keeps a decoded operator character in a quoted span", () => {
+    const segments = scan("echo $'\\x3b' $'\\x7c' $'\\x26'>$'\\x3e'");
+    expect(segments).toHaveLength(1);
+    const tokens = segments[0]?.tokens.slice(1);
+    expect(tokens?.map((token) => token.spans)).toEqual([
+      [{ text: ";", quoted: true }],
+      [{ text: "|", quoted: true }],
+      [
+        { text: "&", quoted: true },
+        { text: ">", quoted: false },
+        { text: ">", quoted: true },
+      ],
+    ]);
+  });
+
+  test("ends the value at a NUL and keeps the token", () => {
+    expect(render(scan("rm -rf $'/\\0tmp'"))).toBe("rm ¦ -rf ¦ «/»");
+  });
+
+  test("decodes an unterminated string up to the end of the command", () => {
+    expect(render(scan("echo $'a\\x41"))).toBe("echo ¦ «aA»");
+  });
+
+  test("lexes a long run of unterminated decoded strings in linear time", () => {
+    const command = "$'\\x41".repeat(16000);
+    const start = performance.now();
+    scan(command);
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+
+  test("lexes a long run of decoded strings near the input cap in linear time", () => {
+    const command = "\"$'\\x41".repeat(18000);
+    const start = performance.now();
+    scan(command);
+    expect(performance.now() - start).toBeLessThan(1000);
+  });
+  test.each(["''", '""', "$''"])(
+    "lexes a long word followed by many empty quotes %s in linear time",
+    (quote) => {
+      const command = "a".repeat(400000) + quote.repeat(400000 / quote.length);
+      const start = performance.now();
+      scan(command);
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
+  test.each([
+    ["a''", "bash"],
+    ['a""', "bash"],
+    ["a$''", "bash"],
+    ["ab''", "bash"],
+    [">''|", "undecoded"],
+    [">''|", "previous"],
+  ] as const)(
+    "lexes many %s words under the %s reading in linear time",
+    (unit, quoting) => {
+      const command = unit.repeat(Math.floor(1_048_576 / unit.length));
+      const start = performance.now();
+      scan(command, quoting);
+      expect(performance.now() - start).toBeLessThan(1000);
+    },
+  );
 });
