@@ -98,7 +98,7 @@ export const PINNED_BLOBS = {
   "src/shell-lex-state.ts": "affce06885979fd37307d4aea063f55acfaec3c3",
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
-  "src/shell-substitution.ts": "af143457fc09f6eccf87b3363c363098cff0d98c",
+  "src/shell-substitution.ts": "9e1afaf3fe6e785612fb893e4aa96fea07417ed7",
   "src/shell-substitution-end.ts": "4a81c02737fe461c24e10516b0da96f19035bbfa",
   "src/shell-substitution-brace.ts": "be3a6959c86277ccc879ddba875bc87dfb2e8d5f",
   "src/shell-substitution-prefix.ts":
@@ -183,5 +183,9 @@ export const PINNED_BLOBS = {
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
   "src/capability/command-walk.ts": "8315edd43cc3fbded2a380c7b70c357806a2b120",
   "src/capability/heredoc-body-commands.ts":
-    "446146563f5e02f734d1a963a813a268893486fd",
+    "7f8ba8413ef22f42acdf44b80b58068a0fb37ca5",
+  "src/capability/heredoc-sanitized.ts":
+    "fd5d91a750db12ad31b30976a9f9e249ecfa2703",
+  "src/capability/heredoc-body-reading.ts":
+    "b868615ee99f994e9c449cea2b6dacb3f18991e4",
 };

@@ -1,7 +1,7 @@
 // The command a command substitution runs when the enclosing word keeps its text: a backtick form, or `$(` inside double quotes.
 
-import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
+import { sanitizedText } from "./capability/heredoc-sanitized.ts";
 import type {
   HeredocReading,
   ProbeCache,
@@ -104,12 +104,7 @@ function sanitizeBody(
       bodyCommands: [],
       bodyUnresolved: false,
     };
-  const extraction = extractHeredocs(text);
-  return {
-    text: extraction.sanitizedCommand,
-    bodyCommands: extraction.bodyCommands,
-    bodyUnresolved: extraction.bodyUnresolved,
-  };
+  return sanitizedText(text);
 }
 
 /** Inside backticks a backslash escapes only `$`, a backtick and itself

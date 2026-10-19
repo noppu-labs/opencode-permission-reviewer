@@ -6,7 +6,8 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "../shell-substitution.ts";
-import { extractHeredocs } from "./heredoc-extractor.ts";
+import { bodyTextStep, expandedBody } from "./heredoc-body-reading.ts";
+import { sanitizedText } from "./heredoc-sanitized.ts";
 
 /** How many bodies deep the scanner nests: a command found in a body may hold
  *  a heredoc of its own, whose body is scanned in turn. */
@@ -61,33 +62,10 @@ export function heredocBodyCommands(
   if (depth >= MAX_BODY_DEPTH) return { commands: [], unresolved: true };
   depth += 1;
   try {
-    const joined = joinContinuations(body);
-    return scanBody(tabStripped ? stripTabs(joined) : joined);
+    return scanBody(expandedBody(body, tabStripped));
   } finally {
     depth -= 1;
   }
-}
-
-function stripTabs(body: string): string {
-  return body
-    .split("\n")
-    .map((line) => line.replace(/^\t+/, ""))
-    .join("\n");
-}
-
-/** The body without its backslash-newline pairs; `\\` stays a pair. */
-function joinContinuations(body: string): string {
-  let joined = "";
-  let from = 0;
-  let at = body.indexOf("\\");
-  while (at !== -1) {
-    if (body[at + 1] === "\n") {
-      joined += body.slice(from, at);
-      from = at + 2;
-    }
-    at = body.indexOf("\\", at + 2);
-  }
-  return from === 0 ? body : joined + body.slice(from);
 }
 
 /** The arithmetic `$((…))` the scan is inside: where it ends, and where each
@@ -127,12 +105,8 @@ function scanBody(text: string): BodyCommands {
 
 /** The index after the character or construct at `index`. */
 function step(scan: Scan, index: number): number {
-  const c = scan.text.charAt(index);
-  const next = scan.text.charAt(index + 1);
-  if (c === "\\") return index + (next !== "" && "$`\\".includes(next) ? 2 : 1);
-  if (c === "$" && next === "{") return index + 2;
-  if (c === "`" || (c === "$" && next === "(")) return substitute(scan, index);
-  return index + 1;
+  const after = bodyTextStep(scan.text, index);
+  return after < 0 ? substitute(scan, index) : after;
 }
 
 function substitute(scan: Scan, index: number): number {
@@ -188,21 +162,8 @@ function keepCommand(
   found: Extract<SubstitutionBody, { kind: "command" }>,
   backtick: boolean,
 ): void {
-  const read = backtick ? sanitized(found.text) : found;
+  const read = backtick ? sanitizedText(found.text) : found;
   scan.commands.push(read.text);
   for (const command of read.bodyCommands) scan.commands.push(command);
   scan.unresolved ||= read.bodyUnresolved;
-}
-
-function sanitized(text: string): {
-  text: string;
-  bodyCommands: string[];
-  bodyUnresolved: boolean;
-} {
-  const extraction = extractHeredocs(text);
-  return {
-    text: extraction.sanitizedCommand,
-    bodyCommands: extraction.bodyCommands,
-    bodyUnresolved: extraction.bodyUnresolved,
-  };
 }
