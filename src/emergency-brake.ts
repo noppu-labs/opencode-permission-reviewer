@@ -1,7 +1,13 @@
+import { bodyCommandsReason } from "./brake-body-commands.ts";
+import { heredocTexts } from "./brake-heredoc-texts.ts";
 import {
   ANALYSIS_LIMIT_REASON,
   brakeReadingsReason,
 } from "./brake-readings.ts";
+import {
+  type BodyCommands,
+  keepBodyCommands,
+} from "./capability/heredoc-body-commands.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import { MAX_ANALYSIS_INPUT_CHARS } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
@@ -21,9 +27,13 @@ import type { PermissionRequest } from "./types.ts";
  * (`sh -c '…'`, `su -c …`, `ssh host …`, `watch …`, `busybox rm …`,
  * `chroot root …`) are peeled before judging the executable.
  *
- * It deliberately does NOT expand variables, globs, command substitutions, or
- * heredocs. Those remain the reviewer's job; the brake only catches literal,
- * unambiguous `rm -rf /`-style root destruction (target resolves to `/`).
+ * It deliberately does NOT expand variables or globs. Those remain the
+ * reviewer's job; the brake only catches literal, unambiguous `rm -rf /`-style
+ * root destruction (target resolves to `/`). The commands that the
+ * substitutions of an unquoted heredoc body run are the exception: bash runs
+ * them, so each is judged as a command of its own, to MAX_BODY_DEPTH levels of
+ * nested bodies. A body the scan cannot read to its end gives the analysis
+ * limit. Such a check only adds blocks after the checks above allow.
  *
  * Each reading of the command is lexed and destructured under its own
  * analysis budget (input size, tokens, depth, re-lexed text, and total
@@ -53,15 +63,39 @@ export function emergencyBrakeReason(
   // analysis cannot finish is rejected for THAT reason, before any lexing or
   // detector runs, and is never described as detected destruction.
   if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  // Every check also runs under the rescan, undecoded and previous quote
-  // readings, even without a `$'` in the text: a command string the wrappers
-  // re-lex can get one from escapes. The rescan reading keeps the brake at
-  // least as strict as the release before the substitution step, and the
-  // undecoded reading as strict as the previous release, on every input.
+  return commandReason(command, 0);
+}
+
+/** The reason the brake gives for `command`, a command at `depth`: the
+ *  readings checks first, then the commands its heredoc bodies run, each
+ *  judged here at depth + 1. */
+function commandReason(command: string, depth: number): string | undefined {
+  const bodies: BodyCommands = { commands: [], unresolved: false };
+  const { extraction } = heredocTexts(command);
+  keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
+  const reason = readingsReason(command, bodies);
+  if (reason !== undefined) return reason;
+  return bodyCommandsReason(
+    bodies.commands,
+    bodies.unresolved,
+    depth + 1,
+    commandReason,
+  );
+}
+
+/** Every check also runs under the rescan, undecoded and previous quote
+ *  readings, even without a `$'` in the text: a command string the wrappers
+ *  re-lex can get one from escapes. The rescan reading keeps the brake at
+ *  least as strict as the release before the substitution step, and the
+ *  undecoded reading as strict as the previous release, on every input. */
+function readingsReason(
+  command: string,
+  bodies: BodyCommands,
+): string | undefined {
   return (
-    brakeReadingsReason(command, "bash") ??
-    brakeReadingsReason(command, "rescan") ??
-    brakeReadingsReason(command, "undecoded") ??
-    brakeReadingsReason(command, "previous")
+    brakeReadingsReason(command, "bash", bodies) ??
+    brakeReadingsReason(command, "rescan", bodies) ??
+    brakeReadingsReason(command, "undecoded", bodies) ??
+    brakeReadingsReason(command, "previous", bodies)
   );
 }
