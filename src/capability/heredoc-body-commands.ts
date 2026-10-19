@@ -1,0 +1,161 @@
+// The commands a heredoc body runs when its delimiter is unquoted: the shell expands the body, and each `$(…)` or backtick in it is a command.
+
+import type { ProbeCache } from "../shell-lex-state.ts";
+import { type FrameCloses, substitutionAt } from "../shell-substitution.ts";
+import { extractHeredocs } from "./heredoc-extractor.ts";
+
+/** How many bodies deep the scanner nests: a command found in a body may hold
+ *  a heredoc of its own, whose body is scanned in turn. */
+export const MAX_BODY_DEPTH = 8;
+
+export interface BodyCommands {
+  /** In source order, each as the text of the substitution that runs it. */
+  commands: string[];
+  /** The body has a `$(` or backtick with no end, or nests past the depth. */
+  unresolved: boolean;
+}
+
+/** Bodies the scanner is inside, across the calls that recurse into each
+ *  other. */
+let depth = 0;
+
+/**
+ * The commands the substitutions in one unquoted heredoc body run. The shell
+ * reads a body like double-quoted text with its quotes literal: a backslash
+ * escapes only `$`, a backtick, another backslash and a newline. A `$(`,
+ * `$((` and `${` step inside and keep scanning, so substitutions nested in
+ * them are found; a `$(` or backtick that `substitutionAt` ends is jumped.
+ * `tabStripped` is a `<<-` body: a line that continues another keeps its tabs,
+ * and every other line loses its leading ones.
+ */
+export function heredocBodyCommands(
+  body: string,
+  tabStripped: boolean,
+): BodyCommands {
+  if (depth >= MAX_BODY_DEPTH) return { commands: [], unresolved: true };
+  depth += 1;
+  try {
+    const joined = joinContinuations(body);
+    return scanBody(tabStripped ? stripTabs(joined) : joined);
+  } finally {
+    depth -= 1;
+  }
+}
+
+function stripTabs(body: string): string {
+  return body
+    .split("\n")
+    .map((line) => line.replace(/^\t+/, ""))
+    .join("\n");
+}
+
+/** The body without its backslash-newline pairs; `\\` stays a pair. */
+function joinContinuations(body: string): string {
+  let joined = "";
+  let from = 0;
+  let at = body.indexOf("\\");
+  while (at !== -1) {
+    if (body[at + 1] === "\n") {
+      joined += body.slice(from, at);
+      from = at + 2;
+    }
+    at = body.indexOf("\\", at + 2);
+  }
+  return from === 0 ? body : joined + body.slice(from);
+}
+
+/** The arithmetic `$((…))` the scan is inside: where it ends, and where each
+ *  frame in it closed, so a nested `$((` is not probed again. */
+interface Arithmetic {
+  end: number;
+  closes: FrameCloses | undefined;
+}
+
+interface Scan {
+  text: string;
+  commands: string[];
+  probes: ProbeCache;
+  arithmetic: Arithmetic | undefined;
+  /** Text the probes that found arithmetic have read. */
+  probed: number;
+  unresolved: boolean;
+}
+
+/** Text those probes may read in all, so a deep nest of `$((` costs a
+ *  bounded amount. Past it the body is unresolved. */
+const PROBE_CHARS = 262_144;
+
+function scanBody(text: string): BodyCommands {
+  const scan: Scan = {
+    text,
+    commands: [],
+    probes: {},
+    arithmetic: undefined,
+    probed: 0,
+    unresolved: false,
+  };
+  let index = 0;
+  while (index < text.length && !scan.unresolved) index = step(scan, index);
+  return { commands: scan.commands, unresolved: scan.unresolved };
+}
+
+/** The index after the character or construct at `index`. */
+function step(scan: Scan, index: number): number {
+  const c = scan.text.charAt(index);
+  const next = scan.text.charAt(index + 1);
+  if (c === "\\") return index + (next !== "" && "$`\\".includes(next) ? 2 : 1);
+  if (c === "$" && next === "{") return index + 2;
+  if (c === "`" || (c === "$" && next === "(")) return substitute(scan, index);
+  return index + 1;
+}
+
+function substitute(scan: Scan, index: number): number {
+  const { text } = scan;
+  if (scan.arithmetic !== undefined && index >= scan.arithmetic.end)
+    scan.arithmetic = undefined;
+  if (opensKnownArithmetic(text, index, scan.arithmetic)) return index + 3;
+  const backtick = text.charAt(index) === "`";
+  const found = substitutionAt(
+    text,
+    index,
+    !backtick,
+    false,
+    "default",
+    "bash",
+    scan.probes,
+  );
+  if (found === undefined || found.end > text.length) {
+    scan.unresolved = true;
+    return text.length;
+  }
+  if (found.kind === "command") {
+    scan.commands.push(commandText(found.text, backtick));
+    return found.end;
+  }
+  if (found.kind !== "arithmetic") return index + 1;
+  scan.probed += found.end - index;
+  scan.unresolved = scan.probed > PROBE_CHARS;
+  scan.arithmetic = found;
+  return index + 3;
+}
+
+/** Whether the `$((` at `index` is one the end-finder already closed as
+ *  arithmetic: its subshell frame closes right before its own. */
+function opensKnownArithmetic(
+  text: string,
+  index: number,
+  arithmetic: Arithmetic | undefined,
+): boolean {
+  const closes = arithmetic?.closes;
+  if (closes === undefined || !text.startsWith("$((", index)) return false;
+  const outer = closes.get(index) ?? closes.get(index + 1);
+  const inner = closes.get(index + 2);
+  return outer !== undefined && inner !== undefined && outer === inner + 1;
+}
+
+/** A backtick body in a heredoc keeps `\"` as written, which the double-quote
+ *  reading of `substitutionAt` would drop, so a backtick is read as unquoted
+ *  and its heredocs collapsed here. */
+function commandText(text: string, backtick: boolean): string {
+  return backtick ? extractHeredocs(text).sanitizedCommand : text;
+}
