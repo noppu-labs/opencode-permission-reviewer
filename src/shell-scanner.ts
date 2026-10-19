@@ -10,7 +10,8 @@
  * is only a last line of defense for *unmistakable* literal destruction.
  * The command a substitution runs is still lexed: an unquoted `$(` splits at
  * its parentheses, and a backtick form or a `$(` inside double quotes adds
- * the segments of its body after the segment holding it.
+ * the segments of its body after the segment holding it, while its text
+ * stays in the word as written.
  */
 
 import {
