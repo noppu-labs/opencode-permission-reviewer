@@ -97,9 +97,12 @@ export const PINNED_BLOBS = {
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "d7082d1704875f2be7a251971ca084c4affd0264",
   "src/shell-substitution.ts": "8b6357ad3463b4b3b9249dce83b4b84ced4f496a",
-  "src/shell-substitution-end.ts": "a60ad4832d21c56aa2013c6256ee2533eb4db159",
+  "src/shell-substitution-end.ts": "62f4e56d7d84145aa1141c31fc8ef8913220280a",
+  "src/shell-substitution-brace.ts": "7cbda795bb68923be5f8c2eee79f84bce4015163",
+  "src/shell-substitution-prefix.ts":
+    "c1941fe8941dcfaed47fcf40cf8e3c99de5a93a5",
   "src/shell-substitution-frames.ts":
-    "b4d96f968ef27fa5773e660920148df906ef55d7",
+    "9507374f24f07a718d525ebe86feb47a4b1a4c1d",
   "src/shell-substitution-heredoc.ts":
     "6105e5f7e9660f20c076f603c420afaf8513d699",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",

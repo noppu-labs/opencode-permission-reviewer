@@ -2,12 +2,15 @@
 
 import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
 import {
+  stepBrace,
+  stepCommandBrace,
+  stepDouble,
+} from "./shell-substitution-brace.ts";
+import {
   advance,
   type BodyScan,
   close,
-  stepBrace,
   stepCommand,
-  stepDouble,
 } from "./shell-substitution-frames.ts";
 
 /**
@@ -32,6 +35,8 @@ export function substitutionBodyEnd(
     commandPosition: true,
     reading,
     mode,
+    prefix: undefined,
+    headEnd: -1,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;
@@ -52,5 +57,6 @@ function step(scan: BodyScan): boolean {
   if (frame === "backtick") return c === "`" ? close(scan) : advance(scan);
   if (frame === "double") return stepDouble(scan, c);
   if (frame === "brace") return stepBrace(scan, c);
+  if (frame === "cbrace") return stepCommandBrace(scan, c);
   return stepCommand(scan, c, frame === "case");
 }

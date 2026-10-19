@@ -44,6 +44,21 @@ describe("substitutionBodyEnd", () => {
     expect(substitutionBodyEnd(text, start, opener)).toBe(end);
   });
 
+  test("reads time after a pipe as a word and after || as a keyword", () => {
+    const piped = '"$(echo a | time case x in x) echo B;; esac)"';
+    const listed = '"$(echo a || time case x in x) echo B;; esac)"';
+    expect(substitutionBodyEnd(piped, 3, "command")).toBe(piped.indexOf(")"));
+    expect(substitutionBodyEnd(listed, 3, "command")).toBe(listed.length - 2);
+  });
+
+  test("reads $$ as one parameter before a brace", () => {
+    const text = `"$(echo $${BRACE}x:-)})"`;
+    expect(substitutionBodyEnd(text, 3, "command")).toBe(text.indexOf(")"));
+    expect(substitutionBodyEnd(text, 3, "command", "default", "previous")).toBe(
+      text.indexOf(")"),
+    );
+  });
+
   test("ends at the end of the input when nothing closes the body", () => {
     const text = `"$(echo ${BRACE}x:-"a)"} `;
     expect(substitutionBodyEnd(text, 3, "command", "default", "bash")).toBe(
