@@ -10,7 +10,8 @@
  * is only a last line of defense for *unmistakable* literal destruction.
  * The command a substitution runs is still lexed: an unquoted `$(` splits at
  * its parentheses, and a backtick form or a `$(` inside double quotes adds
- * the segments of its body after the segment holding it.
+ * the segments of its body after the segment holding it, while its text
+ * stays in the word as written.
  */
 
 import {
@@ -22,7 +23,6 @@ import {
   lastCharIsQuoted,
   lastValueChar,
   MAX_SUBSTITUTION_CHARS,
-  type SubstitutionBudget,
 } from "./shell-lex-state.ts";
 import {
   lexDoubleQuoted,
@@ -30,7 +30,7 @@ import {
   openQuote,
   opensQuote,
 } from "./shell-quote-scan.ts";
-import { substitutionAt } from "./shell-substitution.ts";
+import { lexSubstitution } from "./shell-substitution-lex.ts";
 import type { ShellSegment } from "./shell-token.ts";
 
 const SEPARATORS = new Set([";", "|", "&", "\n", "(", ")"]);
@@ -124,33 +124,6 @@ function lexUnquoted(lex: LexState, c: string): void {
     return;
   }
   appendUnquoted(lex, c);
-}
-
-/** Lex the body of a substitution that opens at the current character
- *  into segments of its own, under the same budget. The character itself is
- *  still scanned as part of the enclosing word. */
-function lexSubstitution(lex: LexState, budget: SubstitutionBudget): void {
-  if (lex.index < lex.substitutionEnd) return;
-  const body = substitutionAt(
-    lex.command,
-    lex.index,
-    lex.inDouble,
-    lex.index < lex.arithmeticEnd,
-    budget.reading ?? "default",
-  );
-  if (body === undefined) return;
-  if (body.kind === "arithmetic") {
-    lex.arithmeticEnd = body.end;
-    return;
-  }
-  lex.substitutionEnd = body.end;
-  budget.substitutionCharsRemaining -= body.text.length;
-  if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
-  else {
-    for (const segment of lexSegments(body.text, budget))
-      lex.substitutions.push(segment);
-  }
-  if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
 }
 
 /**

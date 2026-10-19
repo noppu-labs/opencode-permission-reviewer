@@ -1,58 +1,64 @@
 // Where a command substitution's body ends: the `)` or backtick the shell pairs with its opener.
 
-import type { HeredocReading } from "./shell-lex-state.ts";
+import type {
+  HeredocReading,
+  ProbeCache,
+  SubstitutionScan,
+} from "./shell-lex-state.ts";
+import { stepBrace, stepDouble } from "./shell-substitution-brace.ts";
 import {
-  heredocBodiesEnd,
-  heredocOperatorAt,
-  type PendingHeredoc,
-} from "./shell-substitution-heredoc.ts";
-
-/** The syntax the scan is inside: a command list (`$(`, `(`), a `case`
- *  body, a double-quoted string, or a backtick body. */
-type Frame = "command" | "case" | "double" | "backtick";
-
-interface BodyScan {
-  text: string;
-  index: number;
-  frames: Frame[];
-  heredocs: PendingHeredoc[];
-  /** Whether the next word sits where a command (or `case`/`esac`) can start. */
-  commandPosition: boolean;
-  reading: HeredocReading;
-}
-
-/** Words after which a command can still start. */
-const COMMAND_PREFIX_WORDS = new Set([
-  "then",
-  "do",
-  "else",
-  "elif",
-  "if",
-  "while",
-  "until",
-  "in",
-]);
+  advance,
+  type BodyScan,
+  close,
+  stepCommand,
+} from "./shell-substitution-frames.ts";
+import {
+  openGroup,
+  stepArith,
+  stepArray,
+  stepTest,
+} from "./shell-substitution-groups.ts";
+import { startsSubject } from "./shell-substitution-words.ts";
 
 /**
  * Index of the character that closes the substitution whose body starts at
  * `start`: the matching `)` for a `$(` body, the next unescaped backtick for
- * a backtick body. Returns `text.length` when nothing closes it. Inside a
- * `$(` body, quoted text, comments, heredoc bodies, nested parentheses and
- * `case` patterns do not close it.
+ * a backtick body, the matching `}` for a `${` body, the matching `)` of an
+ * arithmetic pair (`$((`, read under `bash` only; `pair` is the same with
+ * `#` comments, as the shell reads one that is not arithmetic when it
+ * expands it). Returns `text.length`
+ * when nothing closes it. Inside a `$(` body, quoted text, comments, heredoc
+ * bodies, nested parentheses and `case` patterns do not close it. When
+ * `closes` is given, it receives the index each frame inside closed at.
+ * `probes` holds what the calls that read one command share.
  */
 export function substitutionBodyEnd(
   text: string,
   start: number,
-  opener: "command" | "backtick",
+  opener: "command" | "backtick" | "brace" | "arith" | "pair",
   reading: HeredocReading = "default",
+  mode: SubstitutionScan = "bash",
+  closes?: Map<number, number>,
+  probes: ProbeCache = {},
 ): number {
   const scan: BodyScan = {
     text,
     index: start,
-    frames: [opener],
+    frames: [opener === "pair" ? "arith" : opener],
+    starts: [start],
+    closes,
     heredocs: [],
-    commandPosition: true,
+    commandPosition: opener !== "arith" && opener !== "pair",
+    comments: opener === "pair",
     reading,
+    mode,
+    prefix: undefined,
+    headStart: -1,
+    words: undefined,
+    pattern: undefined,
+    saved: [],
+    escapedEnd: -1,
+    probes,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;
@@ -64,127 +70,40 @@ export function substitutionBodyEnd(
  *  closes at `scan.index`. */
 function step(scan: BodyScan): boolean {
   const c = scan.text.charAt(scan.index);
-  const frame = scan.frames.at(-1);
   if (c === "\\") {
+    const joins = scan.mode === "bash" && scan.text[scan.index + 1] === "\n";
     scan.index += 2;
-    scan.commandPosition = false;
+    scan.escapedEnd = scan.index;
+    if (!joins) scan.commandPosition = false;
     return false;
   }
+  if (scan.words !== undefined) startsSubject(scan, c);
+  return stepFrame(scan, c, scan.frames.at(-1));
+}
+
+function stepFrame(
+  scan: BodyScan,
+  c: string,
+  frame: string | undefined,
+): boolean {
   if (frame === "backtick") return c === "`" ? close(scan) : advance(scan);
   if (frame === "double") return stepDouble(scan, c);
-  return stepCommand(scan, c, frame === "case");
+  if (frame === "brace") return stepBrace(scan, c);
+  if (frame === "array") return stepArray(scan, c);
+  if (frame === "arith") return stepArith(scan, c);
+  if (frame === "test") return stepTest(scan, c);
+  const group =
+    scan.mode === "bash" && (c === "(" || c === "[")
+      ? openGroupAt(scan, c, frame === "case")
+      : undefined;
+  return group ?? stepCommand(scan, c, frame === "case");
 }
 
-function advance(scan: BodyScan): boolean {
-  scan.index += 1;
-  return false;
-}
-
-function open(scan: BodyScan, frame: Frame, width: number): boolean {
-  scan.frames.push(frame);
-  scan.index += width;
-  scan.commandPosition = true;
-  return false;
-}
-
-function close(scan: BodyScan): boolean {
-  scan.frames.pop();
-  if (scan.frames.length === 0) return true;
-  scan.index += 1;
-  scan.commandPosition = false;
-  return false;
-}
-
-function stepDouble(scan: BodyScan, c: string): boolean {
-  if (c === '"') return close(scan);
-  if (c === "`") return open(scan, "backtick", 1);
-  if (c === "$" && scan.text[scan.index + 1] === "(")
-    return open(scan, "command", 2);
-  return advance(scan);
-}
-
-function stepCommand(scan: BodyScan, c: string, insideCase: boolean): boolean {
-  if (c === ")") {
-    if (!insideCase) return close(scan);
-    scan.commandPosition = true;
-    return advance(scan);
-  }
-  if (c === "(") return open(scan, "command", 1);
-  if (c === '"') return open(scan, "double", 1);
-  if (c === "`") return open(scan, "backtick", 1);
-  if (c === "'" || (c === "$" && scan.text[scan.index + 1] === "'")) {
-    skipSingleQuoted(scan, c === "$");
-    return false;
-  }
-  stepCommandText(scan, c);
-  return false;
-}
-
-/** Skip a `'…'` string, or a `$'…'` string whose backslashes escape. */
-function skipSingleQuoted(scan: BodyScan, ansiC: boolean): void {
-  const { text } = scan;
-  let i = scan.index + (ansiC ? 2 : 1);
-  while (i < text.length && text[i] !== "'")
-    i += ansiC && text[i] === "\\" ? 2 : 1;
-  scan.index = i + 1;
-  scan.commandPosition = false;
-}
-
-function stepCommandText(scan: BodyScan, c: string): void {
-  if (c === "\n") {
-    skipNewline(scan);
-    return;
-  }
-  if (c === "#" && atWordStart(scan)) {
-    const newline = scan.text.indexOf("\n", scan.index);
-    scan.index = newline === -1 ? scan.text.length : newline;
-    return;
-  }
-  if (c === "<" && scan.text[scan.index + 1] === "<") {
-    readHeredocOperator(scan);
-    return;
-  }
-  if (/\w/.test(c)) {
-    readWord(scan);
-    return;
-  }
-  if (";&|".includes(c)) scan.commandPosition = true;
-  else if (!" \t{!".includes(c)) scan.commandPosition = false;
-  scan.index += 1;
-}
-
-function atWordStart(scan: BodyScan): boolean {
-  return /[\s;&|()]/.test(scan.text.charAt(scan.index - 1));
-}
-
-/** A newline ends the line the pending heredocs started on: their bodies
- *  follow and are skipped whole. */
-function skipNewline(scan: BodyScan): void {
-  scan.index = heredocBodiesEnd(scan.text, scan.index + 1, scan.heredocs);
-  scan.heredocs = [];
-  scan.commandPosition = true;
-}
-
-function readHeredocOperator(scan: BodyScan): void {
-  const operator = heredocOperatorAt(scan.text, scan.index, scan.reading);
-  if (operator.heredoc !== undefined) scan.heredocs.push(operator.heredoc);
-  scan.index = operator.end;
-  scan.commandPosition = false;
-}
-
-/** A word: `case` at a command position opens a `case` body, `esac`
- *  closes the innermost one. */
-function readWord(scan: BodyScan): void {
-  let end = scan.index;
-  while (/\w/.test(scan.text.charAt(end))) end += 1;
-  const word = scan.text.slice(scan.index, end);
-  if (scan.commandPosition && word === "case") scan.frames.push("case");
-  else if (
-    scan.commandPosition &&
-    word === "esac" &&
-    scan.frames.at(-1) === "case"
-  )
-    scan.frames.pop();
-  scan.commandPosition = COMMAND_PREFIX_WORDS.has(word);
-  scan.index = end;
+/** The group a `(` or `[` opens, unless it starts a `case` pattern. */
+function openGroupAt(
+  scan: BodyScan,
+  c: string,
+  insideCase: boolean,
+): boolean | undefined {
+  return insideCase && scan.pattern ? undefined : openGroup(scan, c);
 }

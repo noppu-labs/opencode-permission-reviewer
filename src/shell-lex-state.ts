@@ -18,11 +18,37 @@ export type HeredocReading = "default" | "legacy";
  *  a `$'…'` or `$"…"` word has the value the shell gives it; the reading that
  *  ends a `$'…'` string where bash does but keeps its text and its `$` as
  *  written (`undecoded`); or the previous release's, which ends a `$'…'`
- *  string at its first `'` (`previous`). */
-export type ShellQuoting = "bash" | "undecoded" | "previous";
+ *  string at its first `'` (`previous`). `rescan` reads quotes as `bash`
+ *  does and scans a substitution's body the way the previous release did. */
+export type ShellQuoting = "bash" | "rescan" | "undecoded" | "previous";
+
+/** Which end the scan gives a command substitution's body: where the shell
+ *  ends it (`bash`), or where the previous release did (`previous`), which
+ *  the emergency brake also checks. */
+export type SubstitutionScan = "bash" | "previous";
+
+/** Whether the reading decodes quotes the way bash does. */
+function readsBashQuotes(quoting: ShellQuoting = "bash"): boolean {
+  return quoting === "bash" || quoting === "rescan";
+}
+
+/** The substitution scan a reading uses. Only `bash` ends a body where the
+ *  shell does, and its outer scan then jumps past the body; every other
+ *  reading ends it where the previous release did and walks it again. */
+export function substitutionScanOf(
+  quoting: ShellQuoting = "bash",
+): SubstitutionScan {
+  return quoting === "bash" ? "bash" : "previous";
+}
+
+/** What the substitution end-finder keeps for the whole command it reads:
+ *  where the shell's matched-pair reading closes each construct, per text. */
+export interface ProbeCache {
+  pairTables?: Map<string, Int32Array>;
+}
 
 /** A budget that lexes command substitutions into segments of their own. */
-export interface SubstitutionBudget extends TokenBudget {
+export interface SubstitutionBudget extends TokenBudget, ProbeCache {
   substitutions: "lex";
   /** Heredoc reading for the substitution bodies this scan lexes. */
   reading?: HeredocReading;
@@ -58,6 +84,12 @@ export interface LexState {
   substitutionEnd: number;
   /** Index up to which the text is inside double-quoted `$((…))`. */
   arithmeticEnd: number;
+  /** Set once the shell's reading finds a substitution with no end, or one
+   *  whose end it cannot be sure of: from there on, substitutions are read
+   *  as the previous release read them. */
+  previousReading?: boolean;
+  /** Where `uncertainRegion` last found each of its marks. */
+  marks?: number[];
   tokens: ShellToken[];
   value: string;
   /** The last character `appendValue` added; the last span's last character
@@ -85,11 +117,14 @@ export function appendValue(
   lex: LexState,
   text: string,
   quoted: boolean,
+  opaque = false,
 ): void {
   if (text.length === 0) return;
   const last = lex.spans.at(-1);
-  if (last !== undefined && last.quoted === quoted) last.text += text;
-  else lex.spans.push({ text, quoted });
+  if (last !== undefined && last.quoted === quoted && !!last.opaque === opaque)
+    last.text += text;
+  else
+    lex.spans.push(opaque ? { text, quoted, opaque: true } : { text, quoted });
   lex.value += text;
   lex.lastChar = text.charAt(text.length - 1);
 }
@@ -110,7 +145,7 @@ const OPERATOR_END = "<>&|-";
  *  `undecoded` and `previous` readings keep the previous release's spans,
  *  which leave it out. */
 export function endQuote(lex: LexState): void {
-  if ((lex.budget.quoting ?? "bash") !== "bash") return;
+  if (!readsBashQuotes(lex.budget.quoting)) return;
   if (
     lex.spans.at(-1)?.quoted === false &&
     OPERATOR_END.includes(lastValueChar(lex))

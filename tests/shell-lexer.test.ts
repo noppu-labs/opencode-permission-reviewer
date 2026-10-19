@@ -536,7 +536,7 @@ describe("analyzer hardening batch 10", () => {
     [
       "ls `rm -rf /`",
       [
-        ["ls", "`rm", "-rf", "/`"],
+        ["ls", "`rm -rf /`"],
         ["rm", "-rf", "/"],
       ],
     ],
@@ -555,14 +555,14 @@ describe("analyzer hardening batch 10", () => {
       ],
     ],
     ['a="$(rm -rf /)" b', [["b"], ["rm", "-rf", "/"]]],
-    ["echo `a \\`b\\``", [["echo", "`a", "`b``"], ["a", "`b`"], ["b"]]],
+    ["echo `a \\`b\\``", [["echo", "`a \\`b\\``"], ["a", "`b`"], ["b"]]],
     [
       'echo "$(cat <<EOF\n)\nEOF\n)"',
       [["echo", "$(cat <<EOF\n)\nEOF\n)"], ["cat"]],
     ],
     ["echo '`a`' \\`b\\` \"\\$(c)\"", [["echo", "`a`", "`b`", "$(c)"]]],
     ['echo "$((1 + 2))"', [["echo", "$((1 + 2))"]]],
-    ['x="$(echo "a b")"', [["b)"], ["echo", "a b"]]],
+    ['x="$(echo "a b")"', [["echo", "a b"]]],
   ])("resolves each command %#", (command, expected) => {
     expect(firstExecutables(command)).toEqual(expected);
   });

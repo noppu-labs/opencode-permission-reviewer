@@ -1,0 +1,107 @@
+// Words that leave the next word at a command position (`time`, `coproc`, a function's header), as bash reads them.
+
+import type { BodyScan } from "./shell-substitution-frames.ts";
+
+/** What the previous word asked of the next one. */
+export type Prefix = "time" | "coproc" | "function";
+
+/** After a `coproc` name, the start of the compound command it runs. */
+const COMPOUND_START =
+  /(?:(?:case|if|while|until|for|select)(?!\w)|\{|\(|\[\[)/y;
+const TIME_OPTION = /(?:-p|--)(?=[ \t\n]|$)/y;
+const HEADER = /\((?:[ \t]|\\\n)*\)/y;
+/** A character that ends a function name, and one that cannot start it. */
+const NAME_BREAK = /[\s|&;()<>$`"'\\]/;
+const NAME_START = /[^\s|&;()<>$`"'\\{!#]/;
+
+/**
+ * Whether the word read at `start` keeps the next word at a command
+ * position, and what it asks of that word: `time` (unless it follows a
+ * pipe) and `coproc` with its name.
+ */
+export function keepsCommandPosition(
+  scan: BodyScan,
+  word: string,
+  start: number,
+  end: number,
+): boolean {
+  const pending = scan.prefix;
+  scan.prefix = undefined;
+  if (!scan.commandPosition) return false;
+  if (pending === "coproc") return compoundStartsAfterBlanks(scan.text, end);
+  if (word === "time" && !followsPipe(scan.text, start)) scan.prefix = "time";
+  else if (word === "coproc" || word === "function") scan.prefix = word;
+  return scan.prefix !== undefined;
+}
+
+/** Whether a compound command starts after at least one blank at `from`. */
+function compoundStartsAfterBlanks(text: string, from: number): boolean {
+  let at = from;
+  while (text[at] === " " || text[at] === "\t") at += 1;
+  if (at === from) return false;
+  COMPOUND_START.lastIndex = at;
+  return COMPOUND_START.test(text);
+}
+
+function followsPipe(text: string, start: number): boolean {
+  let i = start - 1;
+  while (text[i] === " " || text[i] === "\t") i -= 1;
+  if (text[i] === "&" && text[i - 1] === "|") return true;
+  return text[i] === "|" && text[i - 1] !== "|";
+}
+
+/** The end of a `-p` or `--` after `time`, or -1. */
+function timeOptionEnd(scan: BodyScan): number {
+  if (scan.prefix !== "time") return -1;
+  TIME_OPTION.lastIndex = scan.index;
+  return TIME_OPTION.test(scan.text) ? TIME_OPTION.lastIndex : -1;
+}
+
+/** Text the scan reads here as a word of its own: the option after `time`,
+ *  the name after `function`, or the start of a command word that is not
+ *  made of word characters (`-a`, `.x`), which can name a function. */
+export function stepPrefixText(scan: BodyScan, c: string): boolean {
+  const optionEnd = c === "-" ? timeOptionEnd(scan) : -1;
+  if (optionEnd >= 0) {
+    scan.index = optionEnd;
+    return true;
+  }
+  if (scan.mode !== "bash" || !NAME_START.test(c)) return false;
+  if (scan.prefix === "function") {
+    scan.headStart = scan.index;
+    scan.index = nameEnd(scan.text, scan.index);
+    scan.prefix = undefined;
+    scan.commandPosition = true;
+    return true;
+  }
+  if (scan.commandPosition && !/\w/.test(c)) scan.headStart = scan.index;
+  return false;
+}
+
+/** The end of the run of characters that can make up a function's name. */
+function nameEnd(text: string, from: number): number {
+  let i = from;
+  for (;;) {
+    i = skipJoins(text, i);
+    if (i >= text.length || NAME_BREAK.test(text.charAt(i))) return i;
+    i += 1;
+  }
+}
+
+/** The end of the `()` of a function header `name ()` at the scan, or -1. */
+export function functionHeaderEnd(scan: BodyScan): number {
+  if (scan.headStart < 0) return -1;
+  let i = nameEnd(scan.text, scan.headStart);
+  while (scan.text[i] === " " || scan.text[i] === "\t")
+    i = skipJoins(scan.text, i + 1);
+  if (i !== scan.index) return -1;
+  HEADER.lastIndex = scan.index;
+  return HEADER.test(scan.text) ? HEADER.lastIndex : -1;
+}
+
+/** The index after the backslash-newlines that start at `from`. */
+export function skipJoins(text: string, from: number): number {
+  let at = from;
+  while (text[at] === "\\" && text[at + 1] === "\n") at += 2;
+  return at;
+}

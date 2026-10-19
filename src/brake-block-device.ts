@@ -1,5 +1,5 @@
 import type { Redirection } from "./capability/capability-types.ts";
-import { quotedChars, type ShellToken } from "./shell-token.ts";
+import { operatorChars, type ShellToken } from "./shell-token.ts";
 
 /**
  * Whitelist of real block-device path prefixes so that pseudo-devices
@@ -69,7 +69,7 @@ function redirectTarget(
 function unquotedRedirectOperators(token: ShellToken): RedirectOperator[] {
   const out: RedirectOperator[] = [];
   const value = token.value;
-  const quoted = quotedChars(token);
+  const quoted = operatorChars(token);
   for (let index = 0; index < value.length; index += 1) {
     if (value[index] !== ">") continue;
     if (quoted[index]) continue;

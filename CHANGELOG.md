@@ -118,6 +118,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell analysis: a `|` or `&` right after an empty quoted redirection target such as `>''` is
   read as its own operator, and a word after an empty here-string such as `<<<''` stays a separate
   word.
+- Shell analysis: a command substitution in double quotes, or in backticks anywhere, is read as part
+  of its word up to where the shell ends it, so quotes, separators and redirection operators inside
+  it no longer change how the rest of the command is read.
+- Shell analysis: a parameter expansion inside double quotes, such as `"${name:-default}"`, is read
+  as part of its word up to where the shell ends it, including any quotes inside it.
 
 ## [3.0.0] - 2026-10-12
 

@@ -16,4 +16,4 @@ description = "The parity check's git blob SHA-1 pin for src/shell-token.ts; gen
 targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''^benchmarks/permission-reviewer/lib/pinned-blobs\.mjs$''']
-regexes = ['''^f616055edcf347591c01aeefbd30857f53e6f65f$''']
+regexes = ['''^f3bf94abd5cad440aa52cac8063fe768f215c873$''']
