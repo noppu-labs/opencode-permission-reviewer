@@ -13,7 +13,8 @@ const PLACEHOLDER = "<HEREDOC:sha256:";
  * holds a `$(` and `(` (with any line continuations between them) followed
  * by a `#` after a blank: the shell ends a `$((` that is not arithmetic at
  * its parentheses when it reads the word, but reads such a `#` as a comment
- * when it expands it. Each mark is searched for once past the last one
+ * when it expands it. Also any `$(` span with a `#` after a blank and a `)`
+ * before the end of that line: bash 3.2 ends a `$(` at that `)`. Each mark is searched for once past the last one
  * found, so the calls for one text take linear time in all.
  */
 export function uncertainRegion(
@@ -21,14 +22,17 @@ export function uncertainRegion(
   from: number,
   to: number,
 ): boolean {
-  lex.marks ??= [-1, -1, -1];
+  lex.marks ??= [-1, -1, -1, -1, -1];
   const { marks } = lex;
   const text = lex.command;
   if (nextMark(marks, 0, 0, () => find(text, PLACEHOLDER, 0)) < text.length)
     return true;
   const pair = nextMark(marks, 1, from, () => pairFrom(text, from));
-  if (pair >= to) return false;
-  return nextMark(marks, 2, pair, () => commentFrom(text, pair)) < to;
+  if (pair < to && nextMark(marks, 2, pair, () => commentFrom(text, pair)) < to)
+    return true;
+  const open = nextMark(marks, 3, from, () => find(text, "$(", from));
+  if (open >= to) return false;
+  return nextMark(marks, 4, open, () => closingComment(text, open)) < to;
 }
 
 /** The mark in `slot` at or after `from`, searched for again only when the
@@ -57,6 +61,21 @@ function pairFrom(text: string, from: number): number {
 }
 
 const PAIR = /\$\((?:\\\n)*\(/g;
+
+/** The first `#` at or after `from` that a blank comes before and a `)`
+ *  follows on its line. A line whose first such `#` has no `)` after it
+ *  has none, so the search moves on to the next line. */
+function closingComment(text: string, from: number): number {
+  let at = commentFrom(text, from);
+  while (at !== Number.POSITIVE_INFINITY) {
+    const newline = text.indexOf("\n", at);
+    const end = newline < 0 ? text.length : newline;
+    if (text.slice(at, end).includes(")")) return at;
+    if (newline < 0) break;
+    at = commentFrom(text, newline);
+  }
+  return Number.POSITIVE_INFINITY;
+}
 
 /** The first `#` at or after `from` that a blank comes before. */
 function commentFrom(text: string, from: number): number {

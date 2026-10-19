@@ -1807,6 +1807,10 @@
     "echo `cat <<EOF\nfoo`": false
   },
   "destruction": {
+    "true || echo \"$(echo a # )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
+    "true || x=\"$(echo a # )\" ; git push --force origin main ; echo \"\n)\"": "git push --force origin main",
+    "true || echo \"${x:-$(echo a # )}\" ; rm -rf ~/x ; echo \"\n)}\"": "rm -rf ~/x",
+    "bash -c 'true || echo \"$(echo a # )\" ; rm -rf ~/x ; echo \"\n)\"'": "bash -c 'rm -rf ~/x'",
     "echo \"$(git log # say \"hi\n)\"; x=\"$(cat <<E\nhi\nE\nrm -rf ~/x\n)\"": "rm -rf ~/x",
     "echo \"$(echo a # say \"x\n)\"; y=\"$(cat <<E\nhi\nE\ngit push --force origin main\n)\"": "git push --force origin main",
     "bash -c 'echo \"$(git log # say \"hi\n)\"; x=\"$(cat <<E\nhi\nE\nrm -rf ~/x\n)\"'": "bash -c 'rm -rf ~/x'",
