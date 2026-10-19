@@ -21,6 +21,9 @@ const COMPOUND_START =
   /[ \t]+(?:(?:case|if|while|until|for|select)(?!\w)|\{|\(|\[\[)/y;
 const TIME_OPTION = /(?:-p|--)(?=[ \t\n]|$)/y;
 const HEADER = /\([ \t]*\)/y;
+/** A character that ends a function name, and one that cannot start it. */
+const NAME_BREAK = /[\s|&;()<>$`"'\\]/;
+const NAME_START = /[^\s|&;()<>$`"'\\{!#]/;
 
 /** A word: `case` at a command position opens a `case` body, `esac`
  *  closes the innermost one. */
@@ -35,14 +38,14 @@ export function readWord(scan: BodyScan): void {
   scan.commandPosition =
     COMMAND_PREFIX_WORDS.has(word) ||
     (scan.mode === "bash" && keepsCommandPosition(scan, word, scan.index, end));
-  scan.headEnd = atCommand ? end : -1;
+  if (atCommand) scan.headStart = scan.index;
   scan.index = end;
 }
 
 /**
  * Whether the word read at `start` keeps the next word at a command
  * position, and what it asks of that word: `time` (unless it follows a
- * pipe), `coproc` and its name, `function` and its name.
+ * pipe) and `coproc` with its name.
  */
 function keepsCommandPosition(
   scan: BodyScan,
@@ -52,7 +55,6 @@ function keepsCommandPosition(
 ): boolean {
   const pending = scan.prefix;
   scan.prefix = undefined;
-  if (pending === "function") return true;
   if (!scan.commandPosition) return false;
   if (pending === "coproc") {
     COMPOUND_START.lastIndex = end;
@@ -71,17 +73,46 @@ function followsPipe(text: string, start: number): boolean {
 }
 
 /** The end of a `-p` or `--` after `time`, or -1. */
-export function timeOptionEnd(scan: BodyScan): number {
+function timeOptionEnd(scan: BodyScan): number {
   if (scan.prefix !== "time") return -1;
   TIME_OPTION.lastIndex = scan.index;
   return TIME_OPTION.test(scan.text) ? TIME_OPTION.lastIndex : -1;
 }
 
+/** Text the scan reads here as a word of its own: the option after `time`,
+ *  the name after `function`, or the start of a command word that is not
+ *  made of word characters (`-a`, `.x`), which can name a function. */
+export function stepPrefixText(scan: BodyScan, c: string): boolean {
+  const optionEnd = c === "-" ? timeOptionEnd(scan) : -1;
+  if (optionEnd >= 0) {
+    scan.index = optionEnd;
+    return true;
+  }
+  if (scan.mode !== "bash" || !NAME_START.test(c)) return false;
+  if (scan.prefix === "function") {
+    scan.headStart = scan.index;
+    scan.index = nameEnd(scan.text, scan.index);
+    scan.prefix = undefined;
+    scan.commandPosition = true;
+    return true;
+  }
+  if (scan.commandPosition && !/\w/.test(c)) scan.headStart = scan.index;
+  return false;
+}
+
+/** The end of the run of characters that can make up a function's name. */
+function nameEnd(text: string, from: number): number {
+  let i = from;
+  while (i < text.length && !NAME_BREAK.test(text.charAt(i))) i += 1;
+  return i;
+}
+
 /** The end of the `()` of a function header `name ()` at the scan, or -1. */
 export function functionHeaderEnd(scan: BodyScan): number {
-  if (scan.headEnd < 0) return -1;
-  for (let i = scan.headEnd; i < scan.index; i += 1)
-    if (scan.text[i] !== " " && scan.text[i] !== "\t") return -1;
+  if (scan.headStart < 0) return -1;
+  let i = nameEnd(scan.text, scan.headStart);
+  while (scan.text[i] === " " || scan.text[i] === "\t") i += 1;
+  if (i !== scan.index) return -1;
   HEADER.lastIndex = scan.index;
   return HEADER.test(scan.text) ? HEADER.lastIndex : -1;
 }

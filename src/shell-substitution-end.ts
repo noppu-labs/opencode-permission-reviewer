@@ -36,7 +36,7 @@ export function substitutionBodyEnd(
     reading,
     mode,
     prefix: undefined,
-    headEnd: -1,
+    headStart: -1,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;

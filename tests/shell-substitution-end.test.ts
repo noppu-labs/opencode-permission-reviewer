@@ -59,6 +59,20 @@ describe("substitutionBodyEnd", () => {
     );
   });
 
+  test.each([
+    "function a-b { case x in x) echo A;; esac; }; a-b",
+    "function a.b () { case x in x) echo A;; esac; }; a.b",
+    "function a:b case x in x) echo A;; esac; a:b",
+    "function 1a case x in x) echo A;; esac; 1a",
+    "function a+b () { case x in x) echo A;; esac; }; a+b",
+  ])("reads the name after function as one word in %j", (body) => {
+    const text = `"$(${body})"`;
+    expect(substitutionBodyEnd(text, 3, "command")).toBe(text.length - 2);
+    expect(substitutionBodyEnd(text, 3, "command", "default", "previous")).toBe(
+      text.indexOf("x)") + 1,
+    );
+  });
+
   test("ends at the end of the input when nothing closes the body", () => {
     const text = `"$(echo ${BRACE}x:-"a)"} `;
     expect(substitutionBodyEnd(text, 3, "command", "default", "bash")).toBe(

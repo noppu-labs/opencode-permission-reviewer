@@ -10,7 +10,7 @@ import {
   functionHeaderEnd,
   type Prefix,
   readWord,
-  timeOptionEnd,
+  stepPrefixText,
 } from "./shell-substitution-prefix.ts";
 
 /** The syntax the scan is inside: a command list (`$(`, `(`), a `case`
@@ -28,8 +28,8 @@ export interface BodyScan {
   mode: SubstitutionScan;
   /** What the last word asked of the next one (`time`, `coproc`, `function`). */
   prefix: Prefix | undefined;
-  /** End of the last word read at a command position, or -1. */
-  headEnd: number;
+  /** Start of the last word that began at a command position, or -1. */
+  headStart: number;
 }
 
 export function advance(scan: BodyScan): boolean {
@@ -40,7 +40,7 @@ export function advance(scan: BodyScan): boolean {
 export function open(scan: BodyScan, frame: Frame, width: number): boolean {
   scan.frames.push(frame);
   scan.prefix = undefined;
-  scan.headEnd = -1;
+  scan.headStart = -1;
   scan.index += width;
   scan.commandPosition = true;
   return false;
@@ -81,7 +81,7 @@ function openParenthesis(scan: BodyScan): boolean {
   const end = scan.mode === "bash" ? functionHeaderEnd(scan) : -1;
   if (end < 0) return open(scan, "command", 1);
   scan.index = end;
-  scan.headEnd = -1;
+  scan.headStart = -1;
   scan.commandPosition = true;
   return false;
 }
@@ -119,11 +119,7 @@ function stepCommandText(scan: BodyScan, c: string): void {
     readHeredocOperator(scan);
     return;
   }
-  const optionEnd = c === "-" ? timeOptionEnd(scan) : -1;
-  if (optionEnd >= 0) {
-    scan.index = optionEnd;
-    return;
-  }
+  if (stepPrefixText(scan, c)) return;
   if (/\w/.test(c)) {
     readWord(scan);
     return;
