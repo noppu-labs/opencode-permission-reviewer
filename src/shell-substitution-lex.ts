@@ -12,6 +12,7 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "./shell-substitution.ts";
+import { uncertainRegion } from "./shell-substitution-trust.ts";
 
 /** Lex the body of a command substitution into segments of its own, under
  *  the same budget. */
@@ -133,12 +134,12 @@ function keepInWord(lex: LexState, end: number): void {
  *  it: the text of a body is lexed once and never walked in the quote state
  *  of the word that holds it. Other readings walk it again, and the
  *  character itself is still scanned as part of the enclosing word. A body
- *  the shell's reading finds no end for is read, with all the text after
- *  it, as the previous release read it. Returns whether the scan moved past
+ *  the shell's reading finds no end for, or an end it cannot be sure of, is
+ *  read, with all the text after it, as the previous release read it. Returns whether the scan moved past
  *  a substitution. */
 function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
   if (lex.index < lex.substitutionEnd) return false;
-  const scan = lex.unterminated
+  const scan = lex.previousReading
     ? "previous"
     : substitutionScanOf(budget.quoting);
   const body = substitutionAt(
@@ -151,14 +152,20 @@ function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
     budget,
   );
   if (body === undefined) return false;
-  if (scan === "bash" && body.end > lex.command.length) {
-    lex.unterminated = true;
+  if (scan === "bash" && !trusted(lex, body.end)) {
+    lex.previousReading = true;
     return lexOne(lex, budget);
   }
   if (scan === "bash") return jumpPast(lex, budget, body);
   if (body.kind === "arithmetic") lex.arithmeticEnd = body.end;
   else if (body.kind === "command") lexBody(lex, budget, body.text, body.end);
   return false;
+}
+
+/** Whether the shell's reading can be sure the substitution at the current
+ *  character ends just before `end`. */
+function trusted(lex: LexState, end: number): boolean {
+  return end <= lex.command.length && !uncertainRegion(lex, lex.index, end);
 }
 
 /** Lex what the substitution holds, then keep its text in the word and

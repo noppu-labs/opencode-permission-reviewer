@@ -1807,6 +1807,17 @@
     "echo `cat <<EOF\nfoo`": false
   },
   "destruction": {
+    "msg=\"${MSG:-\"$(cat <<'EOF'\nhello\nEOF\ngit push --force origin main)\"}\"": "git push --force origin main",
+    "echo \"${x:-\"$(cat <<E\n)\nE\nrm -rf ~/x)\"}\"": "rm -rf ~/x",
+    "echo \"$(cat <<E\nx\nE\nrm -rf ~/x)\"": "rm -rf ~/x",
+    "bash -c 'echo \"$(cat <<E\nx\nE\nrm -rf ~/x)\"'": "bash -c 'rm -rf ~/x'",
+    "true || echo \"$((echo a) # )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
+    "true || x=\"$((echo a) # )\" ; git push --force origin main ; echo \"\n)\"": "git push --force origin main",
+    "bash -c 'true || echo \"$((echo a) # )\" ; rm -rf ~/x ; echo \"\n)\"'": "bash -c 'rm -rf ~/x'",
+    "echo \"$(cat <<E <HEREDOC:sha256:0123456789ab>/dev/null\n)\nE\nrm -rf ~/x)\"": "rm -rf ~/x",
+    "x=\"$(cat <<E <HEREDOC:sha256:0123456789ab>/dev/null\n)\nE\ngit push --force origin main)\"": "git push --force origin main",
+    "bash -c 'echo \"$(cat <<E <HEREDOC:sha256:0123456789ab>/dev/null\n)\nE\nrm -rf ~/x)\"'": "bash -c 'rm -rf ~/x'",
+    "bash -c 'msg=\"${MSG:-\"$(cat <<E\nx\nE\ngit push --force origin main)\"}\"'": "bash -c 'git push --force origin main'",
     "msg=\"${MSG:-\"$(cat <<'EOF'\nhello\nEOF\n)\"}\"; git push --force origin main": "git push --force origin main",
     "echo \"${x:-\"$(cat <<E\nx\nE\n)\"}\" ; rm -rf ~/x": "rm -rf ~/x",
     "echo \"$(cat <<E\nx\nE\n)\" ; rm -rf ~/x": "rm -rf ~/x",
@@ -1976,7 +1987,7 @@
   "outerRedirections": {
     "x=`cat <<EOF\nfoo`>~/.bashrc <<B\nb\nB\nls": ["external-write", null],
     "x=`cat <<EOF\nfoo`>/tmp/y <<B\nb\nB\nls": ["temporary-write", null],
-    "echo `cat <<EOF\nfoo`>/tmp/y": ["temporary-write", "> /tmp/y"],
+    "echo `cat <<EOF\nfoo`>/tmp/y": ["temporary-write", "<< EOF"],
     "echo `cat <a`>~/.bashrc": ["external-write", "> ~/.bashrc"],
     "echo `a>b`>~/.bashrc": ["external-write", "> ~/.bashrc"],
     "echo `a>>b`>>~/.bashrc": ["external-write", ">> ~/.bashrc"],

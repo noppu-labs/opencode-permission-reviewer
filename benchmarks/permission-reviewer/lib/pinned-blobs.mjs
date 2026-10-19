@@ -93,7 +93,7 @@ export const PINNED_BLOBS = {
   "src/shell-redirections.ts": "5cd7793d8d30af5a6b1c70d4e015cba5655f444f",
   "src/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
-  "src/shell-lex-state.ts": "4eb7f3a9be9699567b2cece3e967e239732956c4",
+  "src/shell-lex-state.ts": "ab7b43c6ec2526afdeefcac4748d775bb812f0fa",
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
   "src/shell-substitution.ts": "9d90d22f26adf041b77c979b72355b408cbe0f99",
@@ -104,14 +104,15 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-words.ts": "ee012917a63da958246081ef821af8d5ac52c264",
   "src/shell-substitution-groups.ts":
     "a81777fbf25ba1b7177410826ee278eff0779ad7",
-  "src/shell-substitution-text.ts": "992cea9ddb4092606627e6ec915f414c9ef8665c",
+  "src/shell-substitution-text.ts": "023644a3de082e67080143918bdc1eafa05a0a50",
   "src/shell-substitution-frames.ts":
     "821a5ebd99243275446315a17ea58b1e38125537",
-  "src/shell-substitution-lex.ts": "f4eb45077f2749866c02df57bcf0b83efa03a66e",
+  "src/shell-substitution-lex.ts": "757f81cc73f6ea430ddf11ffd2e92255560f932a",
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
-  "src/shell-substitution-pairs.ts": "7b9fa08ef205664bac8a8c71a362cf08b319676e",
-  "src/shell-pair-text.ts": "9c315a8ffcf00351aaa234869b21fab4f81db99d",
+  "src/shell-substitution-pairs.ts": "97466dbc0ef33effc7ee686398c25586656ff6ac",
+  "src/shell-substitution-trust.ts": "69c201b102741a62221539ad5df3e11503a2da8b",
+  "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
