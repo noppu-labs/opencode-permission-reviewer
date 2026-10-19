@@ -82,7 +82,9 @@ function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
 }
 
 /** Lexes the command and resolves every segment's effective commands under
- *  one shared budget, or returns `undefined` when any limit is hit. */
+ *  one shared budget, or returns `undefined` when any limit is hit. The
+ *  commands that heredoc bodies in its substitutions and in the command
+ *  strings it re-lexes run go to `bodies`, when given. */
 function analyzeSegments(
   command: string,
   reading: HeredocReading,
@@ -92,7 +94,7 @@ function analyzeSegments(
   const lex = lexSegmentsBounded(command, reading, quoting);
   keepBodyCommands(bodies, lex.bodyCommands, lex.bodyUnresolved);
   if (lex.truncated) return undefined;
-  const budget = newAnalysisBudget(reading, quoting);
+  const budget = newAnalysisBudget(reading, quoting, bodies);
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
     const analysis = analyzeSegment(segment, budget);
@@ -183,8 +185,8 @@ function linesReason(
  *  reading can hide a later line from another. The brake checks the default
  *  reading, the reading that collapses every operator, and the heredoc
  *  reading the previous release used; each distinct text is checked once.
- *  The commands that heredoc bodies inside substitutions run are added to
- *  `bodies`, when given. */
+ *  The commands that heredoc bodies inside substitutions and command strings
+ *  run are added to `bodies`, when given. */
 export function brakeReadingsReason(
   command: string,
   quoting: ShellQuoting,

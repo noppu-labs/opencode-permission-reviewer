@@ -5,7 +5,7 @@ import { analyzeEffectiveCommands } from "../shell-effective-commands.ts";
 import { type AnalysisBudget, lexSegmentsBounded } from "../shell-lexer.ts";
 import type { ShellSegment, ShellToken } from "../shell-token.ts";
 import type { Redirection } from "./capability-types.ts";
-import { MAX_BODY_DEPTH } from "./heredoc-body-commands.ts";
+import { type BodyCommands, MAX_BODY_DEPTH } from "./heredoc-body-commands.ts";
 
 /** What a walk collects: the segments, the effective command of each and its
  *  redirections, and whether any limit stopped the analysis short. */
@@ -49,11 +49,12 @@ interface Queued {
 
 /**
  * Walk the commands that heredoc bodies run, each lexed as a command line of
- * its own, after the command's own. A command's lexed segments may hold
- * heredocs of their own (in a double-quoted substitution), whose commands
- * run one level deeper; past `MAX_BODY_DEPTH` levels, or when a body has no
- * end to read, the analysis is incomplete. A limit that stops a walk stops
- * the rest, which shares the one budget.
+ * its own, after the command's own. The budget's `bodies` holds those of the
+ * command strings the walks so far re-lexed. A command's lexed segments may
+ * hold heredocs of their own (in a double-quoted substitution or a command
+ * string), whose commands run one level deeper; past `MAX_BODY_DEPTH`
+ * levels, or when a body has no end to read, the analysis is incomplete. A
+ * limit that stops a walk stops the rest, which shares the one budget.
  */
 export function walkBodyCommands(
   commands: string[],
@@ -61,19 +62,36 @@ export function walkBodyCommands(
   budget: AnalysisBudget,
   into: Walked,
 ): void {
-  into.truncated = into.truncated || unresolved;
-  const queue: Queued[] = commands.map((command) => ({ command, level: 1 }));
+  const strings = takeBodies(budget);
+  into.truncated = into.truncated || unresolved || strings.unresolved;
+  const queue: Queued[] = [...commands, ...strings.commands].map((command) => ({
+    command,
+    level: 1,
+  }));
   for (const next of queue) {
     const lex = lexSegmentsBounded(next.command);
     const stopped = walkSegments(lex.segments, budget, into);
-    into.truncated = into.truncated || lex.bodyUnresolved;
+    const deeper = takeBodies(budget);
+    into.truncated = into.truncated || lex.bodyUnresolved || deeper.unresolved;
     if (lex.truncated || stopped) {
       into.truncated = true;
       return;
     }
-    into.truncated =
-      queueDeeper(queue, lex.bodyCommands, next.level) || into.truncated;
+    const nested = [...lex.bodyCommands, ...deeper.commands];
+    into.truncated = queueDeeper(queue, nested, next.level) || into.truncated;
   }
+}
+
+/** The commands the budget's `bodies` holds, which it then holds no more. */
+function takeBodies(budget: AnalysisBudget): BodyCommands {
+  const { bodies } = budget;
+  if (bodies === undefined) return { commands: [], unresolved: false };
+  const taken = {
+    commands: bodies.commands.splice(0),
+    unresolved: bodies.unresolved,
+  };
+  bodies.unresolved = false;
+  return taken;
 }
 
 /** Queue the commands one level below `level`; true when that is past the

@@ -25,7 +25,10 @@ export function parseCommand(rawCommand: string): ParsedCommand {
   // every segment shares one effective-command budget so wide inputs cannot
   // stay under per-segment ceilings while the total grows unbounded.
   const lex = lexSegmentsBounded(sanitizedCommand);
-  const budget = newAnalysisBudget();
+  const budget = newAnalysisBudget("default", "bash", {
+    commands: [],
+    unresolved: false,
+  });
   const walked = newWalked();
   const stopped = walkSegments(lex.segments, budget, walked);
   walked.truncated = lex.truncated || stopped;
@@ -34,8 +37,9 @@ export function parseCommand(rawCommand: string): ParsedCommand {
     hasDynamicConstructs ||
     dyn ||
     walked.segments.some((segment) => segmentHasDynamic(segment.tokens));
-  // The commands the heredoc bodies run come after the command's own, and
-  // leave the dynamic flags as the command alone sets them.
+  // The commands the heredoc bodies run, the command strings' among them,
+  // come after the command's own, and leave the dynamic flags as the command
+  // alone sets them.
   walkBodyCommands(
     [...extraction.bodyCommands, ...lex.bodyCommands],
     extraction.bodyUnresolved || lex.bodyUnresolved,

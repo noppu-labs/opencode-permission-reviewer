@@ -64,17 +64,22 @@ export interface AnalysisBudget {
   /** Quote reading for every command string and substitution this budget
    *  covers. Absent means bash's reading. */
   quoting?: ShellQuoting;
+  /** Where the commands that heredoc bodies in the re-lexed command strings
+   *  run are kept; a walk that does not judge them leaves it unset. */
+  bodies?: BodyCommands;
 }
 
 export function newAnalysisBudget(
   reading: HeredocReading = "default",
   quoting: ShellQuoting = "bash",
+  bodies?: BodyCommands,
 ): AnalysisBudget {
   return {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
     reading,
     quoting,
+    ...(bodies === undefined ? {} : { bodies }),
   };
 }
 
