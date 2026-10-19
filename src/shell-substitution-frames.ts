@@ -1,6 +1,6 @@
 // The frame steps of the substitution end-finder: how each syntax the scan can be inside reads the next character.
 
-import type { HeredocReading } from "./shell-lex-state.ts";
+import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
 import {
   heredocBodiesEnd,
   heredocOperatorAt,
@@ -9,7 +9,7 @@ import {
 
 /** The syntax the scan is inside: a command list (`$(`, `(`), a `case`
  *  body, a double-quoted string, or a backtick body. */
-type Frame = "command" | "case" | "double" | "backtick";
+type Frame = "command" | "case" | "double" | "backtick" | "brace";
 
 export interface BodyScan {
   text: string;
@@ -19,6 +19,7 @@ export interface BodyScan {
   /** Whether the next word sits where a command (or `case`/`esac`) can start. */
   commandPosition: boolean;
   reading: HeredocReading;
+  mode: SubstitutionScan;
 }
 
 /** Words after which a command can still start. */
@@ -54,10 +55,23 @@ export function close(scan: BodyScan): boolean {
 }
 
 export function stepDouble(scan: BodyScan, c: string): boolean {
-  if (c === '"') return close(scan);
+  return stepQuoted(scan, c, '"');
+}
+
+/** Inside a `${…}` in double quotes, quotes open strings of their own. */
+export function stepBrace(scan: BodyScan, c: string): boolean {
+  return stepQuoted(scan, c, "}");
+}
+
+/** The text of a double-quoted string or of a `${…}` inside one: it ends at
+ *  `closer`, and substitutions inside it open frames of their own. */
+function stepQuoted(scan: BodyScan, c: string, closer: string): boolean {
+  if (c === closer) return close(scan);
+  if (c === '"') return open(scan, "double", 1);
   if (c === "`") return open(scan, "backtick", 1);
-  if (c === "$" && scan.text[scan.index + 1] === "(")
-    return open(scan, "command", 2);
+  const next = c === "$" ? scan.text[scan.index + 1] : undefined;
+  if (next === "(") return open(scan, "command", 2);
+  if (next === "{" && scan.mode === "bash") return open(scan, "brace", 2);
   return advance(scan);
 }
 

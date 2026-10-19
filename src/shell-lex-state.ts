@@ -21,6 +21,11 @@ export type HeredocReading = "default" | "legacy";
  *  string at its first `'` (`previous`). */
 export type ShellQuoting = "bash" | "undecoded" | "previous";
 
+/** Which end the scan gives a command substitution's body: where the shell
+ *  ends it (`bash`), or where the previous release did (`previous`), which
+ *  the emergency brake also checks. */
+export type SubstitutionScan = "bash" | "previous";
+
 /** A budget that lexes command substitutions into segments of their own. */
 export interface SubstitutionBudget extends TokenBudget {
   substitutions: "lex";

@@ -1,10 +1,11 @@
 // Where a command substitution's body ends: the `)` or backtick the shell pairs with its opener.
 
-import type { HeredocReading } from "./shell-lex-state.ts";
+import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
 import {
   advance,
   type BodyScan,
   close,
+  stepBrace,
   stepCommand,
   stepDouble,
 } from "./shell-substitution-frames.ts";
@@ -21,6 +22,7 @@ export function substitutionBodyEnd(
   start: number,
   opener: "command" | "backtick",
   reading: HeredocReading = "default",
+  mode: SubstitutionScan = "bash",
 ): number {
   const scan: BodyScan = {
     text,
@@ -29,6 +31,7 @@ export function substitutionBodyEnd(
     heredocs: [],
     commandPosition: true,
     reading,
+    mode,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;
@@ -48,5 +51,6 @@ function step(scan: BodyScan): boolean {
   }
   if (frame === "backtick") return c === "`" ? close(scan) : advance(scan);
   if (frame === "double") return stepDouble(scan, c);
+  if (frame === "brace") return stepBrace(scan, c);
   return stepCommand(scan, c, frame === "case");
 }
