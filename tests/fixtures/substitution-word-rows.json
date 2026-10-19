@@ -744,6 +744,26 @@
     "echo \"$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ; echo RAN9": [
       "echo ¦ «$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)» ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ echo ¦ RAN9",
       "echo ¦ \"$(: ; (( x ) ) ; (( $(: <<E\n)\nE\n) << 2 ))\necho A)\" ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ $ ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶  ¶ << ¦ 2 ¶  ¶ echo ¦ A ¶ echo ¦ RAN9"
+    ],
+    "\"$(: ; (( ${x:-)} << 2 ))\n2\necho A)\"; echo hi": [
+      "«$(: ; (( ${x:-)} << 2 ))\n2\necho A)» ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ 2 ¶  ¶ 2 ¶ echo ¦ A ¶ echo ¦ hi",
+      "\"$(: ; (( ${x:-)} << 2 ))\n2\necho A)\" ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ 2 ¶  ¶ 2 ¶ echo ¦ A ¶ echo ¦ hi"
+    ],
+    "\"$(: ; (( ${x:-(} << 2 ))\n2\necho A)\"; echo hi": [
+      "«$(: ; (( ${x:-(} << 2 ))\n2\necho A)» ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ 2 ¶  ¶ 2 ¶ echo ¦ A ¶ echo ¦ hi",
+      "\"$(: ; (( ${x:-(} << 2 ))\n2\necho A)\" ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ 2 ¶  ¶ 2 ¶ echo ¦ A ¶ echo ¦ hi"
+    ],
+    "\"$(: ; (( ${x:-)} << E ))\nE)\necho A)\"": [
+      "«$(: ; (( ${x:-)} << E ))\nE)\necho A)» ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ E ¶  ¶ E",
+      "\"$(: ; (( ${x:-)} << E ))\nE)\necho A)\" ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ E ¶  ¶ E"
+    ],
+    "\"$(: ; (( ${x:-(} << E ))\nE)\necho A)\"": [
+      "«$(: ; (( ${x:-(} << E ))\nE)\necho A)» ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ E ¶  ¶ E",
+      "\"$(: ; (( ${x:-(} << E ))\nE)\necho A)\" ¶ : ¶  ¶  ¶ ${x:- ¶ } ¦ << ¦ E ¶  ¶ E"
+    ],
+    "echo \"$(: ; (( x ) ) ; (( `: <<E\n)\nE\n` ) ) ) ; echo \"; echo RAN ; echo \" ) \"": [
+      "echo ¦ «$(: ; (( x ) ) ; (( `: <<E\n)\nE\n` ) ) ) ; echo » ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ `: ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶ ` ¶  ¶ echo ¦ RAN ¶ echo ¦ « ) »",
+      "echo ¦ \"$(: ; (( x ) ) ; (( `: <<E\n)\nE\n` ) ) ) ; echo \" ¶ : ¶  ¶  ¶ x ¶  ¶  ¶  ¶ `: ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶ : ¦ <<E ¦ <HEREDOC:sha256:fafba0527c39> ¶ ` ¶  ¶ echo ¦ RAN ¶ echo ¦ \" ) \""
     ]
   },
   "outer": {

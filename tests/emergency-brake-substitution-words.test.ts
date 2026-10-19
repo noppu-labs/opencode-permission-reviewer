@@ -61,7 +61,13 @@ describe("everyday substitution forms", () => {
 });
 
 describe("the reading reaches each command-string wrapper", () => {
-  const readings: ShellQuoting[] = ["bash", "rescan", "undecoded", "previous"];
+  const readings: ShellQuoting[] = [
+    "bash",
+    "finder",
+    "rescan",
+    "undecoded",
+    "previous",
+  ];
   for (const [wrapper, wrap] of Object.entries(WRAPPERS)) {
     test.each(ROWS.rescanOnly)(
       `blocks through ${wrapper}, by the rescan reading: %j`,
@@ -71,15 +77,20 @@ describe("the reading reaches each command-string wrapper", () => {
         const blocks = readings.filter(
           (reading) => brakeReadingsReason(wrapped, reading) !== undefined,
         );
-        expect(blocks.filter((reading) => reading !== "bash")).toEqual([
-          "rescan",
-        ]);
+        // The finder reading is the bash reading without the heredoc
+        // fallback, so both are left out of the comparison.
+        expect(
+          blocks.filter(
+            (reading) => reading !== "bash" && reading !== "finder",
+          ),
+        ).toEqual(["rescan"]);
       },
     );
   }
 });
 
 describe("the finder reading", () => {
+  // The brake's other passes allow these rows; the finder pass blocks them.
   const others: ShellQuoting[] = ["bash", "rescan", "undecoded", "previous"];
   test.each(ROWS.finderOnly)(
     "blocks %j when no other reading does",

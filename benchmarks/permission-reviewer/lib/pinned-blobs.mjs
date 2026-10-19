@@ -113,7 +113,7 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
   "src/shell-substitution-pairs.ts": "0680bc2448e940ae0660dce3640bfde59461322b",
-  "src/shell-substitution-trust.ts": "e48c540191812ff467672668f54474d2b073001e",
+  "src/shell-substitution-trust.ts": "4f35e1cab86cd9da47cebacd45cbab3d071fd8d5",
   "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",

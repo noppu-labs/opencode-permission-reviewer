@@ -21,9 +21,9 @@ const PLACEHOLDER = "<HEREDOC:sha256:";
  * `#` as a comment when it expands it. Also any `$(` span with such a `#`
  * and a `)` before the end of that line: bash 3.2 ends a `$(` at that `)`.
  * Also a `((` that the shell does not read as arithmetic and whose
- * parentheses hold a `<<`: bash 5.2 and later read that span again as
- * text, so a heredoc in a `$(…)` there takes no body and the substitution
- * ends earlier than the end-finder finds. Each mark is searched for once
+ * parentheses hold a group and then a `<<`: bash 5.2 and later read that
+ * span again as text, so a heredoc in a `$(…)` or `(…)` there takes no body
+ * and the substitution ends earlier than the end-finder finds. Each mark is searched for once
  * past the last one found, so the calls for one text take linear time in
  * all.
  */
@@ -32,7 +32,7 @@ export function uncertainRegion(
   from: number,
   to: number,
 ): boolean {
-  lex.marks ??= [-1, -1, -1, -1, -1, -1, -1, -1];
+  lex.marks ??= [-1, -1, -1, -1, -1, -1, -1, -1, -1];
   const { marks } = lex;
   const text = lex.command;
   if (nextMark(marks, 0, 0, () => find(text, PLACEHOLDER, 0)) < text.length)
@@ -65,8 +65,17 @@ function rejectedGroupEnd(
   return inner < 0 ? -1 : groupCloseFrom(text, inner + 1, probes);
 }
 
+/** The first `(` at or after `from` that opens a group: after a blank, a
+ *  separator, a parenthesis or a `$`. */
+function groupOpenFrom(text: string, from: number): number {
+  let at = text.indexOf("(", from);
+  while (at >= 0 && !/[\s;&|($]/.test(text.charAt(at - 1)))
+    at = text.indexOf("(", at + 1);
+  return at < 0 ? Number.POSITIVE_INFINITY : at;
+}
+
 /** The first `((` at or after `from` that the shell does not read as
- *  arithmetic and whose parentheses hold a `<<`. */
+ *  arithmetic and whose parentheses hold a `<<` after a group. */
 function heredocGroupFrom(lex: LexState, from: number): number {
   const text = lex.command;
   const probes: ProbeCache =
@@ -75,9 +84,11 @@ function heredocGroupFrom(lex: LexState, from: number): number {
   let at = text.indexOf("((", from);
   while (at >= 0) {
     const end = text[at - 1] === "$" ? -1 : rejectedGroupEnd(text, at, probes);
+    const open = nextMark(marks, 8, at + 2, () => groupOpenFrom(text, at + 2));
     if (
       end >= 0 &&
-      nextMark(marks, 6, at + 2, () => find(text, "<<", at + 2)) < end
+      open < end &&
+      nextMark(marks, 6, open + 2, () => find(text, "<<", open + 2)) < end
     )
       return at;
     at = text.indexOf("((", at + 1);
