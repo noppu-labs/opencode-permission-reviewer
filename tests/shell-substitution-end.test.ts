@@ -105,3 +105,27 @@ describe("substitutionAt", () => {
     },
   );
 });
+
+/** `text: [index just past the opener, index of the closing brace]` for a
+ *  `${…}` in double quotes, from bash 3.2, 4.4, 5.1 and 5.3 (all agree), one
+ *  row per line in tests/fixtures/expansion-end-rows.json. */
+const EXPANSIONS = JSON.parse(
+  readFileSync(
+    join(import.meta.dir, "fixtures/expansion-end-rows.json"),
+    "utf8",
+  ),
+) as Record<string, [number, number]>;
+
+describe("substitutionBodyEnd of a braced expansion", () => {
+  test.each(Object.entries(EXPANSIONS))(
+    "ends %j at its closing brace",
+    (text, [start, end]) => {
+      expect(substitutionBodyEnd(text, start, "brace")).toBe(end);
+    },
+  );
+
+  test("ends at the end of the text when nothing closes it", () => {
+    const text = '"${x:-"a b"';
+    expect(substitutionBodyEnd(text, 3, "brace")).toBe(text.length);
+  });
+});

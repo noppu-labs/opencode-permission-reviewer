@@ -28,7 +28,7 @@ const ROWS = JSON.parse(
   everyday: Record<string, CapabilityActionClass>;
 };
 
-describe("a substitution's text does not hide the commands around it", () => {
+describe("a substitution's text keeps the commands around it", () => {
   test.each(Object.entries(ROWS.destruction))("%s", (command, twin) => {
     const form = analyze(command).capability;
     const plain = analyze(twin).capability;
