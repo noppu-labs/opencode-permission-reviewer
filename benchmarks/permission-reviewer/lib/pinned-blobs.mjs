@@ -53,7 +53,7 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "b9912695680fd0d746ffcede325d048d9523c055",
+  "src/emergency-brake.ts": "ebfdc5af7e2345d8471c017c0e3d2af1ee8b4b53",
   "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
   "src/brake-heredoc-texts.ts": "912e96820c37ee43c4221ef5a1ada0e6db5b2f66",
   "src/brake-readings.ts": "51d74b8fcc3b711583e3f1edc83d3ce373fa85ea",
@@ -76,7 +76,7 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "240a322996ee996e0a0e3a6d9bdd69771ee719b5",
+    "b63e6e92dbc1972a2e0967166894ee64ae958753",
   "src/capability/bash-analyzer.ts": "74fc89978ba4f023c9238d662933c4d2a987edea",
   "src/capability/bash-command-tables.ts":
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
@@ -183,13 +183,15 @@ export const PINNED_BLOBS = {
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
   "src/capability/command-walk.ts": "728cdbe623e1f38bd7ab8f9784641cd2535b861a",
   "src/capability/heredoc-body-commands.ts":
-    "21499ab3105e61555b40402cbeb54d3074e8bc6a",
+    "68788436c756437e363d045f3dfb0103c0b7e49f",
   "src/capability/heredoc-sanitized.ts":
     "fd5d91a750db12ad31b30976a9f9e249ecfa2703",
   "src/capability/heredoc-body-reading.ts":
     "b868615ee99f994e9c449cea2b6dacb3f18991e4",
   "src/capability/delimited-substitution-end.ts":
-    "142f4738055cd20beec6c81590a9b17a865bcedd",
+    "f475f9ddeca163227d1c977b02457c1e4d022547",
   "src/capability/heredoc-body-early-ends.ts":
-    "ad98f83ef8713c2d6945a54fbce45de747071ebd",
+    "d32d1411b18b5666ae54d44566be41d0a71dab97",
+  "src/capability/delimited-arithmetic.ts":
+    "a7466ea048567c7f8b57cf92d43d6ed88dfb937f",
 };

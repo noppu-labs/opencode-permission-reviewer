@@ -2,22 +2,43 @@
 
 import { substitutionAt } from "../shell-substitution.ts";
 import {
-  delimitedSubstitutionEnd,
-  readsAsArithmetic,
-} from "./delimited-substitution-end.ts";
+  type ArithmeticReads,
+  readsAsArithmeticAt,
+} from "./delimited-arithmetic.ts";
+import { delimitedSubstitutionEnd } from "./delimited-substitution-end.ts";
 import { bodyTextStep } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
 
-/** Text the scans below may read for one heredoc body, the bodies nested in
- *  it included: twice the input cap (MAX_ANALYSIS_INPUT_CHARS). Past it the
- *  body is unresolved. */
-const EARLY_END_CHARS = 262_144;
+/** Text the scans below may read, per character of the input they serve,
+ *  and on top of that. Past it every body still to scan is unresolved. */
+const EARLY_END_CHARS_PER_CHAR = 32;
+const EARLY_END_CHARS_FLOOR = 65_536;
 
-let remaining: number = EARLY_END_CHARS;
+let remaining = 0;
+let scopes = 0;
 
-/** Starts the budget for a body that no other body holds. */
-export function startEarlyEndBudget(): void {
-  remaining = EARLY_END_CHARS;
+function budgetFor(chars: number): number {
+  return EARLY_END_CHARS_PER_CHAR * chars + EARLY_END_CHARS_FLOOR;
+}
+
+/** Runs `run` under one budget for every body it scans, sized to the
+ *  `inputChars` of the request it serves. */
+export function withEarlyEndBudget<T>(inputChars: number, run: () => T): T {
+  const saved = remaining;
+  remaining = budgetFor(inputChars);
+  scopes += 1;
+  try {
+    return run();
+  } finally {
+    scopes -= 1;
+    remaining = saved;
+  }
+}
+
+/** Starts the budget for a body that no other body holds, sized to the
+ *  body, unless a request's budget covers it. */
+export function startEarlyEndBudget(bodyChars: number): void {
+  if (scopes === 0) remaining = budgetFor(bodyChars);
 }
 
 export interface EarlyEndCommands {
@@ -25,8 +46,7 @@ export interface EarlyEndCommands {
   unresolved: boolean;
 }
 
-interface EarlyScan extends EarlyEndCommands {
-  text: string;
+interface EarlyScan extends EarlyEndCommands, ArithmeticReads {
   known: ReadonlyMap<number, number>;
 }
 
@@ -44,7 +64,14 @@ export function earlyEndCommands(
   text: string,
   known: ReadonlyMap<number, number>,
 ): EarlyEndCommands {
-  const scan: EarlyScan = { text, known, commands: [], unresolved: false };
+  const scan: EarlyScan = {
+    text,
+    known,
+    commands: [],
+    unresolved: false,
+    closes: new Map(),
+    differs: undefined,
+  };
   let index = 0;
   while (index >= 0 && index < text.length && !scan.unresolved) {
     const after = text.startsWith("$$", index)
@@ -58,8 +85,8 @@ export function earlyEndCommands(
 /** The index after the substitution at `index`, or -1 where bash 3.2
  *  stops expanding the body. */
 function substitute(scan: EarlyScan, index: number): number {
-  const found = commandAt(scan.text, index);
-  if (found === undefined || !charge(scan, found.end - index)) return -1;
+  const found = commandAt(scan, index);
+  if (found === undefined || scan.unresolved) return -1;
   if (found.arithmetic) return index + 3;
   const listed = scan.known.get(index);
   if (listed === undefined || found.end > listed) keep(scan, found.command);
@@ -74,18 +101,24 @@ interface Found {
 
 /** The command the backtick or `$(` at `index` runs and the index after it,
  *  or whether bash 3.2 reads the `$((` there as arithmetic; `undefined`
- *  when nothing ends it. */
-function commandAt(text: string, index: number): Found | undefined {
+ *  when nothing ends it. Only text a scan reads for the first time is
+ *  charged: the ends one scan finds are kept for the scans after it. */
+function commandAt(scan: EarlyScan, index: number): Found | undefined {
+  const { text } = scan;
   if (text.charAt(index) === "`") {
     const found = substitutionAt(text, index, false, false);
     if (found?.kind !== "command" || found.end > text.length) return undefined;
+    charge(scan, found.end - index);
     return { command: found.text, end: found.end, arithmetic: false };
   }
-  const close = delimitedSubstitutionEnd(text, index + 2);
+  const fresh = !scan.closes.has(index + 2);
+  const close = delimitedSubstitutionEnd(text, index + 2, scan.closes);
+  if (fresh) charge(scan, (close < 0 ? text.length : close) - index);
   if (close < 0) return undefined;
-  const command = text.slice(index + 2, close);
   const arithmetic =
-    command.startsWith("(") && readsAsArithmetic(command.slice(1));
+    text.charAt(index + 2) === "(" &&
+    readsAsArithmeticAt(scan, index, close, (chars) => charge(scan, chars));
+  const command = arithmetic ? "" : text.slice(index + 2, close);
   return { command, end: close + 1, arithmetic };
 }
 

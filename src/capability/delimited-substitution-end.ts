@@ -5,29 +5,58 @@ type Frame = "paren" | "double" | "brace";
 interface Delimited {
   text: string;
   frames: Frame[];
+  /** Where the text of each frame starts. */
+  starts: number[];
   comment: boolean;
+  closes: DelimitedCloses | undefined;
 }
+
+/** The `)` that ends each parenthesis frame of one text, by the index its
+ *  text starts at, or -1 for a frame the text ends inside. A frame is read
+ *  the same way wherever the scan that opens it began, so one scan settles
+ *  every frame it opens. */
+export type DelimitedCloses = Map<number, number>;
 
 /**
  * The index of the `)` that ends the `$(` whose text starts at `start`, as
  * bash 3.2 finds it when it expands a heredoc body, or -1 when the text
  * ends first (bash then reports a bad substitution and expands no further).
  * It reads no `case` pattern, heredoc body or `${…}` outside double quotes,
- * so a `)` in any of them ends the substitution.
+ * so a `)` in any of them ends the substitution. `closes`, when given, keeps
+ * the end of every parenthesis frame the scan opens and is read first.
  */
-export function delimitedSubstitutionEnd(text: string, start: number): number {
-  const after = delimitedEnd(text, start, "paren");
+export function delimitedSubstitutionEnd(
+  text: string,
+  start: number,
+  closes?: DelimitedCloses,
+): number {
+  const known = closes?.get(start);
+  if (known !== undefined) return known;
+  const after = delimitedEnd(text, start, "paren", closes);
   return after < 0 ? -1 : after - 1;
 }
 
 /** The index after the character that closes `first`, or -1. */
-function delimitedEnd(text: string, start: number, first: Frame): number {
-  const scan: Delimited = { text, frames: [first], comment: false };
+function delimitedEnd(
+  text: string,
+  start: number,
+  first: Frame,
+  closes?: DelimitedCloses,
+): number {
+  const scan: Delimited = {
+    text,
+    frames: [first],
+    starts: [start],
+    comment: false,
+    closes,
+  };
   let index = start;
   while (index >= 0 && index < text.length) {
     index = stepFrame(scan, index);
     if (scan.frames.length === 0) return index;
   }
+  for (const [at, frame] of scan.frames.entries())
+    if (frame === "paren") closes?.set(scan.starts[at] ?? -1, -1);
   return -1;
 }
 
@@ -95,11 +124,14 @@ function stepDollar(scan: Delimited, index: number): number {
 
 function open(scan: Delimited, frame: Frame, after: number): number {
   scan.frames.push(frame);
+  scan.starts.push(after);
   return after;
 }
 
 function close(scan: Delimited, index: number): number {
-  scan.frames.pop();
+  const frame = scan.frames.pop();
+  const start = scan.starts.pop() ?? -1;
+  if (frame === "paren") scan.closes?.set(start, index);
   return index + 1;
 }
 

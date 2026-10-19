@@ -65,7 +65,7 @@ export function heredocBodyCommands(
   tabStripped: boolean,
 ): BodyCommands {
   if (depth >= MAX_BODY_DEPTH) return { commands: [], unresolved: true };
-  if (depth === 0) startEarlyEndBudget();
+  if (depth === 0) startEarlyEndBudget(body.length);
   depth += 1;
   try {
     return scanBody(expandedBody(body, tabStripped));
