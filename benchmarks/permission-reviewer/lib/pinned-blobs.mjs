@@ -183,9 +183,13 @@ export const PINNED_BLOBS = {
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
   "src/capability/command-walk.ts": "8315edd43cc3fbded2a380c7b70c357806a2b120",
   "src/capability/heredoc-body-commands.ts":
-    "68a1b39360c4d269131b987fe73a86e04d96ebde",
+    "21499ab3105e61555b40402cbeb54d3074e8bc6a",
   "src/capability/heredoc-sanitized.ts":
     "fd5d91a750db12ad31b30976a9f9e249ecfa2703",
   "src/capability/heredoc-body-reading.ts":
     "b868615ee99f994e9c449cea2b6dacb3f18991e4",
+  "src/capability/delimited-substitution-end.ts":
+    "142f4738055cd20beec6c81590a9b17a865bcedd",
+  "src/capability/heredoc-body-early-ends.ts":
+    "a984763effaa7a5d4ca8473764e98cf300f874cb",
 };

@@ -6,6 +6,10 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "../shell-substitution.ts";
+import {
+  earlyEndCommands,
+  startEarlyEndBudget,
+} from "./heredoc-body-early-ends.ts";
 import { bodyTextStep, expandedBody } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
 
@@ -53,13 +57,15 @@ let depth = 0;
  * `$((` and `${` step inside and keep scanning, so substitutions nested in
  * them are found; a `$(` or backtick that `substitutionAt` ends is jumped.
  * `tabStripped` is a `<<-` body: a line that continues another keeps its tabs,
- * and every other line loses its leading ones.
+ * and every other line loses its leading ones. The commands bash 3.2 runs
+ * where it ends a `$(` at an earlier `)` come after the others.
  */
 export function heredocBodyCommands(
   body: string,
   tabStripped: boolean,
 ): BodyCommands {
   if (depth >= MAX_BODY_DEPTH) return { commands: [], unresolved: true };
+  if (depth === 0) startEarlyEndBudget();
   depth += 1;
   try {
     return scanBody(expandedBody(body, tabStripped));
@@ -83,6 +89,8 @@ interface Scan {
   /** Text the probes that found arithmetic have read. */
   probed: number;
   unresolved: boolean;
+  /** The index after each listed substitution, by the index it starts at. */
+  ends: Map<number, number>;
 }
 
 /** Text those probes may read in all, so a deep nest of `$((` costs a
@@ -99,10 +107,18 @@ function scanBody(text: string): BodyCommands {
     arithmetic: undefined,
     probed: 0,
     unresolved: false,
+    ends: new Map(),
   };
   let index = 0;
   while (index < text.length && !scan.unresolved) index = step(scan, index);
-  return { commands: scan.commands, unresolved: scan.unresolved };
+  if (scan.unresolved) return { commands: scan.commands, unresolved: true };
+  const early = earlyEndCommands(text, scan.ends);
+  const listed = new Set(scan.commands);
+  const added = early.commands.filter((command) => !listed.has(command));
+  return {
+    commands: [...scan.commands, ...added],
+    unresolved: early.unresolved,
+  };
 }
 
 /** The index after the character or construct at `index`. */
@@ -131,6 +147,7 @@ function substitute(scan: Scan, index: number): number {
     return text.length;
   }
   if (found.kind === "command") {
+    scan.ends.set(index, found.end);
     keepCommand(scan, found, backtick);
     return found.end;
   }
