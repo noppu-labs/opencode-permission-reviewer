@@ -1,5 +1,16 @@
 // Shell token and segment shapes, and the quote-span queries every consumer of them shares.
 
+/** A run of a token's value that shares one quoting. `opaque` marks text the
+ *  lexer kept whole from a substitution (an unquoted backtick form): it is
+ *  the substitution's command, not the outer command's, so no operator in it
+ *  acts on the outer command. It stays unquoted otherwise: a glob character
+ *  in it reads as it did before. */
+interface TokenSpan {
+  text: string;
+  quoted: boolean;
+  opaque?: true;
+}
+
 export interface ShellToken {
   /** Original text including any surrounding quotes. */
   raw: string;
@@ -13,7 +24,7 @@ export interface ShellToken {
    *  A zero-width quoted span can end a word: it marks an empty quote right
    *  after text that ends like a redirection operator (`<<<''`), and holds no
    *  character of `value`. */
-  spans?: Array<{ text: string; quoted: boolean }>;
+  spans?: TokenSpan[];
 }
 
 export interface ShellSegment {
@@ -49,7 +60,7 @@ export function tokenCharIsQuoted(token: ShellToken, index: number): boolean {
 /** A token's spans with the offset in `value` where each one starts, so a
  *  slice can find its first span by binary search. */
 export interface SpanIndex {
-  spans: Array<{ text: string; quoted: boolean }>;
+  spans: TokenSpan[];
   starts: number[];
 }
 
@@ -84,7 +95,7 @@ export function sliceIndexed(
   end = token.value.length,
 ): ShellToken {
   const value = token.value.slice(start, end);
-  const spans: Array<{ text: string; quoted: boolean }> = [];
+  const spans: TokenSpan[] = [];
   for (
     let i = firstSpanEndingAfter(index, start);
     i < index.spans.length && (index.starts[i] ?? 0) < end;
@@ -112,7 +123,7 @@ function firstSpanEndingAfter(index: SpanIndex, start: number): number {
 /** Append the part of span `i` that falls inside `[start, end)`, merging it
  *  into the previous span when the quoting matches. */
 function pushSlicePiece(
-  spans: Array<{ text: string; quoted: boolean }>,
+  spans: TokenSpan[],
   index: SpanIndex,
   i: number,
   start: number,
@@ -126,12 +137,14 @@ function pushSlicePiece(
   if (from >= to) return;
   const text = span.text.slice(from - spanStart, to - spanStart);
   const previous = spans.at(-1);
-  if (previous?.quoted === span.quoted) previous.text += text;
+  if (previous?.quoted === span.quoted && previous.opaque === span.opaque)
+    previous.text += text;
+  else if (span.opaque) spans.push({ text, quoted: span.quoted, opaque: true });
   else spans.push({ text, quoted: span.quoted });
 }
 
 /** `tokenCharIsQuoted` for every character of `token.value`, in one pass. */
-export function quotedChars(token: ShellToken): boolean[] {
+function quotedChars(token: ShellToken): boolean[] {
   const quoted: boolean[] = [];
   const spans = token.spans ?? [
     { text: token.value, quoted: token.raw !== token.value },
@@ -146,6 +159,31 @@ export function quotedChars(token: ShellToken): boolean[] {
   }
   while (quoted.length < token.value.length) quoted.push(false);
   return quoted;
+}
+
+/** For every character of `token.value`, whether it came from a substitution's
+ *  text that the lexer kept whole (an `opaque` span). */
+export function opaqueChars(token: ShellToken): boolean[] {
+  const opaque: boolean[] = Array.from(
+    { length: token.value.length },
+    () => false,
+  );
+  let offset = 0;
+  for (const span of token.spans ?? []) {
+    if (span.opaque) opaque.fill(true, offset, offset + span.text.length);
+    offset += span.text.length;
+  }
+  return opaque;
+}
+
+/** For every character of `token.value`, whether it cannot act as a shell
+ *  operator: it is quoted or escaped, or it came from a substitution's text. */
+export function operatorChars(token: ShellToken): boolean[] {
+  const inert = quotedChars(token);
+  opaqueChars(token).forEach((opaque, index) => {
+    if (opaque) inert[index] = true;
+  });
+  return inert;
 }
 
 export function hasQuotedChar(token: ShellToken): boolean {

@@ -63,7 +63,7 @@ export const PINNED_BLOBS = {
   "src/brake-root-rm.ts": "8389ffd387fec486d49fa6583b713fbb4df28b21",
   "src/brake-find-root.ts": "2ebefecea8bfc28a165ea41739319a4dd3c7738e",
   "src/brake-find-exec.ts": "a4c8be903faf42139a2ca35b94d687e49e4e6b95",
-  "src/brake-block-device.ts": "419b097fcef8a2f7696175ef891dd4633b1eb844",
+  "src/brake-block-device.ts": "5bb4118f73203cbf4dae217c55351b7b8a8fd936",
   "src/brake-device-copy.ts": "d11bbd124821d2c7f5258b5d2682d8e9ec13fe1c",
   "src/brake-partition-tools.ts": "2d7e552d88f20157cdcede7ad7e87c613660254c",
   "src/brake-formatter-options.ts": "28cdc2bc3963739cf6871c2e0220d1c4eab77491",
@@ -89,11 +89,11 @@ export const PINNED_BLOBS = {
   "src/shell-lexer.ts": "82ccb7c998c0723a4e278d89e5e0e5daec06a3c1",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/shell-lexer-tables.ts": "d962f14223b70f233fcc11c637f1c0f817d3757d",
-  "src/shell-token.ts": "f616055edcf347591c01aeefbd30857f53e6f65f",
+  "src/shell-token.ts": "f3bf94abd5cad440aa52cac8063fe768f215c873",
   "src/shell-redirections.ts": "5cd7793d8d30af5a6b1c70d4e015cba5655f444f",
   "src/shell-redirection-operators.ts":
-    "cd6278e27b9a39682c09141a0b101fc31fd8b915",
-  "src/shell-lex-state.ts": "4e9aad89dff91ccfb7ba4c6d5d65ecda90600c98",
+    "545337ac0023100e74c1d405f31971098c471090",
+  "src/shell-lex-state.ts": "957a577a199fdbab0d2d07fa9ee8b86bfcf2af1c",
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
   "src/shell-substitution.ts": "231f33706768debdb5330518e3dd4ddb5c4be585",
@@ -107,7 +107,7 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-text.ts": "023644a3de082e67080143918bdc1eafa05a0a50",
   "src/shell-substitution-frames.ts":
     "cddd06ca08c1d2d1fc3fc1d793350ad7b46fd513",
-  "src/shell-substitution-lex.ts": "370a3e9a15c6349e0062226ce6eac92179989998",
+  "src/shell-substitution-lex.ts": "cfab4aa9980533cd00a343973d81dec972578db5",
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
   "src/shell-substitution-pairs.ts": "97466dbc0ef33effc7ee686398c25586656ff6ac",

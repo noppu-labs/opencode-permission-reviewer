@@ -110,11 +110,13 @@ function lexNested(
 }
 
 /** Add the substitution that starts at the current character to the word as
- *  written, quoted inside double quotes, and continue after it. */
+ *  written, and continue after it. Inside double quotes it is quoted; outside
+ *  it stays unquoted but opaque, so no operator in it acts on the outer
+ *  command. */
 function keepInWord(lex: LexState, end: number): void {
   const stop = Math.min(end, lex.command.length);
   const text = lex.command.slice(lex.index, stop);
-  appendValue(lex, text, lex.inDouble);
+  appendValue(lex, text, lex.inDouble, !lex.inDouble);
   lex.raw += text;
   lex.hasToken = true;
   lex.dollarRun = 0;

@@ -8,7 +8,12 @@ import {
 } from "../src/shell-lex-state.ts";
 import { normalizeShellRedirections } from "../src/shell-redirections.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
-import type { ShellSegment } from "../src/shell-token.ts";
+import {
+  hasQuotedChar,
+  type ShellSegment,
+  sliceToken,
+  tokenCharIsQuoted,
+} from "../src/shell-token.ts";
 
 function scan(command: string, quoting?: ShellQuoting): ShellSegment[] {
   const budget: LexBudget = {
@@ -54,7 +59,16 @@ const ROWS = JSON.parse(
     join(import.meta.dir, "fixtures/substitution-word-rows.json"),
     "utf8",
   ),
-) as Record<"bash" | "outer" | "rescan" | "undecoded" | "previous", Rows>;
+) as Record<
+  | "bash"
+  | "outer"
+  | "rescan"
+  | "undecoded"
+  | "previous"
+  | "redirections"
+  | "redirectionsRescan",
+  Rows
+>;
 
 describe.each([
   ["bash", ROWS.bash],
@@ -105,12 +119,16 @@ describe("a substitution's text in a word", () => {
     });
   });
 
-  test("marks an unquoted backtick form unquoted", () => {
+  test("keeps an unquoted backtick form in an unquoted span of its own", () => {
     const token = scan("echo a`b c`d")[0]?.tokens[1];
     expect(token).toEqual({
       raw: "a`b c`d",
       value: "a`b c`d",
-      spans: [{ text: "a`b c`d", quoted: false }],
+      spans: [
+        { text: "a", quoted: false },
+        { text: "`b c`", quoted: false, opaque: true },
+        { text: "d", quoted: false },
+      ],
     });
   });
 
@@ -191,6 +209,87 @@ describe("an expansion in double quotes", () => {
   test("is not an expansion when the `$` is escaped", () => {
     const command = `echo "\\${OPEN}x:-"a b"}"`;
     expect(render(scan(command))).toBe(render(scan(command, "rescan")));
+  });
+});
+
+/** The words and redirections of the first segment, as `value ¦ value` and
+ *  `operator target ¦ operator target`. */
+function splitFirst(command: string, quoting?: ShellQuoting): [string, string] {
+  const tokens = scan(command, quoting)[0]?.tokens ?? [];
+  const split = normalizeShellRedirections(tokens);
+  return [
+    split.tokens.map((token) => token.value).join(" ¦ "),
+    split.redirections
+      .map((found) => `${found.operator} ${found.target}`)
+      .join(" ¦ "),
+  ];
+}
+
+// Text a substitution holds is not the outer command's: an operator in it
+// does not redirect the outer command, and the outer operators after it do.
+// `redirectionsRescan` is the previous release's split of the same inputs.
+describe("the redirections of a word that holds a substitution", () => {
+  test.each(Object.entries(ROWS.redirections))("splits %j", (command, row) => {
+    expect(splitFirst(command)).toEqual(row);
+    expect(splitFirst(command, "bash")).toEqual(row);
+  });
+
+  test.each(Object.entries(ROWS.redirectionsRescan))(
+    "splits %j as the previous release did under the rescan reading",
+    (command, row) => {
+      expect(splitFirst(command, "rescan")).toEqual(row);
+    },
+  );
+
+  test("keeps the text of an unquoted backtick form in a span of its own", () => {
+    const token = scan("echo x`a>b`y>c")[0]?.tokens[1];
+    expect(token?.spans).toEqual([
+      { text: "x", quoted: false },
+      { text: "`a>b`", quoted: false, opaque: true },
+      { text: "y>c", quoted: false },
+    ]);
+  });
+
+  test("keeps neighbouring forms from merging with the text around them", () => {
+    const token = scan("echo `a``b`")[0]?.tokens[1];
+    expect(token?.spans).toEqual([
+      { text: "`a``b`", quoted: false, opaque: true },
+    ]);
+  });
+
+  test("leaves the text of the other readings in plain spans", () => {
+    for (const quoting of ["rescan", "undecoded", "previous"] as const) {
+      const spans = scan("echo x`a>b`y", quoting)[0]?.tokens.flatMap(
+        (token) => token.spans ?? [],
+      );
+      expect(spans?.some((span) => "opaque" in span)).toBe(false);
+    }
+  });
+
+  test("reads the text as unquoted for the checks of glob characters", () => {
+    const token = scan("echo `a*`")[0]?.tokens[1];
+    expect(token && tokenCharIsQuoted(token, 2)).toBe(false);
+    expect(token && hasQuotedChar(token)).toBe(false);
+  });
+
+  test.each([
+    ["echo `a`|cat", "echo ¦ `a` ¶ a ¶ cat"],
+    ["echo `a|b`|cat", "echo ¦ `a|b` ¶ a ¶ b ¶ cat"],
+    ["echo `a;b`;ls", "echo ¦ `a;b` ¶ a ¶ b ¶ ls"],
+    ["echo >`a&b`&ls", "echo ¦ >`a&b` ¶ a ¶ b ¶ ls"],
+  ])(
+    "ends the outer command only at its own separator in %j",
+    (command, source) => {
+      expect(raws(scan(command))).toBe(source);
+    },
+  );
+
+  test("keeps the flag when a word is sliced", () => {
+    const token = scan("echo x`a>b`y>c")[0]?.tokens[1];
+    const sliced = token && sliceToken(token, 1, 6);
+    expect(sliced?.spans).toEqual([
+      { text: "`a>b`", quoted: false, opaque: true },
+    ]);
   });
 });
 

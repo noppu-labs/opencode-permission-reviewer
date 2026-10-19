@@ -111,11 +111,14 @@ export function appendValue(
   lex: LexState,
   text: string,
   quoted: boolean,
+  opaque = false,
 ): void {
   if (text.length === 0) return;
   const last = lex.spans.at(-1);
-  if (last !== undefined && last.quoted === quoted) last.text += text;
-  else lex.spans.push({ text, quoted });
+  if (last !== undefined && last.quoted === quoted && !!last.opaque === opaque)
+    last.text += text;
+  else
+    lex.spans.push(opaque ? { text, quoted, opaque: true } : { text, quoted });
   lex.value += text;
   lex.lastChar = text.charAt(text.length - 1);
 }

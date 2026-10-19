@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { brakeReadingsReason } from "../src/brake-readings.ts";
 import { analyzeBashCommand } from "../src/context/command-evidence.ts";
+import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import type { CapabilityActionClass } from "../src/types.ts";
 import { request } from "./helpers.ts";
 
@@ -26,6 +28,8 @@ const ROWS = JSON.parse(
 ) as {
   destruction: Record<string, string>;
   everyday: Record<string, CapabilityActionClass>;
+  outerRedirections: Record<string, [CapabilityActionClass, string | null]>;
+  blockDevice: Record<string, boolean>;
 };
 
 describe("a substitution's text keeps the commands around it", () => {
@@ -40,5 +44,37 @@ describe("a substitution's text keeps the commands around it", () => {
 describe("everyday substitutions keep their action class", () => {
   test.each(Object.entries(ROWS.everyday))("%s", (command, action) => {
     expect(analyze(command).capability?.actionClass.value).toBe(action);
+  });
+});
+
+// The outer command's redirections stay, whatever operators the substitution
+// text holds, and the action class is the one the previous release gave. A
+// segment that only assigns has no command to report them on (null).
+describe("the outer redirections of a command with a substitution", () => {
+  test.each(Object.entries(ROWS.outerRedirections))(
+    "%j",
+    (command, [action, redirections]) => {
+      const result = analyze(command);
+      expect(result.capability?.actionClass.value).toBe(action);
+      if (redirections === null) return;
+      expect(
+        result.parsed?.redirections[0]
+          ?.map((found) => `${found.operator} ${found.target}`)
+          .join(" ¦ "),
+      ).toBe(redirections);
+    },
+  );
+});
+
+// A write to a block device is found from the outer command's own operator,
+// from the command a substitution runs, and not from the operators the
+// substitution's text holds for the outer command.
+describe("the brake on redirections around a substitution", () => {
+  test.each(Object.entries(ROWS.blockDevice))("%j", (command, blocked) => {
+    const reason = emergencyBrakeReason(
+      request({ metadata: { command }, patterns: [command] }),
+    );
+    expect(reason !== undefined).toBe(blocked);
+    expect(brakeReadingsReason(command, "bash") !== undefined).toBe(blocked);
   });
 });
