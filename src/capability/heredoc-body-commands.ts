@@ -86,7 +86,9 @@ interface Scan {
 }
 
 /** Text those probes may read in all, so a deep nest of `$((` costs a
- *  bounded amount. Past it the body is unresolved. */
+ *  bounded amount. Past it the body is unresolved. It is twice the input
+ *  cap (MAX_ANALYSIS_INPUT_CHARS), so the probes may read a body at the cap
+ *  twice over before it is unresolved. */
 const PROBE_CHARS = 262_144;
 
 function scanBody(text: string): BodyCommands {

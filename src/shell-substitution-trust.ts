@@ -23,9 +23,9 @@ const PLACEHOLDER = "<HEREDOC:sha256:";
  * Also a `((` that the shell does not read as arithmetic and whose
  * parentheses hold a group and then a `<<`: bash 5.2 and later read that
  * span again as text, so a heredoc in a `$(…)` or `(…)` there takes no body
- * and the substitution ends earlier than the end-finder finds. Each mark is searched for once
- * past the last one found, so the calls for one text take linear time in
- * all.
+ * and the substitution ends earlier than the end-finder finds. Each mark is
+ * searched for once past the last one found, so the calls for one text take
+ * linear time in all.
  */
 export function uncertainRegion(
   lex: LexState,

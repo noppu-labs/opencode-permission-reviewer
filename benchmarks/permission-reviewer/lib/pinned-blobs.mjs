@@ -113,7 +113,7 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
   "src/shell-substitution-pairs.ts": "0680bc2448e940ae0660dce3640bfde59461322b",
-  "src/shell-substitution-trust.ts": "4f35e1cab86cd9da47cebacd45cbab3d071fd8d5",
+  "src/shell-substitution-trust.ts": "004bf2986c2606da3d240e72caadce506e665c2b",
   "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
@@ -183,7 +183,7 @@ export const PINNED_BLOBS = {
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
   "src/capability/command-walk.ts": "8315edd43cc3fbded2a380c7b70c357806a2b120",
   "src/capability/heredoc-body-commands.ts":
-    "7f8ba8413ef22f42acdf44b80b58068a0fb37ca5",
+    "68a1b39360c4d269131b987fe73a86e04d96ebde",
   "src/capability/heredoc-sanitized.ts":
     "fd5d91a750db12ad31b30976a9f9e249ecfa2703",
   "src/capability/heredoc-body-reading.ts":
