@@ -66,6 +66,11 @@
     }
   },
   "overrides": [
+    // One compact row per line in a long test table: the widest row is 275 characters.
+    {
+      "includes": ["tests/fixtures/heredoc-body-command-rows.json"],
+      "formatter": { "lineWidth": 320 }
+    },
     // Test directories only: see docs/DEVELOPMENT.md, "Test files".
     {
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],
