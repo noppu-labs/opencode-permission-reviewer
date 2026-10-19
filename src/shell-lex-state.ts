@@ -41,8 +41,15 @@ export function substitutionScanOf(
   return quoting === "bash" ? "bash" : "previous";
 }
 
+/** What the substitution end-finder may still read ahead to tell an
+ *  arithmetic `((` from a nested subshell, across every substitution one
+ *  command holds. Set to the length of the command on first use. */
+export interface ProbeBudget {
+  arithmeticReadsRemaining?: number;
+}
+
 /** A budget that lexes command substitutions into segments of their own. */
-export interface SubstitutionBudget extends TokenBudget {
+export interface SubstitutionBudget extends TokenBudget, ProbeBudget {
   substitutions: "lex";
   /** Heredoc reading for the substitution bodies this scan lexes. */
   reading?: HeredocReading;

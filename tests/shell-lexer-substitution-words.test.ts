@@ -362,4 +362,24 @@ describe("work stays linear in the text", () => {
       expect(ms).toBeLessThan(1000);
     },
   );
+  test.each([
+    ["at the cap", CAP],
+    ["at 8x the cap", 8 * CAP],
+  ])(
+    "reads many subshells that open with two parentheses and hold a heredoc %s",
+    (_name, size) => {
+      const unit = 'echo "$( ((a <<E\n(((\nE\n )) )" ;\n';
+      const { ms } = timed(unit.repeat(Math.floor(size / unit.length)));
+      expect(ms).toBeLessThan(1000);
+    },
+  );
+
+  test.each([
+    ["at the cap", CAP],
+    ["at 8x the cap", 8 * CAP],
+  ])("reads many opening parentheses in substitutions %s", (_name, size) => {
+    const unit = 'echo "$( ((( x )" ;\n';
+    const { ms } = timed(unit.repeat(Math.floor(size / unit.length)));
+    expect(ms).toBeLessThan(1000);
+  });
 });

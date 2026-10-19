@@ -1,6 +1,10 @@
 // Where a command substitution's body ends: the `)` or backtick the shell pairs with its opener.
 
-import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
+import type {
+  HeredocReading,
+  ProbeBudget,
+  SubstitutionScan,
+} from "./shell-lex-state.ts";
 import { stepBrace, stepDouble } from "./shell-substitution-brace.ts";
 import {
   advance,
@@ -23,6 +27,7 @@ import { startsSubject } from "./shell-substitution-words.ts";
  * when nothing closes it. Inside a `$(` body, quoted text, comments, heredoc
  * bodies, nested parentheses and `case` patterns do not close it. When
  * `closes` is given, it receives the index each frame inside closed at.
+ * `probes` is the budget the arithmetic probes of a whole command share.
  */
 export function substitutionBodyEnd(
   text: string,
@@ -31,6 +36,7 @@ export function substitutionBodyEnd(
   reading: HeredocReading = "default",
   mode: SubstitutionScan = "bash",
   closes?: Map<number, number>,
+  probes: ProbeBudget = { arithmeticReadsRemaining: text.length },
 ): number {
   const scan: BodyScan = {
     text,
@@ -48,7 +54,7 @@ export function substitutionBodyEnd(
     pattern: undefined,
     saved: [],
     escapedEnd: -1,
-    lookahead: text.length,
+    probes,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;
@@ -61,9 +67,10 @@ export function substitutionBodyEnd(
 function step(scan: BodyScan): boolean {
   const c = scan.text.charAt(scan.index);
   if (c === "\\") {
+    const joins = scan.mode === "bash" && scan.text[scan.index + 1] === "\n";
     scan.index += 2;
     scan.escapedEnd = scan.index;
-    scan.commandPosition = false;
+    if (!joins) scan.commandPosition = false;
     return false;
   }
   if (scan.words !== undefined) startsSubject(scan, c);

@@ -3,11 +3,11 @@
 import type { BodyScan } from "./shell-substitution-frames.ts";
 import { keepsCommandPosition } from "./shell-substitution-prefix.ts";
 
-/** Where a `case` or `for` header is: its subject, its `in`, a `for`
- *  loop's name, and the words of its list. */
 /** Whether a `case` pattern began with a `(`. */
 export type Pattern = "bare" | "paren" | undefined;
 
+/** Where a `case` or `for` header is: its subject, its `in`, a `for`
+ *  loop's name, and the words of its list. */
 export type Words =
   | "caseSubject"
   | "caseIn"
@@ -30,13 +30,14 @@ const COMMAND_PREFIX_WORDS = new Set([
 /** A word: `case` at a command position opens a `case` body, `esac`
  *  closes the innermost one. */
 export function readWord(scan: BodyScan): void {
+  if (scan.mode === "bash") {
+    const end = wordEnd(scan.text, scan.index);
+    readBashWord(scan, joinedWord(scan.text, scan.index, end), end);
+    return;
+  }
   let end = scan.index;
   while (/\w/.test(scan.text.charAt(end))) end += 1;
   const word = scan.text.slice(scan.index, end);
-  if (scan.mode === "bash") {
-    readBashWord(scan, word, end);
-    return;
-  }
   const atCommand = scan.commandPosition;
   if (atCommand && word === "case") scan.frames.push("case");
   else if (atCommand && word === "esac" && scan.frames.at(-1) === "case")
@@ -44,6 +45,21 @@ export function readWord(scan: BodyScan): void {
   scan.commandPosition = COMMAND_PREFIX_WORDS.has(word);
   if (atCommand) scan.headStart = scan.index;
   scan.index = end;
+}
+
+/** The end of the word at `from`, which a backslash-newline does not end. */
+function wordEnd(text: string, from: number): number {
+  let end = from;
+  for (;;) {
+    while (/\w/.test(text.charAt(end))) end += 1;
+    const joins = text[end] === "\\" && text[end + 1] === "\n";
+    if (!joins || !/\w/.test(text.charAt(end + 2))) return end;
+    end += 2;
+  }
+}
+
+function joinedWord(text: string, from: number, end: number): string {
+  return text.slice(from, end).replaceAll("\\\n", "");
 }
 
 /** A word as bash reads it: a keyword only at a command position, and not

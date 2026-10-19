@@ -2,7 +2,11 @@
 
 import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
-import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
+import type {
+  HeredocReading,
+  ProbeBudget,
+  SubstitutionScan,
+} from "./shell-lex-state.ts";
 import { substitutionBodyEnd } from "./shell-substitution-end.ts";
 
 /** The command text a substitution runs, and the index just past its
@@ -30,15 +34,16 @@ export function substitutionAt(
   inArithmetic: boolean,
   reading: HeredocReading = "default",
   scan: SubstitutionScan = "bash",
+  probes?: ProbeBudget,
 ): SubstitutionBody | undefined {
   const c = command.charAt(index);
   if (c === "`")
     return backtickBody(command, index + 1, inDouble, reading, scan);
   if (inDouble && c === "$" && command[index + 1] === "{")
-    return expansionBody(command, index, reading, scan);
+    return expansionBody(command, index, reading, scan, probes);
   if (!inDouble || c !== "$" || command[index + 1] !== "(") return undefined;
   if (inArithmetic && command[index + 2] === "(") return undefined;
-  return dollarParenBody(command, index + 2, reading, scan);
+  return dollarParenBody(command, index + 2, reading, scan, probes);
 }
 
 /** A `${…}` in double quotes holds quoted text and substitutions of its own,
@@ -50,6 +55,7 @@ function expansionBody(
   index: number,
   reading: HeredocReading,
   scan: SubstitutionScan,
+  probes: ProbeBudget | undefined,
 ): SubstitutionBody | undefined {
   if (scan !== "bash" || endsDollarPair(command, index)) return undefined;
   const closes: FrameCloses = new Map();
@@ -60,6 +66,7 @@ function expansionBody(
     reading,
     scan,
     closes,
+    probes,
   );
   return { kind: "expansion", end: close + 1, closes };
 }
@@ -105,6 +112,7 @@ function dollarParenBody(
   start: number,
   reading: HeredocReading,
   scan: SubstitutionScan,
+  probes: ProbeBudget | undefined,
 ): SubstitutionBody {
   const isPair = command[start] === "(";
   const closes: FrameCloses | undefined =
@@ -116,10 +124,19 @@ function dollarParenBody(
     reading,
     scan,
     closes,
+    probes,
   );
   if (
     isPair &&
-    substitutionBodyEnd(command, start + 1, "command", reading, scan) ===
+    substitutionBodyEnd(
+      command,
+      start + 1,
+      "command",
+      reading,
+      scan,
+      undefined,
+      probes,
+    ) ===
       close - 1
   )
     return { kind: "arithmetic", end: close + 1, closes };

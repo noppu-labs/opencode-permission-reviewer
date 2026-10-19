@@ -40,9 +40,23 @@ function stepSeparator(scan: BodyScan, c: string): void {
 }
 
 function atWordStart(scan: BodyScan): boolean {
-  if (scan.mode === "bash" && scan.escapedEnd === scan.index)
-    return scan.text.charAt(scan.index - 1) === "\n";
-  return /[\s;&|()]/.test(scan.text.charAt(scan.index - 1));
+  const { text, index } = scan;
+  if (scan.mode === "bash" && scan.escapedEnd === index)
+    return afterContinuation(text, index);
+  return /[\s;&|()]/.test(text.charAt(index - 1));
+}
+
+/** Whether the text right before `index`, once the backslash-newlines that
+ *  join lines are taken out, ends where a word does. An escaped character
+ *  that is not a newline is part of its word. */
+function afterContinuation(text: string, index: number): boolean {
+  if (text.charAt(index - 1) !== "\n") return false;
+  let at = index - 2;
+  while (text[at - 1] === "\n" && text[at - 2] === "\\") at -= 2;
+  if (at === 0) return true;
+  let slashes = 0;
+  while (text[at - 2 - slashes] === "\\") slashes += 1;
+  return slashes % 2 === 0 && /[\s;&|()]/.test(text.charAt(at - 1));
 }
 
 /** In a `case` body, `;;`, `;&` and `;;&` end a clause: patterns follow. */
@@ -58,7 +72,12 @@ function caseTerminator(scan: BodyScan): void {
  *  follow and are skipped whole. */
 function skipNewline(scan: BodyScan): void {
   endHeader(scan);
-  scan.index = heredocBodiesEnd(scan.text, scan.index + 1, scan.heredocs);
+  scan.index = heredocBodiesEnd(
+    scan.text,
+    scan.index + 1,
+    scan.heredocs,
+    scan.mode === "bash",
+  );
   scan.heredocs = [];
   scan.commandPosition = true;
 }

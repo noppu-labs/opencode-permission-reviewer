@@ -1,6 +1,10 @@
 // The frame steps of the substitution end-finder: how each syntax the scan can be inside reads the next character.
 
-import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
+import type {
+  HeredocReading,
+  ProbeBudget,
+  SubstitutionScan,
+} from "./shell-lex-state.ts";
 import type { PendingHeredoc } from "./shell-substitution-heredoc.ts";
 import { functionHeaderEnd, type Prefix } from "./shell-substitution-prefix.ts";
 import { stepCommandText } from "./shell-substitution-text.ts";
@@ -47,8 +51,9 @@ export interface BodyScan {
   saved: [Words | undefined, Pattern][];
   /** Index right after the last backslash escape. */
   escapedEnd: number;
-  /** Characters an arithmetic probe may still read ahead. */
-  lookahead: number;
+  /** What the arithmetic probe may still read, shared by the calls that
+   *  read one command. */
+  probes: ProbeBudget;
 }
 
 export function advance(scan: BodyScan): boolean {

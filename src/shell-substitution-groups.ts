@@ -48,12 +48,15 @@ function openTest(scan: BodyScan): boolean | undefined {
 
 /** The index of the `))` that closes the `((` at the scan, or -1 when the
  *  first unmatched `)` is not followed by another, or when the text runs
- *  out. Quotes are skipped. The text read is charged to a budget, so a run
- *  of `((` that never close costs a bounded amount in all. */
+ *  out. Quotes are skipped. The text read is charged to the budget the
+ *  command shares, so a run of `((` that never close costs a bounded amount
+ *  in all. */
 function arithmeticEnd(scan: BodyScan): number {
-  const limit = Math.min(scan.text.length, scan.index + scan.lookahead);
+  const remaining = scan.probes.arithmeticReadsRemaining ?? 0;
+  const limit = Math.min(scan.text.length, scan.index + remaining);
   const { end, stop } = matchEnd(scan.text, scan.index + 2, limit);
-  scan.lookahead -= Math.max(0, stop - scan.index);
+  scan.probes.arithmeticReadsRemaining =
+    remaining - Math.max(0, stop - scan.index);
   return end;
 }
 
@@ -88,7 +91,7 @@ function skipQuoted(text: string, from: number, limit: number): number {
 /** The text of an arithmetic command: its parentheses nest, and nothing in
  *  it is a command. */
 export function stepArith(scan: BodyScan, c: string): boolean {
-  if (c === "#") return advance(scan);
+  if (c === "#" || c === "<" || c === ">") return advance(scan);
   const group = c === "(" ? openGroup(scan, c) : undefined;
   if (group !== undefined) return group;
   if (c === "(" && scan.text[scan.index - 1] !== "$") {
@@ -128,6 +131,6 @@ function endsTest(scan: BodyScan): boolean {
   return (
     text.startsWith("]]", index) &&
     /\s/.test(text.charAt(index - 1)) &&
-    (index + 2 >= text.length || /[\s;&|)]/.test(text.charAt(index + 2)))
+    (index + 2 >= text.length || /[\s;&|)<>]/.test(text.charAt(index + 2)))
   );
 }
