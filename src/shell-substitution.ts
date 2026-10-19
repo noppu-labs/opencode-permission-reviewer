@@ -6,10 +6,12 @@ import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
 import { substitutionBodyEnd } from "./shell-substitution-end.ts";
 
 /** The command text a substitution runs, and the index just past its
- *  closing `)` or backtick. */
+ *  closing `)` or backtick; or, for a `${…}` expansion, the index just past
+ *  its `}`. */
 export type SubstitutionBody =
   | { kind: "command"; text: string; end: number }
-  | { kind: "arithmetic"; end: number };
+  | { kind: "arithmetic"; end: number }
+  | { kind: "expansion"; end: number };
 
 /**
  * An unquoted `$(` is not a substitution here: the scanner already splits at
@@ -28,9 +30,36 @@ export function substitutionAt(
   const c = command.charAt(index);
   if (c === "`")
     return backtickBody(command, index + 1, inDouble, reading, scan);
+  if (inDouble && c === "$" && command[index + 1] === "{")
+    return expansionBody(command, index, reading, scan);
   if (!inDouble || c !== "$" || command[index + 1] !== "(") return undefined;
   if (inArithmetic && command[index + 2] === "(") return undefined;
   return dollarParenBody(command, index + 2, reading, scan);
+}
+
+/** A `${…}` in double quotes holds quoted text and substitutions of its own,
+ *  so a `}` or `"` inside it does not end the word. Only the shell's reading
+ *  scans it. A `$` right after another `$` is no start: versions of the shell
+ *  disagree on where such a word ends, so the previous reading stays. */
+function expansionBody(
+  command: string,
+  index: number,
+  reading: HeredocReading,
+  scan: SubstitutionScan,
+): SubstitutionBody | undefined {
+  if (scan !== "bash" || endsDollarPair(command, index)) return undefined;
+  const close = substitutionBodyEnd(command, index + 2, "brace", reading, scan);
+  return { kind: "expansion", end: close + 1 };
+}
+
+/** Whether the `$` at `index` is the second of a `$$` pair: an odd number
+ *  of unescaped `$` end right before it. */
+function endsDollarPair(command: string, index: number): boolean {
+  let dollars = 0;
+  while (command[index - 1 - dollars] === "$") dollars += 1;
+  let slashes = 0;
+  while (command[index - 1 - dollars - slashes] === "\\") slashes += 1;
+  return (dollars - (slashes % 2)) % 2 === 1;
 }
 
 /** The body with its heredoc bodies collapsed, under the chosen reading. */

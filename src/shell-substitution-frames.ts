@@ -15,7 +15,7 @@ import {
 
 /** The syntax the scan is inside: a command list (`$(`, `(`), a `case`
  *  body, a double-quoted string, or a backtick body. */
-type Frame = "command" | "case" | "double" | "backtick" | "brace" | "cbrace";
+type Frame = "command" | "case" | "double" | "backtick" | "brace";
 
 export interface BodyScan {
   text: string;
@@ -89,7 +89,7 @@ function openParenthesis(scan: BodyScan): boolean {
 /** `${` opens an expansion that holds a `)` as text; `$$` is one parameter. */
 function stepDollar(scan: BodyScan): boolean {
   const next = scan.text[scan.index + 1];
-  if (next === "{") return open(scan, "cbrace", 2);
+  if (next === "{") return open(scan, "brace", 2);
   scan.commandPosition = false;
   scan.index += next === "$" ? 2 : 1;
   return false;

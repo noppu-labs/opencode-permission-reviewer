@@ -27,9 +27,12 @@ function lexBody(
   if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
 }
 
-/** Lex the command substitutions inside the expression of a double-quoted
- *  `$((…))` that spans `[from, to)`. */
-function lexArithmetic(
+/** Lex the command substitutions inside text that spans `[from, to)` and is
+ *  kept in its word whole: the expression of a double-quoted `$((…))`, or a
+ *  `${…}` expansion in double quotes. A substitution there runs even between
+ *  quotes. The `${` of a nested expansion is stepped over: the end of the
+ *  outer one is already known. */
+function lexNested(
   lex: LexState,
   budget: SubstitutionBudget,
   from: number,
@@ -37,6 +40,10 @@ function lexArithmetic(
 ): void {
   let index = from;
   while (index < to && !lex.outOfTokens) {
+    if (lex.command.startsWith("${", index)) {
+      index += 2;
+      continue;
+    }
     const body = substitutionAt(
       lex.command,
       index,
@@ -85,11 +92,13 @@ function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
   if (body === undefined) return false;
   if (scan !== "bash") {
     if (body.kind === "arithmetic") lex.arithmeticEnd = body.end;
-    else lexBody(lex, budget, body.text, body.end);
+    else if (body.kind === "command") lexBody(lex, budget, body.text, body.end);
     return false;
   }
   if (body.kind === "arithmetic")
-    lexArithmetic(lex, budget, lex.index + 3, body.end - 2);
+    lexNested(lex, budget, lex.index + 3, body.end - 2);
+  else if (body.kind === "expansion")
+    lexNested(lex, budget, lex.index + 2, body.end - 1);
   else lexBody(lex, budget, body.text, body.end);
   keepInWord(lex, body.end);
   return true;

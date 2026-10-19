@@ -1,11 +1,7 @@
 // Where a command substitution's body ends: the `)` or backtick the shell pairs with its opener.
 
 import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
-import {
-  stepBrace,
-  stepCommandBrace,
-  stepDouble,
-} from "./shell-substitution-brace.ts";
+import { stepBrace, stepDouble } from "./shell-substitution-brace.ts";
 import {
   advance,
   type BodyScan,
@@ -16,14 +12,14 @@ import {
 /**
  * Index of the character that closes the substitution whose body starts at
  * `start`: the matching `)` for a `$(` body, the next unescaped backtick for
- * a backtick body. Returns `text.length` when nothing closes it. Inside a
- * `$(` body, quoted text, comments, heredoc bodies, nested parentheses and
- * `case` patterns do not close it.
+ * a backtick body, the matching `}` for a `${` body. Returns `text.length`
+ * when nothing closes it. Inside a `$(` body, quoted text, comments, heredoc
+ * bodies, nested parentheses and `case` patterns do not close it.
  */
 export function substitutionBodyEnd(
   text: string,
   start: number,
-  opener: "command" | "backtick",
+  opener: "command" | "backtick" | "brace",
   reading: HeredocReading = "default",
   mode: SubstitutionScan = "bash",
 ): number {
@@ -57,6 +53,5 @@ function step(scan: BodyScan): boolean {
   if (frame === "backtick") return c === "`" ? close(scan) : advance(scan);
   if (frame === "double") return stepDouble(scan, c);
   if (frame === "brace") return stepBrace(scan, c);
-  if (frame === "cbrace") return stepCommandBrace(scan, c);
   return stepCommand(scan, c, frame === "case");
 }

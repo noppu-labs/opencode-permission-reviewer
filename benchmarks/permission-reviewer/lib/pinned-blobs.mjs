@@ -96,14 +96,14 @@ export const PINNED_BLOBS = {
   "src/shell-lex-state.ts": "ada91fb7e77665f368111a6d842bb4dd6344876d",
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
-  "src/shell-substitution.ts": "8b6357ad3463b4b3b9249dce83b4b84ced4f496a",
-  "src/shell-substitution-end.ts": "4248ea2c3e41fc9fc1e61a16598b47cd41953c89",
-  "src/shell-substitution-brace.ts": "7cbda795bb68923be5f8c2eee79f84bce4015163",
+  "src/shell-substitution.ts": "52d63dd6e3e74b7b17b73e76587c10fa05c23cf3",
+  "src/shell-substitution-end.ts": "77825d9900f363ca9a2f029c3b8ef060f04a5116",
+  "src/shell-substitution-brace.ts": "9fca7e19fc8dabcd789bf4807b756ab32c57db50",
   "src/shell-substitution-prefix.ts":
     "82d653c3843bd92d710eefe725b6a654566bcbc4",
   "src/shell-substitution-frames.ts":
-    "d377ae2ab85e657ae7e6ff681c2fb780f094d389",
-  "src/shell-substitution-lex.ts": "0cd2aee8d4b2e80e996faed3ec698133d79bec0c",
+    "765db5eb356575e0cc2158c97b9ec57d767c0ca0",
+  "src/shell-substitution-lex.ts": "f564f97b58155751e134edaa59dec0dd9c953226",
   "src/shell-substitution-heredoc.ts":
     "6105e5f7e9660f20c076f603c420afaf8513d699",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
