@@ -2,6 +2,7 @@
 
 import type { ProbeCache } from "./shell-lex-state.ts";
 import {
+  collapsedAt,
   heredocBodyEnd,
   heredocDelimiter,
   keywordAt,
@@ -133,7 +134,8 @@ function closeCommandText(read: Reader, kind: Kind, i: number): number {
 function closeHeredoc(read: Reader, kind: Kind, i: number): number {
   const { word, dash, end } = heredocDelimiter(read.text, i);
   const onLine = at(read, kind, end);
-  if (word === "" || read.newline < 0) return onLine;
+  if (word === "" || read.newline < 0 || collapsedAt(read.text, end))
+    return onLine;
   if (onLine >= 0 && onLine < read.newline) return onLine;
   read.lines ??= lineIndex(read.text);
   const body = heredocBodyEnd(read.lines, read.newline, word, dash);

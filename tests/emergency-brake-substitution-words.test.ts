@@ -9,8 +9,9 @@ import { request } from "./helpers.ts";
 const blocked =
   "Emergency brake: command contains unmistakable broad system destruction.";
 
-/** `block` and `allow` are plain commands; `rescanOnly` are commands that only
- *  the rescan reading of a substitution body blocks. One row per line in
+/** `block` and `allow` are plain commands; `rescanOnly` are commands that,
+ *  of the previous release's readings, only the rescan reading of a
+ *  substitution body blocks. One row per line in
  *  tests/fixtures/emergency-brake-substitution-rows.json. */
 const ROWS = JSON.parse(
   readFileSync(
@@ -53,25 +54,20 @@ describe("everyday substitution forms", () => {
   });
 });
 
-describe("a substitution body the rescan reading alone blocks", () => {
-  for (const [wrapper, wrap] of Object.entries(WRAPPERS)) {
-    test.each(ROWS.rescanOnly)(`blocks through ${wrapper}: %j`, (command) => {
-      expect(brake(wrap(command))).toBe(blocked);
-    });
-  }
-});
-
 describe("the reading reaches each command-string wrapper", () => {
   const readings: ShellQuoting[] = ["bash", "rescan", "undecoded", "previous"];
   for (const [wrapper, wrap] of Object.entries(WRAPPERS)) {
     test.each(ROWS.rescanOnly)(
-      `only the rescan reading blocks, through ${wrapper}: %j`,
+      `blocks through ${wrapper}, by the rescan reading: %j`,
       (command) => {
         const wrapped = wrap(command);
+        expect(brake(wrapped)).toBe(blocked);
         const blocks = readings.filter(
           (reading) => brakeReadingsReason(wrapped, reading) !== undefined,
         );
-        expect(blocks).toEqual(["rescan"]);
+        expect(blocks.filter((reading) => reading !== "bash")).toEqual([
+          "rescan",
+        ]);
       },
     );
   }

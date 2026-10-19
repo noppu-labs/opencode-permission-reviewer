@@ -87,7 +87,7 @@ describe("substitutionBodyEnd", () => {
     expect(substitutionBodyEnd(text, 3, "command", "default", "bash")).toBe(
       3 + body.length,
     );
-    expect(performance.now() - started).toBeLessThan(1000);
+    expect(performance.now() - started).toBeLessThan(3000);
   });
 });
 

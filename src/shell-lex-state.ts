@@ -84,6 +84,9 @@ export interface LexState {
   substitutionEnd: number;
   /** Index up to which the text is inside double-quoted `$((…))`. */
   arithmeticEnd: number;
+  /** Set once the shell's reading finds a substitution with no end: from
+   *  there on, substitutions are read as the previous release read them. */
+  unterminated?: boolean;
   tokens: ShellToken[];
   value: string;
   /** The last character `appendValue` added; the last span's last character

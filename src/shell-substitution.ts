@@ -141,9 +141,21 @@ function dollarParenBody(
       close - 1
   )
     return { kind: "arithmetic", end: close + 1, closes };
+  const end =
+    opener === "arith"
+      ? substitutionBodyEnd(
+          command,
+          start,
+          "pair",
+          reading,
+          scan,
+          undefined,
+          probes,
+        )
+      : close;
   return {
     kind: "command",
-    text: sanitizeBody(command.slice(start, close), reading),
-    end: close + 1,
+    text: sanitizeBody(command.slice(start, end), reading),
+    end: end + 1,
   };
 }

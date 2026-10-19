@@ -1,5 +1,6 @@
 // How the substitution end-finder reads the text of a command list: newlines, comments, heredoc operators, words and separators.
 
+import { collapsedAt } from "./shell-pair-text.ts";
 import type { BodyScan } from "./shell-substitution-frames.ts";
 import {
   heredocBodiesEnd,
@@ -82,9 +83,14 @@ function skipNewline(scan: BodyScan): void {
   scan.commandPosition = true;
 }
 
+/** A heredoc whose body the extractor already replaced with its placeholder
+ *  has no body lines left to skip. */
 function readHeredocOperator(scan: BodyScan): void {
   const operator = heredocOperatorAt(scan.text, scan.index, scan.reading);
-  if (operator.heredoc !== undefined) scan.heredocs.push(operator.heredoc);
+  const collapsed =
+    scan.mode === "bash" && collapsedAt(scan.text, operator.end);
+  if (operator.heredoc !== undefined && !collapsed)
+    scan.heredocs.push(operator.heredoc);
   scan.index = operator.end;
   scan.commandPosition = false;
 }

@@ -52,6 +52,8 @@ function openTest(scan: BodyScan): boolean | undefined {
  *  nothing in it is a command, and a `${` that is no `${ command; }` is
  *  text, so a `)` in it pairs. */
 export function stepArith(scan: BodyScan, c: string): boolean {
+  if (c === "#" && scan.comments && /\s/.test(scan.text.charAt(scan.index - 1)))
+    return skipComment(scan);
   if (c === "#" || c === "<" || c === ">") return advance(scan);
   if (c === "$" && plainBrace(scan.text, scan.index)) return advance(scan);
   const group = c === "(" ? openGroup(scan, c) : undefined;
@@ -64,6 +66,12 @@ export function stepArith(scan: BodyScan, c: string): boolean {
   const done = stepCommand(scan, c, false);
   if (scan.frames.at(-1) === "arith") scan.commandPosition = false;
   return done;
+}
+
+function skipComment(scan: BodyScan): boolean {
+  const newline = scan.text.indexOf("\n", scan.index);
+  scan.index = newline < 0 ? scan.text.length : newline;
+  return false;
 }
 
 function plainBrace(text: string, index: number): boolean {

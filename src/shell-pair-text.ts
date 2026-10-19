@@ -128,3 +128,11 @@ export function keywordAt(text: string, i: number, word: string): boolean {
 
 /** Keywords that a command follows. */
 const LEADS = /(?:^|[\s;&|(])(?:then|do|else|elif|\{|!|time)$/;
+
+/** Whether the heredoc extractor's placeholder follows a delimiter that ends
+ *  at `end`: the body was already taken out of the text. */
+export function collapsedAt(text: string, end: number): boolean {
+  return COLLAPSED.test(text.slice(end, end + 32));
+}
+
+const COLLAPSED = /^ <HEREDOC:sha256:[0-9a-f]{12}>/;

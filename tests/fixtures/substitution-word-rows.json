@@ -1807,6 +1807,15 @@
     "echo `cat <<EOF\nfoo`": false
   },
   "destruction": {
+    "msg=\"${MSG:-\"$(cat <<'EOF'\nhello\nEOF\n)\"}\"; git push --force origin main": "git push --force origin main",
+    "echo \"${x:-\"$(cat <<E\nx\nE\n)\"}\" ; rm -rf ~/x": "rm -rf ~/x",
+    "echo \"$(cat <<E\nx\nE\n)\" ; rm -rf ~/x": "rm -rf ~/x",
+    "x=\"$(cat <<-E\n\tx\n\tE\n)\"; rm -rf ~/x": "rm -rf ~/x",
+    "x=\"$((cd /tmp && ls) # list )\ngit push --force origin main)\"": "git push --force origin main",
+    "echo \"$((echo a) ; echo # )\nrm -rf ~/x)\"": "rm -rf ~/x",
+    "echo \"$((( x = 1 )) ; echo a # )\nrm -rf ~/x)\"": "rm -rf ~/x",
+    "true || x=\"$(echo A #c)\"; rm -rf ~/x": "rm -rf ~/x",
+    "true || echo \"${x:-$(echo A #c)}\"; rm -rf ~/x": "rm -rf ~/x",
     "echo \"$(echo \")\")\" ; rm -rf /": "rm -rf /",
     "echo \"$(echo \")\"; rm -rf /)\"": "rm -rf /",
     "echo \"$(rm -rf /)\"": "rm -rf /",

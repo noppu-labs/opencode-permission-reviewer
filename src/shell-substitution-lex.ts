@@ -7,7 +7,11 @@ import {
   substitutionScanOf,
 } from "./shell-lex-state.ts";
 import { lexSegments } from "./shell-scanner.ts";
-import { type FrameCloses, substitutionAt } from "./shell-substitution.ts";
+import {
+  type FrameCloses,
+  type SubstitutionBody,
+  substitutionAt,
+} from "./shell-substitution.ts";
 
 /** Lex the body of a command substitution into segments of its own, under
  *  the same budget. */
@@ -128,11 +132,15 @@ function keepInWord(lex: LexState, end: number): void {
  *  substitution then joins the enclosing word and the scan continues after
  *  it: the text of a body is lexed once and never walked in the quote state
  *  of the word that holds it. Other readings walk it again, and the
- *  character itself is still scanned as part of the enclosing word. Returns
- *  whether the scan moved past a substitution. */
+ *  character itself is still scanned as part of the enclosing word. A body
+ *  the shell's reading finds no end for is read, with all the text after
+ *  it, as the previous release read it. Returns whether the scan moved past
+ *  a substitution. */
 function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
   if (lex.index < lex.substitutionEnd) return false;
-  const scan = substitutionScanOf(budget.quoting);
+  const scan = lex.unterminated
+    ? "previous"
+    : substitutionScanOf(budget.quoting);
   const body = substitutionAt(
     lex.command,
     lex.index,
@@ -143,11 +151,23 @@ function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
     budget,
   );
   if (body === undefined) return false;
-  if (scan !== "bash") {
-    if (body.kind === "arithmetic") lex.arithmeticEnd = body.end;
-    else if (body.kind === "command") lexBody(lex, budget, body.text, body.end);
-    return false;
+  if (scan === "bash" && body.end > lex.command.length) {
+    lex.unterminated = true;
+    return lexOne(lex, budget);
   }
+  if (scan === "bash") return jumpPast(lex, budget, body);
+  if (body.kind === "arithmetic") lex.arithmeticEnd = body.end;
+  else if (body.kind === "command") lexBody(lex, budget, body.text, body.end);
+  return false;
+}
+
+/** Lex what the substitution holds, then keep its text in the word and
+ *  continue after it. */
+function jumpPast(
+  lex: LexState,
+  budget: SubstitutionBudget,
+  body: SubstitutionBody,
+): boolean {
   if (body.kind === "arithmetic")
     lexNested(
       lex,

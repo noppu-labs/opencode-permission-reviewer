@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
 import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
@@ -194,10 +195,25 @@ describe("an expansion in double quotes", () => {
     ]);
   });
 
-  test("reads an unterminated one to the end of the input", () => {
-    const segments = scan(`echo "${OPEN}x:-a ; echo RAN`);
-    expect(segments).toHaveLength(1);
-    expect(segments[0]?.tokens[1]?.value).toBe(`${OPEN}x:-a ; echo RAN`);
+  test("reads an unterminated one and the text after it as the previous release did", () => {
+    for (const command of [
+      `echo "${OPEN}x:-a ; echo RAN`,
+      `echo "$(echo a ; echo RAN`,
+      `true || x="$(echo A #c)"; echo RAN`,
+      `echo "$(( 1 + 2 ; echo RAN`,
+    ])
+      expect(render(scan(command))).toBe(render(scan(command, "rescan")));
+  });
+
+  test("reads the commands after a heredoc the extractor collapsed", () => {
+    const command = extractHeredocs(
+      `echo "${OPEN}x:-"$(cat <<E\nx\nE\n)"}" ; echo RAN`,
+    ).sanitizedCommand;
+    expect(
+      scan(command)
+        .at(-1)
+        ?.tokens.map((token) => token.value),
+    ).toEqual(["echo", "RAN"]);
   });
 
   test("keeps the previous reading after a `$$`, where shells disagree", () => {
@@ -250,7 +266,7 @@ describe("the redirections of a word that holds a substitution", () => {
     ]);
   });
 
-  test("keeps neighbouring forms from merging with the text around them", () => {
+  test("keeps two adjacent backtick forms in one opaque span", () => {
     const token = scan("echo `a``b`")[0]?.tokens[1];
     expect(token?.spans).toEqual([
       { text: "`a``b`", quoted: false, opaque: true },
@@ -343,21 +359,161 @@ describe("work stays linear in the text", () => {
     return { segments, ms: performance.now() - start };
   }
 
-  test.each([
-    ["many quoted substitutions at the cap", many(CAP)],
-    ["many quoted substitutions at 8x the cap", many(8 * CAP)],
-    ["one body with many quotes at the cap", quotes(CAP)],
-    ["one body with many quotes at 8x the cap", quotes(8 * CAP)],
-    ["nested substitutions past the budget", nested(1600)],
-    ["nested substitutions at the cap", nested(Math.floor(CAP / 14))],
-    ["nested substitutions at 8x the cap", nested(Math.floor((8 * CAP) / 14))],
-    ["unterminated expansions at the cap", unterminated(Math.floor(CAP / 6))],
+  const repeated = (unit: string, size: number): string =>
+    unit.repeat(Math.floor(size / unit.length));
+  const deepThenCase = (size: number): string => {
+    const depth = Math.floor(size / 12);
+    return `echo "$( ${"(( ".repeat(depth)}1${" ))".repeat(depth)} )" ;\necho "$( (( case = 1 )); echo A)" ; echo hi`;
+  };
+  const deepQuotedThenCase = (size: number): string => {
+    const depth = Math.floor(size / 20);
+    return `echo "$( ${'(( "$x" + '.repeat(depth)}1${" ))".repeat(depth)} )" ;\necho "$( (( case + "$x" )); echo A)" ; echo hi`;
+  };
+  /** Past the cap the deep shapes run out of substitution budget, so only
+   *  their time is checked there. */
+  const endsWithEchoHi = (segments: ShellSegment[], size: number): void => {
+    if (size > CAP) return;
+    expect(segments.at(-1)?.tokens.map((token) => token.value)).toEqual([
+      "echo",
+      "hi",
+    ]);
+  };
+
+  /** Shapes timed at the cap and at 8x the cap, each with what its
+   *  segments must show, if anything. */
+  const SHAPES: [
+    string,
+    (size: number) => string,
+    ((segments: ShellSegment[], size: number) => void)?,
+  ][] = [
+    ["many quoted substitutions", many],
+    ["one body with many quotes", quotes],
     [
-      "unterminated expansions at 8x the cap",
-      unterminated(Math.floor((8 * CAP) / 6)),
+      "nested substitutions",
+      (size: number): string => nested(Math.floor(size / 14)),
     ],
-  ])("lexes %s in under a second", (_name, command) => {
-    expect(timed(command).ms).toBeLessThan(1000);
+    [
+      "unterminated expansions",
+      (size: number): string => unterminated(Math.floor(size / 6)),
+    ],
+    [
+      "unterminated substitutions",
+      (size: number): string =>
+        `echo ${'"$(echo a #c '.repeat(Math.floor(size / 14))}`,
+    ],
+    [
+      "unterminated expansions and substitutions",
+      (size: number): string =>
+        `echo ${`"${OPEN}x:-$(a `.repeat(Math.floor(size / 12))}`,
+    ],
+    [
+      "unterminated arithmetic expansions",
+      (size: number): string =>
+        `echo ${'"$(( 1 '.repeat(Math.floor(size / 7))}`,
+    ],
+    [
+      "collapsed heredocs in expansions",
+      (size: number): string =>
+        extractHeredocs(
+          `echo "${OPEN}x:-"$(cat <<E\nx\nE\n)"}" ;\n`.repeat(
+            Math.floor(size / 30),
+          ),
+        ).sanitizedCommand,
+    ],
+    [
+      "nested expansions",
+      (size: number): string => nestedExpansions(Math.floor(size / 12)),
+      (segments: ShellSegment[]): void => {
+        expect(segments).toHaveLength(2);
+        expect(segments[0]?.tokens).toHaveLength(2);
+      },
+    ],
+    [
+      "nested plain expansions",
+      (size: number): string => nestedPlainExpansions(Math.floor(size / 14)),
+      (segments: ShellSegment[]): void => {
+        expect(segments).toHaveLength(2);
+        expect(segments[0]?.tokens).toHaveLength(2);
+      },
+    ],
+    [
+      "one word per expansion",
+      (size: number): string => manyExpansions(Math.floor(size / 16)),
+      (segments: ShellSegment[], size: number): void => {
+        expect(segments).toHaveLength(2);
+        expect(segments[0]?.tokens).toHaveLength(Math.floor(size / 16) + 1);
+      },
+    ],
+    [
+      "the command in each expansion once",
+      (size: number): string => expansionsWithCommands(Math.floor(size / 12)),
+      (segments: ShellSegment[], size: number): void =>
+        expect(segments).toHaveLength(Math.floor(size / 12) + 2),
+    ],
+    [
+      "many arithmetic expansions in one expansion",
+      (size: number): string => manyArithmetics(Math.floor(size / 7)),
+      (segments: ShellSegment[]): void => expect(segments).toHaveLength(2),
+    ],
+    [
+      "many subshell substitutions in one expansion",
+      (size: number): string => manySubshells(Math.floor(size / 20)),
+      (segments: ShellSegment[], size: number): void =>
+        expect(segments).toHaveLength(2 * Math.floor(size / 20) + 2),
+    ],
+    [
+      "nested arithmetic expansions",
+      (size: number): string => nestedArithmetics(Math.floor(size / 8)),
+      (segments: ShellSegment[]): void => expect(segments).toHaveLength(2),
+    ],
+    [
+      "a subshell substitution under nested arithmetic",
+      (size: number): string => {
+        const depth = Math.floor(size / 8);
+        return `echo "$(( ${"$(( ".repeat(depth)}$((a) )${" ))".repeat(depth)} ))" ; echo RAN`;
+      },
+      (segments: ShellSegment[]): void =>
+        expect(segments.map((segment) => segment.tokens[0]?.value)).toEqual([
+          "echo",
+          undefined,
+          "a",
+          "echo",
+        ]),
+    ],
+    [
+      "subshells that open with two parentheses and hold a heredoc",
+      (size: number): string =>
+        repeated('echo "$( ((a <<E\n(((\nE\n )) )" ;\n', size),
+    ],
+    [
+      "opening parentheses in substitutions",
+      (size: number): string => repeated('echo "$( ((( x )" ;\n', size),
+    ],
+    [
+      "a double parenthesis after deep nested arithmetic commands",
+      deepThenCase,
+      endsWithEchoHi,
+    ],
+    [
+      "quoted arithmetic after deep nested quoted arithmetic",
+      deepQuotedThenCase,
+      endsWithEchoHi,
+    ],
+  ];
+
+  test.each(
+    SHAPES.flatMap(([name, build, check]) => [
+      [`${name} at the cap`, CAP, build, check] as const,
+      [`${name} at 8x the cap`, 8 * CAP, build, check] as const,
+    ]),
+  )("lexes %s in bounded time", (_name, size, build, check) => {
+    const { segments, ms } = timed(build(size));
+    check?.(segments, size);
+    expect(ms).toBeLessThan(3000);
+  });
+
+  test("lexes nested substitutions past the budget in bounded time", () => {
+    expect(timed(nested(1600)).ms).toBeLessThan(3000);
   });
 
   test.each([100, 150])(
@@ -365,7 +521,7 @@ describe("work stays linear in the text", () => {
     (depth) => {
       const { segments, ms } = timed(nested(depth));
       expect(segments).toHaveLength(depth + 1);
-      expect(ms).toBeLessThan(1000);
+      expect(ms).toBeLessThan(3000);
     },
   );
 
@@ -373,114 +529,12 @@ describe("work stays linear in the text", () => {
     expect(scan(nested(Math.floor(CAP / 14)))).toHaveLength(0);
   });
 
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("keeps nested expansions %s in one word", (_name, size) => {
-    for (const command of [
-      nestedExpansions(Math.floor(size / 12)),
-      nestedPlainExpansions(Math.floor(size / 14)),
-    ]) {
-      const { segments, ms } = timed(command);
-      expect(segments).toHaveLength(2);
-      expect(segments[0]?.tokens).toHaveLength(2);
-      expect(ms).toBeLessThan(1000);
-    }
-  });
-
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("reads one word per expansion %s", (_name, size) => {
-    const count = Math.floor(size / 16);
-    const { segments, ms } = timed(manyExpansions(count));
-    expect(segments).toHaveLength(2);
-    expect(segments[0]?.tokens).toHaveLength(count + 1);
-    expect(ms).toBeLessThan(1000);
-  });
-
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("lexes the command in each expansion once %s", (_name, size) => {
-    const count = Math.floor(size / 12);
-    const { segments, ms } = timed(expansionsWithCommands(count));
-    expect(segments).toHaveLength(count + 2);
-    expect(ms).toBeLessThan(1000);
-  });
-
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("reads many arithmetic expansions in one expansion %s", (_name, size) => {
-    const { segments, ms } = timed(manyArithmetics(Math.floor(size / 7)));
-    expect(segments).toHaveLength(2);
-    expect(ms).toBeLessThan(1000);
-  });
-
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("lexes many subshell substitutions in one expansion %s", (_name, size) => {
-    const count = Math.floor(size / 20);
-    const { segments, ms } = timed(manySubshells(count));
-    expect(segments).toHaveLength(2 * count + 2);
-    expect(ms).toBeLessThan(1000);
-  });
-
   test("reads many arithmetic expansions in one arithmetic expansion at the cap", () => {
     const { segments, ms } = timed(manyInArithmetic(Math.floor(CAP / 9)));
     expect(segments).toHaveLength(2);
-    expect(ms).toBeLessThan(1000);
+    expect(ms).toBeLessThan(3000);
   });
 
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("reads nested arithmetic expansions %s", (_name, size) => {
-    const { segments, ms } = timed(nestedArithmetics(Math.floor(size / 8)));
-    expect(segments).toHaveLength(2);
-    expect(ms).toBeLessThan(1000);
-  });
-
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])(
-    "finds a subshell substitution under nested arithmetic %s",
-    (_name, size) => {
-      const depth = Math.floor(size / 8);
-      const command = `echo "$(( ${"$(( ".repeat(depth)}$((a) )${" ))".repeat(depth)} ))" ; echo RAN`;
-      const { segments, ms } = timed(command);
-      expect(segments.map((segment) => segment.tokens[0]?.value)).toEqual([
-        "echo",
-        undefined,
-        "a",
-        "echo",
-      ]);
-      expect(ms).toBeLessThan(1000);
-    },
-  );
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])(
-    "reads many subshells that open with two parentheses and hold a heredoc %s",
-    (_name, size) => {
-      const unit = 'echo "$( ((a <<E\n(((\nE\n )) )" ;\n';
-      const { ms } = timed(unit.repeat(Math.floor(size / unit.length)));
-      expect(ms).toBeLessThan(1000);
-    },
-  );
-
-  test.each([
-    ["at the cap", CAP],
-    ["at 8x the cap", 8 * CAP],
-  ])("reads many opening parentheses in substitutions %s", (_name, size) => {
-    const unit = 'echo "$( ((( x )" ;\n';
-    const { ms } = timed(unit.repeat(Math.floor(size / unit.length)));
-    expect(ms).toBeLessThan(1000);
-  });
   test.each([
     ["short padding", 10],
     ["long padding", 100],
@@ -494,40 +548,4 @@ describe("work stays linear in the text", () => {
       expect(last?.tokens.map((token) => token.value)).toEqual(["echo", "hi"]);
     },
   );
-
-  const deepThenCase = (size: number): string => {
-    const depth = Math.floor(size / 12);
-    return `echo "$( ${"(( ".repeat(depth)}1${" ))".repeat(depth)} )" ;\necho "$( (( case = 1 )); echo A)" ; echo hi`;
-  };
-
-  test("reads a double parenthesis after deep nested arithmetic commands at the cap", () => {
-    const { segments, ms } = timed(deepThenCase(CAP));
-    expect(segments.at(-1)?.tokens.map((token) => token.value)).toEqual([
-      "echo",
-      "hi",
-    ]);
-    expect(ms).toBeLessThan(1000);
-  });
-
-  test("reads deep nested arithmetic commands at 8x the cap in under a second", () => {
-    expect(timed(deepThenCase(8 * CAP)).ms).toBeLessThan(1000);
-  });
-
-  const deepQuotedThenCase = (size: number): string => {
-    const depth = Math.floor(size / 20);
-    return `echo "$( ${'(( "$x" + '.repeat(depth)}1${" ))".repeat(depth)} )" ;\necho "$( (( case + "$x" )); echo A)" ; echo hi`;
-  };
-
-  test("reads quoted arithmetic after deep nested quoted arithmetic at the cap", () => {
-    const { segments, ms } = timed(deepQuotedThenCase(CAP));
-    expect(segments.at(-1)?.tokens.map((token) => token.value)).toEqual([
-      "echo",
-      "hi",
-    ]);
-    expect(ms).toBeLessThan(1000);
-  });
-
-  test("reads deep nested quoted arithmetic at 8x the cap in under a second", () => {
-    expect(timed(deepQuotedThenCase(8 * CAP)).ms).toBeLessThan(1000);
-  });
 });

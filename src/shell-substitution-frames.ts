@@ -51,6 +51,8 @@ export interface BodyScan {
   saved: [Words | undefined, Pattern][];
   /** Index right after the last backslash escape. */
   escapedEnd: number;
+  /** Whether a `#` after a blank starts a comment in an arithmetic frame. */
+  comments: boolean;
   /** The parenthesis matches shared by the calls that read one command. */
   probes: ProbeCache;
 }
