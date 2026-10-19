@@ -1807,6 +1807,13 @@
     "echo `cat <<EOF\nfoo`": false
   },
   "destruction": {
+    "true || echo \"$(echo a;# )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
+    "true || echo \"$(echo a&# )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
+    "true || echo \"$(echo a|# )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
+    "true || x=\"$(# )\" ; git push --force origin main ; echo \"\n)\"": "git push --force origin main",
+    "true || echo \"${x:-$(echo a;# )}\" ; rm -rf ~/x ; echo \"\n)}\"": "rm -rf ~/x",
+    "true || echo \"$(echo a >#x )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
+    "bash -c 'true || echo \"$(echo a;# )\" ; rm -rf ~/x ; echo \"\n)\"'": "bash -c 'rm -rf ~/x'",
     "true || echo \"$(echo a # )\" ; rm -rf ~/x ; echo \"\n)\"": "rm -rf ~/x",
     "true || x=\"$(echo a # )\" ; git push --force origin main ; echo \"\n)\"": "git push --force origin main",
     "true || echo \"${x:-$(echo a # )}\" ; rm -rf ~/x ; echo \"\n)}\"": "rm -rf ~/x",

@@ -105,14 +105,14 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-words.ts": "ee012917a63da958246081ef821af8d5ac52c264",
   "src/shell-substitution-groups.ts":
     "a81777fbf25ba1b7177410826ee278eff0779ad7",
-  "src/shell-substitution-text.ts": "023644a3de082e67080143918bdc1eafa05a0a50",
+  "src/shell-substitution-text.ts": "97160652d1fe23dc1b88f721563f5bc122bfaa1f",
   "src/shell-substitution-frames.ts":
     "821a5ebd99243275446315a17ea58b1e38125537",
   "src/shell-substitution-lex.ts": "757f81cc73f6ea430ddf11ffd2e92255560f932a",
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
   "src/shell-substitution-pairs.ts": "97466dbc0ef33effc7ee686398c25586656ff6ac",
-  "src/shell-substitution-trust.ts": "299342f0bcf012f369f065929366012b4bc1da6d",
+  "src/shell-substitution-trust.ts": "2d67c27e763e2b110130cfcd71df5781b2ad5007",
   "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
