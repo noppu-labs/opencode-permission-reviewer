@@ -41,17 +41,10 @@ export function substitutionScanOf(
   return quoting === "bash" ? "bash" : "previous";
 }
 
-/** The parentheses of one text: the index of the `)` that matches each `(`
- *  (-1 for none), and how many quote and backslash characters precede each
- *  index. */
-export interface ParenTable {
-  matches: Int32Array;
-  quotes: Int32Array;
-}
-
-/** What the substitution end-finder keeps for the whole command it reads. */
+/** What the substitution end-finder keeps for the whole command it reads:
+ *  where the shell's matched-pair reading closes each construct, per text. */
 export interface ProbeCache {
-  parenTables?: Map<string, ParenTable>;
+  pairTables?: Map<string, Int32Array>;
 }
 
 /** A budget that lexes command substitutions into segments of their own. */

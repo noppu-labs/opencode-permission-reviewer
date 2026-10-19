@@ -23,7 +23,8 @@ import { startsSubject } from "./shell-substitution-words.ts";
 /**
  * Index of the character that closes the substitution whose body starts at
  * `start`: the matching `)` for a `$(` body, the next unescaped backtick for
- * a backtick body, the matching `}` for a `${` body. Returns `text.length`
+ * a backtick body, the matching `}` for a `${` body, the matching `)` of an
+ * arithmetic pair (`$((`, read under `bash` only). Returns `text.length`
  * when nothing closes it. Inside a `$(` body, quoted text, comments, heredoc
  * bodies, nested parentheses and `case` patterns do not close it. When
  * `closes` is given, it receives the index each frame inside closed at.
@@ -32,7 +33,7 @@ import { startsSubject } from "./shell-substitution-words.ts";
 export function substitutionBodyEnd(
   text: string,
   start: number,
-  opener: "command" | "backtick" | "brace",
+  opener: "command" | "backtick" | "brace" | "arith",
   reading: HeredocReading = "default",
   mode: SubstitutionScan = "bash",
   closes?: Map<number, number>,
@@ -45,7 +46,7 @@ export function substitutionBodyEnd(
     starts: [start],
     closes,
     heredocs: [],
-    commandPosition: true,
+    commandPosition: opener !== "arith",
     reading,
     mode,
     prefix: undefined,

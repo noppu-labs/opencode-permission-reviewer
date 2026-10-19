@@ -117,10 +117,11 @@ function dollarParenBody(
   const isPair = command[start] === "(";
   const closes: FrameCloses | undefined =
     isPair && scan === "bash" ? new Map() : undefined;
+  const opener = closes === undefined ? "command" : "arith";
   const close = substitutionBodyEnd(
     command,
     start,
-    "command",
+    opener,
     reading,
     scan,
     closes,
@@ -131,7 +132,7 @@ function dollarParenBody(
     substitutionBodyEnd(
       command,
       start + 1,
-      "command",
+      opener,
       reading,
       scan,
       undefined,

@@ -32,10 +32,20 @@ function stepQuoted(
   return c === "$" ? stepDollar(scan, singleQuotes) : advance(scan);
 }
 
-/** A `$$` is one parameter, so the `$` after it does not start a `${`. */
+/** A `$$` is one parameter, so the `$` after it does not start a `${`.
+ *  The shell reads a `$((` as one arithmetic pair. */
 function stepDollar(scan: BodyScan, singleQuotes: boolean): boolean {
   const next = scan.text[scan.index + 1];
-  if (next === "(") return open(scan, "command", 2);
+  if (next !== "(") return stepParameter(scan, next, singleQuotes);
+  const pair = scan.mode === "bash" && scan.text[scan.index + 2] === "(";
+  return open(scan, pair ? "arith" : "command", 2);
+}
+
+function stepParameter(
+  scan: BodyScan,
+  next: string | undefined,
+  singleQuotes: boolean,
+): boolean {
   if (scan.mode !== "bash") return advance(scan);
   if (next === "{") return open(scan, "brace", 2);
   if (next === "$") scan.index += 1;

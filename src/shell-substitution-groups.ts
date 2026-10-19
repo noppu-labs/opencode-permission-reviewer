@@ -1,6 +1,5 @@
 // Constructs whose words are never commands: an array literal, a `[[ ]]` test and an arithmetic command.
 
-import type { ParenTable, ProbeCache } from "./shell-lex-state.ts";
 import {
   advance,
   type BodyScan,
@@ -8,11 +7,13 @@ import {
   open,
   stepCommand,
 } from "./shell-substitution-frames.ts";
+import { closesAsArithmetic } from "./shell-substitution-pairs.ts";
 
 /**
  * Opens the group that the `(` or `[` at the scan starts, if it starts one:
- * `x=(`, a `[[` at a command position, and `((` or `$((` that closes with
- * `))`. Returns undefined when it starts none.
+ * `x=(`, a `[[` at a command position, a `((` the shell pairs as arithmetic,
+ * and any `$((`, which the shell reads as one pair. Returns undefined when
+ * it starts none.
  */
 export function openGroup(scan: BodyScan, c: string): boolean | undefined {
   const { text, index } = scan;
@@ -22,7 +23,8 @@ export function openGroup(scan: BodyScan, c: string): boolean | undefined {
   const dollar = text[index - 1] === "$";
   if (!scan.commandPosition && !dollar && scan.words !== "forName")
     return undefined;
-  if (!isArithmetic(scan)) return undefined;
+  if (!dollar && !closesAsArithmetic(text, index, scan.probes))
+    return undefined;
   const forLoop = scan.words === "forName";
   open(scan, "arith", 1);
   open(scan, "arith", 1);
@@ -46,47 +48,12 @@ function openTest(scan: BodyScan): boolean | undefined {
   return false;
 }
 
-/** Whether the `((` at the scan is arithmetic: it closes with `))`, and
- *  nothing in between is quoted or escaped, so that a quoted parenthesis
- *  cannot have paired with it. The parentheses of the whole text are matched
- *  once, so the answer is a function of the text after the `((` alone and no
- *  `((` is read twice. */
-function isArithmetic(scan: BodyScan): boolean {
-  const { text, index } = scan;
-  const { matches, quotes } = parenTable(text, scan.probes);
-  const closer = matches[index + 1] ?? -1;
-  if (closer < 0 || text[closer + 1] !== ")") return false;
-  return (quotes[closer] ?? 0) === (quotes[index + 2] ?? 0);
-}
-
-/** The parentheses of `text`, matched in one pass. Every parenthesis counts;
- *  a `)` with no `(` open is ignored. */
-function parenTable(text: string, cache: ProbeCache): ParenTable {
-  const known = cache.parenTables?.get(text);
-  if (known !== undefined) return known;
-  const matches = new Int32Array(text.length).fill(-1);
-  const quotes = new Int32Array(text.length + 1);
-  const open = new Int32Array(text.length);
-  let depth = 0;
-  for (let i = 0; i < text.length; i += 1) {
-    const code = text.charCodeAt(i);
-    quotes[i + 1] = (quotes[i] ?? 0) + (QUOTING.has(code) ? 1 : 0);
-    if (code === 40) open[depth++] = i;
-    else if (code === 41 && depth > 0) matches[open[--depth] ?? 0] = i;
-  }
-  const table = { matches, quotes };
-  cache.parenTables ??= new Map();
-  cache.parenTables.set(text, table);
-  return table;
-}
-
-/** `'`, `"`, a backtick and a backslash. */
-const QUOTING = new Set([39, 34, 96, 92]);
-
-/** The text of an arithmetic command: its parentheses nest, and nothing in
- *  it is a command. */
+/** The text of an arithmetic command or of a `$((`: its parentheses nest,
+ *  nothing in it is a command, and a `${` that is no `${ command; }` is
+ *  text, so a `)` in it pairs. */
 export function stepArith(scan: BodyScan, c: string): boolean {
   if (c === "#" || c === "<" || c === ">") return advance(scan);
+  if (c === "$" && plainBrace(scan.text, scan.index)) return advance(scan);
   const group = c === "(" ? openGroup(scan, c) : undefined;
   if (group !== undefined) return group;
   if (c === "(" && scan.text[scan.index - 1] !== "$") {
@@ -97,6 +64,10 @@ export function stepArith(scan: BodyScan, c: string): boolean {
   const done = stepCommand(scan, c, false);
   if (scan.frames.at(-1) === "arith") scan.commandPosition = false;
   return done;
+}
+
+function plainBrace(text: string, index: number): boolean {
+  return text[index + 1] === "{" && !/[\s|]/.test(text.charAt(index + 2));
 }
 
 /** The text of an array literal: nothing in it is a command. */

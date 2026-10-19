@@ -413,4 +413,22 @@ describe("work stays linear in the text", () => {
   test("reads deep nested arithmetic commands at 8x the cap in under a second", () => {
     expect(timed(deepThenCase(8 * CAP)).ms).toBeLessThan(1000);
   });
+
+  const deepQuotedThenCase = (size: number): string => {
+    const depth = Math.floor(size / 20);
+    return `echo "$( ${'(( "$x" + '.repeat(depth)}1${" ))".repeat(depth)} )" ;\necho "$( (( case + "$x" )); echo A)" ; echo hi`;
+  };
+
+  test("reads quoted arithmetic after deep nested quoted arithmetic at the cap", () => {
+    const { segments, ms } = timed(deepQuotedThenCase(CAP));
+    expect(segments.at(-1)?.tokens.map((token) => token.value)).toEqual([
+      "echo",
+      "hi",
+    ]);
+    expect(ms).toBeLessThan(1000);
+  });
+
+  test("reads deep nested quoted arithmetic at 8x the cap in under a second", () => {
+    expect(timed(deepQuotedThenCase(8 * CAP)).ms).toBeLessThan(1000);
+  });
 });
