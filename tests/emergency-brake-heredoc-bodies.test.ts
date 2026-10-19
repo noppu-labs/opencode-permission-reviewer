@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { MAX_BODY_COMMANDS } from "../src/brake-body-commands.ts";
 import { ANALYSIS_LIMIT_REASON } from "../src/brake-readings.ts";
 import { MAX_BODY_DEPTH } from "../src/capability/heredoc-body-commands.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
-import { MAX_EFFECTIVE_COMMANDS } from "../src/shell-lexer.ts";
 import { request } from "./helpers.ts";
 
 const blocked =
@@ -63,13 +63,11 @@ describe("the brake judges the commands a heredoc body's substitutions run", () 
     expect(brake(nested(MAX_BODY_DEPTH))).toBe(ANALYSIS_LIMIT_REASON);
   });
 
-  test("judges as many distinct body commands as the effective-command cap", () => {
-    expect(brake(distinct(MAX_EFFECTIVE_COMMANDS))).toBeUndefined();
+  test("judges as many distinct body commands as the body-command cap", () => {
+    expect(brake(distinct(MAX_BODY_COMMANDS))).toBeUndefined();
   });
 
   test("reports the analysis limit for one body command more", () => {
-    expect(brake(distinct(MAX_EFFECTIVE_COMMANDS + 1))).toBe(
-      ANALYSIS_LIMIT_REASON,
-    );
+    expect(brake(distinct(MAX_BODY_COMMANDS + 1))).toBe(ANALYSIS_LIMIT_REASON);
   });
 });

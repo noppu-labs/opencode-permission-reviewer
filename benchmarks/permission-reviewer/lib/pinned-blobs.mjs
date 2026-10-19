@@ -54,7 +54,7 @@ export const PINNED_BLOBS = {
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
   "src/emergency-brake.ts": "b9912695680fd0d746ffcede325d048d9523c055",
-  "src/brake-body-commands.ts": "9a3d4db36394f4590b65f2358a01756555fe7ced",
+  "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
   "src/brake-heredoc-texts.ts": "912e96820c37ee43c4221ef5a1ada0e6db5b2f66",
   "src/brake-readings.ts": "51d74b8fcc3b711583e3f1edc83d3ce373fa85ea",
   "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",

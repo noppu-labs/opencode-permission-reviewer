@@ -234,9 +234,16 @@ describe("stress and adversarial robustness", () => {
     [
       "command strings with heredoc bodies",
       Array.from(
-        { length: 2_800 },
+        { length: 800 },
         (_, i) => `sh -c "cat <<E\n'\\$(c${i})'\nE"`,
       ).join("; "),
+    ],
+    [
+      "command strings whose heredoc bodies run command strings",
+      `sh -c "cat <<EOF\n${Array.from(
+        { length: 700 },
+        (_, i) => `\\$(sh -c 'cat <<E\n\\$(b${i})\nE')\n`,
+      ).join("")}EOF"`,
     ],
     ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
     [

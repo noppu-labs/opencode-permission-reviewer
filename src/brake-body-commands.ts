@@ -2,10 +2,7 @@
 
 import { ANALYSIS_LIMIT_REASON } from "./brake-readings.ts";
 import { MAX_BODY_DEPTH } from "./capability/heredoc-body-commands.ts";
-import {
-  MAX_ANALYSIS_INPUT_CHARS,
-  MAX_EFFECTIVE_COMMANDS,
-} from "./shell-lexer.ts";
+import { MAX_ANALYSIS_INPUT_CHARS } from "./shell-lexer.ts";
 
 /** Judges one command at `depth`, the depth its bodies were found at. */
 export type CommandJudge = (
@@ -20,11 +17,15 @@ export interface BodyBudget {
   chars: number;
 }
 
-/** The budget for one request: as many commands as the effective-command
- *  cap, and twice the input cap of text. */
+/** How many distinct body commands one request may judge. Each runs every
+ *  reading of the brake, so this bounds the time a request takes. */
+export const MAX_BODY_COMMANDS = 1024;
+
+/** The budget for one request: MAX_BODY_COMMANDS commands, and twice the
+ *  input cap of text. */
 export function newBodyBudget(): BodyBudget {
   return {
-    commands: MAX_EFFECTIVE_COMMANDS,
+    commands: MAX_BODY_COMMANDS,
     chars: 2 * MAX_ANALYSIS_INPUT_CHARS,
   };
 }
