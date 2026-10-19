@@ -1,6 +1,7 @@
 // The lexer's scan state and the token and segment accumulators the character handlers fill.
 
 import { decodeAnsiCWord } from "./capability/ansi-c-quoting.ts";
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
 
 type ShellSpan = NonNullable<ShellToken["spans"]>[number];
@@ -57,6 +58,10 @@ export interface SubstitutionBudget extends TokenBudget, ProbeCache {
   /** Command-substitution text the scan may still lex a second time, nested
    *  substitutions included. Past zero the scan stops as if out of tokens. */
   substitutionCharsRemaining: number;
+  /** Where the commands the heredocs inside substitution bodies run are
+   *  kept as the scan lexes the bodies; a scan that does not read them
+   *  leaves it unset. */
+  bodies?: BodyCommands;
 }
 
 /** `skip` leaves command substitutions unlexed: no body segments and no

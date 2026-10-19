@@ -13,7 +13,15 @@ import { substitutionBodyEnd } from "./shell-substitution-end.ts";
  *  closing `)` or backtick; or, for a `${…}` expansion, the index just past
  *  its `}`. */
 export type SubstitutionBody =
-  | { kind: "command"; text: string; end: number }
+  | {
+      kind: "command";
+      text: string;
+      end: number;
+      /** The commands the heredocs sanitized out of `text` run, and whether
+       *  one of their bodies could not be read to the end. */
+      bodyCommands: string[];
+      bodyUnresolved: boolean;
+    }
   | { kind: "arithmetic"; end: number; closes: FrameCloses | undefined }
   | { kind: "expansion"; end: number; closes: FrameCloses };
 
@@ -81,11 +89,27 @@ function endsDollarPair(command: string, index: number): boolean {
   return (dollars - (slashes % 2)) % 2 === 1;
 }
 
-/** The body with its heredoc bodies collapsed, under the chosen reading. */
-function sanitizeBody(text: string, reading: HeredocReading): string {
-  return reading === "legacy"
-    ? legacySanitizedCommand(text)
-    : extractHeredocs(text).sanitizedCommand;
+/** The body with its heredoc bodies collapsed, under the chosen reading, and
+ *  the commands those bodies run. The previous release's reading lists none. */
+function sanitizeBody(
+  text: string,
+  reading: HeredocReading,
+): Pick<
+  Extract<SubstitutionBody, { kind: "command" }>,
+  "text" | "bodyCommands" | "bodyUnresolved"
+> {
+  if (reading === "legacy")
+    return {
+      text: legacySanitizedCommand(text),
+      bodyCommands: [],
+      bodyUnresolved: false,
+    };
+  const extraction = extractHeredocs(text);
+  return {
+    text: extraction.sanitizedCommand,
+    bodyCommands: extraction.bodyCommands,
+    bodyUnresolved: extraction.bodyUnresolved,
+  };
 }
 
 /** Inside backticks a backslash escapes only `$`, a backtick and itself
@@ -102,7 +126,9 @@ function backtickBody(
   const text = command.slice(start, close).replace(escaped, "$1");
   return {
     kind: "command",
-    text: inDouble ? sanitizeBody(text, reading) : text,
+    ...(inDouble
+      ? sanitizeBody(text, reading)
+      : { text, bodyCommands: [], bodyUnresolved: false }),
     end: close + 1,
   };
 }
@@ -155,7 +181,7 @@ function dollarParenBody(
       : close;
   return {
     kind: "command",
-    text: sanitizeBody(command.slice(start, end), reading),
+    ...sanitizeBody(command.slice(start, end), reading),
     end: end + 1,
   };
 }

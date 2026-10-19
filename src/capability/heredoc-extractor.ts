@@ -4,6 +4,7 @@ import {
   consumeBodies,
   type PendingLine,
 } from "./heredoc-bodies.ts";
+import type { BodyCommands } from "./heredoc-body-commands.ts";
 import {
   closeBacktickFrames,
   dropSubstitutedStarts,
@@ -67,6 +68,11 @@ export interface HeredocExtraction {
   heredocs: HeredocRecord[];
   /** Whether any dynamic construct was detected inside a body. */
   hasDynamicConstructs: boolean;
+  /** The commands the substitutions in unquoted bodies run, in body order. */
+  bodyCommands: string[];
+  /** Some body has a substitution with no end, or nests past the depth the
+   *  scanner reads. */
+  bodyUnresolved: boolean;
 }
 
 /** Options for `extractHeredocs`. */
@@ -89,8 +95,10 @@ export function extractHeredocs(
   command: string,
   options: HeredocOptions = {},
 ): HeredocExtraction {
+  const bodies: BodyCommands = { commands: [], unresolved: false };
   const scan: HeredocScan = {
     command,
+    bodies,
     heredocs: [],
     hasDynamicConstructs: false,
     unterminated: false,
@@ -120,6 +128,8 @@ export function extractHeredocs(
     sanitizedCommand: scan.out,
     heredocs: scan.heredocs,
     hasDynamicConstructs: scan.hasDynamicConstructs,
+    bodyCommands: bodies.commands,
+    bodyUnresolved: bodies.unresolved,
   };
 }
 

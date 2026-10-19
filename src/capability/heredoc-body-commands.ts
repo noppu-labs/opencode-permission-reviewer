@@ -1,7 +1,11 @@
 // The commands a heredoc body runs when its delimiter is unquoted: the shell expands the body, and each `$(…)` or backtick in it is a command.
 
 import type { ProbeCache } from "../shell-lex-state.ts";
-import { type FrameCloses, substitutionAt } from "../shell-substitution.ts";
+import {
+  type FrameCloses,
+  type SubstitutionBody,
+  substitutionAt,
+} from "../shell-substitution.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
 
 /** How many bodies deep the scanner nests: a command found in a body may hold
@@ -13,6 +17,28 @@ export interface BodyCommands {
   commands: string[];
   /** The body has a `$(` or backtick with no end, or nests past the depth. */
   unresolved: boolean;
+}
+
+/** Adds commands to `into`, with whether their bodies were unresolved. A
+ *  collector that is not there is a reading that keeps none. */
+export function keepBodyCommands(
+  into: BodyCommands | undefined,
+  commands: string[],
+  unresolved: boolean,
+): void {
+  if (into === undefined) return;
+  for (const command of commands) into.commands.push(command);
+  into.unresolved ||= unresolved;
+}
+
+/** Adds the commands of one unquoted body to `into`. */
+export function addBodyCommands(
+  into: BodyCommands,
+  body: string,
+  tabStripped: boolean,
+): void {
+  const found = heredocBodyCommands(body, tabStripped);
+  keepBodyCommands(into, found.commands, found.unresolved);
 }
 
 /** Bodies the scanner is inside, across the calls that recurse into each
@@ -129,7 +155,7 @@ function substitute(scan: Scan, index: number): number {
     return text.length;
   }
   if (found.kind === "command") {
-    scan.commands.push(commandText(found.text, backtick));
+    keepCommand(scan, found, backtick);
     return found.end;
   }
   if (found.kind !== "arithmetic") return index + 1;
@@ -153,9 +179,30 @@ function opensKnownArithmetic(
   return outer !== undefined && inner !== undefined && outer === inner + 1;
 }
 
-/** A backtick body in a heredoc keeps `\"` as written, which the double-quote
+/** A command a substitution runs, then the commands that heredocs in it run.
+ *  A backtick body in a heredoc keeps `\"` as written, which the double-quote
  *  reading of `substitutionAt` would drop, so a backtick is read as unquoted
  *  and its heredocs collapsed here. */
-function commandText(text: string, backtick: boolean): string {
-  return backtick ? extractHeredocs(text).sanitizedCommand : text;
+function keepCommand(
+  scan: Scan,
+  found: Extract<SubstitutionBody, { kind: "command" }>,
+  backtick: boolean,
+): void {
+  const read = backtick ? sanitized(found.text) : found;
+  scan.commands.push(read.text);
+  for (const command of read.bodyCommands) scan.commands.push(command);
+  scan.unresolved ||= read.bodyUnresolved;
+}
+
+function sanitized(text: string): {
+  text: string;
+  bodyCommands: string[];
+  bodyUnresolved: boolean;
+} {
+  const extraction = extractHeredocs(text);
+  return {
+    text: extraction.sanitizedCommand,
+    bodyCommands: extraction.bodyCommands,
+    bodyUnresolved: extraction.bodyUnresolved,
+  };
 }

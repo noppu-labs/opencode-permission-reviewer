@@ -1,5 +1,6 @@
 // Lexes the command a substitution runs into segments of its own, for the scan of the word that holds it.
 
+import { keepBodyCommands } from "./capability/heredoc-body-commands.ts";
 import {
   appendValue,
   type LexState,
@@ -14,14 +15,17 @@ import {
 } from "./shell-substitution.ts";
 import { uncertainRegion } from "./shell-substitution-trust.ts";
 
+type CommandBody = Extract<SubstitutionBody, { kind: "command" }>;
+
 /** Lex the body of a command substitution into segments of its own, under
- *  the same budget. */
+ *  the same budget, and keep the commands its heredocs run. */
 function lexBody(
   lex: LexState,
   budget: SubstitutionBudget,
-  text: string,
-  end: number,
+  body: CommandBody,
 ): void {
+  const { text, end } = body;
+  keepBodyCommands(budget.bodies, body.bodyCommands, body.bodyUnresolved);
   lex.substitutionEnd = end;
   budget.substitutionCharsRemaining -= text.length;
   if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
@@ -87,7 +91,7 @@ function stepNested(
     budget,
   );
   if (body?.kind === "command") {
-    lexBody(lex, budget, body.text, body.end);
+    lexBody(lex, budget, body);
     walk.index = body.end;
     return;
   }
@@ -158,7 +162,7 @@ function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
   }
   if (scan === "bash") return jumpPast(lex, budget, body);
   if (body.kind === "arithmetic") lex.arithmeticEnd = body.end;
-  else if (body.kind === "command") lexBody(lex, budget, body.text, body.end);
+  else if (body.kind === "command") lexBody(lex, budget, body);
   return false;
 }
 
@@ -185,7 +189,7 @@ function jumpPast(
     );
   else if (body.kind === "expansion")
     lexNested(lex, budget, lex.index + 2, body.end - 1, body.closes);
-  else lexBody(lex, budget, body.text, body.end);
+  else lexBody(lex, budget, body);
   keepInWord(lex, body.end);
   return true;
 }

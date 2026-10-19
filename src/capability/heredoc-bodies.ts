@@ -2,6 +2,7 @@
 
 import { elementAt } from "../element-at.ts";
 import type { HeredocRecord } from "./capability-types.ts";
+import { addBodyCommands, type BodyCommands } from "./heredoc-body-commands.ts";
 import {
   type BodyRecord,
   bodyRecord,
@@ -23,6 +24,9 @@ export interface PendingLine {
   unterminated: boolean;
   pending: PendingStart[];
   pieces: Array<{ text: string } | { pendingIndex: number }>;
+  /** Where the commands the unquoted bodies run are kept; a scan that does
+   *  not read them leaves it unset. */
+  bodies?: BodyCommands;
 }
 
 export function appendText(scan: PendingLine, text: string): void {
@@ -56,6 +60,8 @@ export function consumeBodies(
     if (read.unterminated) scan.unterminated = true;
     const record = bodyRecord(scan.command, start, read, lineEnd, targets);
     if (record.dynamic) scan.hasDynamicConstructs = true;
+    if (scan.bodies !== undefined && start.resolved && !start.quoted)
+      addBodyCommands(scan.bodies, read.body, start.operator === "<<-");
     records.push(record);
   }
   scan.out += sanitizedStartLine(scan, records);

@@ -17,6 +17,9 @@ interface BodyRow {
   unresolved: boolean;
   /** The probe markers bash ran that these commands hold. */
   ran?: string[];
+  /** The markers bash ran from the body of a heredoc the commands hold; the
+   *  commands list them after the text that holds the heredoc. */
+  ranInNestedBody?: string[];
   /** Set where the versions disagree on what runs. */
   versions?: string;
   note?: string;
@@ -48,6 +51,17 @@ describe("heredocBodyCommands", () => {
       for (const marker of row.ran ?? []) {
         const listed = row.commands.some((command) => command.includes(marker));
         expect([row.id, marker, listed]).toEqual([row.id, marker, true]);
+      }
+    }
+  });
+
+  test("lists the commands a nested heredoc body runs after the text that holds it", () => {
+    for (const row of rows) {
+      for (const marker of row.ranInNestedBody ?? []) {
+        const at = row.commands.findIndex((command) =>
+          command.includes(marker),
+        );
+        expect([row.id, marker, at > 0]).toEqual([row.id, marker, true]);
       }
     }
   });
