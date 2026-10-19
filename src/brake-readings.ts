@@ -9,12 +9,11 @@ import {
   type FindCommand,
   isRootFind,
 } from "./brake-find-root.ts";
+import { heredocTexts } from "./brake-heredoc-texts.ts";
 import { logicalLines } from "./brake-logical-lines.ts";
 import { commandExportsSecret } from "./brake-network-export.ts";
 import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
-import { extractHeredocs } from "./capability/heredoc-extractor.ts";
-import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
 import {
   analyzeSegmentRedirections,
   type SegmentRedirectionsAnalysis,
@@ -183,22 +182,14 @@ export function brakeReadingsReason(
   // Heredoc bodies are shell input data, not command segments. Analyze the
   // body-free form so quoted payloads cannot trigger false destructive-command
   // matches; dynamic expansions remain visible to the reviewer evidence.
-  const extraction = extractHeredocs(command);
-  const allOperators = extractHeredocs(command, { readAllOperators: true });
-  const readings = new Set([
-    extraction.sanitizedCommand,
-    allOperators.sanitizedCommand,
-  ]);
+  const { extraction, allOperators, legacy } = heredocTexts(command);
+  const readings = new Set([extraction.sanitizedCommand, allOperators]);
   for (const text of readings) {
     const reason = detectorReason(text, "default", quoting);
     if (reason !== undefined) return reason;
   }
   // The previous release's heredoc reading, its substitutions re-lexed the same way.
-  const legacyReason = detectorReason(
-    legacySanitizedCommand(command),
-    "legacy",
-    quoting,
-  );
+  const legacyReason = detectorReason(legacy, "legacy", quoting);
   if (legacyReason !== undefined) return legacyReason;
   // A body that never ends takes every later line with it, and a heredoc in a
   // substitution or backticks may end where the scan's reading and the
