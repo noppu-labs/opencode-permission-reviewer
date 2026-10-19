@@ -36,7 +36,9 @@ interface EarlyScan extends EarlyEndCommands {
  * start in `known`, ending at the index it maps to. A substitution with the
  * same start and end adds nothing, and nor does one that ends earlier: its
  * command is the start of the listed one. The scan then goes on from the
- * earlier end, where the rest of the listed command is body text.
+ * earlier end, where the rest of the listed command is body text. A `$$` is
+ * the shell's process id here, as in every release, so a `(` after it is
+ * text.
  */
 export function earlyEndCommands(
   text: string,
@@ -45,7 +47,9 @@ export function earlyEndCommands(
   const scan: EarlyScan = { text, known, commands: [], unresolved: false };
   let index = 0;
   while (index >= 0 && index < text.length && !scan.unresolved) {
-    const after = bodyTextStep(text, index);
+    const after = text.startsWith("$$", index)
+      ? index + 2
+      : bodyTextStep(text, index);
     index = after < 0 ? substitute(scan, index) : after;
   }
   return { commands: scan.commands, unresolved: scan.unresolved };

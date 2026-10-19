@@ -191,5 +191,5 @@ export const PINNED_BLOBS = {
   "src/capability/delimited-substitution-end.ts":
     "142f4738055cd20beec6c81590a9b17a865bcedd",
   "src/capability/heredoc-body-early-ends.ts":
-    "a984763effaa7a5d4ca8473764e98cf300f874cb",
+    "ad98f83ef8713c2d6945a54fbce45de747071ebd",
 };

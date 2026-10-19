@@ -200,5 +200,8 @@
   { "id": "9.16", "body": "$(cat <<'IN'\nit's\nIN\n)$(echo RAN1 >&2)", "tabStripped": false, "commands": ["cat <<IN <HEREDOC:sha256:a53006eb431e>\n", "echo RAN1 >&2"], "unresolved": false, "ran": ["RAN1"] },
   { "id": "9.17", "body": "$((1;#))$(echo RAN1 >&2)\n))", "tabStripped": false, "commands": ["echo RAN1 >&2"], "unresolved": false, "ran": [] },
   { "id": "9.18", "body": "\t$(cat <<'IN'\n\t)$(echo RAN1 >&2)\n\tIN\n\t)", "tabStripped": true, "commands": ["cat <<IN <HEREDOC:sha256:2294bcbf746e>\n", "echo RAN1 >&2"], "unresolved": false, "ran": ["RAN1"], "versions": "3.2: RAN1; 4.4: nothing; 5.1: nothing; 5.3: nothing" },
-  { "id": "9.20", "body": "$(echo $(cat <<'IN'\n$(case a in a) true;; esac)$(echo RAN1 >&2)\nIN\n))", "tabStripped": false, "commands": ["echo $(cat <<IN <HEREDOC:sha256:31c4daff575c>\n)"], "unresolved": false, "ran": [], "note": "3.2 runs RAN1 as it parses the listed command, read here as at the top level" }
+  { "id": "9.20", "body": "$(echo $(cat <<'IN'\n$(case a in a) true;; esac)$(echo RAN1 >&2)\nIN\n))", "tabStripped": false, "commands": ["echo $(cat <<IN <HEREDOC:sha256:31c4daff575c>\n)"], "unresolved": false, "ran": [], "note": "3.2 runs RAN1 as it parses the listed command, read here as at the top level" },
+  { "id": "9.21", "body": "$$(cat <<'IN'\n$(echo RAN1 >&2)\nIN\n)", "tabStripped": false, "commands": ["cat <<IN <HEREDOC:sha256:5b349d8e6f42>\n", "echo RAN1 >&2"], "unresolved": false, "ran": ["RAN1"] },
+  { "id": "9.22", "body": "$$(cat <<'IN'\n`echo RAN1 >&2`\nIN\n)", "tabStripped": false, "commands": ["cat <<IN <HEREDOC:sha256:ec47c63f218c>\n", "echo RAN1 >&2"], "unresolved": false, "ran": ["RAN1"] },
+  { "id": "9.23", "body": "$$$(cat <<'IN'\n$(echo RAN1 >&2)\nIN\n)", "tabStripped": false, "commands": ["cat <<IN <HEREDOC:sha256:5b349d8e6f42>\n"], "unresolved": false, "ran": [] }
 ]
