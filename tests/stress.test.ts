@@ -223,6 +223,21 @@ describe("stress and adversarial robustness", () => {
       "double parentheses before a late heredoc operator",
       `${"echo $(true) (( (a) ) ) ; ".repeat(5_000)}<<E\n`,
     ],
+    [
+      "distinct body commands at the input cap",
+      `cat <<EOF\n${Array.from({ length: 17_000 }, (_, i) => `\`a${i}\``).join("")}\nEOF`,
+    ],
+    [
+      "distinct body commands after a parenthesis in a quoted inner body",
+      `cat <<EOF\n$(cat <<'IN'\n)${Array.from({ length: 14_000 }, (_, i) => `$(a${i})`).join("")}\nIN\n)\nEOF`,
+    ],
+    [
+      "command strings with heredoc bodies",
+      Array.from(
+        { length: 2_800 },
+        (_, i) => `sh -c "cat <<E\n'\\$(c${i})'\nE"`,
+      ).join("; "),
+    ],
     ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
     [
       "backtick-wrapped dollar-quoted escapes at the input cap",

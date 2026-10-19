@@ -2,6 +2,10 @@
 
 import { ANALYSIS_LIMIT_REASON } from "./brake-readings.ts";
 import { MAX_BODY_DEPTH } from "./capability/heredoc-body-commands.ts";
+import {
+  MAX_ANALYSIS_INPUT_CHARS,
+  MAX_EFFECTIVE_COMMANDS,
+} from "./shell-lexer.ts";
 
 /** Judges one command at `depth`, the depth its bodies were found at. */
 export type CommandJudge = (
@@ -9,19 +13,40 @@ export type CommandJudge = (
   depth: number,
 ) => string | undefined;
 
+/** What one request may still judge of the commands its heredoc bodies run,
+ *  at every depth: how many commands, and how much of their text. */
+export interface BodyBudget {
+  commands: number;
+  chars: number;
+}
+
+/** The budget for one request: as many commands as the effective-command
+ *  cap, and twice the input cap of text. */
+export function newBodyBudget(): BodyBudget {
+  return {
+    commands: MAX_EFFECTIVE_COMMANDS,
+    chars: 2 * MAX_ANALYSIS_INPUT_CHARS,
+  };
+}
+
 /** The first reason `judge` gives for a command that a heredoc body runs. The
  *  commands at `depth` are the ones the bodies of depth `depth - 1` run; the
- *  top command's bodies are at depth 1. A body that is unresolved, or whose
- *  commands lie past MAX_BODY_DEPTH, gives the analysis limit. */
+ *  top command's bodies are at depth 1. A body that is unresolved, whose
+ *  commands lie past MAX_BODY_DEPTH, or whose commands overrun `budget`,
+ *  gives the analysis limit. */
 export function bodyCommandsReason(
   commands: readonly string[],
   unresolved: boolean,
   depth: number,
   judge: CommandJudge,
+  budget: BodyBudget,
 ): string | undefined {
   if (commands.length === 0 && !unresolved) return undefined;
   if (unresolved || depth > MAX_BODY_DEPTH) return ANALYSIS_LIMIT_REASON;
   for (const command of new Set(commands)) {
+    budget.commands -= 1;
+    budget.chars -= command.length;
+    if (budget.commands < 0 || budget.chars < 0) return ANALYSIS_LIMIT_REASON;
     const reason = judge(command, depth);
     if (reason !== undefined) return reason;
   }

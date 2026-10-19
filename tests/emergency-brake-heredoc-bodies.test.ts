@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { ANALYSIS_LIMIT_REASON } from "../src/brake-readings.ts";
 import { MAX_BODY_DEPTH } from "../src/capability/heredoc-body-commands.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { MAX_EFFECTIVE_COMMANDS } from "../src/shell-lexer.ts";
 import { request } from "./helpers.ts";
 
 const blocked =
@@ -31,6 +32,12 @@ function nested(levels: number): string {
   return `cat <<EOF\n${body}\nEOF`;
 }
 
+/** A heredoc whose body runs `count` distinct commands. */
+function distinct(count: number): string {
+  const body = Array.from({ length: count }, (_, i) => `$(a${i})`).join(" ");
+  return `cat <<EOF\n${body}\nEOF`;
+}
+
 describe("the brake judges the commands a heredoc body's substitutions run", () => {
   test.each(ROWS.block)("blocks the destruction in %j", (command) => {
     expect(brake(command)).toBe(blocked);
@@ -54,5 +61,15 @@ describe("the brake judges the commands a heredoc body's substitutions run", () 
 
   test("reports the analysis limit past the deepest level", () => {
     expect(brake(nested(MAX_BODY_DEPTH))).toBe(ANALYSIS_LIMIT_REASON);
+  });
+
+  test("judges as many distinct body commands as the effective-command cap", () => {
+    expect(brake(distinct(MAX_EFFECTIVE_COMMANDS))).toBeUndefined();
+  });
+
+  test("reports the analysis limit for one body command more", () => {
+    expect(brake(distinct(MAX_EFFECTIVE_COMMANDS + 1))).toBe(
+      ANALYSIS_LIMIT_REASON,
+    );
   });
 });

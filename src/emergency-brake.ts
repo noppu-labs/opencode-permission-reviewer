@@ -1,4 +1,8 @@
-import { bodyCommandsReason } from "./brake-body-commands.ts";
+import {
+  type BodyBudget,
+  bodyCommandsReason,
+  newBodyBudget,
+} from "./brake-body-commands.ts";
 import { heredocTexts } from "./brake-heredoc-texts.ts";
 import {
   ANALYSIS_LIMIT_REASON,
@@ -32,8 +36,9 @@ import type { PermissionRequest } from "./types.ts";
  * root destruction (target resolves to `/`). The commands that the
  * substitutions of an unquoted heredoc body run are the exception: bash runs
  * them, so each is judged as a command of its own, to MAX_BODY_DEPTH levels of
- * nested bodies. A body the scan cannot read to its end gives the analysis
- * limit. Such a check only adds blocks after the checks above allow.
+ * nested bodies. A body the scan cannot read to its end, or more body
+ * commands than one request's budget, gives the analysis limit. Such a check
+ * only adds blocks after the checks above allow.
  *
  * Each reading of the command is lexed and destructured under its own
  * analysis budget (input size, tokens, depth, re-lexed text, and total
@@ -66,13 +71,17 @@ export function emergencyBrakeReason(
   // analysis cannot finish is rejected for THAT reason, before any lexing or
   // detector runs, and is never described as detected destruction.
   if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  return commandReason(command, 0);
+  return commandReason(command, 0, newBodyBudget());
 }
 
 /** The reason the brake gives for `command`, a command at `depth`: the
  *  readings checks first, then the commands its heredoc bodies run, each
- *  judged here at depth + 1. */
-function commandReason(command: string, depth: number): string | undefined {
+ *  judged here at depth + 1 under the request's one `budget`. */
+function commandReason(
+  command: string,
+  depth: number,
+  budget: BodyBudget,
+): string | undefined {
   const bodies: BodyCommands = { commands: [], unresolved: false };
   const { extraction } = heredocTexts(command);
   keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
@@ -82,7 +91,8 @@ function commandReason(command: string, depth: number): string | undefined {
     bodies.commands,
     bodies.unresolved,
     depth + 1,
-    commandReason,
+    (body, level) => commandReason(body, level, budget),
+    budget,
   );
 }
 
