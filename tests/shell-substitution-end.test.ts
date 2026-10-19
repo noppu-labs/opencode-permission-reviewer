@@ -91,6 +91,80 @@ describe("substitutionBodyEnd", () => {
   });
 });
 
+describe("a double parenthesis", () => {
+  const SUBSTITUTION = "$( (( case = 1 )); echo A)";
+  const ALPHABET = [
+    '"',
+    "'",
+    "`",
+    "(",
+    ")",
+    "((",
+    "))",
+    "$(",
+    "$((",
+    "${",
+    "}",
+    " ",
+    " ",
+    "\n",
+    "\\",
+    "#",
+    ";",
+    "&&",
+    "x",
+    "a",
+    "case ",
+    "<<E\n",
+    "E\n",
+    "[[ ",
+    " ]]",
+    "x=(",
+    "for w in ",
+    "; do ",
+    "done",
+    "))",
+    "$(( (( ",
+    " 1 ",
+    "(((",
+  ];
+
+  function prefixes(count: number): string[] {
+    let seed = 7;
+    const next = (n: number): number => {
+      seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+      return seed % n;
+    };
+    return Array.from({ length: count }, () => {
+      let text = "";
+      for (let i = next(40); i > 0; i -= 1)
+        text += ALPHABET[next(ALPHABET.length)];
+      return text;
+    });
+  }
+
+  test("is read the same wherever it stands", () => {
+    const alone = substitutionBodyEnd(SUBSTITUTION, 2, "command") - 2;
+    expect(alone).toBeGreaterThan(0);
+    for (const prefix of prefixes(3000)) {
+      const text = prefix + SUBSTITUTION;
+      const at = prefix.length + 2;
+      expect(substitutionBodyEnd(text, at, "command") - at).toBe(alone);
+    }
+  });
+
+  test("is read the same after a run of nested arithmetic", () => {
+    const nest = `echo "$(( ((${" ".repeat(200)}1)) ))" ;\n`;
+    for (const copies of [1, 3, 20]) {
+      const prefix = nest.repeat(copies);
+      const at = prefix.length + 2;
+      expect(
+        substitutionBodyEnd(prefix + SUBSTITUTION, at, "command") - at,
+      ).toBe(substitutionBodyEnd(SUBSTITUTION, 2, "command") - 2);
+    }
+  });
+});
+
 describe("substitutionAt", () => {
   test.each(rows)(
     "passes the scan version through for %j",

@@ -1,5 +1,6 @@
 // Constructs whose words are never commands: an array literal, a `[[ ]]` test and an arithmetic command.
 
+import type { ParenTable, ProbeCache } from "./shell-lex-state.ts";
 import {
   advance,
   type BodyScan,
@@ -21,8 +22,7 @@ export function openGroup(scan: BodyScan, c: string): boolean | undefined {
   const dollar = text[index - 1] === "$";
   if (!scan.commandPosition && !dollar && scan.words !== "forName")
     return undefined;
-  const end = arithmeticEnd(scan);
-  if (end < 0) return undefined;
+  if (!isArithmetic(scan)) return undefined;
   const forLoop = scan.words === "forName";
   open(scan, "arith", 1);
   open(scan, "arith", 1);
@@ -46,47 +46,42 @@ function openTest(scan: BodyScan): boolean | undefined {
   return false;
 }
 
-/** The index of the `))` that closes the `((` at the scan, or -1 when the
- *  first unmatched `)` is not followed by another, or when the text runs
- *  out. Quotes are skipped. The text read is charged to the budget the
- *  command shares, so a run of `((` that never close costs a bounded amount
- *  in all. */
-function arithmeticEnd(scan: BodyScan): number {
-  const remaining = scan.probes.arithmeticReadsRemaining ?? 0;
-  const limit = Math.min(scan.text.length, scan.index + remaining);
-  const { end, stop } = matchEnd(scan.text, scan.index + 2, limit);
-  scan.probes.arithmeticReadsRemaining =
-    remaining - Math.max(0, stop - scan.index);
-  return end;
+/** Whether the `((` at the scan is arithmetic: it closes with `))`, and
+ *  nothing in between is quoted or escaped, so that a quoted parenthesis
+ *  cannot have paired with it. The parentheses of the whole text are matched
+ *  once, so the answer is a function of the text after the `((` alone and no
+ *  `((` is read twice. */
+function isArithmetic(scan: BodyScan): boolean {
+  const { text, index } = scan;
+  const { matches, quotes } = parenTable(text, scan.probes);
+  const closer = matches[index + 1] ?? -1;
+  if (closer < 0 || text[closer + 1] !== ")") return false;
+  return (quotes[closer] ?? 0) === (quotes[index + 2] ?? 0);
 }
 
-function matchEnd(
-  text: string,
-  from: number,
-  limit: number,
-): { end: number; stop: number } {
+/** The parentheses of `text`, matched in one pass. Every parenthesis counts;
+ *  a `)` with no `(` open is ignored. */
+function parenTable(text: string, cache: ProbeCache): ParenTable {
+  const known = cache.parenTables?.get(text);
+  if (known !== undefined) return known;
+  const matches = new Int32Array(text.length).fill(-1);
+  const quotes = new Int32Array(text.length + 1);
+  const open = new Int32Array(text.length);
   let depth = 0;
-  let i = from;
-  while (i < limit) {
-    const c = text.charAt(i);
-    if (c === ")" && depth === 0)
-      return { end: text[i + 1] === ")" ? i : -1, stop: i };
-    depth += c === "(" ? 1 : c === ")" ? -1 : 0;
-    i = skipQuoted(text, i, limit);
+  for (let i = 0; i < text.length; i += 1) {
+    const code = text.charCodeAt(i);
+    quotes[i + 1] = (quotes[i] ?? 0) + (QUOTING.has(code) ? 1 : 0);
+    if (code === 40) open[depth++] = i;
+    else if (code === 41 && depth > 0) matches[open[--depth] ?? 0] = i;
   }
-  return { end: -1, stop: i };
+  const table = { matches, quotes };
+  cache.parenTables ??= new Map();
+  cache.parenTables.set(text, table);
+  return table;
 }
 
-/** The index after the character at `from`, or after the escape or quoted
- *  string that starts there. */
-function skipQuoted(text: string, from: number, limit: number): number {
-  const c = text.charAt(from);
-  if (c === "\\") return from + 2;
-  if (c !== "'" && c !== '"' && c !== "`") return from + 1;
-  let i = from + 1;
-  while (i < limit && text[i] !== c) i += c !== "'" && text[i] === "\\" ? 2 : 1;
-  return i + 1;
-}
+/** `'`, `"`, a backtick and a backslash. */
+const QUOTING = new Set([39, 34, 96, 92]);
 
 /** The text of an arithmetic command: its parentheses nest, and nothing in
  *  it is a command. */

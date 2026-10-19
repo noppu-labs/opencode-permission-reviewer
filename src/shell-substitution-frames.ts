@@ -2,7 +2,7 @@
 
 import type {
   HeredocReading,
-  ProbeBudget,
+  ProbeCache,
   SubstitutionScan,
 } from "./shell-lex-state.ts";
 import type { PendingHeredoc } from "./shell-substitution-heredoc.ts";
@@ -51,9 +51,8 @@ export interface BodyScan {
   saved: [Words | undefined, Pattern][];
   /** Index right after the last backslash escape. */
   escapedEnd: number;
-  /** What the arithmetic probe may still read, shared by the calls that
-   *  read one command. */
-  probes: ProbeBudget;
+  /** The parenthesis matches shared by the calls that read one command. */
+  probes: ProbeCache;
 }
 
 export function advance(scan: BodyScan): boolean {

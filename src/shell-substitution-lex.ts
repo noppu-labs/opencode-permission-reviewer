@@ -3,7 +3,6 @@
 import {
   appendValue,
   type LexState,
-  type ProbeBudget,
   type SubstitutionBudget,
   substitutionScanOf,
 } from "./shell-lex-state.ts";
@@ -26,13 +25,6 @@ function lexBody(
       lex.substitutions.push(segment);
   }
   if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
-}
-
-/** The budget the arithmetic probes of this command share: the length of the
- *  command, set when its first substitution is read. */
-function probesOf(lex: LexState, budget: SubstitutionBudget): ProbeBudget {
-  budget.arithmeticReadsRemaining ??= lex.command.length;
-  return budget;
 }
 
 /** Where the walk over kept text is, and where each frame inside it closed. */
@@ -87,7 +79,7 @@ function stepNested(
     false,
     budget.reading ?? "default",
     "bash",
-    probesOf(lex, budget),
+    budget,
   );
   if (body?.kind === "command") {
     lexBody(lex, budget, body.text, body.end);
@@ -146,7 +138,7 @@ function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
     lex.index < lex.arithmeticEnd,
     budget.reading ?? "default",
     scan,
-    probesOf(lex, budget),
+    budget,
   );
   if (body === undefined) return false;
   if (scan !== "bash") {

@@ -41,15 +41,21 @@ export function substitutionScanOf(
   return quoting === "bash" ? "bash" : "previous";
 }
 
-/** What the substitution end-finder may still read ahead to tell an
- *  arithmetic `((` from a nested subshell, across every substitution one
- *  command holds. Set to the length of the command on first use. */
-export interface ProbeBudget {
-  arithmeticReadsRemaining?: number;
+/** The parentheses of one text: the index of the `)` that matches each `(`
+ *  (-1 for none), and how many quote and backslash characters precede each
+ *  index. */
+export interface ParenTable {
+  matches: Int32Array;
+  quotes: Int32Array;
+}
+
+/** What the substitution end-finder keeps for the whole command it reads. */
+export interface ProbeCache {
+  parenTables?: Map<string, ParenTable>;
 }
 
 /** A budget that lexes command substitutions into segments of their own. */
-export interface SubstitutionBudget extends TokenBudget, ProbeBudget {
+export interface SubstitutionBudget extends TokenBudget, ProbeCache {
   substitutions: "lex";
   /** Heredoc reading for the substitution bodies this scan lexes. */
   reading?: HeredocReading;

@@ -1,7 +1,10 @@
 // How the substitution end-finder reads a word: where a `case` keyword opens a body, and which words are arguments, patterns or list items.
 
 import type { BodyScan } from "./shell-substitution-frames.ts";
-import { keepsCommandPosition } from "./shell-substitution-prefix.ts";
+import {
+  keepsCommandPosition,
+  skipJoins,
+} from "./shell-substitution-prefix.ts";
 
 /** Whether a `case` pattern began with a `(`. */
 export type Pattern = "bare" | "paren" | undefined;
@@ -47,14 +50,14 @@ export function readWord(scan: BodyScan): void {
   scan.index = end;
 }
 
-/** The end of the word at `from`, which a backslash-newline does not end. */
+/** The end of the word at `from`, which backslash-newlines do not end. */
 function wordEnd(text: string, from: number): number {
   let end = from;
   for (;;) {
     while (/\w/.test(text.charAt(end))) end += 1;
-    const joins = text[end] === "\\" && text[end + 1] === "\n";
-    if (!joins || !/\w/.test(text.charAt(end + 2))) return end;
-    end += 2;
+    const next = skipJoins(text, end);
+    if (next === end || !/\w/.test(text.charAt(next))) return end;
+    end = next;
   }
 }
 

@@ -9,7 +9,7 @@ export type Prefix = "time" | "coproc" | "function";
 const COMPOUND_START =
   /[ \t]+(?:(?:case|if|while|until|for|select)(?!\w)|\{|\(|\[\[)/y;
 const TIME_OPTION = /(?:-p|--)(?=[ \t\n]|$)/y;
-const HEADER = /\([ \t]*\)/y;
+const HEADER = /\((?:[ \t]|\\\n)*\)/y;
 /** A character that ends a function name, and one that cannot start it. */
 const NAME_BREAK = /[\s|&;()<>$`"'\\]/;
 const NAME_START = /[^\s|&;()<>$`"'\\{!#]/;
@@ -75,16 +75,27 @@ export function stepPrefixText(scan: BodyScan, c: string): boolean {
 /** The end of the run of characters that can make up a function's name. */
 function nameEnd(text: string, from: number): number {
   let i = from;
-  while (i < text.length && !NAME_BREAK.test(text.charAt(i))) i += 1;
-  return i;
+  for (;;) {
+    i = skipJoins(text, i);
+    if (i >= text.length || NAME_BREAK.test(text.charAt(i))) return i;
+    i += 1;
+  }
 }
 
 /** The end of the `()` of a function header `name ()` at the scan, or -1. */
 export function functionHeaderEnd(scan: BodyScan): number {
   if (scan.headStart < 0) return -1;
   let i = nameEnd(scan.text, scan.headStart);
-  while (scan.text[i] === " " || scan.text[i] === "\t") i += 1;
+  while (scan.text[i] === " " || scan.text[i] === "\t")
+    i = skipJoins(scan.text, i + 1);
   if (i !== scan.index) return -1;
   HEADER.lastIndex = scan.index;
   return HEADER.test(scan.text) ? HEADER.lastIndex : -1;
+}
+
+/** The index after the backslash-newlines that start at `from`. */
+export function skipJoins(text: string, from: number): number {
+  let at = from;
+  while (text[at] === "\\" && text[at + 1] === "\n") at += 2;
+  return at;
 }

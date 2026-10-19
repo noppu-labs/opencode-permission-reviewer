@@ -4,7 +4,7 @@ import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
 import type {
   HeredocReading,
-  ProbeBudget,
+  ProbeCache,
   SubstitutionScan,
 } from "./shell-lex-state.ts";
 import { substitutionBodyEnd } from "./shell-substitution-end.ts";
@@ -34,7 +34,7 @@ export function substitutionAt(
   inArithmetic: boolean,
   reading: HeredocReading = "default",
   scan: SubstitutionScan = "bash",
-  probes?: ProbeBudget,
+  probes?: ProbeCache,
 ): SubstitutionBody | undefined {
   const c = command.charAt(index);
   if (c === "`")
@@ -55,7 +55,7 @@ function expansionBody(
   index: number,
   reading: HeredocReading,
   scan: SubstitutionScan,
-  probes: ProbeBudget | undefined,
+  probes: ProbeCache | undefined,
 ): SubstitutionBody | undefined {
   if (scan !== "bash" || endsDollarPair(command, index)) return undefined;
   const closes: FrameCloses = new Map();
@@ -112,7 +112,7 @@ function dollarParenBody(
   start: number,
   reading: HeredocReading,
   scan: SubstitutionScan,
-  probes: ProbeBudget | undefined,
+  probes: ProbeCache | undefined,
 ): SubstitutionBody {
   const isPair = command[start] === "(";
   const closes: FrameCloses | undefined =

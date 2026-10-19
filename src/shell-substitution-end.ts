@@ -2,7 +2,7 @@
 
 import type {
   HeredocReading,
-  ProbeBudget,
+  ProbeCache,
   SubstitutionScan,
 } from "./shell-lex-state.ts";
 import { stepBrace, stepDouble } from "./shell-substitution-brace.ts";
@@ -27,7 +27,7 @@ import { startsSubject } from "./shell-substitution-words.ts";
  * when nothing closes it. Inside a `$(` body, quoted text, comments, heredoc
  * bodies, nested parentheses and `case` patterns do not close it. When
  * `closes` is given, it receives the index each frame inside closed at.
- * `probes` is the budget the arithmetic probes of a whole command share.
+ * `probes` holds what the calls that read one command share.
  */
 export function substitutionBodyEnd(
   text: string,
@@ -36,7 +36,7 @@ export function substitutionBodyEnd(
   reading: HeredocReading = "default",
   mode: SubstitutionScan = "bash",
   closes?: Map<number, number>,
-  probes: ProbeBudget = { arithmeticReadsRemaining: text.length },
+  probes: ProbeCache = {},
 ): number {
   const scan: BodyScan = {
     text,

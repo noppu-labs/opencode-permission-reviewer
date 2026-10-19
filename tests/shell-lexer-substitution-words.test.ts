@@ -382,4 +382,35 @@ describe("work stays linear in the text", () => {
     const { ms } = timed(unit.repeat(Math.floor(size / unit.length)));
     expect(ms).toBeLessThan(1000);
   });
+  test.each([
+    ["short padding", 10],
+    ["long padding", 100],
+    ["very long padding", 5000],
+  ])(
+    "reads a double parenthesis after nested arithmetic with %s the same",
+    (_name, pad) => {
+      const nest = `echo "$(( ((${" ".repeat(pad)}1)) ))" ;\n`;
+      const command = `${nest.repeat(3)}echo "$( (( case = 1 )); echo A)" ; echo hi`;
+      const last = scan(command).at(-1);
+      expect(last?.tokens.map((token) => token.value)).toEqual(["echo", "hi"]);
+    },
+  );
+
+  const deepThenCase = (size: number): string => {
+    const depth = Math.floor(size / 12);
+    return `echo "$( ${"(( ".repeat(depth)}1${" ))".repeat(depth)} )" ;\necho "$( (( case = 1 )); echo A)" ; echo hi`;
+  };
+
+  test("reads a double parenthesis after deep nested arithmetic commands at the cap", () => {
+    const { segments, ms } = timed(deepThenCase(CAP));
+    expect(segments.at(-1)?.tokens.map((token) => token.value)).toEqual([
+      "echo",
+      "hi",
+    ]);
+    expect(ms).toBeLessThan(1000);
+  });
+
+  test("reads deep nested arithmetic commands at 8x the cap in under a second", () => {
+    expect(timed(deepThenCase(8 * CAP)).ms).toBeLessThan(1000);
+  });
 });
