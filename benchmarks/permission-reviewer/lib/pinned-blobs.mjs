@@ -97,12 +97,16 @@ export const PINNED_BLOBS = {
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
   "src/shell-substitution.ts": "e0dabd476cea5241c144170b0118ffd316c244ed",
-  "src/shell-substitution-end.ts": "487fd89ac306852380c4d8e2de6f3df4eb241870",
+  "src/shell-substitution-end.ts": "76107dcac851e74bf7010ea0896f6e3b28728a1d",
   "src/shell-substitution-brace.ts": "9fca7e19fc8dabcd789bf4807b756ab32c57db50",
   "src/shell-substitution-prefix.ts":
-    "82d653c3843bd92d710eefe725b6a654566bcbc4",
+    "a5deabdb9a3a04345e1e14c6d00fb3cd57131e57",
+  "src/shell-substitution-words.ts": "c5d893593695bb1512526a627a60821a00c98b27",
+  "src/shell-substitution-groups.ts":
+    "e2ad37af66dcead755d3bd2b4e4ed0e1f41e3372",
+  "src/shell-substitution-text.ts": "3a3a9a71a8f5d9ebf30755b3e024b954abb01e2b",
   "src/shell-substitution-frames.ts":
-    "414199b9ea295d46abe6713700ecedaf5f42e96a",
+    "a6ffa15f307a4214c3370fba33c8740bc246a4d6",
   "src/shell-substitution-lex.ts": "26958e902018fde74a23861a4830499f7a91e039",
   "src/shell-substitution-heredoc.ts":
     "6105e5f7e9660f20c076f603c420afaf8513d699",

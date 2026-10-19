@@ -2,17 +2,6 @@
 
 import type { BodyScan } from "./shell-substitution-frames.ts";
 
-/** Words after which a command can still start. */
-const COMMAND_PREFIX_WORDS = new Set([
-  "then",
-  "do",
-  "else",
-  "elif",
-  "if",
-  "while",
-  "until",
-  "in",
-]);
 /** What the previous word asked of the next one. */
 export type Prefix = "time" | "coproc" | "function";
 
@@ -25,29 +14,12 @@ const HEADER = /\([ \t]*\)/y;
 const NAME_BREAK = /[\s|&;()<>$`"'\\]/;
 const NAME_START = /[^\s|&;()<>$`"'\\{!#]/;
 
-/** A word: `case` at a command position opens a `case` body, `esac`
- *  closes the innermost one. */
-export function readWord(scan: BodyScan): void {
-  let end = scan.index;
-  while (/\w/.test(scan.text.charAt(end))) end += 1;
-  const word = scan.text.slice(scan.index, end);
-  const atCommand = scan.commandPosition;
-  if (atCommand && word === "case") scan.frames.push("case");
-  else if (atCommand && word === "esac" && scan.frames.at(-1) === "case")
-    scan.frames.pop();
-  scan.commandPosition =
-    COMMAND_PREFIX_WORDS.has(word) ||
-    (scan.mode === "bash" && keepsCommandPosition(scan, word, scan.index, end));
-  if (atCommand) scan.headStart = scan.index;
-  scan.index = end;
-}
-
 /**
  * Whether the word read at `start` keeps the next word at a command
  * position, and what it asks of that word: `time` (unless it follows a
  * pipe) and `coproc` with its name.
  */
-function keepsCommandPosition(
+export function keepsCommandPosition(
   scan: BodyScan,
   word: string,
   start: number,

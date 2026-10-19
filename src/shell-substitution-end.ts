@@ -8,6 +8,13 @@ import {
   close,
   stepCommand,
 } from "./shell-substitution-frames.ts";
+import {
+  openGroup,
+  stepArith,
+  stepArray,
+  stepTest,
+} from "./shell-substitution-groups.ts";
+import { startsSubject } from "./shell-substitution-words.ts";
 
 /**
  * Index of the character that closes the substitution whose body starts at
@@ -37,6 +44,11 @@ export function substitutionBodyEnd(
     mode,
     prefix: undefined,
     headStart: -1,
+    words: undefined,
+    pattern: undefined,
+    saved: [],
+    escapedEnd: -1,
+    lookahead: text.length,
   };
   while (scan.index < text.length) {
     if (step(scan)) return scan.index;
@@ -48,14 +60,39 @@ export function substitutionBodyEnd(
  *  closes at `scan.index`. */
 function step(scan: BodyScan): boolean {
   const c = scan.text.charAt(scan.index);
-  const frame = scan.frames.at(-1);
   if (c === "\\") {
     scan.index += 2;
+    scan.escapedEnd = scan.index;
     scan.commandPosition = false;
     return false;
   }
+  if (scan.words !== undefined) startsSubject(scan, c);
+  return stepFrame(scan, c, scan.frames.at(-1));
+}
+
+function stepFrame(
+  scan: BodyScan,
+  c: string,
+  frame: string | undefined,
+): boolean {
   if (frame === "backtick") return c === "`" ? close(scan) : advance(scan);
   if (frame === "double") return stepDouble(scan, c);
   if (frame === "brace") return stepBrace(scan, c);
-  return stepCommand(scan, c, frame === "case");
+  if (frame === "array") return stepArray(scan, c);
+  if (frame === "arith") return stepArith(scan, c);
+  if (frame === "test") return stepTest(scan, c);
+  const group =
+    scan.mode === "bash" && (c === "(" || c === "[")
+      ? openGroupAt(scan, c, frame === "case")
+      : undefined;
+  return group ?? stepCommand(scan, c, frame === "case");
+}
+
+/** The group a `(` or `[` opens, unless it starts a `case` pattern. */
+function openGroupAt(
+  scan: BodyScan,
+  c: string,
+  insideCase: boolean,
+): boolean | undefined {
+  return insideCase && scan.pattern ? undefined : openGroup(scan, c);
 }

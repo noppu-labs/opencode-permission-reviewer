@@ -1,21 +1,22 @@
 // The frame steps of the substitution end-finder: how each syntax the scan can be inside reads the next character.
 
 import type { HeredocReading, SubstitutionScan } from "./shell-lex-state.ts";
-import {
-  heredocBodiesEnd,
-  heredocOperatorAt,
-  type PendingHeredoc,
-} from "./shell-substitution-heredoc.ts";
-import {
-  functionHeaderEnd,
-  type Prefix,
-  readWord,
-  stepPrefixText,
-} from "./shell-substitution-prefix.ts";
+import type { PendingHeredoc } from "./shell-substitution-heredoc.ts";
+import { functionHeaderEnd, type Prefix } from "./shell-substitution-prefix.ts";
+import { stepCommandText } from "./shell-substitution-text.ts";
+import type { Pattern, Words } from "./shell-substitution-words.ts";
 
 /** The syntax the scan is inside: a command list (`$(`, `(`), a `case`
  *  body, a double-quoted string, or a backtick body. */
-type Frame = "command" | "case" | "double" | "backtick" | "brace";
+type Frame =
+  | "command"
+  | "case"
+  | "double"
+  | "backtick"
+  | "brace"
+  | "array"
+  | "arith"
+  | "test";
 
 export interface BodyScan {
   text: string;
@@ -35,6 +36,19 @@ export interface BodyScan {
   prefix: Prefix | undefined;
   /** Start of the last word that began at a command position, or -1. */
   headStart: number;
+  /** The `case` or `for` header the scan is in, if any. */
+  words: Words | undefined;
+  /** In a `case` body, whether the next word is a pattern: after the `in`
+   *  or a `;;`, until the pattern's `)`. `paren` when the pattern began with
+   *  a `(`, where `esac` is a pattern too. */
+  pattern: Pattern;
+  /** The `words` and `pattern` of each enclosing frame, restored when an
+   *  inner frame closes. */
+  saved: [Words | undefined, Pattern][];
+  /** Index right after the last backslash escape. */
+  escapedEnd: number;
+  /** Characters an arithmetic probe may still read ahead. */
+  lookahead: number;
 }
 
 export function advance(scan: BodyScan): boolean {
@@ -47,6 +61,9 @@ export function open(scan: BodyScan, frame: Frame, width: number): boolean {
   scan.starts.push(scan.index);
   scan.prefix = undefined;
   scan.headStart = -1;
+  scan.saved.push([scan.words, scan.pattern]);
+  scan.words = undefined;
+  scan.pattern = undefined;
   scan.index += width;
   scan.commandPosition = true;
   return false;
@@ -56,6 +73,7 @@ export function close(scan: BodyScan): boolean {
   scan.frames.pop();
   const began = scan.starts.pop();
   if (began !== undefined) scan.closes?.set(began, scan.index);
+  [scan.words, scan.pattern] = scan.saved.pop() ?? [undefined, undefined];
   if (scan.frames.length === 0) return true;
   scan.index += 1;
   scan.commandPosition = false;
@@ -67,12 +85,7 @@ export function stepCommand(
   c: string,
   insideCase: boolean,
 ): boolean {
-  if (c === ")") {
-    if (!insideCase) return close(scan);
-    scan.commandPosition = true;
-    return advance(scan);
-  }
-  if (c === "(") return openParenthesis(scan);
+  if (c === ")" || c === "(") return stepParenthesis(scan, c, insideCase);
   if (c === '"') return open(scan, "double", 1);
   if (c === "`") return open(scan, "backtick", 1);
   if (c === "'" || (c === "$" && scan.text[scan.index + 1] === "'")) {
@@ -82,6 +95,24 @@ export function stepCommand(
   if (c === "$" && scan.mode === "bash") return stepDollar(scan);
   stepCommandText(scan, c);
   return false;
+}
+
+/** A `)` ends a `case` pattern or closes a frame; a `(` opens a subshell,
+ *  or is the optional one before a pattern. */
+function stepParenthesis(
+  scan: BodyScan,
+  c: string,
+  insideCase: boolean,
+): boolean {
+  if (c === "(" && insideCase && scan.pattern) {
+    scan.pattern = "paren";
+    return advance(scan);
+  }
+  if (c === "(") return openParenthesis(scan);
+  if (!insideCase) return close(scan);
+  scan.commandPosition = true;
+  scan.pattern = undefined;
+  return advance(scan);
 }
 
 /** A `(` opens a subshell, unless it is the `()` of a function header. */
@@ -110,50 +141,5 @@ export function skipSingleQuoted(scan: BodyScan, ansiC: boolean): void {
   while (i < text.length && text[i] !== "'")
     i += ansiC && text[i] === "\\" ? 2 : 1;
   scan.index = i + 1;
-  scan.commandPosition = false;
-}
-
-function stepCommandText(scan: BodyScan, c: string): void {
-  if (c === "\n") {
-    skipNewline(scan);
-    return;
-  }
-  if (c === "#" && atWordStart(scan)) {
-    const newline = scan.text.indexOf("\n", scan.index);
-    scan.index = newline === -1 ? scan.text.length : newline;
-    return;
-  }
-  if (c === "<" && scan.text[scan.index + 1] === "<") {
-    readHeredocOperator(scan);
-    return;
-  }
-  if (stepPrefixText(scan, c)) return;
-  if (/\w/.test(c)) {
-    readWord(scan);
-    return;
-  }
-  if (";&|".includes(c)) {
-    scan.commandPosition = true;
-    scan.prefix = undefined;
-  } else if (!" \t{!".includes(c)) scan.commandPosition = false;
-  scan.index += 1;
-}
-
-function atWordStart(scan: BodyScan): boolean {
-  return /[\s;&|()]/.test(scan.text.charAt(scan.index - 1));
-}
-
-/** A newline ends the line the pending heredocs started on: their bodies
- *  follow and are skipped whole. */
-function skipNewline(scan: BodyScan): void {
-  scan.index = heredocBodiesEnd(scan.text, scan.index + 1, scan.heredocs);
-  scan.heredocs = [];
-  scan.commandPosition = true;
-}
-
-function readHeredocOperator(scan: BodyScan): void {
-  const operator = heredocOperatorAt(scan.text, scan.index, scan.reading);
-  if (operator.heredoc !== undefined) scan.heredocs.push(operator.heredoc);
-  scan.index = operator.end;
   scan.commandPosition = false;
 }
