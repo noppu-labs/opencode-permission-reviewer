@@ -227,6 +227,14 @@ describe("work stays linear in the text", () => {
     `echo ${`"${OPEN}x:-"a b"}" `.repeat(count)}; echo RAN`;
   const expansionsWithCommands = (count: number): string =>
     `echo "${`${OPEN}x:-$(x)}`.repeat(count)}" ; echo RAN`;
+  const manyArithmetics = (count: number): string =>
+    `echo "${`${OPEN}x:-${"$((1)) ".repeat(count)}}`}" ; echo RAN`;
+  const manySubshells = (count: number): string =>
+    `echo "${`${OPEN}x:-${"$((a) )".repeat(count)}}`}" ; echo RAN`;
+  const manyInArithmetic = (count: number): string =>
+    `echo "$(( ${"$((1)) + ".repeat(count)}1 ))" ; echo RAN`;
+  const nestedArithmetics = (depth: number): string =>
+    `echo "$(( ${"$(( ".repeat(depth)}1${" ))".repeat(depth)} ))" ; echo RAN`;
   const unterminated = (count: number): string =>
     `echo "${`${OPEN}x:-`.repeat(count)}`;
 
@@ -301,4 +309,57 @@ describe("work stays linear in the text", () => {
     expect(segments).toHaveLength(count + 2);
     expect(ms).toBeLessThan(1000);
   });
+
+  test.each([
+    ["at the cap", CAP],
+    ["at 8x the cap", 8 * CAP],
+  ])("reads many arithmetic expansions in one expansion %s", (_name, size) => {
+    const { segments, ms } = timed(manyArithmetics(Math.floor(size / 7)));
+    expect(segments).toHaveLength(2);
+    expect(ms).toBeLessThan(1000);
+  });
+
+  test.each([
+    ["at the cap", CAP],
+    ["at 8x the cap", 8 * CAP],
+  ])("lexes many subshell substitutions in one expansion %s", (_name, size) => {
+    const count = Math.floor(size / 20);
+    const { segments, ms } = timed(manySubshells(count));
+    expect(segments).toHaveLength(2 * count + 2);
+    expect(ms).toBeLessThan(1000);
+  });
+
+  test("reads many arithmetic expansions in one arithmetic expansion at the cap", () => {
+    const { segments, ms } = timed(manyInArithmetic(Math.floor(CAP / 9)));
+    expect(segments).toHaveLength(2);
+    expect(ms).toBeLessThan(1000);
+  });
+
+  test.each([
+    ["at the cap", CAP],
+    ["at 8x the cap", 8 * CAP],
+  ])("reads nested arithmetic expansions %s", (_name, size) => {
+    const { segments, ms } = timed(nestedArithmetics(Math.floor(size / 8)));
+    expect(segments).toHaveLength(2);
+    expect(ms).toBeLessThan(1000);
+  });
+
+  test.each([
+    ["at the cap", CAP],
+    ["at 8x the cap", 8 * CAP],
+  ])(
+    "finds a subshell substitution under nested arithmetic %s",
+    (_name, size) => {
+      const depth = Math.floor(size / 8);
+      const command = `echo "$(( ${"$(( ".repeat(depth)}$((a) )${" ))".repeat(depth)} ))" ; echo RAN`;
+      const { segments, ms } = timed(command);
+      expect(segments.map((segment) => segment.tokens[0]?.value)).toEqual([
+        "echo",
+        undefined,
+        "a",
+        "echo",
+      ]);
+      expect(ms).toBeLessThan(1000);
+    },
+  );
 });

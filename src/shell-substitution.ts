@@ -10,8 +10,12 @@ import { substitutionBodyEnd } from "./shell-substitution-end.ts";
  *  its `}`. */
 export type SubstitutionBody =
   | { kind: "command"; text: string; end: number }
-  | { kind: "arithmetic"; end: number }
-  | { kind: "expansion"; end: number };
+  | { kind: "arithmetic"; end: number; closes: FrameCloses | undefined }
+  | { kind: "expansion"; end: number; closes: FrameCloses };
+
+/** The index each frame inside a substitution closed at, by the index it
+ *  began at: the `(` or `$` that opened it. */
+export type FrameCloses = Map<number, number>;
 
 /**
  * An unquoted `$(` is not a substitution here: the scanner already splits at
@@ -48,8 +52,16 @@ function expansionBody(
   scan: SubstitutionScan,
 ): SubstitutionBody | undefined {
   if (scan !== "bash" || endsDollarPair(command, index)) return undefined;
-  const close = substitutionBodyEnd(command, index + 2, "brace", reading, scan);
-  return { kind: "expansion", end: close + 1 };
+  const closes: FrameCloses = new Map();
+  const close = substitutionBodyEnd(
+    command,
+    index + 2,
+    "brace",
+    reading,
+    scan,
+    closes,
+  );
+  return { kind: "expansion", end: close + 1, closes };
 }
 
 /** Whether the `$` at `index` is the second of a `$$` pair: an odd number
@@ -94,13 +106,23 @@ function dollarParenBody(
   reading: HeredocReading,
   scan: SubstitutionScan,
 ): SubstitutionBody {
-  const close = substitutionBodyEnd(command, start, "command", reading, scan);
+  const isPair = command[start] === "(";
+  const closes: FrameCloses | undefined =
+    isPair && scan === "bash" ? new Map() : undefined;
+  const close = substitutionBodyEnd(
+    command,
+    start,
+    "command",
+    reading,
+    scan,
+    closes,
+  );
   if (
-    command[start] === "(" &&
+    isPair &&
     substitutionBodyEnd(command, start + 1, "command", reading, scan) ===
       close - 1
   )
-    return { kind: "arithmetic", end: close + 1 };
+    return { kind: "arithmetic", end: close + 1, closes };
   return {
     kind: "command",
     text: sanitizeBody(command.slice(start, close), reading),

@@ -7,7 +7,7 @@ import {
   substitutionScanOf,
 } from "./shell-lex-state.ts";
 import { lexSegments } from "./shell-scanner.ts";
-import { substitutionAt } from "./shell-substitution.ts";
+import { type FrameCloses, substitutionAt } from "./shell-substitution.ts";
 
 /** Lex the body of a command substitution into segments of its own, under
  *  the same budget. */
@@ -27,36 +27,85 @@ function lexBody(
   if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
 }
 
+/** Where the walk over kept text is, and where each frame inside it closed. */
+interface Walk {
+  index: number;
+  closes: FrameCloses;
+}
+
+/** Whether the `$((` at `index` is arithmetic, by the frames the end-finder
+ *  already closed: its subshell frame closes right before its own. */
+function knownArithmetic(closes: FrameCloses, index: number): boolean {
+  const outer = closes.get(index) ?? closes.get(index + 1);
+  const inner = closes.get(index + 2);
+  return outer !== undefined && inner !== undefined && outer === inner + 1;
+}
+
+/** Charge the text of a probe that found arithmetic to the substitution
+ *  budget. It reads text again, so a deep nest of unknown `$((` costs a
+ *  bounded amount in all. */
+function chargeProbe(
+  lex: LexState,
+  budget: SubstitutionBudget,
+  size: number,
+): void {
+  budget.substitutionCharsRemaining -= size;
+  if (budget.substitutionCharsRemaining >= 0) return;
+  budget.tokensRemaining = 0;
+  lex.outOfTokens = true;
+}
+
+function stepNested(
+  lex: LexState,
+  budget: SubstitutionBudget,
+  walk: Walk,
+): void {
+  const { command } = lex;
+  if (command.startsWith("${", walk.index)) {
+    walk.index += 2;
+    return;
+  }
+  if (
+    command.startsWith("$((", walk.index) &&
+    knownArithmetic(walk.closes, walk.index)
+  ) {
+    walk.index += 1;
+    return;
+  }
+  const body = substitutionAt(
+    command,
+    walk.index,
+    true,
+    false,
+    budget.reading ?? "default",
+    "bash",
+  );
+  if (body?.kind === "command") {
+    lexBody(lex, budget, body.text, body.end);
+    walk.index = body.end;
+    return;
+  }
+  if (body?.kind === "arithmetic")
+    chargeProbe(lex, budget, body.end - walk.index);
+  walk.index += command[walk.index] === "\\" ? 2 : 1;
+}
+
 /** Lex the command substitutions inside text that spans `[from, to)` and is
  *  kept in its word whole: the expression of a double-quoted `$((…))`, or a
  *  `${…}` expansion in double quotes. A substitution there runs even between
  *  quotes. The `${` of a nested expansion is stepped over: the end of the
- *  outer one is already known. */
+ *  outer one is already known. A `$((` is arithmetic, or a subshell inside a
+ *  command substitution (`$((cmd) )`), which the shell runs in both places;
+ *  `closes` says which for the ones the end-finder already read. */
 function lexNested(
   lex: LexState,
   budget: SubstitutionBudget,
   from: number,
   to: number,
+  closes: FrameCloses,
 ): void {
-  let index = from;
-  while (index < to && !lex.outOfTokens) {
-    if (lex.command.startsWith("${", index)) {
-      index += 2;
-      continue;
-    }
-    const body = substitutionAt(
-      lex.command,
-      index,
-      true,
-      true,
-      budget.reading ?? "default",
-      "bash",
-    );
-    if (body?.kind === "command") {
-      lexBody(lex, budget, body.text, body.end);
-      index = body.end;
-    } else index += lex.command[index] === "\\" ? 2 : 1;
-  }
+  const walk: Walk = { index: from, closes };
+  while (walk.index < to && !lex.outOfTokens) stepNested(lex, budget, walk);
 }
 
 /** Add the substitution that starts at the current character to the word as
@@ -96,9 +145,15 @@ function lexOne(lex: LexState, budget: SubstitutionBudget): boolean {
     return false;
   }
   if (body.kind === "arithmetic")
-    lexNested(lex, budget, lex.index + 3, body.end - 2);
+    lexNested(
+      lex,
+      budget,
+      lex.index + 3,
+      body.end - 2,
+      body.closes ?? new Map(),
+    );
   else if (body.kind === "expansion")
-    lexNested(lex, budget, lex.index + 2, body.end - 1);
+    lexNested(lex, budget, lex.index + 2, body.end - 1, body.closes);
   else lexBody(lex, budget, body.text, body.end);
   keepInWord(lex, body.end);
   return true;

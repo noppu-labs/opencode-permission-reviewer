@@ -21,6 +21,11 @@ export interface BodyScan {
   text: string;
   index: number;
   frames: Frame[];
+  /** Where each open frame began, for `closes`. */
+  starts: number[];
+  /** When present, the index each frame closed at, by the index it began at:
+   *  the `(` or `$` that opened it. */
+  closes: Map<number, number> | undefined;
   heredocs: PendingHeredoc[];
   /** Whether the next word sits where a command (or `case`/`esac`) can start. */
   commandPosition: boolean;
@@ -39,6 +44,7 @@ export function advance(scan: BodyScan): boolean {
 
 export function open(scan: BodyScan, frame: Frame, width: number): boolean {
   scan.frames.push(frame);
+  scan.starts.push(scan.index);
   scan.prefix = undefined;
   scan.headStart = -1;
   scan.index += width;
@@ -48,6 +54,8 @@ export function open(scan: BodyScan, frame: Frame, width: number): boolean {
 
 export function close(scan: BodyScan): boolean {
   scan.frames.pop();
+  const began = scan.starts.pop();
+  if (began !== undefined) scan.closes?.set(began, scan.index);
   if (scan.frames.length === 0) return true;
   scan.index += 1;
   scan.commandPosition = false;

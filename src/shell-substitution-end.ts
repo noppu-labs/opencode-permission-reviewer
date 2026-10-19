@@ -14,7 +14,8 @@ import {
  * `start`: the matching `)` for a `$(` body, the next unescaped backtick for
  * a backtick body, the matching `}` for a `${` body. Returns `text.length`
  * when nothing closes it. Inside a `$(` body, quoted text, comments, heredoc
- * bodies, nested parentheses and `case` patterns do not close it.
+ * bodies, nested parentheses and `case` patterns do not close it. When
+ * `closes` is given, it receives the index each frame inside closed at.
  */
 export function substitutionBodyEnd(
   text: string,
@@ -22,11 +23,14 @@ export function substitutionBodyEnd(
   opener: "command" | "backtick" | "brace",
   reading: HeredocReading = "default",
   mode: SubstitutionScan = "bash",
+  closes?: Map<number, number>,
 ): number {
   const scan: BodyScan = {
     text,
     index: start,
     frames: [opener],
+    starts: [start],
+    closes,
     heredocs: [],
     commandPosition: true,
     reading,

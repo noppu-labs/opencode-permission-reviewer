@@ -601,9 +601,113 @@
       "echo ¦ «${x:-\"$(( 1 + 1 ))\"}» ¶ echo ¦ RAN",
       "echo ¦ \"${x:-\"$(( 1 + 1 ))\"}\" ¶ echo ¦ RAN"
     ],
+    "echo \"${x:-$((echo RAN1 >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN1 >&2) )}» ¶  ¶ echo ¦ RAN1 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN1 >&2) )}\" ¶  ¶ echo ¦ RAN1 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN2 >&2); (echo B >&2))}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN2 >&2); (echo B >&2))}» ¶  ¶ echo ¦ RAN2 ¦ >&2 ¶  ¶ echo ¦ B ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN2 >&2); (echo B >&2))}\" ¶  ¶ echo ¦ RAN2 ¦ >&2 ¶  ¶ echo ¦ B ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN3 >&2) ) + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN3 >&2) ) + 1 ))» ¶  ¶ echo ¦ RAN3 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN3 >&2) ) + 1 ))\" ¶  ¶ echo ¦ RAN3 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN4 >&2); (echo B >&2)) + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN4 >&2); (echo B >&2)) + 1 ))» ¶  ¶ echo ¦ RAN4 ¦ >&2 ¶  ¶ echo ¦ B ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN4 >&2); (echo B >&2)) + 1 ))\" ¶  ¶ echo ¦ RAN4 ¦ >&2 ¶  ¶ echo ¦ B ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((1 + 2))}\" ; echo RAN": [
+      "echo ¦ «${x:-$((1 + 2))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((1 + 2))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( $((echo RAN5 >&2) ) + 1 ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( $((echo RAN5 >&2) ) + 1 ))}» ¶  ¶ echo ¦ RAN5 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( $((echo RAN5 >&2) ) + 1 ))}\" ¶  ¶ echo ¦ RAN5 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( 1 + $((2 + 3)) ))\" ; echo RAN": [
+      "echo ¦ «$(( 1 + $((2 + 3)) ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( 1 + $((2 + 3)) ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN6 >&2) ) $((echo RAN7 >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN6 >&2) ) $((echo RAN7 >&2) )}» ¶  ¶ echo ¦ RAN6 ¦ >&2 ¶  ¶ echo ¦ RAN7 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN6 >&2) ) $((echo RAN7 >&2) )}\" ¶  ¶ echo ¦ RAN6 ¦ >&2 ¶  ¶ echo ¦ RAN7 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN8 >&2) )}\" \"$((echo RAN9 >&2) )\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN8 >&2) )}» ¦ «$((echo RAN9 >&2) )» ¶  ¶ echo ¦ RAN8 ¦ >&2 ¶  ¶ echo ¦ RAN9 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN8 >&2) )}\" ¦ \"$((echo RAN9 >&2) )\" ¶  ¶ echo ¦ RAN8 ¦ >&2 ¶  ¶ echo ¦ RAN9 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN10 >&2)  )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN10 >&2)  )}» ¶  ¶ echo ¦ RAN10 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN10 >&2)  )}\" ¶  ¶ echo ¦ RAN10 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$( (echo RAN11 >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$( (echo RAN11 >&2) )}» ¶  ¶ echo ¦ RAN11 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$( (echo RAN11 >&2) )}\" ¶  ¶ echo ¦ RAN11 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo \")\" >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo \")\" >&2) )}» ¶  ¶ echo ¦ «)» ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo \")\" >&2) )}\" ¶  ¶ echo ¦ \")\" ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( 1 + $((echo RAN12 >&2) ) ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( 1 + $((echo RAN12 >&2) ) ))}» ¶  ¶ echo ¦ RAN12 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( 1 + $((echo RAN12 >&2) ) ))}\" ¶  ¶ echo ¦ RAN12 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( ${x:-$((echo RAN13 >&2) )} + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( ${x:-$((echo RAN13 >&2) )} + 1 ))» ¶  ¶ echo ¦ RAN13 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"$(( ${x:-$((echo RAN13 >&2) )} + 1 ))\" ¶  ¶ echo ¦ RAN13 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-\"$((echo RAN14 >&2) )\"}\" ; echo RAN": [
+      "echo ¦ «${x:-\"$((echo RAN14 >&2) )\"}» ¶  ¶ echo ¦ RAN14 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-\"$((echo RAN14 >&2) )\"}\" ¶  ¶ echo ¦ RAN14 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN15 >&2) ; )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN15 >&2) ; )}» ¶  ¶ echo ¦ RAN15 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN15 >&2) ; )}\" ¶  ¶ echo ¦ RAN15 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$((echo RAN16 >&2) )\" ; echo RAN": [
+      "echo ¦ «$((echo RAN16 >&2) )» ¶  ¶ echo ¦ RAN16 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"$((echo RAN16 >&2) )\" ¶  ¶ echo ¦ RAN16 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( (1) + (2) ))\" ; echo RAN": [
+      "echo ¦ «$(( (1) + (2) ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( (1) + (2) ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( (1) + (2) ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( (1) + (2) ))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( (1) + (2) ))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN17 >&2) ) ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN17 >&2) ) ))» ¶  ¶ echo ¦ RAN17 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN17 >&2) ) ))\" ¶  ¶ echo ¦ RAN17 ¦ >&2 ¶ echo ¦ RAN"
+    ],
     "echo \"$(echo \"${x:-\"a b\"}\")\" ; echo RAN": [
       "echo ¦ «$(echo \"${x:-\"a b\"}\")» ¶ echo ¦ «${x:-\"a b\"}» ¶ echo ¦ RAN",
       "echo ¦ \"$(echo \"${x:-\"a b\"}\")\" ¶ echo ¦ \"${x:-\"a b\"}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN1) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN1) )}» ¶  ¶ echo ¦ RAN1 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN1) )}\" ¶  ¶ echo ¦ RAN1 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN2); (echo B))}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN2); (echo B))}» ¶  ¶ echo ¦ RAN2 ¶  ¶ echo ¦ B ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN2); (echo B))}\" ¶  ¶ echo ¦ RAN2 ¶  ¶ echo ¦ B ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN3) ) + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN3) ) + 1 ))» ¶  ¶ echo ¦ RAN3 ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN3) ) + 1 ))\" ¶  ¶ echo ¦ RAN3 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( $((echo RAN5) ) + 1 ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( $((echo RAN5) ) + 1 ))}» ¶  ¶ echo ¦ RAN5 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( $((echo RAN5) ) + 1 ))}\" ¶  ¶ echo ¦ RAN5 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN6) ) $((echo RAN7) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN6) ) $((echo RAN7) )}» ¶  ¶ echo ¦ RAN6 ¶  ¶ echo ¦ RAN7 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN6) ) $((echo RAN7) )}\" ¶  ¶ echo ¦ RAN6 ¶  ¶ echo ¦ RAN7 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN8) ) ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN8) ) ))» ¶  ¶ echo ¦ RAN8 ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN8) ) ))\" ¶  ¶ echo ¦ RAN8 ¶ echo ¦ RAN"
     ]
   },
   "outer": {
@@ -1306,9 +1410,113 @@
       "echo ¦ «${x:-»$ ¶  ¶ 1 ¦ + ¦ 1 ¶  ¶ «}» ¶ echo ¦ RAN",
       "echo ¦ \"${x:-\"$ ¶  ¶ 1 ¦ + ¦ 1 ¶  ¶ \"}\" ¶ echo ¦ RAN"
     ],
+    "echo \"${x:-$((echo RAN1 >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN1 >&2) )}» ¶  ¶ echo ¦ RAN1 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN1 >&2) )}\" ¶  ¶ echo ¦ RAN1 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN2 >&2); (echo B >&2))}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN2 >&2); (echo B >&2))}» ¶  ¶ echo ¦ RAN2 ¦ >&2 ¶  ¶ echo ¦ B ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN2 >&2); (echo B >&2))}\" ¶  ¶ echo ¦ RAN2 ¦ >&2 ¶  ¶ echo ¦ B ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN3 >&2) ) + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN3 >&2) ) + 1 ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN3 >&2) ) + 1 ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN4 >&2); (echo B >&2)) + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN4 >&2); (echo B >&2)) + 1 ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN4 >&2); (echo B >&2)) + 1 ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((1 + 2))}\" ; echo RAN": [
+      "echo ¦ «${x:-$((1 + 2))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((1 + 2))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( $((echo RAN5 >&2) ) + 1 ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( $((echo RAN5 >&2) ) + 1 ))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( $((echo RAN5 >&2) ) + 1 ))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( 1 + $((2 + 3)) ))\" ; echo RAN": [
+      "echo ¦ «$(( 1 + $((2 + 3)) ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( 1 + $((2 + 3)) ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN6 >&2) ) $((echo RAN7 >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN6 >&2) ) $((echo RAN7 >&2) )}» ¶  ¶ echo ¦ RAN6 ¦ >&2 ¶  ¶ echo ¦ RAN7 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN6 >&2) ) $((echo RAN7 >&2) )}\" ¶  ¶ echo ¦ RAN6 ¦ >&2 ¶  ¶ echo ¦ RAN7 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN8 >&2) )}\" \"$((echo RAN9 >&2) )\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN8 >&2) )}» ¦ «$((echo RAN9 >&2) )» ¶  ¶ echo ¦ RAN8 ¦ >&2 ¶  ¶ echo ¦ RAN9 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN8 >&2) )}\" ¦ \"$((echo RAN9 >&2) )\" ¶  ¶ echo ¦ RAN8 ¦ >&2 ¶  ¶ echo ¦ RAN9 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN10 >&2)  )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN10 >&2)  )}» ¶  ¶ echo ¦ RAN10 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN10 >&2)  )}\" ¶  ¶ echo ¦ RAN10 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$( (echo RAN11 >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$( (echo RAN11 >&2) )}» ¶  ¶ echo ¦ RAN11 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$( (echo RAN11 >&2) )}\" ¶  ¶ echo ¦ RAN11 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo \")\" >&2) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo » ¶  ¶ echo ¦ «)» ¦ >&2 ¶ « >&2) )}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo \" ¶  ¶ echo ¦ \")\" ¦ >&2 ¶ \" >&2) )}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( 1 + $((echo RAN12 >&2) ) ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( 1 + $((echo RAN12 >&2) ) ))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( 1 + $((echo RAN12 >&2) ) ))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( ${x:-$((echo RAN13 >&2) )} + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( ${x:-$((echo RAN13 >&2) )} + 1 ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( ${x:-$((echo RAN13 >&2) )} + 1 ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-\"$((echo RAN14 >&2) )\"}\" ; echo RAN": [
+      "echo ¦ «${x:-»$ ¶  ¶ echo ¦ RAN14 ¦ >&2 ¶  ¶ «}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-\"$ ¶  ¶ echo ¦ RAN14 ¦ >&2 ¶  ¶ \"}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN15 >&2) ; )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN15 >&2) ; )}» ¶  ¶ echo ¦ RAN15 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN15 >&2) ; )}\" ¶  ¶ echo ¦ RAN15 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$((echo RAN16 >&2) )\" ; echo RAN": [
+      "echo ¦ «$((echo RAN16 >&2) )» ¶  ¶ echo ¦ RAN16 ¦ >&2 ¶ echo ¦ RAN",
+      "echo ¦ \"$((echo RAN16 >&2) )\" ¶  ¶ echo ¦ RAN16 ¦ >&2 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( (1) + (2) ))\" ; echo RAN": [
+      "echo ¦ «$(( (1) + (2) ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( (1) + (2) ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( (1) + (2) ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( (1) + (2) ))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( (1) + (2) ))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN17 >&2) ) ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN17 >&2) ) ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN17 >&2) ) ))\" ¶ echo ¦ RAN"
+    ],
     "echo \"$(echo \"${x:-\"a b\"}\")\" ; echo RAN": [
       "echo ¦ «$(echo »${x:-«a b»}«)» ¶ echo ¦ «${x:-»a ¦ b«}» ¶ echo ¦ RAN",
       "echo ¦ \"$(echo \"${x:-\"a b\"}\")\" ¶ echo ¦ \"${x:-\"a ¦ b\"}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN1) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN1) )}» ¶  ¶ echo ¦ RAN1 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN1) )}\" ¶  ¶ echo ¦ RAN1 ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN2); (echo B))}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN2); (echo B))}» ¶  ¶ echo ¦ RAN2 ¶  ¶ echo ¦ B ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN2); (echo B))}\" ¶  ¶ echo ¦ RAN2 ¶  ¶ echo ¦ B ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN3) ) + 1 ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN3) ) + 1 ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN3) ) + 1 ))\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$(( $((echo RAN5) ) + 1 ))}\" ; echo RAN": [
+      "echo ¦ «${x:-$(( $((echo RAN5) ) + 1 ))}» ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$(( $((echo RAN5) ) + 1 ))}\" ¶ echo ¦ RAN"
+    ],
+    "echo \"${x:-$((echo RAN6) ) $((echo RAN7) )}\" ; echo RAN": [
+      "echo ¦ «${x:-$((echo RAN6) ) $((echo RAN7) )}» ¶  ¶ echo ¦ RAN6 ¶  ¶ echo ¦ RAN7 ¶ echo ¦ RAN",
+      "echo ¦ \"${x:-$((echo RAN6) ) $((echo RAN7) )}\" ¶  ¶ echo ¦ RAN6 ¶  ¶ echo ¦ RAN7 ¶ echo ¦ RAN"
+    ],
+    "echo \"$(( $((echo RAN8) ) ))\" ; echo RAN": [
+      "echo ¦ «$(( $((echo RAN8) ) ))» ¶ echo ¦ RAN",
+      "echo ¦ \"$(( $((echo RAN8) ) ))\" ¶ echo ¦ RAN"
     ]
   },
   "undecoded": {
@@ -1622,7 +1830,14 @@
     "bash -c 'echo \"${x:-\"a b\"}\" ; rm -rf /'": "rm -rf /",
     "bash -c 'echo \"${x:-\"a;b\"}\" ; rm -rf /'": "rm -rf /",
     "sh -c \"echo \\\"\\${x:-\\\"a b\\\"}\\\" ; rm -rf /\"": "rm -rf /",
-    "sudo bash -c 'echo \"${x:-\"a)\"}\" ; rm -rf /'": "rm -rf /"
+    "sudo bash -c 'echo \"${x:-\"a)\"}\" ; rm -rf /'": "rm -rf /",
+    "echo \"${x:-$((rm -rf /) )}\"": "rm -rf /",
+    "echo \"${x:-$((rm -rf /); (true))}\"": "rm -rf /",
+    "echo \"$(( $((rm -rf /) ) + 1 ))\"": "rm -rf /",
+    "echo \"$(( $((rm -rf /); (true)) + 1 ))\"": "rm -rf /",
+    "echo \"${x:-$(( 1 + $((rm -rf /) ) ))}\"": "rm -rf /",
+    "bash -c 'echo \"${x:-$((rm -rf /) )}\"'": "rm -rf /",
+    "echo \"${x:-$((rm -rf /) )}\" ; true": "rm -rf /"
   },
   "everyday": {
     "echo \"$(date)\"": "read-only",
@@ -1647,6 +1862,10 @@
     "cd \"${HOME}\"": "read-only",
     "echo \"${x:-\"$(date)\"}\"": "read-only",
     "echo \"${x:-'a b'}\"": "read-only",
-    "git commit -m \"${MSG:-default}\"": "git-mutation"
+    "git commit -m \"${MSG:-default}\"": "git-mutation",
+    "echo \"${x:-$((1 + 2))}\"": "read-only",
+    "x=\"${x:-$((1 + 2))}\"": "unknown",
+    "echo \"$(( 1 + $((2 + 3)) ))\"": "read-only",
+    "echo \"${x:-$((echo hi) )}\"": "read-only"
   }
 }
