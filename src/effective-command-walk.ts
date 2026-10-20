@@ -1,10 +1,6 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
-import {
-  type BodyCommands,
-  keepBodyCommands,
-} from "./capability/heredoc-body-commands.ts";
-import { sanitizedText } from "./capability/heredoc-sanitized.ts";
+import { keepStringBodies } from "./capability/heredoc-string-bodies.ts";
 import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
@@ -165,16 +161,6 @@ function reanalyze(text: string, level: WalkLevel): void {
   if (lexBudget.tokensRemaining <= 0) sink.truncated = true;
   for (const sub of segments)
     walk(sub.tokens, sink, level.redirections, level.depth + 1);
-}
-
-/** Keeps the commands the heredoc bodies of command string `text` run. */
-function keepStringBodies(
-  bodies: BodyCommands | undefined,
-  text: string,
-): void {
-  if (bodies === undefined || !text.includes("<<")) return;
-  const read = sanitizedText(text);
-  keepBodyCommands(bodies, read.bodyCommands, read.bodyUnresolved);
 }
 
 /** Walk the operand tail from `start` one level deeper, if any is left. */

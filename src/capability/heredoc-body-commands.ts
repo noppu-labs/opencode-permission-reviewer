@@ -6,6 +6,7 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "../shell-substitution.ts";
+import { knownArithmetic } from "../shell-substitution-arithmetic.ts";
 import { earlyEndCommands } from "./heredoc-body-early-ends.ts";
 import { bodyTextStep, expandedBody } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
@@ -118,7 +119,8 @@ function step(scan: Scan, index: number): number {
 
 function substitute(scan: Scan, index: number): number {
   const { text } = scan;
-  if (opensKnownArithmetic(text, index, scan.closes)) return index + 3;
+  if (text.startsWith("$((", index) && knownArithmetic(scan.closes, index))
+    return index + 3;
   const backtick = text.charAt(index) === "`";
   const found = substitutionAt(
     text,
@@ -143,19 +145,6 @@ function substitute(scan: Scan, index: number): number {
   for (const [opened, closed] of found.closes ?? [])
     scan.closes.set(opened, closed);
   return index + 3;
-}
-
-/** Whether the `$((` at `index` is one the end-finder already closed as
- *  arithmetic: its subshell frame closes right before its own. */
-function opensKnownArithmetic(
-  text: string,
-  index: number,
-  closes: FrameCloses,
-): boolean {
-  if (!text.startsWith("$((", index)) return false;
-  const outer = closes.get(index) ?? closes.get(index + 1);
-  const inner = closes.get(index + 2);
-  return outer !== undefined && inner !== undefined && outer === inner + 1;
 }
 
 /** A command a substitution runs, then the commands that heredocs in it run.

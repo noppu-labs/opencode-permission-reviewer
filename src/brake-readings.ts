@@ -4,11 +4,8 @@ import {
 } from "./brake-block-device.ts";
 import { commandDestroysDevice } from "./brake-device-tools.ts";
 import { joinExecCommands } from "./brake-find-exec.ts";
-import {
-  analyzeFind,
-  type FindCommand,
-  isRootFind,
-} from "./brake-find-root.ts";
+import { type FindCommand, isRootFind } from "./brake-find-root.ts";
+import { analyzeFinds } from "./brake-find-walk.ts";
 import { heredocTexts } from "./brake-heredoc-texts.ts";
 import { logicalLines } from "./brake-logical-lines.ts";
 import { commandExportsSecret } from "./brake-network-export.ts";
@@ -124,27 +121,6 @@ function analyzeSegment(
     segmentRedirections: all.segmentRedirections,
     finds,
   };
-}
-
-/** The find commands among `commands` and among the commands their exec
- *  actions run, at any depth, or `undefined` when any exec walk hits a limit.
- *  The exec walks of a nested find are charged to the shared `budget` per
- *  argv token, which keeps the nested work linear in the budget. */
-function analyzeFinds(
-  commands: readonly ShellToken[][],
-  budget: AnalysisBudget,
-): FindCommand[] | undefined {
-  const finds: FindCommand[] = [];
-  const pending = commands.map((command) => ({ command, nested: false }));
-  for (let next = pending.pop(); next; next = pending.pop()) {
-    const find = analyzeFind(next.command, budget, next.nested);
-    if (find?.exec.truncated) return undefined;
-    if (find === undefined) continue;
-    finds.push(find);
-    for (const command of find.exec.commands)
-      pending.push({ command, nested: true });
-  }
-  return finds;
 }
 
 /** The first destructive or secret-export reason among the detectors, run on

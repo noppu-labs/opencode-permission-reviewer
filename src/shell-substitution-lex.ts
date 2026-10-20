@@ -13,6 +13,7 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "./shell-substitution.ts";
+import { knownArithmetic } from "./shell-substitution-arithmetic.ts";
 import { uncertainRegion } from "./shell-substitution-trust.ts";
 
 type CommandBody = Extract<SubstitutionBody, { kind: "command" }>;
@@ -40,14 +41,6 @@ function lexBody(
 interface Walk {
   index: number;
   closes: FrameCloses;
-}
-
-/** Whether the `$((` at `index` is arithmetic, by the frames the end-finder
- *  already closed: its subshell frame closes right before its own. */
-function knownArithmetic(closes: FrameCloses, index: number): boolean {
-  const outer = closes.get(index) ?? closes.get(index + 1);
-  const inner = closes.get(index + 2);
-  return outer !== undefined && inner !== undefined && outer === inner + 1;
 }
 
 /** Charge the text of a probe that found arithmetic to the substitution

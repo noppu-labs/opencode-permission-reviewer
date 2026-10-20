@@ -1,14 +1,11 @@
 import { describe, expect, test } from "bun:test";
 import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import { commandSegments } from "../src/command-segments.ts";
 import {
   analyzeEffectiveCommands,
   effectiveCommands,
 } from "../src/shell-effective-commands.ts";
-import {
-  commandSegments,
-  newAnalysisBudget,
-  shellBasename,
-} from "../src/shell-lexer.ts";
+import { newAnalysisBudget, shellBasename } from "../src/shell-lexer.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
 import {
   type ShellSegment,

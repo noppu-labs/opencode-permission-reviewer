@@ -5,14 +5,9 @@ import {
   type PendingLine,
 } from "./heredoc-bodies.ts";
 import type { BodyCommands } from "./heredoc-body-commands.ts";
-import {
-  closeBacktickFrames,
-  dropSubstitutedStarts,
-} from "./heredoc-frame-starts.ts";
+import { closeBacktickFrames, closeFrame } from "./heredoc-frame-starts.ts";
 import { scanHeredocOperator, scanNewline } from "./heredoc-operator-scan.ts";
 import {
-  closingFrame,
-  fallBackFromArithmetic,
   openBacktick,
   openFrame,
   type ScanContext,
@@ -183,24 +178,4 @@ function scanCharacter(scan: HeredocScan): void {
     return;
   }
   scan.i += 1;
-}
-
-/** Close the construct ending at `scan.i`, or fall back a lone `)` out of
- *  arithmetic. A substitution or backtick that ends on the operator's own
- *  line ends no heredoc: the shell reads the close before any body line, so
- *  the starts opened inside it are dropped and their operator text stays in
- *  the command. */
-function closeFrame(scan: HeredocScan): boolean {
-  const frame = closingFrame(scan);
-  if (frame === undefined) return fallBackFromArithmetic(scan);
-  scan.frames.pop();
-  if (frame.kind === "backtick") scan.backtickAt = -1;
-  scan.quote = frame.quote;
-  scan.i += frame.close.length;
-  if (
-    !scan.readAllOperators &&
-    (frame.kind === "substitution" || frame.kind === "backtick")
-  )
-    dropSubstitutedStarts(scan, frame);
-  return true;
 }
