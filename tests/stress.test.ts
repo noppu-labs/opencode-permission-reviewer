@@ -440,6 +440,34 @@ describe("stress and adversarial robustness", () => {
   );
 
   test.each(
+    [
+      "ssh -S c h x;",
+      "ssh -o -- h -x x;",
+      "mosh --ssh y h -- x;",
+      "autossh -M 0 -f h x;",
+      "ssh -S c h ",
+      "mosh h -- ",
+      "autossh -M 0 h ",
+    ].flatMap((unit) => [
+      [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
+      [
+        `${JSON.stringify(unit)} at eight times the input cap`,
+        unit,
+        8 * 131_072,
+      ] as const,
+    ]),
+  )(
+    "parses ssh, mosh and autossh calls of %s in linear time",
+    (_, unit, size) => {
+      const command = unit.repeat(Math.floor(size / unit.length));
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
     (["<<A", "<<<x"] as const).flatMap((stdin) => [
       [
         `${stdin} and 16,000 redirections at the input cap`,

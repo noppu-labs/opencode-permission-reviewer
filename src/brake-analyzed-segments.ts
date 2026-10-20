@@ -88,6 +88,7 @@ function analyzeReading(
   keepBodyScripts(bodies, lex.scripts);
   if (lex.truncated) return undefined;
   const budget = newAnalysisBudget(reading, quoting, bodies);
+  budget.previousSsh = true;
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
     const analysis = analyzeSegment(segment, budget);

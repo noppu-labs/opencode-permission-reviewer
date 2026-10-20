@@ -21,7 +21,7 @@ import {
   skipWrapperArguments,
   timeoutCommandIndex,
 } from "./shell-wrapper-options.ts";
-import { sshRemoteCommand } from "./ssh-remote-command.ts";
+import { remoteCommandTexts } from "./ssh-remote-command.ts";
 import { walkLimitReached } from "./walk-limits.ts";
 import { reanalysisSegments } from "./walk-reanalysis.ts";
 import { peelWatch } from "./watch-command.ts";
@@ -109,9 +109,16 @@ function peelCommand(
   if (commandString !== null && shellReadsStdin(words, i))
     level.sink.stdinShells.push(level.redirections);
   if (reanalyzeIfPresent(commandString, level)) return;
-  if (base === "ssh") {
-    if (!reanalyzeIfPresent(sshRemoteCommand(words, i), level))
-      level.sink.bareSsh.push(level.redirections);
+  const remotes = remoteCommandTexts(
+    words,
+    i,
+    base,
+    level.sink.budget.previousSsh === true,
+  );
+  if (remotes !== undefined) {
+    for (const text of remotes)
+      if (!reanalyzeIfPresent(text, level))
+        level.sink.bareSsh.push(level.redirections);
     return;
   }
   const tail = operandTailIndex(words, i, base);

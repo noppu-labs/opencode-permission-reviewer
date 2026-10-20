@@ -89,6 +89,11 @@
       "includes": ["tests/fixtures/heredoc-script-judgement-rows.json"],
       "formatter": { "lineWidth": 260 }
     },
+    // The same for the ssh argument rows, whose widest row is 208 characters.
+    {
+      "includes": ["tests/fixtures/ssh-argument-rows.json"],
+      "formatter": { "lineWidth": 220 }
+    },
     // Test directories only: see docs/DEVELOPMENT.md, "Test files".
     {
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],

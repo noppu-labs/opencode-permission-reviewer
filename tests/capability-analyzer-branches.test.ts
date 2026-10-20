@@ -57,7 +57,7 @@ describe("analyzeCapability effective commands", () => {
     ["npm ls", "unknown/low | unknown | "],
     [
       "mosh host rm -rf /",
-      "remote-operation/high | remote-operation | process.childProcesses,remote.enabled,remote.mutationHint",
+      "remote-operation/high | remote-operation | writeEffects.externalWrite,writeEffects.deletion,process.childProcesses,remote.enabled,remote.mutationHint",
     ],
     [
       "autossh host ls",

@@ -1,24 +1,58 @@
-// The remote command of an `ssh` invocation: what follows its options and host.
+// The remote command of an `ssh`, `mosh` or `autossh` invocation: what follows its options and host.
 
+import { SSH_TOOLS } from "./capability/bash-command-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
+import { readAutosshArguments, readMoshArguments } from "./ssh-arguments.ts";
 import {
-  sshDestinationIndex,
-  sshRemoteCommandIndex,
+  PREVIOUS_SSH_READING,
+  readSshArguments,
+  type SshCall,
 } from "./ssh-value-options.ts";
 
-/** The remote command `ssh` at `i` runs, joined into one string, or `null`
- *  when nothing follows the options and host. */
-export function sshRemoteCommand(
-  words: ShellToken[],
-  i: number,
+/** The remote command of the call as one string, or `null` when nothing
+ *  follows the options and host. */
+function remoteText(
+  words: readonly ShellToken[],
+  call: SshCall,
 ): string | null {
-  const rest = consumeSshRemote(words, i + 1);
-  return rest.length > 0 ? rest.map((t) => t.value).join(" ") : null;
+  if (call.remoteCommand === undefined) return null;
+  return words
+    .slice(call.remoteCommand)
+    .map((t) => t.value)
+    .join(" ");
 }
 
-/** Consume ssh options + host and return the remaining remote-command tokens. */
-function consumeSshRemote(tokens: ShellToken[], start: number): ShellToken[] {
-  const values = tokens.map((t) => t.value);
-  const destination = sshDestinationIndex(values, start);
-  return tokens.slice(sshRemoteCommandIndex(values, destination));
+function readCall(
+  words: readonly string[],
+  base: string,
+  start: number,
+): SshCall {
+  if (base === "mosh") return readMoshArguments(words, start);
+  if (base === "autossh") return readAutosshArguments(words, start);
+  return readSshArguments(words, start);
+}
+
+/** The remote commands the `ssh`, `mosh` or `autossh` at `i` runs, each
+ *  joined into one string, with `null` for a reading that finds none (ssh
+ *  then reads a script from stdin). `undefined` when `base` is not one of
+ *  them, or when mosh has no remote command: mosh reads no script from stdin
+ *  and stays a command of its own. With `previous`, an ssh that the previous
+ *  release's reading splits differently gets that reading's remote command
+ *  as well. */
+export function remoteCommandTexts(
+  words: ShellToken[],
+  i: number,
+  base: string,
+  previous: boolean,
+): (string | null)[] | undefined {
+  if (!SSH_TOOLS.has(base)) return;
+  const values = words.map((t) => t.value);
+  const text = remoteText(words, readCall(values, base, i + 1));
+  if (text === null && base === "mosh") return;
+  if (!previous || base !== "ssh") return [text];
+  const old = remoteText(
+    words,
+    readSshArguments(values, i + 1, PREVIOUS_SSH_READING),
+  );
+  return old === text ? [text] : [text, old];
 }
