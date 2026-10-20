@@ -127,6 +127,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are checked like any other command.
 - Shell analysis: a heredoc or here-string that a shell reads as its script, such as `sh <<'EOF'`
   or `cat <<EOF | bash`, is checked line by line like any other command.
+- Shell analysis: ssh, mosh and autossh arguments are read as those programs read them, including
+  every ssh option that takes a value, `--`, `ssh://` destinations and the login user.
+- Shell analysis: wrapper and remote facts such as privilege escalation now also come from
+  commands inside command strings, `env -S`, `watch` and ssh remote commands, and from commands
+  after a leading redirection.
+- Shell analysis: `env -S` strings, env's value options and abbreviated long options are read
+  as GNU env reads them, and input redirections on any command count toward credential reads.
 
 ## [3.0.0] - 2026-10-12
 
