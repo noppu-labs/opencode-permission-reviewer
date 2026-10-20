@@ -4,14 +4,12 @@ import {
   consumeBodies,
   type PendingLine,
 } from "./heredoc-bodies.ts";
-import { parseDelimiterWord } from "./heredoc-delimiter.ts";
-import { innermostLimit, insideSubstitution } from "./heredoc-frame-bounds.ts";
+import type { BodyCommands } from "./heredoc-body-commands.ts";
 import {
   closeBacktickFrames,
   dropSubstitutedStarts,
-  enclosingSubstitution,
-  readsNoBody,
 } from "./heredoc-frame-starts.ts";
+import { scanHeredocOperator, scanNewline } from "./heredoc-operator-scan.ts";
 import {
   closingFrame,
   fallBackFromArithmetic,
@@ -70,6 +68,11 @@ export interface HeredocExtraction {
   heredocs: HeredocRecord[];
   /** Whether any dynamic construct was detected inside a body. */
   hasDynamicConstructs: boolean;
+  /** The commands the substitutions in unquoted bodies run, in body order. */
+  bodyCommands: string[];
+  /** Some body has a substitution with no end, or nests past the depth the
+   *  scanner reads. */
+  bodyUnresolved: boolean;
 }
 
 /** Options for `extractHeredocs`. */
@@ -92,8 +95,13 @@ export function extractHeredocs(
   command: string,
   options: HeredocOptions = {},
 ): HeredocExtraction {
+  // Only a `<` right before another opens a heredoc, so without one the
+  // command comes back as it is.
+  if (!command.includes("<<")) return unchanged(command);
+  const bodies: BodyCommands = { commands: [], unresolved: false };
   const scan: HeredocScan = {
     command,
+    bodies,
     heredocs: [],
     hasDynamicConstructs: false,
     unterminated: false,
@@ -123,6 +131,20 @@ export function extractHeredocs(
     sanitizedCommand: scan.out,
     heredocs: scan.heredocs,
     hasDynamicConstructs: scan.hasDynamicConstructs,
+    bodyCommands: bodies.commands,
+    bodyUnresolved: bodies.unresolved,
+  };
+}
+
+function unchanged(command: string): HeredocExtraction {
+  return {
+    unterminated: false,
+    framed: false,
+    sanitizedCommand: command,
+    heredocs: [],
+    hasDynamicConstructs: false,
+    bodyCommands: [],
+    bodyUnresolved: false,
   };
 }
 
@@ -181,63 +203,4 @@ function closeFrame(scan: HeredocScan): boolean {
   )
     dropSubstitutedStarts(scan, frame);
   return true;
-}
-
-export function scanNewline(scan: HeredocScan): void {
-  if (scan.pending.length === 0) {
-    scan.lineStart = scan.i + 1;
-    scan.i += 1;
-    return;
-  }
-  appendText(scan, scan.command.slice(scan.cursor, scan.i));
-  const resume = consumeBodies(scan, scan.i + 1, scan.i);
-  scan.out += "\n";
-  scan.cursor = resume;
-  scan.i = resume;
-  // The resume is where the text the scan reads next begins; a body cut at a
-  // close resumes mid-line, and the skipped body text is not part of the line.
-  scan.lineStart = resume;
-}
-
-export function scanHeredocOperator(scan: HeredocScan): void {
-  const { command, i } = scan;
-  let j = i + 2;
-  const operator = command[j] === "-" ? "<<-" : "<<";
-  if (operator === "<<-") j += 1;
-  if (command[j] === "<") {
-    // Here-string: the word is an inline argument, not a body.
-    scan.i = j + 1;
-    return;
-  }
-  if (!scan.readAllOperators && readsNoBody(scan)) {
-    // Inside an expansion the shell reads `<<` as literal or shift text: no
-    // heredoc opens and no body is read.
-    scan.i += 2;
-    return;
-  }
-  while (j < command.length && (command[j] === " " || command[j] === "\t"))
-    j += 1;
-  const frame = enclosingSubstitution(scan.frames);
-  const word = parseDelimiterWord(command, j, {
-    stopAtBacktick: frame?.kind === "backtick",
-    stopAtCarriageReturn: scan.legacy,
-  });
-  const limit = innermostLimit(scan.frames);
-  if (insideSubstitution(scan.frames)) scan.framed = true;
-  appendText(scan, command.slice(scan.cursor, i));
-  scan.pending.push({
-    operator,
-    delimiter: word.delimiter,
-    rawWord: command.slice(j, word.wordEnd),
-    quoted: word.quoted,
-    resolved: word.resolved,
-    opStart: i,
-    wordEnd: word.wordEnd,
-    lineStart: scan.lineStart,
-    ...(frame === undefined ? {} : { frame }),
-    ...(limit === undefined ? {} : { limit }),
-  });
-  scan.pieces.push({ pendingIndex: scan.pending.length - 1 });
-  scan.cursor = word.wordEnd;
-  scan.i = word.wordEnd;
 }

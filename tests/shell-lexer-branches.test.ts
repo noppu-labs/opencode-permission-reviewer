@@ -76,7 +76,12 @@ describe("shell lexer token budget", () => {
 
   test("bounded lexing truncates at the token cap and the input cap", () => {
     const atCap = lexSegmentsBounded("a ".repeat(16_384));
-    expect(atCap).toEqual({ segments: [], truncated: true });
+    expect(atCap).toEqual({
+      segments: [],
+      truncated: true,
+      bodyCommands: [],
+      bodyUnresolved: false,
+    });
     const underCap = lexSegmentsBounded("a ".repeat(16_383));
     expect(underCap.truncated).toBe(false);
     expect(underCap.segments.map((s) => s.tokens.length)).toEqual([16_383]);
@@ -84,6 +89,8 @@ describe("shell lexer token budget", () => {
     expect(lexSegmentsBounded("a".repeat(131_073))).toEqual({
       segments: [],
       truncated: true,
+      bodyCommands: [],
+      bodyUnresolved: false,
     });
     expect(lexSegmentsBounded("a".repeat(131_072)).truncated).toBe(false);
   });

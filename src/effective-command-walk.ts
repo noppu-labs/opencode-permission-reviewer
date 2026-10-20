@@ -1,5 +1,10 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
+import {
+  type BodyCommands,
+  keepBodyCommands,
+} from "./capability/heredoc-body-commands.ts";
+import { sanitizedText } from "./capability/heredoc-sanitized.ts";
 import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
@@ -136,7 +141,8 @@ function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
 
 /** Re-lex a command string and walk each of its segments one level deeper.
  *  Its length is charged to the re-analysis budget first, then each
- *  substitution body as it is lexed. */
+ *  substitution body as it is lexed. The commands its heredoc bodies run go
+ *  to the budget's `bodies`, when it has them. */
 function reanalyze(text: string, level: WalkLevel): void {
   const { sink } = level;
   sink.budget.remainingReanalysisChars -= text.length;
@@ -144,6 +150,7 @@ function reanalyze(text: string, level: WalkLevel): void {
     sink.truncated = true;
     return;
   }
+  const { bodies } = sink.budget;
   const lexBudget: SubstitutionBudget = {
     tokensRemaining: Number.POSITIVE_INFINITY,
     substitutions: "lex",
@@ -151,11 +158,23 @@ function reanalyze(text: string, level: WalkLevel): void {
     reading: sink.budget.reading ?? "default",
     quoting: sink.budget.quoting ?? "bash",
   };
+  if (bodies !== undefined) lexBudget.bodies = bodies;
+  keepStringBodies(bodies, text);
   const segments = lexSegments(text, lexBudget);
   sink.budget.remainingReanalysisChars = lexBudget.substitutionCharsRemaining;
   if (lexBudget.tokensRemaining <= 0) sink.truncated = true;
   for (const sub of segments)
     walk(sub.tokens, sink, level.redirections, level.depth + 1);
+}
+
+/** Keeps the commands the heredoc bodies of command string `text` run. */
+function keepStringBodies(
+  bodies: BodyCommands | undefined,
+  text: string,
+): void {
+  if (bodies === undefined || !text.includes("<<")) return;
+  const read = sanitizedText(text);
+  keepBodyCommands(bodies, read.bodyCommands, read.bodyUnresolved);
 }
 
 /** Walk the operand tail from `start` one level deeper, if any is left. */

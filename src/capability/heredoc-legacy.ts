@@ -4,11 +4,8 @@
 // delimiter tracking. It has no substitution frames.
 
 import { appendText, consumeBodies } from "./heredoc-bodies.ts";
-import {
-  type HeredocScan,
-  scanHeredocOperator,
-  scanNewline,
-} from "./heredoc-extractor.ts";
+import type { HeredocScan } from "./heredoc-extractor.ts";
+import { scanHeredocOperator, scanNewline } from "./heredoc-operator-scan.ts";
 import {
   atCommandBoundary,
   scanInsideQuotes,

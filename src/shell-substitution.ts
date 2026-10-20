@@ -1,7 +1,7 @@
 // The command a command substitution runs when the enclosing word keeps its text: a backtick form, or `$(` inside double quotes.
 
-import { extractHeredocs } from "./capability/heredoc-extractor.ts";
 import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
+import { sanitizedText } from "./capability/heredoc-sanitized.ts";
 import type {
   HeredocReading,
   ProbeCache,
@@ -13,7 +13,15 @@ import { substitutionBodyEnd } from "./shell-substitution-end.ts";
  *  closing `)` or backtick; or, for a `${…}` expansion, the index just past
  *  its `}`. */
 export type SubstitutionBody =
-  | { kind: "command"; text: string; end: number }
+  | {
+      kind: "command";
+      text: string;
+      end: number;
+      /** The commands the heredocs sanitized out of `text` run, and whether
+       *  one of their bodies could not be read to the end. */
+      bodyCommands: string[];
+      bodyUnresolved: boolean;
+    }
   | { kind: "arithmetic"; end: number; closes: FrameCloses | undefined }
   | { kind: "expansion"; end: number; closes: FrameCloses };
 
@@ -81,11 +89,31 @@ function endsDollarPair(command: string, index: number): boolean {
   return (dollars - (slashes % 2)) % 2 === 1;
 }
 
-/** The body with its heredoc bodies collapsed, under the chosen reading. */
-function sanitizeBody(text: string, reading: HeredocReading): string {
-  return reading === "legacy"
-    ? legacySanitizedCommand(text)
-    : extractHeredocs(text).sanitizedCommand;
+/** The command body ending at `end`, with its heredoc bodies collapsed
+ *  under the chosen reading (or as written, `sanitize` unset), and the
+ *  commands those bodies run. The previous release's reading lists none. */
+function commandBody(
+  text: string,
+  end: number,
+  reading: HeredocReading,
+  sanitize: boolean,
+): SubstitutionBody {
+  if (!sanitize || reading === "legacy")
+    return {
+      kind: "command",
+      text: sanitize ? legacySanitizedCommand(text) : text,
+      bodyCommands: [],
+      bodyUnresolved: false,
+      end,
+    };
+  const read = sanitizedText(text);
+  return {
+    kind: "command",
+    text: read.text,
+    bodyCommands: read.bodyCommands,
+    bodyUnresolved: read.bodyUnresolved,
+    end,
+  };
 }
 
 /** Inside backticks a backslash escapes only `$`, a backtick and itself
@@ -100,11 +128,7 @@ function backtickBody(
   const close = substitutionBodyEnd(command, start, "backtick", reading, scan);
   const escaped = inDouble ? /\\([$`\\"])/g : /\\([$`\\])/g;
   const text = command.slice(start, close).replace(escaped, "$1");
-  return {
-    kind: "command",
-    text: inDouble ? sanitizeBody(text, reading) : text,
-    end: close + 1,
-  };
+  return commandBody(text, close + 1, reading, inDouble);
 }
 
 function dollarParenBody(
@@ -153,9 +177,5 @@ function dollarParenBody(
           probes,
         )
       : close;
-  return {
-    kind: "command",
-    text: sanitizeBody(command.slice(start, end), reading),
-    end: end + 1,
-  };
+  return commandBody(command.slice(start, end), end + 1, reading, true);
 }

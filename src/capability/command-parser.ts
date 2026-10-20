@@ -1,9 +1,9 @@
-import { elementAt } from "../element-at.ts";
-import { analyzeEffectiveCommands } from "../shell-effective-commands.ts";
 import { lexSegmentsBounded, newAnalysisBudget } from "../shell-lexer.ts";
 import type { ShellToken } from "../shell-token.ts";
-import type { ParsedCommand, Redirection } from "./capability-types.ts";
+import type { ParsedCommand } from "./capability-types.ts";
+import { newWalked, walkBodyCommands, walkSegments } from "./command-walk.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
+import { withScanBudget } from "./heredoc-scan-budget.ts";
 
 /*
  * Reusable command parser.
@@ -20,41 +20,46 @@ import { extractHeredocs } from "./heredoc-extractor.ts";
 
 /** Parse a raw bash command into the reusable structure. */
 export function parseCommand(rawCommand: string): ParsedCommand {
-  const { sanitizedCommand, heredocs, hasDynamicConstructs } =
-    extractHeredocs(rawCommand);
+  return withScanBudget(rawCommand.length, () => parse(rawCommand));
+}
+
+function parse(rawCommand: string): ParsedCommand {
+  const extraction = extractHeredocs(rawCommand);
+  const { sanitizedCommand, heredocs, hasDynamicConstructs } = extraction;
   // Bounded from the start: oversized input or token floods stop HERE, and
   // every segment shares one effective-command budget so wide inputs cannot
   // stay under per-segment ceilings while the total grows unbounded.
   const lex = lexSegmentsBounded(sanitizedCommand);
-  const segments = lex.segments;
-  const effective: ShellToken[][] = [];
-  const redirections: Redirection[][] = [];
-  let analysisTruncated = lex.truncated;
-  const budget = newAnalysisBudget();
-  for (const segment of segments) {
-    const analysis = analyzeEffectiveCommands(segment, budget);
-    analysisTruncated = analysisTruncated || analysis.truncated;
-    for (const [index, cmd] of analysis.commands.entries()) {
-      effective.push(cmd);
-      redirections.push(
-        elementAt(analysis.redirections, index, "analysis.redirections"),
-      );
-    }
-  }
+  const budget = newAnalysisBudget("default", "bash", {
+    commands: [],
+    unresolved: false,
+  });
+  const walked = newWalked();
+  const stopped = walkSegments(lex.segments, budget, walked);
+  walked.truncated = lex.truncated || stopped;
   const dyn = looksDynamic(sanitizedCommand);
   const dynamic =
     hasDynamicConstructs ||
     dyn ||
-    segments.some((segment) => segmentHasDynamic(segment.tokens));
+    walked.segments.some((segment) => segmentHasDynamic(segment.tokens));
+  // The commands the heredoc bodies run, the command strings' among them,
+  // come after the command's own, and leave the dynamic flags as the command
+  // alone sets them.
+  walkBodyCommands(
+    [...extraction.bodyCommands, ...lex.bodyCommands],
+    extraction.bodyUnresolved || lex.bodyUnresolved,
+    budget,
+    walked,
+  );
 
   return {
     sanitizedCommand,
-    segments,
-    effective,
-    redirections,
+    segments: walked.segments,
+    effective: walked.effective,
+    redirections: walked.redirections,
     heredocs,
     hasDynamicConstructs: dynamic,
-    analysisTruncated,
+    analysisTruncated: walked.truncated,
   };
 }
 

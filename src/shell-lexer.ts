@@ -1,5 +1,6 @@
 // Lexing entry points: per-request analysis budgets, the bounded lexing pass, and token-value segments for evidence consumers.
 
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
 import {
   type HeredocReading,
   MAX_SUBSTITUTION_CHARS,
@@ -63,18 +64,24 @@ export interface AnalysisBudget {
   /** Quote reading for every command string and substitution this budget
    *  covers. Absent means bash's reading. */
   quoting?: ShellQuoting;
+  /** Where the commands that heredoc bodies in the re-lexed command strings
+   *  run are kept; a walk that does not judge them leaves it unset. */
+  bodies?: BodyCommands;
 }
 
 export function newAnalysisBudget(
   reading: HeredocReading = "default",
   quoting: ShellQuoting = "bash",
+  bodies?: BodyCommands,
 ): AnalysisBudget {
-  return {
+  const budget: AnalysisBudget = {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
     reading,
     quoting,
   };
+  if (bodies !== undefined) budget.bodies = bodies;
+  return budget;
 }
 
 function basename(exe: string): string {
@@ -88,6 +95,12 @@ function basename(exe: string): string {
 export interface LexAnalysis {
   segments: ShellSegment[];
   truncated: boolean;
+  /** The commands the heredocs inside substitution bodies run, in source
+   *  order, and whether one of those bodies could not be read to the end.
+   *  They are kept beside the segments, which hold only the text as it was
+   *  lexed. Empty under the previous release's heredoc reading. */
+  bodyCommands: string[];
+  bodyUnresolved: boolean;
 }
 
 export function lexSegmentsBounded(
@@ -96,16 +109,28 @@ export function lexSegmentsBounded(
   quoting: ShellQuoting = "bash",
 ): LexAnalysis {
   if (command.length > MAX_ANALYSIS_INPUT_CHARS)
-    return { segments: [], truncated: true };
+    return {
+      segments: [],
+      truncated: true,
+      bodyCommands: [],
+      bodyUnresolved: false,
+    };
+  const bodies: BodyCommands = { commands: [], unresolved: false };
   const state: SubstitutionBudget = {
     tokensRemaining: MAX_LEX_TOKENS,
     substitutions: "lex",
     substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
     reading,
     quoting,
+    bodies,
   };
   const segments = lexSegments(command, state);
-  return { segments, truncated: state.tokensRemaining <= 0 };
+  return {
+    segments,
+    truncated: state.tokensRemaining <= 0,
+    bodyCommands: bodies.commands,
+    bodyUnresolved: bodies.unresolved,
+  };
 }
 
 export { basename as shellBasename };

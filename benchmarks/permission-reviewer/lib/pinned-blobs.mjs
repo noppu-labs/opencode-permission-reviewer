@@ -53,9 +53,10 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "7b13e84e626dbcafb8fdca5a33c111b3913797e9",
+  "src/emergency-brake.ts": "6c1d1ff23cf20b5e8df983abaaefec32f80c3c98",
+  "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
   "src/brake-heredoc-texts.ts": "912e96820c37ee43c4221ef5a1ada0e6db5b2f66",
-  "src/brake-readings.ts": "628a573e4647d69b9cc60fe612baabb51592e49b",
+  "src/brake-readings.ts": "51d74b8fcc3b711583e3f1edc83d3ce373fa85ea",
   "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/reviewed-command.ts": "d7f4893e9f590680cfc10d2e4b9ffc1743fb17b7",
   "src/brake-arguments.ts": "9e67d27ca7194e5dca9023a4e2265931263ed328",
@@ -75,29 +76,29 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "8a7dac86fbe3f7d4fef91a4806f02ae511ba2ce7",
+    "6ee04a5a05687dd004973a85858b89f60b16bfa0",
   "src/capability/bash-analyzer.ts": "74fc89978ba4f023c9238d662933c4d2a987edea",
   "src/capability/bash-command-tables.ts":
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "e7abc1607cc2c7e01f95e0ea6684e7d60850bede",
   "src/shell-effective-commands.ts": "03ea05a61143f16d90875b81dd4b024e95a90e54",
-  "src/effective-command-walk.ts": "2110d53a7483f67dba2906e61ce7589058773a13",
+  "src/effective-command-walk.ts": "8f74e20633a5fdd5062262ce22fcb5138415060b",
   "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
   "src/ssh-remote-command.ts": "3b286efa96c402c2628ad4399c4b6e09341c2764",
-  "src/shell-lexer.ts": "82ccb7c998c0723a4e278d89e5e0e5daec06a3c1",
+  "src/shell-lexer.ts": "343fc32496b4865d32603d5aa242af31c936cc19",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/shell-lexer-tables.ts": "d962f14223b70f233fcc11c637f1c0f817d3757d",
   "src/shell-token.ts": "f3bf94abd5cad440aa52cac8063fe768f215c873",
   "src/shell-redirections.ts": "5cd7793d8d30af5a6b1c70d4e015cba5655f444f",
   "src/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
-  "src/shell-lex-state.ts": "ab7b43c6ec2526afdeefcac4748d775bb812f0fa",
+  "src/shell-lex-state.ts": "affce06885979fd37307d4aea063f55acfaec3c3",
   "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
-  "src/shell-substitution.ts": "9d90d22f26adf041b77c979b72355b408cbe0f99",
+  "src/shell-substitution.ts": "6e8cdaec821a8a095948cd2f3077b238a1297acb",
   "src/shell-substitution-end.ts": "4a81c02737fe461c24e10516b0da96f19035bbfa",
   "src/shell-substitution-brace.ts": "be3a6959c86277ccc879ddba875bc87dfb2e8d5f",
   "src/shell-substitution-prefix.ts":
@@ -108,16 +109,16 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-text.ts": "97160652d1fe23dc1b88f721563f5bc122bfaa1f",
   "src/shell-substitution-frames.ts":
     "821a5ebd99243275446315a17ea58b1e38125537",
-  "src/shell-substitution-lex.ts": "757f81cc73f6ea430ddf11ffd2e92255560f932a",
+  "src/shell-substitution-lex.ts": "74f9c7ff9c9dd14be711e1941906fbd41cd7ac79",
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
-  "src/shell-substitution-pairs.ts": "97466dbc0ef33effc7ee686398c25586656ff6ac",
-  "src/shell-substitution-trust.ts": "2d67c27e763e2b110130cfcd71df5781b2ad5007",
+  "src/shell-substitution-pairs.ts": "0680bc2448e940ae0660dce3640bfde59461322b",
+  "src/shell-substitution-trust.ts": "004bf2986c2606da3d240e72caadce506e665c2b",
   "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/ssh-value-options.ts": "fbf84d1a7168a0219f91597a1e7a269eb794ab0f",
   "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
   "src/capability/heredoc-extractor.ts":
-    "1f8842d8c0eb08251212c745314311a105905e95",
+    "775577f01723f778ed24e49289567d5468a81276",
   "src/capability/heredoc-frame-starts.ts":
     "dfb86218caf3036456a6270e145c26c1c058cf54",
   "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
@@ -167,15 +168,32 @@ export const PINNED_BLOBS = {
   "src/capability/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/capability/heredoc-bodies.ts":
-    "2fc1a65e1da5521654470f34e5f091eef8de0481",
+    "004e456dc6f311741c4cd94592b5c921151912dc",
   "src/capability/heredoc-body-records.ts":
     "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
   "src/capability/heredoc-frame-bounds.ts":
     "d0437e9529f655f03b6c5b2b91ad056cf22c6b81",
   "src/capability/heredoc-legacy.ts":
-    "ede77c6222bd92143317e25f97d991b9bcd92178",
+    "58c8cdea02051628ec911524f2a8a7f26e2e0d2b",
   "src/capability/heredoc-frame-links.ts":
     "ff27ca905447be7b9f36c446badd4dee6f4ac5d8",
   "src/capability/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
+  "src/capability/heredoc-operator-scan.ts":
+    "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
+  "src/capability/command-walk.ts": "728cdbe623e1f38bd7ab8f9784641cd2535b861a",
+  "src/capability/heredoc-body-commands.ts":
+    "3f35026129223314082eec69c462da6b251ccb0e",
+  "src/capability/heredoc-sanitized.ts":
+    "fd5d91a750db12ad31b30976a9f9e249ecfa2703",
+  "src/capability/heredoc-body-reading.ts":
+    "b868615ee99f994e9c449cea2b6dacb3f18991e4",
+  "src/capability/delimited-substitution-end.ts":
+    "bb55b69fb233011143c29d249888c96abdcaf731",
+  "src/capability/heredoc-body-early-ends.ts":
+    "e35a63a72e7afa567443a405dd23b7fde5a61bc0",
+  "src/capability/delimited-arithmetic.ts":
+    "87f3403fd0373c9ef745a898240b94db5913ba74",
+  "src/capability/heredoc-scan-budget.ts":
+    "4ab2e937255ad8398eb6dbfa71ebe5d690c49b4c",
 };

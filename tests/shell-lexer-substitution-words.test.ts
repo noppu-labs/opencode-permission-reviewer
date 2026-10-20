@@ -54,7 +54,10 @@ type Rows = Record<string, [string, string]>;
 /** `input: [render, raws]` per reading, one row per line in
  *  tests/fixtures/substitution-word-rows.json. `rescan`, `undecoded` and
  *  `previous` are pinned to the output of the release before the
- *  substitution body stopped being scanned twice. */
+ *  substitution body stopped being scanned twice. A `bash` row whose
+ *  substitution span holds a double parenthesis the shell does not read as
+ *  arithmetic, with a heredoc in it, equals its `previous` row; its
+ *  `finder` row keeps the end the end-finder gives. */
 const ROWS = JSON.parse(
   readFileSync(
     join(import.meta.dir, "fixtures/substitution-word-rows.json"),
@@ -66,6 +69,7 @@ const ROWS = JSON.parse(
   | "rescan"
   | "undecoded"
   | "previous"
+  | "finder"
   | "redirections"
   | "redirectionsRescan",
   Rows
@@ -76,6 +80,7 @@ describe.each([
   ["rescan", ROWS.rescan],
   ["undecoded", ROWS.undecoded],
   ["previous", ROWS.previous],
+  ["finder", ROWS.finder],
 ] as const)("the %s reading of substitution words", (quoting, table) => {
   test.each(Object.entries(table))("lexes %j", (command, [spans, source]) => {
     const segments = scan(command, quoting);

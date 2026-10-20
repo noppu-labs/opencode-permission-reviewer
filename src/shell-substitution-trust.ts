@@ -1,6 +1,10 @@
 // Whether the text a substitution spans holds something whose end the shell's reading cannot be sure of.
 
-import type { LexState } from "./shell-lex-state.ts";
+import type { LexState, ProbeCache } from "./shell-lex-state.ts";
+import {
+  closesAsArithmetic,
+  groupCloseFrom,
+} from "./shell-substitution-pairs.ts";
 import { afterContinuation, WORD_END } from "./shell-substitution-text.ts";
 
 /** The text the heredoc extractor puts in place of a body. A user may type
@@ -16,15 +20,19 @@ const PLACEHOLDER = "<HEREDOC:sha256:";
  * arithmetic at its parentheses when it reads the word, but reads such a
  * `#` as a comment when it expands it. Also any `$(` span with such a `#`
  * and a `)` before the end of that line: bash 3.2 ends a `$(` at that `)`.
- * Each mark is searched for once past the last one found, so the calls for
- * one text take linear time in all.
+ * Also a `((` that the shell does not read as arithmetic and whose
+ * parentheses hold a group and then a `<<`: bash 5.2 and later read that
+ * span again as text, so a heredoc in a `$(…)` or `(…)` there takes no body
+ * and the substitution ends earlier than the end-finder finds. Each mark is
+ * searched for once past the last one found, so the calls for one text take
+ * linear time in all.
  */
 export function uncertainRegion(
   lex: LexState,
   from: number,
   to: number,
 ): boolean {
-  lex.marks ??= [-1, -1, -1, -1, -1];
+  lex.marks ??= [-1, -1, -1, -1, -1, -1, -1, -1, -1];
   const { marks } = lex;
   const text = lex.command;
   if (nextMark(marks, 0, 0, () => find(text, PLACEHOLDER, 0)) < text.length)
@@ -33,8 +41,59 @@ export function uncertainRegion(
   if (pair < to && nextMark(marks, 2, pair, () => commentFrom(text, pair)) < to)
     return true;
   const open = nextMark(marks, 3, from, () => find(text, "$(", from));
-  if (open >= to) return false;
-  return nextMark(marks, 4, open, () => closingComment(text, open)) < to;
+  if (
+    open < to &&
+    nextMark(marks, 4, open, () => closingComment(text, open)) < to
+  )
+    return true;
+  if (lex.budget.quoting === "finder") return false;
+  if (nextMark(marks, 5, from, () => find(text, "<<", from)) >= to)
+    return false;
+  return nextMark(marks, 7, from, () => heredocGroupFrom(lex, from)) < to;
+}
+
+/** Where the `((` at `index` ends when the shell does not read it as
+ *  arithmetic but as two subshells: the `)` that closes its first `(`.
+ *  -1 when the shell reads it as arithmetic or nothing closes it. */
+function rejectedGroupEnd(
+  text: string,
+  index: number,
+  probes: ProbeCache,
+): number {
+  if (closesAsArithmetic(text, index, probes)) return -1;
+  const inner = groupCloseFrom(text, index + 2, probes);
+  return inner < 0 ? -1 : groupCloseFrom(text, inner + 1, probes);
+}
+
+/** The first `(` at or after `from` that opens a group: after a blank, a
+ *  separator, a parenthesis or a `$`. */
+function groupOpenFrom(text: string, from: number): number {
+  let at = text.indexOf("(", from);
+  while (at >= 0 && !/[\s;&|($]/.test(text.charAt(at - 1)))
+    at = text.indexOf("(", at + 1);
+  return at < 0 ? Number.POSITIVE_INFINITY : at;
+}
+
+/** The first `((` at or after `from` that the shell does not read as
+ *  arithmetic and whose parentheses hold a `<<` after a group. */
+function heredocGroupFrom(lex: LexState, from: number): number {
+  const text = lex.command;
+  const probes: ProbeCache =
+    lex.budget.substitutions === "lex" ? lex.budget : {};
+  const marks = lex.marks ?? [];
+  let at = text.indexOf("((", from);
+  while (at >= 0) {
+    const end = text[at - 1] === "$" ? -1 : rejectedGroupEnd(text, at, probes);
+    const open = nextMark(marks, 8, at + 2, () => groupOpenFrom(text, at + 2));
+    if (
+      end >= 0 &&
+      open < end &&
+      nextMark(marks, 6, open + 2, () => find(text, "<<", open + 2)) < end
+    )
+      return at;
+    at = text.indexOf("((", at + 1);
+  }
+  return Number.POSITIVE_INFINITY;
 }
 
 /** The mark in `slot` at or after `from`, searched for again only when the

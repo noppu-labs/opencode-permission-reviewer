@@ -11,14 +11,20 @@ const blocked =
 
 /** `block` and `allow` are plain commands; `rescanOnly` are commands that,
  *  of the previous release's readings, only the rescan reading of a
- *  substitution body blocks. One row per line in
+ *  substitution body blocks; `finderOnly` are commands that only the finder
+ *  reading blocks. One row per line in
  *  tests/fixtures/emergency-brake-substitution-rows.json. */
 const ROWS = JSON.parse(
   readFileSync(
     join(import.meta.dir, "fixtures/emergency-brake-substitution-rows.json"),
     "utf8",
   ),
-) as { block: string[]; allow: string[]; rescanOnly: string[] };
+) as {
+  block: string[];
+  allow: string[];
+  rescanOnly: string[];
+  finderOnly: string[];
+};
 
 const brake = (command: string): string | undefined =>
   emergencyBrakeReason(request({ metadata: { command } }));
@@ -55,7 +61,13 @@ describe("everyday substitution forms", () => {
 });
 
 describe("the reading reaches each command-string wrapper", () => {
-  const readings: ShellQuoting[] = ["bash", "rescan", "undecoded", "previous"];
+  const readings: ShellQuoting[] = [
+    "bash",
+    "finder",
+    "rescan",
+    "undecoded",
+    "previous",
+  ];
   for (const [wrapper, wrap] of Object.entries(WRAPPERS)) {
     test.each(ROWS.rescanOnly)(
       `blocks through ${wrapper}, by the rescan reading: %j`,
@@ -65,10 +77,28 @@ describe("the reading reaches each command-string wrapper", () => {
         const blocks = readings.filter(
           (reading) => brakeReadingsReason(wrapped, reading) !== undefined,
         );
-        expect(blocks.filter((reading) => reading !== "bash")).toEqual([
-          "rescan",
-        ]);
+        // The finder reading is the bash reading without the heredoc
+        // fallback, so both are left out of the comparison.
+        expect(
+          blocks.filter(
+            (reading) => reading !== "bash" && reading !== "finder",
+          ),
+        ).toEqual(["rescan"]);
       },
     );
   }
+});
+
+describe("the finder reading", () => {
+  // The brake's other passes allow these rows; the finder pass blocks them.
+  const others: ShellQuoting[] = ["bash", "rescan", "undecoded", "previous"];
+  test.each(ROWS.finderOnly)(
+    "blocks %j when no other reading does",
+    (command) => {
+      expect(brake(command)).toBe(blocked);
+      expect(brakeReadingsReason(command, "finder")).toBe(blocked);
+      for (const reading of others)
+        expect(brakeReadingsReason(command, reading)).toBeUndefined();
+    },
+  );
 });

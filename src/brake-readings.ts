@@ -15,6 +15,10 @@ import { commandExportsSecret } from "./brake-network-export.ts";
 import { isRootRm } from "./brake-root-rm.ts";
 import type { Redirection } from "./capability/capability-types.ts";
 import {
+  type BodyCommands,
+  keepBodyCommands,
+} from "./capability/heredoc-body-commands.ts";
+import {
   analyzeSegmentRedirections,
   type SegmentRedirectionsAnalysis,
 } from "./shell-effective-commands.ts";
@@ -78,15 +82,19 @@ function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
 }
 
 /** Lexes the command and resolves every segment's effective commands under
- *  one shared budget, or returns `undefined` when any limit is hit. */
+ *  one shared budget, or returns `undefined` when any limit is hit. The
+ *  commands that heredoc bodies in its substitutions and in the command
+ *  strings it re-lexes run go to `bodies`, when given. */
 function analyzeSegments(
   command: string,
   reading: HeredocReading,
   quoting: ShellQuoting,
+  bodies: BodyCommands | undefined,
 ): AnalyzedSegment[] | undefined {
   const lex = lexSegmentsBounded(command, reading, quoting);
+  keepBodyCommands(bodies, lex.bodyCommands, lex.bodyUnresolved);
   if (lex.truncated) return undefined;
-  const budget = newAnalysisBudget(reading, quoting);
+  const budget = newAnalysisBudget(reading, quoting, bodies);
   const analyzed: AnalyzedSegment[] = [];
   for (const segment of lex.segments) {
     const analysis = analyzeSegment(segment, budget);
@@ -145,8 +153,9 @@ function detectorReason(
   sanitizedCommand: string,
   reading: HeredocReading,
   quoting: ShellQuoting,
+  bodies: BodyCommands | undefined,
 ): string | undefined {
-  const analyzed = analyzeSegments(sanitizedCommand, reading, quoting);
+  const analyzed = analyzeSegments(sanitizedCommand, reading, quoting, bodies);
   if (analyzed === undefined) return ANALYSIS_LIMIT_REASON;
 
   if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
@@ -163,9 +172,10 @@ function detectorReason(
 function linesReason(
   command: string,
   quoting: ShellQuoting,
+  bodies: BodyCommands | undefined,
 ): string | undefined {
   for (const line of logicalLines(command)) {
-    const reason = detectorReason(line, "default", quoting);
+    const reason = detectorReason(line, "default", quoting, bodies);
     if (reason !== undefined && reason !== ANALYSIS_LIMIT_REASON) return reason;
   }
 }
@@ -174,10 +184,13 @@ function linesReason(
  *  Text the scan leaves inline is lexed as commands, so a body read under one
  *  reading can hide a later line from another. The brake checks the default
  *  reading, the reading that collapses every operator, and the heredoc
- *  reading the previous release used; each distinct text is checked once. */
+ *  reading the previous release used; each distinct text is checked once.
+ *  The commands that heredoc bodies inside substitutions and command strings
+ *  run are added to `bodies`, when given. */
 export function brakeReadingsReason(
   command: string,
   quoting: ShellQuoting,
+  bodies?: BodyCommands,
 ): string | undefined {
   // Heredoc bodies are shell input data, not command segments. Analyze the
   // body-free form so quoted payloads cannot trigger false destructive-command
@@ -185,11 +198,11 @@ export function brakeReadingsReason(
   const { extraction, allOperators, legacy } = heredocTexts(command);
   const readings = new Set([extraction.sanitizedCommand, allOperators]);
   for (const text of readings) {
-    const reason = detectorReason(text, "default", quoting);
+    const reason = detectorReason(text, "default", quoting, bodies);
     if (reason !== undefined) return reason;
   }
   // The previous release's heredoc reading, its substitutions re-lexed the same way.
-  const legacyReason = detectorReason(legacy, "legacy", quoting);
+  const legacyReason = detectorReason(legacy, "legacy", quoting, bodies);
   if (legacyReason !== undefined) return legacyReason;
   // A body that never ends takes every later line with it, and a heredoc in a
   // substitution or backticks may end where the scan's reading and the
@@ -198,7 +211,7 @@ export function brakeReadingsReason(
   // this: the all-operators reading opens starts the shell does not read.
   if (extraction.unterminated || extraction.framed)
     return (
-      detectorReason(command, "default", quoting) ??
-      linesReason(command, quoting)
+      detectorReason(command, "default", quoting, bodies) ??
+      linesReason(command, quoting, bodies)
     );
 }

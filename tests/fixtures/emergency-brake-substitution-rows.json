@@ -27,5 +27,6 @@
     "\"$(echo \")\")\"$'' rm -rf /",
     "x\"$(echo \")\")\"$'' rm -rf /",
     "\"$(${\"bash -c '`bash -c ';; rm -rf /$'"
-  ]
+  ],
+  "finderOnly": ["`((( <<)) )'`;rm -rf /", "`((( <<E\nE\n)) )#`;rm -rf /"]
 }

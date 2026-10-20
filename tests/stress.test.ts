@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { parseCommand } from "../src/capability/command-parser.ts";
 import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
 import { analyzeBashCommand } from "../src/context/command-evidence.ts";
 import { parseDecision } from "../src/decision.ts";
@@ -28,6 +29,21 @@ const quotedRedirectionShapes: [string, string][] = [
   ["quoted word redirections", "a'b'>&".repeat(21_845)],
   ["dollar-quoted redirections", "$'\\'>&".repeat(21_845)],
 ];
+
+// Heredocs at `size` whose bodies nest arithmetic substitutions 320 deep.
+function nestedArithmeticBodies(size: number): string {
+  const unit = `cat <<E\n${"$((".repeat(320)}1${"))".repeat(320)}\nE\n`;
+  return unit.repeat(Math.floor(size / unit.length));
+}
+
+// Heredocs at `size` whose bodies nest arithmetic substitutions 320 deep,
+// each holding the next in single quotes.
+function quotedArithmeticBodies(size: number): string {
+  let nest = "1";
+  for (let level = 0; level < 320; level += 1) nest = `$(('${nest}'))`;
+  const unit = `cat <<E\n${nest}\nE\n`;
+  return unit.repeat(Math.floor(size / unit.length));
+}
 
 // /tmp/opencode is one of the plugin's approved enrichment roots. Ensure it
 // exists on a fresh CI runner or a clean clone before mkdtemp uses it.
@@ -213,6 +229,46 @@ describe("stress and adversarial robustness", () => {
       "escaped single quotes after an arithmetic opener",
       `$(( '${"\\'".repeat(60_000)}`,
     ],
+    [
+      "double parentheses holding heredocs in substitutions",
+      'echo "$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo "; echo x ; echo " ) "\n'.repeat(
+        2_400,
+      ),
+    ],
+    [
+      "double parentheses before a late heredoc operator",
+      `${"echo $(true) (( (a) ) ) ; ".repeat(5_000)}<<E\n`,
+    ],
+    [
+      "distinct body commands at the input cap",
+      `cat <<EOF\n${Array.from({ length: 17_000 }, (_, i) => `\`a${i}\``).join("")}\nEOF`,
+    ],
+    [
+      "distinct body commands after a parenthesis in a quoted inner body",
+      `cat <<EOF\n$(cat <<'IN'\n)${Array.from({ length: 14_000 }, (_, i) => `$(a${i})`).join("")}\nIN\n)\nEOF`,
+    ],
+    [
+      "command strings with heredoc bodies",
+      Array.from(
+        { length: 800 },
+        (_, i) => `sh -c "cat <<E\n'\\$(c${i})'\nE"`,
+      ).join("; "),
+    ],
+    [
+      "command strings whose heredoc bodies run command strings",
+      `sh -c "cat <<EOF\n${Array.from(
+        { length: 700 },
+        (_, i) => `\\$(sh -c 'cat <<E\n\\$(b${i})\nE')\n`,
+      ).join("")}EOF"`,
+    ],
+    [
+      "heredocs whose bodies nest arithmetic at the input cap",
+      nestedArithmeticBodies(131_072),
+    ],
+    [
+      "heredocs whose bodies nest quoted arithmetic at the input cap",
+      quotedArithmeticBodies(131_072),
+    ],
     ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
     [
       "backtick-wrapped dollar-quoted escapes at the input cap",
@@ -237,6 +293,43 @@ describe("stress and adversarial robustness", () => {
     lexSegments(command);
     expect(Date.now() - started).toBeLessThan(1_000);
   }, 60_000);
+
+  test("lexes double parentheses holding heredocs well past the input cap in linear time", () => {
+    const unit =
+      'echo "$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo "; echo x ; echo " ) "\n';
+    const command = unit.repeat(Math.floor((8 * 131_072) / unit.length));
+    const started = Date.now();
+    lexSegments(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  }, 60_000);
+
+  test.each([
+    ["at the input cap", 131_072],
+    ["at eight times the input cap", 8 * 131_072],
+  ])(
+    "parses heredocs whose bodies nest arithmetic %s in linear time",
+    (_, size) => {
+      const command = nestedArithmeticBodies(size);
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["at the input cap", 131_072],
+    ["at eight times the input cap", 8 * 131_072],
+  ])(
+    "parses heredocs whose bodies nest quoted arithmetic %s in linear time",
+    (_, size) => {
+      const command = quotedArithmeticBodies(size);
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
 
   // The analyzer already finishes the third shape under the bound, so only
   // the first two are regression rows for it.
