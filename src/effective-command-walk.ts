@@ -4,11 +4,7 @@ import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
 import { operandTailIndex } from "./operand-tail-index.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
-import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
-import {
-  type AnalysisBudget,
-  shellBasename as basename,
-} from "./shell-lexer.ts";
+import { shellBasename as basename } from "./shell-lexer.ts";
 import { TRANSPARENT_WRAPPERS } from "./shell-lexer-tables.ts";
 import {
   normalizeShellRedirections,
@@ -24,28 +20,8 @@ import {
 import { remoteCommandTexts } from "./ssh-remote-command.ts";
 import { walkLimitReached } from "./walk-limits.ts";
 import { reanalysisSegments } from "./walk-reanalysis.ts";
+import type { WalkLevel, WalkSink } from "./walk-sink.ts";
 import { peelWatch } from "./watch-command.ts";
-
-/** Where every level of one walk collects its effective commands, the
- *  redirections each level's segment carries itself, and the redirections of
- *  each `ssh` that has no remote command: it yields no effective command,
- *  and the login shell on the far side reads its stdin. */
-export interface WalkSink extends EffectiveCommandsAnalysis {
-  budget: AnalysisBudget;
-  segmentRedirections: ShellRedirection[];
-  bareSsh: ShellRedirection[][];
-  /** The redirections of each shell run with `-c` and `-s`: after its
-   *  command string it reads a script from stdin. */
-  stdinShells: ShellRedirection[][];
-}
-
-/** One level of the walk: the redirections its commands carry, inherited
- *  ones first, and its command-string re-entry depth. */
-interface WalkLevel {
-  sink: WalkSink;
-  redirections: ShellRedirection[];
-  depth: number;
-}
 
 export function walk(
   tokens: ShellToken[],

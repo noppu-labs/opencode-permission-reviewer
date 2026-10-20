@@ -11,10 +11,11 @@
  * in effective-command-walk.ts; this module is its public entry point.
  */
 
-import { type WalkSink, walk } from "./effective-command-walk.ts";
+import { walk } from "./effective-command-walk.ts";
 import { type AnalysisBudget, newAnalysisBudget } from "./shell-lexer.ts";
 import type { ShellRedirection } from "./shell-redirections.ts";
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
+import type { WalkSink } from "./walk-sink.ts";
 
 /**
  * Resolve a segment into its "effective commands" — the token lists starting
