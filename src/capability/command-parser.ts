@@ -1,7 +1,8 @@
 import { lexSegmentsBounded, newAnalysisBudget } from "../shell-lexer.ts";
 import type { ShellToken } from "../shell-token.ts";
+import { walkBodyCommands } from "./body-command-walk.ts";
 import type { ParsedCommand } from "./capability-types.ts";
-import { newWalked, walkBodyCommands, walkSegments } from "./command-walk.ts";
+import { newWalked, walkSegments } from "./command-walk.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
 import { withScanBudget } from "./heredoc-scan-budget.ts";
 import { mainFeeds } from "./walk-feeds.ts";

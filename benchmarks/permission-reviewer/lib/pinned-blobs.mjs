@@ -76,7 +76,7 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "2771e19f78dc45294bbab8db6984f9792e41db81",
+    "0a7bf98c1907299dee63f319d0b2d3c2ea522452",
   "src/capability/bash-analyzer.ts": "ab5599857930aae2d1ea7517e3d498f52b00cd7a",
   "src/capability/bash-command-tables.ts":
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
@@ -181,7 +181,7 @@ export const PINNED_BLOBS = {
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
   "src/capability/heredoc-operator-scan.ts":
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
-  "src/capability/command-walk.ts": "33826f13ce26e39d665be1418aaaeb031804ecbe",
+  "src/capability/command-walk.ts": "75c01304ca4005fae33e923efb1b4799350be2fa",
   "src/capability/heredoc-body-commands.ts":
     "526a59419b776f0d176a54ad0b423ae5aa90dbab",
   "src/capability/heredoc-sanitized.ts":
