@@ -83,7 +83,7 @@ export const PINNED_BLOBS = {
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "e7abc1607cc2c7e01f95e0ea6684e7d60850bede",
   "src/shell-effective-commands.ts": "03ea05a61143f16d90875b81dd4b024e95a90e54",
-  "src/effective-command-walk.ts": "a0e77c1c983355d2be164e10d963f429969ff18a",
+  "src/effective-command-walk.ts": "cb95638a1c0142565e02c33e8ef5411b80480fe6",
   "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",

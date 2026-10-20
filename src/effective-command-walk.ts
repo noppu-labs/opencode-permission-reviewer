@@ -3,6 +3,7 @@
 import { keepStringBodies } from "./capability/heredoc-string-bodies.ts";
 import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
+import { operandTailIndex } from "./operand-tail-index.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
 import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
 import type { SubstitutionBudget } from "./shell-lex-state.ts";
@@ -19,7 +20,6 @@ import {
 import { lexSegments } from "./shell-scanner.ts";
 import type { ShellToken } from "./shell-token.ts";
 import {
-  chrootCommandIndex,
   commandStart,
   skipWrapperArguments,
   timeoutCommandIndex,
@@ -115,12 +115,9 @@ function peelCommand(
     reanalyzeIfPresent(sshRemoteCommand(words, i), level);
     return;
   }
-  if (base === "busybox") {
-    walkTail(words, i + 1, level);
-    return;
-  }
-  if (base === "chroot") {
-    walkTail(words, chrootCommandIndex(words, i), level);
+  const tail = operandTailIndex(words, i, base);
+  if (tail !== undefined) {
+    walkTail(words, tail, level);
     return;
   }
   const { sink } = level;
