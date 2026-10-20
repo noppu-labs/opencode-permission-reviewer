@@ -20,6 +20,8 @@ export interface ScriptFeed {
 export interface StdinReader {
   redirections: readonly ScriptRedirection[];
   pipedFrom: number | undefined;
+  /** The placeholder of each of its first redirections that is a heredoc. */
+  placeholders?: readonly (string | undefined)[];
 }
 
 export interface ScriptFeedInput {
@@ -28,6 +30,9 @@ export interface ScriptFeedInput {
   redirections: readonly (readonly ScriptRedirection[])[];
   /** Per effective command, the index of the one whose stdout feeds it. */
   pipedFrom: readonly (number | undefined)[];
+  /** Per effective command, the placeholder of each of its first
+   *  redirections that is a heredoc and carries none of its own. */
+  placeholders?: readonly (readonly (string | undefined)[])[];
   /** The readings of each heredoc body, by placeholder. */
   scripts: ReadonlyMap<string, readonly string[]>;
   /** The ssh commands with no remote command. */
@@ -46,6 +51,8 @@ export interface ScriptFeedResult {
 }
 
 /** The script readings a command's stdin carries. */
+const OTHER: StdinSource = { kind: "other" };
+
 export interface StdinScripts {
   scripts: string[];
   unresolved: boolean;
@@ -71,9 +78,8 @@ export function scriptFeeds(input: ScriptFeedInput): ScriptFeedResult {
     if (shellReadsStdin(words)) take(stdinScripts(input, index), false);
   });
   for (const reader of input.shells ?? [])
-    take(scriptsOf(input, reader.redirections, reader.pipedFrom), false);
-  for (const reader of input.remote ?? [])
-    take(scriptsOf(input, reader.redirections, reader.pipedFrom), true);
+    take(scriptsOf(input, reader), false);
+  for (const reader of input.remote ?? []) take(scriptsOf(input, reader), true);
   return { feeds, unresolved: unresolved || input.glued === true };
 }
 
@@ -85,34 +91,61 @@ export function stdinScripts(
   input: ScriptFeedInput,
   index: number,
 ): StdinScripts {
-  return scriptsOf(
-    input,
+  return scriptsFrom(input, sourceAt(input, index), input.pipedFrom[index]);
+}
+
+function scriptsOf(input: ScriptFeedInput, reader: StdinReader): StdinScripts {
+  const source = stdinSource(reader.redirections, reader.placeholders);
+  return scriptsFrom(input, source, reader.pipedFrom);
+}
+
+function scriptsFrom(
+  input: ScriptFeedInput,
+  source: StdinSource,
+  producer: number | undefined,
+): StdinScripts {
+  const read = source.kind === "pipe" ? pipedSource(input, producer) : source;
+  return readings(read, input.scripts);
+}
+
+/** What each input's commands read, by index, found once: the commands of a
+ *  command string share the redirections of the text around it, and a pipe's
+ *  producer feeds each of them. */
+interface KnownSources {
+  own: StdinSource[];
+  piped: StdinSource[];
+}
+
+const SOURCES = new WeakMap<ScriptFeedInput, KnownSources>();
+
+function knownSources(input: ScriptFeedInput): KnownSources {
+  const held = SOURCES.get(input);
+  if (held !== undefined) return held;
+  const known: KnownSources = { own: [], piped: [] };
+  SOURCES.set(input, known);
+  return known;
+}
+
+function sourceAt(input: ScriptFeedInput, index: number): StdinSource {
+  const { own } = knownSources(input);
+  own[index] ??= stdinSource(
     input.redirections[index] ?? [],
-    input.pipedFrom[index],
+    input.placeholders?.[index],
   );
+  return own[index];
 }
 
-function scriptsOf(
-  input: ScriptFeedInput,
-  redirections: readonly ScriptRedirection[],
-  producer: number | undefined,
-): StdinScripts {
-  const source = stdinSource(redirections);
-  if (source.kind !== "pipe") return readings(source, input.scripts);
-  return fromProducer(input, producer);
-}
-
-function fromProducer(
+/** What a pipe from effective command `producer` carries, when that is a
+ *  plain `cat`: what its own stdin reads. */
+function pipedSource(
   input: ScriptFeedInput,
   producer: number | undefined,
-): StdinScripts {
+): StdinSource {
   const words = producer === undefined ? undefined : input.effective[producer];
-  if (producer === undefined || words === undefined || !catPassesStdin(words))
-    return readings({ kind: "other" }, input.scripts);
-  return readings(
-    stdinSource(input.redirections[producer] ?? []),
-    input.scripts,
-  );
+  if (producer === undefined || words === undefined) return OTHER;
+  const { piped } = knownSources(input);
+  piped[producer] ??= catPassesStdin(words) ? sourceAt(input, producer) : OTHER;
+  return piped[producer];
 }
 
 function readings(

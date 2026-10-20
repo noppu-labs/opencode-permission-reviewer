@@ -19,6 +19,9 @@ export interface SegmentFeedParts {
   segment: ShellSegment;
   effective: readonly (readonly ShellToken[])[];
   redirections: readonly (readonly ShellRedirection[])[];
+  /** Every redirection the segment and its command strings carry, once
+   *  each: the lists above take theirs from it. */
+  segmentRedirections: readonly ShellRedirection[];
   /** The redirections of each ssh in it that has no remote command. */
   bareSsh: readonly (readonly ShellRedirection[])[];
   /** The redirections of each shell in it run with `-c` and `-s`. */
@@ -43,6 +46,7 @@ export function buildFeedInput(
   const producers = segmentProducers(segments, counts);
   const effective: (readonly ShellToken[])[] = [];
   const redirections: (readonly ScriptRedirection[])[] = [];
+  const marks: (readonly (string | undefined)[])[] = [];
   const pipedFrom: (number | undefined)[] = [];
   const remote: StdinReader[] = [];
   const shells: StdinReader[] = [];
@@ -51,20 +55,20 @@ export function buildFeedInput(
     const producer = producers[index];
     part.effective.forEach((words, at) => {
       effective.push(words);
-      redirections.push(
-        markRedirections(part.redirections[at] ?? [], placeholders),
-      );
+      redirections.push(part.redirections[at] ?? []);
+      marks.push(placeholders);
       pipedFrom.push(producer);
     });
     for (const own of part.bareSsh)
-      remote.push(readerOf(own, placeholders, producer));
+      remote.push({ redirections: own, pipedFrom: producer, placeholders });
     for (const own of part.stdinShells)
-      shells.push(readerOf(own, placeholders, producer));
+      shells.push({ redirections: own, pipedFrom: producer, placeholders });
   });
   return {
     effective,
     redirections,
     pipedFrom,
+    placeholders: marks,
     scripts,
     remote,
     shells,
@@ -72,37 +76,10 @@ export function buildFeedInput(
   };
 }
 
-function readerOf(
-  own: readonly ShellRedirection[],
-  placeholders: readonly (string | undefined)[],
-  producer: number | undefined,
-): StdinReader {
-  return {
-    redirections: markRedirections(own, placeholders),
-    pipedFrom: producer,
-  };
-}
-
 /** Whether a word of the segment holds a placeholder together with other
  *  text, which only a command lexed without `separatePlaceholders` has. */
 function hasGluedWord({ segment }: SegmentFeedParts): boolean {
   return segment.tokens.some((token) => holdsGluedPlaceholder(token.value));
-}
-
-/** `redirections` with the placeholder of each heredoc among the first of
- *  them, which are the segment's own: `placeholders[k]` is the one of
- *  redirection `k`. Without placeholders the list is returned as it is. */
-export function markRedirections(
-  redirections: readonly ShellRedirection[],
-  placeholders: readonly (string | undefined)[],
-): readonly ScriptRedirection[] {
-  if (placeholders.length === 0) return redirections;
-  return redirections.map((redirection, index) => {
-    const placeholder = placeholders[index];
-    return placeholder === undefined
-      ? redirection
-      : { ...redirection, placeholder };
-  });
 }
 
 /** For each effective command of `segments` (`counts[k]` of them in segment

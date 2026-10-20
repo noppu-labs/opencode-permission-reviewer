@@ -32,18 +32,12 @@ const NO_FEEDS: FeedAnalysis = {
 };
 
 /** Whether a redirection of the segments is a heredoc or here-string: with
- *  none, no command reads a script that way. */
+ *  none, no command reads a script that way. Each redirection is looked at
+ *  once, however many commands inherit it. */
 export function mayFeed(parts: readonly SegmentFeedParts[]): boolean {
-  return parts.some(
-    ({ redirections, bareSsh, stdinShells }) =>
-      redirections.some(readsText) ||
-      bareSsh.some(readsText) ||
-      stdinShells.some(readsText),
+  return parts.some(({ segmentRedirections }) =>
+    segmentRedirections.some(({ operator }) => operator.includes("<<")),
   );
-}
-
-function readsText(redirections: readonly { operator: string }[]): boolean {
-  return redirections.some(({ operator }) => operator.includes("<<"));
 }
 
 /** The scripts the commands of `parts` read, given the bodies recorded in

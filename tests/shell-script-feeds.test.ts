@@ -8,7 +8,6 @@ import { lexSegmentsBounded, newAnalysisBudget } from "../src/shell-lexer.ts";
 import { heredocPlaceholders } from "../src/shell-redirections.ts";
 import {
   buildFeedInput,
-  markRedirections,
   pipedFromSegments,
   type SegmentFeedParts,
   scriptFeedsOfSegments,
@@ -67,6 +66,7 @@ function partsOf(
       segment,
       effective: analysis.commands,
       redirections: analysis.redirections,
+      segmentRedirections: analysis.segmentRedirections,
       bareSsh: analysis.bareSsh,
       stdinShells: analysis.stdinShells,
     };
@@ -153,16 +153,20 @@ describe("placeholders of a segment's heredoc redirections", () => {
     expect(placeholdersOf("sh <<A\nx\n")).toHaveLength(1);
   });
 
-  test("marking leaves an unmarked redirection as it was", () => {
-    const marked = markRedirections(
-      [
-        { operator: "<", target: "f", quoted: false },
-        { operator: "<<", target: "A", quoted: false },
-      ],
-      [undefined, "<HEREDOC:sha256:abc>"],
-    );
-    expect(marked[0]).toEqual({ operator: "<", target: "f", quoted: false });
-    expect(marked[1]?.placeholder).toBe("<HEREDOC:sha256:abc>");
+  test("a placeholder applies to the heredoc redirection at its index", () => {
+    const redirections = [
+      { operator: "<<", target: "A", quoted: false },
+      { operator: "<", target: "f", quoted: false },
+    ];
+    const placeholders = ["<HEREDOC:sha256:abc>", undefined];
+    expect(stdinSource(redirections, placeholders)).toEqual({ kind: "other" });
+    expect(stdinSource(redirections.slice(0, 1), placeholders)).toEqual({
+      kind: "script",
+      placeholder: "<HEREDOC:sha256:abc>",
+    });
+    expect(stdinSource(redirections.slice(0, 1))).toEqual({
+      kind: "unrecorded",
+    });
   });
 });
 
@@ -327,5 +331,14 @@ describe("work stays linear", () => {
     const feeds = scriptFeedsOfSegments(parts, scripts).feeds;
     expect(performance.now() - started).toBeLessThan(500);
     expect(feeds.length).toBeLessThanOrEqual(1);
+  });
+
+  test("many commands that inherit one long redirection list", () => {
+    const command = `sh -c '${"sh;".repeat(4000)}' <<A ${"<A ".repeat(15000)}\nA\n`;
+    const { parts, scripts } = partsOf(command);
+    const started = performance.now();
+    const feeds = scriptFeedsOfSegments(parts, scripts).feeds;
+    expect(performance.now() - started).toBeLessThan(500);
+    expect(feeds).toEqual([]);
   });
 });

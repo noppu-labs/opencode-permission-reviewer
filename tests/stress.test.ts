@@ -80,7 +80,28 @@ const scriptFeedShapes: [string, string][] = [
     "scripts nested to the depth cap, repeated at the input cap",
     nestedScripts(7).repeat(Math.floor(131_072 / nestedScripts(7).length)),
   ],
+  [
+    "shells in a command string inheriting a heredoc and 8,000 redirections at the input cap",
+    inheritedRedirections("<<A", 400, 8_000),
+  ],
+  [
+    "shells in a command string inheriting a here-string and 8,000 redirections at the input cap",
+    inheritedRedirections("<<<x", 400, 8_000),
+  ],
 ];
+
+// A command string of `commands` shells that all inherit the stdin and the
+// `redirections` written after it, padded with a comment to the input cap. The
+// padding leaves room for the placeholder that replaces a heredoc body.
+function inheritedRedirections(
+  stdin: "<<A" | "<<<x",
+  commands: number,
+  redirections: number,
+): string {
+  const body = stdin === "<<A" ? "A\n" : "";
+  const text = `sh -c '${"sh;".repeat(commands)}' ${stdin} ${"<A ".repeat(redirections)}\n${body}`;
+  return `${text}# ${"x".repeat(131_072 - 64 - text.length - 2)}`;
+}
 
 // A shell whose script feeds a shell, `levels` deep.
 function nestedScripts(levels: number): string {
@@ -411,6 +432,27 @@ describe("stress and adversarial robustness", () => {
     "parses script feeds of %s in linear time",
     (_, unit, size) => {
       const command = unit.repeat(Math.floor(size / unit.length));
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    (["<<A", "<<<x"] as const).flatMap((stdin) => [
+      [
+        `${stdin} and 16,000 redirections at the input cap`,
+        inheritedRedirections(stdin, 4_000, 16_000),
+      ],
+      [
+        `${stdin} and 16,000 redirections at eight times the input cap`,
+        inheritedRedirections(stdin, 4_000, 16_000).repeat(8),
+      ],
+    ]),
+  )(
+    "parses 4,000 shells in a command string inheriting %s in linear time",
+    (_, command) => {
       const started = Date.now();
       parseCommand(command);
       expect(Date.now() - started).toBeLessThan(1_000);

@@ -230,6 +230,7 @@ function partsOf(text: string): SegmentFeedParts[] {
       segment,
       effective: analysis.commands,
       redirections: analysis.redirections,
+      segmentRedirections: analysis.segmentRedirections,
       bareSsh: analysis.bareSsh,
       stdinShells: analysis.stdinShells,
     };
