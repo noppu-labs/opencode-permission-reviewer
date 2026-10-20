@@ -125,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as part of its word up to where the shell ends it, including any quotes inside it.
 - Shell analysis: when a heredoc's delimiter is unquoted, the commands its body's substitutions run
   are checked like any other command.
-- Shell analysis: a heredoc or here-string that a shell reads as its script, such as `sh <<'EOF'` or `cat <<EOF | bash`, is checked line by line like any other command.
+- Shell analysis: a heredoc or here-string that a shell reads as its script, such as `sh <<'EOF'`
+  or `cat <<EOF | bash`, is checked line by line like any other command.
 
 ## [3.0.0] - 2026-10-12
 

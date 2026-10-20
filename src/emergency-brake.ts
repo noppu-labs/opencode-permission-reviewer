@@ -36,9 +36,11 @@ import type { PermissionRequest } from "./types.ts";
  * root destruction (target resolves to `/`). The commands that the
  * substitutions of an unquoted heredoc body run are the exception: bash runs
  * them, so each is judged as a command of its own, to MAX_BODY_DEPTH levels of
- * nested bodies. A body the scan cannot read to its end, or more body
- * commands than one request's budget, gives the analysis limit. Such a check
- * only adds blocks after the checks above allow.
+ * nested bodies. So is the script a shell or ssh reads from a heredoc or
+ * here-string, after the body commands. A body the scan cannot read to its
+ * end, a script that was not recorded, or more body commands and scripts than
+ * one request's budget, gives the analysis limit. Such a check only adds
+ * blocks after the checks above allow.
  *
  * Each reading of the command is lexed and destructured under its own
  * analysis budget (input size, tokens, depth, re-lexed text, and total
