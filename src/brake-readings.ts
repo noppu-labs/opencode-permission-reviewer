@@ -111,7 +111,9 @@ export function brakeReadingsReason(
     if (reason !== undefined) return reason;
   }
   // The previous release's heredoc reading, its substitutions re-lexed the same way.
-  const legacyReason = detectorReason(legacy, "legacy", quoting, bodies);
+  const legacyReason = readsLikeDefault(legacy, readings)
+    ? undefined
+    : detectorReason(legacy, "legacy", quoting, bodies);
   if (legacyReason !== undefined) return legacyReason;
   // A body that never ends takes every later line with it, and a heredoc in a
   // substitution or backticks may end where the scan's reading and the
@@ -123,4 +125,12 @@ export function brakeReadingsReason(
       detectorReason(command, "default", quoting, bodies) ??
       linesReason(command, quoting, bodies)
     );
+}
+
+/** Whether the previous release's heredoc reading of `text` is one the
+ *  default reading already checked. The two read only heredocs apart, and a
+ *  text with no `<` holds none; with no backslash either, no escape in it can
+ *  make one in a command string read from it. */
+function readsLikeDefault(text: string, checked: ReadonlySet<string>): boolean {
+  return checked.has(text) && !text.includes("<") && !text.includes("\\");
 }
