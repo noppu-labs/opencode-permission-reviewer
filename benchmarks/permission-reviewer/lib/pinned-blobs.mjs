@@ -83,7 +83,7 @@ export const PINNED_BLOBS = {
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "e7abc1607cc2c7e01f95e0ea6684e7d60850bede",
   "src/shell-effective-commands.ts": "e33b7f9ee53207e6efe0429ff890856a26b00d72",
-  "src/effective-command-walk.ts": "21be181761b275e6bc37e767a561c824699baef4",
+  "src/effective-command-walk.ts": "4023b89fbcb0fb2acf89a56ccd18117ddcf8b264",
   "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
@@ -211,4 +211,5 @@ export const PINNED_BLOBS = {
   "src/shell-script-readers.ts": "5168b9181fc6cdb0b86438af66677db9424b6c94",
   "src/shell-stdin-source.ts": "1c003b31ae9ebc6f5d996ebed403860b9a643dd5",
   "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
+  "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",
 };

@@ -10,7 +10,6 @@ import type { SubstitutionBudget } from "./shell-lex-state.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
-  MAX_EFFECTIVE_COMMANDS,
 } from "./shell-lexer.ts";
 import { TRANSPARENT_WRAPPERS } from "./shell-lexer-tables.ts";
 import {
@@ -25,13 +24,8 @@ import {
   timeoutCommandIndex,
 } from "./shell-wrapper-options.ts";
 import { sshRemoteCommand } from "./ssh-remote-command.ts";
+import { walkLimitReached } from "./walk-limits.ts";
 import { peelWatch } from "./watch-command.ts";
-
-/** Ceiling on command-string re-entry (`sh -c`, `env -S`, watch, ssh,
- *  busybox, chroot). Deeper nesting than this is not a legitimate review
- *  shape; the walk stops descending and the unanalyzed remainder stays the
- *  model reviewer's job, keeping unbounded input from exhausting the stack. */
-const MAX_WALK_DEPTH = 32;
 
 /** Where every level of one walk collects its effective commands, the
  *  redirections each level's segment carries itself, and the redirections of
@@ -61,11 +55,7 @@ export function walk(
   // command text, so both bounds are hard stops, not tuning knobs. Hitting
   // either one marks the analysis truncated so downstream gates know the
   // collected commands do not cover the whole command.
-  if (
-    depth > MAX_WALK_DEPTH ||
-    sink.commands.length >= MAX_EFFECTIVE_COMMANDS ||
-    sink.budget.remainingCommands <= 0
-  ) {
+  if (walkLimitReached(sink, depth)) {
     sink.truncated = true;
     return;
   }
