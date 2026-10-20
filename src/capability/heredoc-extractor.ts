@@ -95,6 +95,9 @@ export function extractHeredocs(
   command: string,
   options: HeredocOptions = {},
 ): HeredocExtraction {
+  // Only a `<` right before another opens a heredoc, so without one the
+  // command comes back as it is.
+  if (!command.includes("<<")) return unchanged(command);
   const bodies: BodyCommands = { commands: [], unresolved: false };
   const scan: HeredocScan = {
     command,
@@ -130,6 +133,18 @@ export function extractHeredocs(
     hasDynamicConstructs: scan.hasDynamicConstructs,
     bodyCommands: bodies.commands,
     bodyUnresolved: bodies.unresolved,
+  };
+}
+
+function unchanged(command: string): HeredocExtraction {
+  return {
+    unterminated: false,
+    framed: false,
+    sanitizedCommand: command,
+    heredocs: [],
+    hasDynamicConstructs: false,
+    bodyCommands: [],
+    bodyUnresolved: false,
   };
 }
 

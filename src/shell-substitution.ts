@@ -89,22 +89,31 @@ function endsDollarPair(command: string, index: number): boolean {
   return (dollars - (slashes % 2)) % 2 === 1;
 }
 
-/** The body with its heredoc bodies collapsed, under the chosen reading, and
- *  the commands those bodies run. The previous release's reading lists none. */
-function sanitizeBody(
+/** The command body ending at `end`, with its heredoc bodies collapsed
+ *  under the chosen reading (or as written, `sanitize` unset), and the
+ *  commands those bodies run. The previous release's reading lists none. */
+function commandBody(
   text: string,
+  end: number,
   reading: HeredocReading,
-): Pick<
-  Extract<SubstitutionBody, { kind: "command" }>,
-  "text" | "bodyCommands" | "bodyUnresolved"
-> {
-  if (reading === "legacy")
+  sanitize: boolean,
+): SubstitutionBody {
+  if (!sanitize || reading === "legacy")
     return {
-      text: legacySanitizedCommand(text),
+      kind: "command",
+      text: sanitize ? legacySanitizedCommand(text) : text,
       bodyCommands: [],
       bodyUnresolved: false,
+      end,
     };
-  return sanitizedText(text);
+  const read = sanitizedText(text);
+  return {
+    kind: "command",
+    text: read.text,
+    bodyCommands: read.bodyCommands,
+    bodyUnresolved: read.bodyUnresolved,
+    end,
+  };
 }
 
 /** Inside backticks a backslash escapes only `$`, a backtick and itself
@@ -119,13 +128,7 @@ function backtickBody(
   const close = substitutionBodyEnd(command, start, "backtick", reading, scan);
   const escaped = inDouble ? /\\([$`\\"])/g : /\\([$`\\])/g;
   const text = command.slice(start, close).replace(escaped, "$1");
-  return {
-    kind: "command",
-    ...(inDouble
-      ? sanitizeBody(text, reading)
-      : { text, bodyCommands: [], bodyUnresolved: false }),
-    end: close + 1,
-  };
+  return commandBody(text, close + 1, reading, inDouble);
 }
 
 function dollarParenBody(
@@ -174,9 +177,5 @@ function dollarParenBody(
           probes,
         )
       : close;
-  return {
-    kind: "command",
-    ...sanitizeBody(command.slice(start, end), reading),
-    end: end + 1,
-  };
+  return commandBody(command.slice(start, end), end + 1, reading, true);
 }

@@ -29,7 +29,7 @@ export function keepBodyCommands(
   commands: string[],
   unresolved: boolean,
 ): void {
-  if (into === undefined) return;
+  if (into === undefined || (commands.length === 0 && !unresolved)) return;
   for (const command of commands) into.commands.push(command);
   into.unresolved ||= unresolved;
 }
@@ -63,6 +63,9 @@ export function heredocBodyCommands(
   tabStripped: boolean,
 ): BodyCommands {
   if (depth >= MAX_BODY_DEPTH) return { commands: [], unresolved: true };
+  // A substitution starts at a `$` or a backtick; joining lines adds neither.
+  if (!body.includes("$") && !body.includes("`"))
+    return { commands: [], unresolved: false };
   if (depth === 0) startScanBudget(body.length);
   depth += 1;
   try {

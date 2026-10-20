@@ -157,8 +157,8 @@ function reanalyze(text: string, level: WalkLevel): void {
     substitutionCharsRemaining: sink.budget.remainingReanalysisChars,
     reading: sink.budget.reading ?? "default",
     quoting: sink.budget.quoting ?? "bash",
-    ...(bodies === undefined ? {} : { bodies }),
   };
+  if (bodies !== undefined) lexBudget.bodies = bodies;
   keepStringBodies(bodies, text);
   const segments = lexSegments(text, lexBudget);
   sink.budget.remainingReanalysisChars = lexBudget.substitutionCharsRemaining;

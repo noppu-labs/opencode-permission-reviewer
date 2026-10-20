@@ -74,13 +74,14 @@ export function newAnalysisBudget(
   quoting: ShellQuoting = "bash",
   bodies?: BodyCommands,
 ): AnalysisBudget {
-  return {
+  const budget: AnalysisBudget = {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
     reading,
     quoting,
-    ...(bodies === undefined ? {} : { bodies }),
   };
+  if (bodies !== undefined) budget.bodies = bodies;
+  return budget;
 }
 
 function basename(exe: string): string {
