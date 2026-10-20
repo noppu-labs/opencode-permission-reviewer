@@ -6,12 +6,10 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "../shell-substitution.ts";
-import {
-  earlyEndCommands,
-  startEarlyEndBudget,
-} from "./heredoc-body-early-ends.ts";
+import { earlyEndCommands } from "./heredoc-body-early-ends.ts";
 import { bodyTextStep, expandedBody } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
+import { chargeScan, startScanBudget } from "./heredoc-scan-budget.ts";
 
 /** How many bodies deep the scanner nests: a command found in a body may hold
  *  a heredoc of its own, whose body is scanned in turn. */
@@ -65,7 +63,7 @@ export function heredocBodyCommands(
   tabStripped: boolean,
 ): BodyCommands {
   if (depth >= MAX_BODY_DEPTH) return { commands: [], unresolved: true };
-  if (depth === 0) startEarlyEndBudget(body.length);
+  if (depth === 0) startScanBudget(body.length);
   depth += 1;
   try {
     return scanBody(expandedBody(body, tabStripped));
@@ -74,38 +72,26 @@ export function heredocBodyCommands(
   }
 }
 
-/** The arithmetic `$((…))` the scan is inside: where it ends, and where each
- *  frame in it closed, so a nested `$((` is not probed again. */
-interface Arithmetic {
-  end: number;
-  closes: FrameCloses | undefined;
-}
-
 interface Scan {
   text: string;
   commands: string[];
   probes: ProbeCache;
-  arithmetic: Arithmetic | undefined;
-  /** Text the probes that found arithmetic have read. */
-  probed: number;
+  /** Where each frame closed that the probes which found arithmetic read,
+   *  so a nested `$((` one of them settled is not probed again. A probe's
+   *  text is charged to the request's scan budget (heredoc-scan-budget.ts);
+   *  past it the body is unresolved. */
+  closes: FrameCloses;
   unresolved: boolean;
   /** The index after each listed substitution, by the index it starts at. */
   ends: Map<number, number>;
 }
-
-/** Text those probes may read in all, so a deep nest of `$((` costs a
- *  bounded amount. Past it the body is unresolved. It is twice the input
- *  cap (MAX_ANALYSIS_INPUT_CHARS), so the probes may read a body at the cap
- *  twice over before it is unresolved. */
-const PROBE_CHARS = 262_144;
 
 function scanBody(text: string): BodyCommands {
   const scan: Scan = {
     text,
     commands: [],
     probes: {},
-    arithmetic: undefined,
-    probed: 0,
+    closes: new Map(),
     unresolved: false,
     ends: new Map(),
   };
@@ -129,9 +115,7 @@ function step(scan: Scan, index: number): number {
 
 function substitute(scan: Scan, index: number): number {
   const { text } = scan;
-  if (scan.arithmetic !== undefined && index >= scan.arithmetic.end)
-    scan.arithmetic = undefined;
-  if (opensKnownArithmetic(text, index, scan.arithmetic)) return index + 3;
+  if (opensKnownArithmetic(text, index, scan.closes)) return index + 3;
   const backtick = text.charAt(index) === "`";
   const found = substitutionAt(
     text,
@@ -152,9 +136,9 @@ function substitute(scan: Scan, index: number): number {
     return found.end;
   }
   if (found.kind !== "arithmetic") return index + 1;
-  scan.probed += found.end - index;
-  scan.unresolved = scan.probed > PROBE_CHARS;
-  scan.arithmetic = found;
+  scan.unresolved = !chargeScan(found.end - index);
+  for (const [opened, closed] of found.closes ?? [])
+    scan.closes.set(opened, closed);
   return index + 3;
 }
 
@@ -163,10 +147,9 @@ function substitute(scan: Scan, index: number): number {
 function opensKnownArithmetic(
   text: string,
   index: number,
-  arithmetic: Arithmetic | undefined,
+  closes: FrameCloses,
 ): boolean {
-  const closes = arithmetic?.closes;
-  if (closes === undefined || !text.startsWith("$((", index)) return false;
+  if (!text.startsWith("$((", index)) return false;
   const outer = closes.get(index) ?? closes.get(index + 1);
   const inner = closes.get(index + 2);
   return outer !== undefined && inner !== undefined && outer === inner + 1;

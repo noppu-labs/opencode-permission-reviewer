@@ -36,6 +36,15 @@ function nestedArithmeticBodies(size: number): string {
   return unit.repeat(Math.floor(size / unit.length));
 }
 
+// Heredocs at `size` whose bodies nest arithmetic substitutions 320 deep,
+// each holding the next in single quotes.
+function quotedArithmeticBodies(size: number): string {
+  let nest = "1";
+  for (let level = 0; level < 320; level += 1) nest = `$(('${nest}'))`;
+  const unit = `cat <<E\n${nest}\nE\n`;
+  return unit.repeat(Math.floor(size / unit.length));
+}
+
 // /tmp/opencode is one of the plugin's approved enrichment roots. Ensure it
 // exists on a fresh CI runner or a clean clone before mkdtemp uses it.
 beforeAll(async () => {
@@ -256,6 +265,10 @@ describe("stress and adversarial robustness", () => {
       "heredocs whose bodies nest arithmetic at the input cap",
       nestedArithmeticBodies(131_072),
     ],
+    [
+      "heredocs whose bodies nest quoted arithmetic at the input cap",
+      quotedArithmeticBodies(131_072),
+    ],
     ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
     [
       "backtick-wrapped dollar-quoted escapes at the input cap",
@@ -297,6 +310,20 @@ describe("stress and adversarial robustness", () => {
     "parses heredocs whose bodies nest arithmetic %s in linear time",
     (_, size) => {
       const command = nestedArithmeticBodies(size);
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["at the input cap", 131_072],
+    ["at eight times the input cap", 8 * 131_072],
+  ])(
+    "parses heredocs whose bodies nest quoted arithmetic %s in linear time",
+    (_, size) => {
+      const command = quotedArithmeticBodies(size);
       const started = Date.now();
       parseCommand(command);
       expect(Date.now() - started).toBeLessThan(1_000);

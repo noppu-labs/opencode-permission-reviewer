@@ -1,33 +1,26 @@
-// Whether bash 3.2 reads a `$((` in a heredoc body as arithmetic, settled from the parenthesis ends a scan of the body already found where it can be.
+// Whether bash 3.2 reads a `$((` in a heredoc body as arithmetic, settled from the parenthesis ends one scan of the body keeps for the nested ones.
 
 import {
+  arithmeticCountEnd,
   type DelimitedCloses,
-  readsAsArithmetic,
+  doubleQuoteEnd,
 } from "./delimited-substitution-end.ts";
 
-/** One body's text, the parenthesis ends its scans found, and how many
- *  characters before each index read differently when the shell checks an
- *  arithmetic text than when it ends a substitution, built when first
- *  needed. */
+/** One body's text, and where each parenthesis the arithmetic check counts
+ *  in it closes, by the index its text starts at. */
 export interface ArithmeticReads {
   text: string;
-  closes: DelimitedCloses;
-  differs: Int32Array | undefined;
-}
-
-/** A backtick, a `#` and the escape byte: the arithmetic check reads them as
- *  plain characters, the end-finder does not. */
-function readsDifferently(c: string): boolean {
-  return c === "`" || c === "#" || c === "\x01";
+  counts: DelimitedCloses;
 }
 
 /**
  * Whether bash 3.2 reads the `$((` at `index`, whose `$(` ends at the `)` at
  * `close`, as arithmetic: its text must end with `)` and balance its
- * parentheses before that. Where that text holds no character that reads
- * differently, it balances exactly when the end-finder closes its inner `(`
- * right before `close`, which the kept ends tell at once. Otherwise the text
- * is checked in full, its length charged through `charge` first.
+ * parentheses before that. The check's own reading of the inner `(` tells it
+ * at once: closing right before `close` balances, closing earlier does not.
+ * A scan settles every nested `(` it opens, so a nest is read once, and only
+ * a first read is charged. Where the inner `(` closes past `close`, or not
+ * at all, the text is checked on its own, its length charged first.
  */
 export function readsAsArithmeticAt(
   reads: ArithmeticReads,
@@ -37,27 +30,42 @@ export function readsAsArithmeticAt(
 ): boolean {
   const { text } = reads;
   if (text.charAt(close - 1) !== ")") return false;
-  const inner = reads.closes.get(index + 3);
-  if (inner !== undefined && !differsBetween(reads, index + 3, close - 1))
-    return inner === close - 1;
-  return (
-    charge(close - index) && readsAsArithmetic(text.slice(index + 3, close))
-  );
+  const start = index + 3;
+  const fresh = !reads.counts.has(start);
+  const end = arithmeticCountEnd(text, start, reads.counts);
+  if (fresh && !charge((end < 0 ? text.length : end) - index)) return false;
+  if (end === close - 1) return true;
+  if (end >= 0 && end < close - 1) return false;
+  return charge(close - index) && readsAsArithmetic(text.slice(start, close));
 }
 
-function differsBetween(
-  reads: ArithmeticReads,
-  from: number,
-  to: number,
-): boolean {
-  reads.differs ??= countDiffering(reads.text);
-  return (reads.differs[to] ?? 0) - (reads.differs[from] ?? 0) > 0;
+/**
+ * Whether bash 3.2 reads the `$((` whose text after `$((` up to its closing
+ * `)` is `inner` as arithmetic: it must end with `)`, and the parentheses
+ * before that must balance outside quotes. Otherwise it runs the text after
+ * `$(` as a command.
+ */
+function readsAsArithmetic(inner: string): boolean {
+  if (!inner.endsWith(")")) return false;
+  const text = inner.slice(0, -1);
+  let open = 0;
+  let index = 0;
+  while (index < text.length && open >= 0) {
+    const c = text.charAt(index);
+    if (c === "(") open += 1;
+    if (c === ")") open -= 1;
+    index = pastArithmeticChar(text, index, c);
+  }
+  return open === 0;
 }
 
-function countDiffering(text: string): Int32Array {
-  const counts = new Int32Array(text.length + 1);
-  for (let index = 0; index < text.length; index += 1)
-    counts[index + 1] =
-      (counts[index] ?? 0) + (readsDifferently(text.charAt(index)) ? 1 : 0);
-  return counts;
+function pastArithmeticChar(text: string, index: number, c: string): number {
+  if (c === "\\") return index + 2;
+  if (c === "'") {
+    const end = text.indexOf("'", index + 1);
+    return end < 0 ? text.length : end + 1;
+  }
+  if (c !== '"') return index + 1;
+  const end = doubleQuoteEnd(text, index + 1);
+  return end < 0 ? text.length : end;
 }

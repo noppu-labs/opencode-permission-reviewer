@@ -1,6 +1,8 @@
 // Where bash 3.2 ends a `$(` when it expands a heredoc body: it counts parentheses, skips quotes and backticks, and reads a `#` after a blank as a comment.
 
-type Frame = "paren" | "double" | "brace";
+/** `count` is a parenthesis frame as the arithmetic check reads it: no
+ *  comments, and a backtick or the escape byte is a plain character. */
+type Frame = "paren" | "count" | "double" | "brace";
 
 interface Delimited {
   text: string;
@@ -8,7 +10,14 @@ interface Delimited {
   /** Where the text of each frame starts. */
   starts: number[];
   comment: boolean;
-  closes: DelimitedCloses | undefined;
+  kept: Kept;
+}
+
+/** Where the scan keeps the ends of the `paren` and the `count` frames it
+ *  opens. */
+interface Kept {
+  paren?: DelimitedCloses | undefined;
+  count?: DelimitedCloses | undefined;
 }
 
 /** The `)` that ends each parenthesis frame of one text, by the index its
@@ -32,7 +41,23 @@ export function delimitedSubstitutionEnd(
 ): number {
   const known = closes?.get(start);
   if (known !== undefined) return known;
-  const after = delimitedEnd(text, start, "paren", closes);
+  const after = delimitedEnd(text, start, "paren", { paren: closes });
+  return after < 0 ? -1 : after - 1;
+}
+
+/**
+ * The index of the `)` that closes the parentheses opened right before
+ * `start` as bash 3.2's arithmetic check counts them, or -1. `counts` keeps
+ * the end of every such frame the scan opens and is read first.
+ */
+export function arithmeticCountEnd(
+  text: string,
+  start: number,
+  counts: DelimitedCloses,
+): number {
+  const known = counts.get(start);
+  if (known !== undefined) return known;
+  const after = delimitedEnd(text, start, "count", { count: counts });
   return after < 0 ? -1 : after - 1;
 }
 
@@ -41,14 +66,14 @@ function delimitedEnd(
   text: string,
   start: number,
   first: Frame,
-  closes?: DelimitedCloses,
+  kept: Kept = {},
 ): number {
   const scan: Delimited = {
     text,
     frames: [first],
     starts: [start],
     comment: false,
-    closes,
+    kept,
   };
   let index = start;
   while (index >= 0 && index < text.length) {
@@ -56,15 +81,34 @@ function delimitedEnd(
     if (scan.frames.length === 0) return index;
   }
   for (const [at, frame] of scan.frames.entries())
-    if (frame === "paren") closes?.set(scan.starts[at] ?? -1, -1);
+    keep(scan, frame, scan.starts[at] ?? -1, -1);
   return -1;
+}
+
+function keep(scan: Delimited, frame: Frame, start: number, end: number): void {
+  if (frame === "paren") scan.kept.paren?.set(start, end);
+  if (frame === "count") scan.kept.count?.set(start, end);
 }
 
 function stepFrame(scan: Delimited, index: number): number {
   const frame = scan.frames.at(-1);
   if (frame === "double") return stepDouble(scan, index);
   if (frame === "brace") return stepBrace(scan, index);
+  if (frame === "count") return stepCount(scan, index);
   return stepParen(scan, index);
+}
+
+/** The arithmetic check's reading: parentheses counted, quotes skipped,
+ *  every other character plain. */
+function stepCount(scan: Delimited, index: number): number {
+  const c = scan.text.charAt(index);
+  if (c === "(") return open(scan, "count", index + 1);
+  if (c === ")") return close(scan, index);
+  if (c === "\\") return index + 2;
+  if (c === '"') return open(scan, "double", index + 1);
+  if (c !== "'") return index + 1;
+  const end = scan.text.indexOf("'", index + 1);
+  return end < 0 ? -1 : end + 1;
 }
 
 function stepParen(scan: Delimited, index: number): number {
@@ -131,7 +175,7 @@ function open(scan: Delimited, frame: Frame, after: number): number {
 function close(scan: Delimited, index: number): number {
   const frame = scan.frames.pop();
   const start = scan.starts.pop() ?? -1;
-  if (frame === "paren") scan.closes?.set(start, index);
+  if (frame !== undefined) keep(scan, frame, start, index);
   return index + 1;
 }
 
@@ -143,33 +187,8 @@ function pastBacktick(text: string, index: number): number {
   return at < text.length ? at + 1 : -1;
 }
 
-/**
- * Whether bash 3.2 reads the `$((` whose text after `$((` up to its closing
- * `)` is `inner` as arithmetic: it must end with `)`, and the parentheses
- * before that must balance outside quotes. Otherwise it runs the text after
- * `$(` as a command.
- */
-export function readsAsArithmetic(inner: string): boolean {
-  if (!inner.endsWith(")")) return false;
-  const text = inner.slice(0, -1);
-  let open = 0;
-  let index = 0;
-  while (index < text.length && open >= 0) {
-    const c = text.charAt(index);
-    if (c === "(") open += 1;
-    if (c === ")") open -= 1;
-    index = pastArithmeticChar(text, index, c);
-  }
-  return open === 0;
-}
-
-function pastArithmeticChar(text: string, index: number, c: string): number {
-  if (c === "\\") return index + 2;
-  if (c === "'") {
-    const end = text.indexOf("'", index + 1);
-    return end < 0 ? text.length : end + 1;
-  }
-  if (c !== '"') return index + 1;
-  const end = delimitedEnd(text, index + 1, "double");
-  return end < 0 ? text.length : end;
+/** The index after the `"` that closes the double quote whose text starts
+ *  at `start`, or -1. */
+export function doubleQuoteEnd(text: string, start: number): number {
+  return delimitedEnd(text, start, "double");
 }

@@ -2,8 +2,8 @@ import { lexSegmentsBounded, newAnalysisBudget } from "../shell-lexer.ts";
 import type { ShellToken } from "../shell-token.ts";
 import type { ParsedCommand } from "./capability-types.ts";
 import { newWalked, walkBodyCommands, walkSegments } from "./command-walk.ts";
-import { withEarlyEndBudget } from "./heredoc-body-early-ends.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
+import { withScanBudget } from "./heredoc-scan-budget.ts";
 
 /*
  * Reusable command parser.
@@ -20,7 +20,7 @@ import { extractHeredocs } from "./heredoc-extractor.ts";
 
 /** Parse a raw bash command into the reusable structure. */
 export function parseCommand(rawCommand: string): ParsedCommand {
-  return withEarlyEndBudget(rawCommand.length, () => parse(rawCommand));
+  return withScanBudget(rawCommand.length, () => parse(rawCommand));
 }
 
 function parse(rawCommand: string): ParsedCommand {

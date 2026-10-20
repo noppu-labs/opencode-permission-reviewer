@@ -12,7 +12,7 @@ import {
   type BodyCommands,
   keepBodyCommands,
 } from "./capability/heredoc-body-commands.ts";
-import { withEarlyEndBudget } from "./capability/heredoc-body-early-ends.ts";
+import { withScanBudget } from "./capability/heredoc-scan-budget.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import { MAX_ANALYSIS_INPUT_CHARS } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
@@ -72,7 +72,7 @@ export function emergencyBrakeReason(
   // analysis cannot finish is rejected for THAT reason, before any lexing or
   // detector runs, and is never described as detected destruction.
   if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  return withEarlyEndBudget(command.length, () =>
+  return withScanBudget(command.length, () =>
     commandReason(command, 0, newBodyBudget()),
   );
 }

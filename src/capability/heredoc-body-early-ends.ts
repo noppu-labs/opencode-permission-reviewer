@@ -5,41 +5,13 @@ import {
   type ArithmeticReads,
   readsAsArithmeticAt,
 } from "./delimited-arithmetic.ts";
-import { delimitedSubstitutionEnd } from "./delimited-substitution-end.ts";
+import {
+  type DelimitedCloses,
+  delimitedSubstitutionEnd,
+} from "./delimited-substitution-end.ts";
 import { bodyTextStep } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
-
-/** Text the scans below may read, per character of the input they serve,
- *  and on top of that. Past it every body still to scan is unresolved. */
-const EARLY_END_CHARS_PER_CHAR = 32;
-const EARLY_END_CHARS_FLOOR = 65_536;
-
-let remaining = 0;
-let scopes = 0;
-
-function budgetFor(chars: number): number {
-  return EARLY_END_CHARS_PER_CHAR * chars + EARLY_END_CHARS_FLOOR;
-}
-
-/** Runs `run` under one budget for every body it scans, sized to the
- *  `inputChars` of the request it serves. */
-export function withEarlyEndBudget<T>(inputChars: number, run: () => T): T {
-  const saved = remaining;
-  remaining = budgetFor(inputChars);
-  scopes += 1;
-  try {
-    return run();
-  } finally {
-    scopes -= 1;
-    remaining = saved;
-  }
-}
-
-/** Starts the budget for a body that no other body holds, sized to the
- *  body, unless a request's budget covers it. */
-export function startEarlyEndBudget(bodyChars: number): void {
-  if (scopes === 0) remaining = budgetFor(bodyChars);
-}
+import { chargeScan } from "./heredoc-scan-budget.ts";
 
 export interface EarlyEndCommands {
   commands: string[];
@@ -48,6 +20,8 @@ export interface EarlyEndCommands {
 
 interface EarlyScan extends EarlyEndCommands, ArithmeticReads {
   known: ReadonlyMap<number, number>;
+  /** The ends the delimited scans found, kept for the scans after them. */
+  closes: DelimitedCloses;
 }
 
 /**
@@ -70,7 +44,7 @@ export function earlyEndCommands(
     commands: [],
     unresolved: false,
     closes: new Map(),
-    differs: undefined,
+    counts: new Map(),
   };
   let index = 0;
   while (index >= 0 && index < text.length && !scan.unresolved) {
@@ -133,7 +107,6 @@ function keep(scan: EarlyScan, text: string): void {
 }
 
 function charge(scan: EarlyScan, chars: number): boolean {
-  remaining -= chars;
-  scan.unresolved ||= remaining < 0;
+  scan.unresolved ||= !chargeScan(chars);
   return !scan.unresolved;
 }
