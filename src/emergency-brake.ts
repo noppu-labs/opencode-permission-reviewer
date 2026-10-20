@@ -78,13 +78,20 @@ export function emergencyBrakeReason(
 
 /** The reason the brake gives for `command`, a command at `depth`: the
  *  readings checks first, then the commands its heredoc bodies run, each
- *  judged here at depth + 1 under the request's one `budget`. */
+ *  judged here at depth + 1 under the request's one `budget`. A body command
+ *  keeps the heredoc placeholders of the text it came from, so it reads them
+ *  in the `scripts` that text recorded. */
 function commandReason(
   command: string,
   depth: number,
   budget: BodyBudget,
+  scripts?: Map<string, string[]>,
 ): string | undefined {
-  const bodies: BodyCommands = { commands: [], unresolved: false };
+  const bodies: BodyCommands = {
+    commands: [],
+    unresolved: false,
+    ...(scripts && { scripts }),
+  };
   const { extraction, allOperatorsScripts } = heredocTexts(command);
   keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
   keepBodyScripts(bodies, extraction.scripts);
@@ -92,7 +99,7 @@ function commandReason(
   const reason = readingsReason(command, bodies);
   if (reason !== undefined) return reason;
   const judge = (body: string, level: number): string | undefined =>
-    commandReason(body, level, budget);
+    commandReason(body, level, budget, bodies.scripts);
   return (
     bodyCommandsReason(
       bodies.commands,

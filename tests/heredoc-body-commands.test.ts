@@ -39,7 +39,11 @@ describe("heredocBodyCommands", () => {
   test.each(rows.map((row) => [row.id, row] as const))(
     "reads body %s as the shell expands it",
     (_id, row) => {
-      expect(heredocBodyCommands(row.body, row.tabStripped)).toEqual({
+      const { commands, unresolved } = heredocBodyCommands(
+        row.body,
+        row.tabStripped,
+      );
+      expect({ commands, unresolved }).toEqual({
         commands: row.commands,
         unresolved: row.unresolved,
       });
@@ -81,6 +85,26 @@ describe("heredocBodyCommands", () => {
     expect(heredocBodyCommands(body, false)).toEqual(
       heredocBodyCommands(body, false),
     );
+  });
+
+  test("keeps the scripts of the heredocs in the commands it lists", () => {
+    const found = heredocBodyCommands("$(sh <<'X'\necho hi\nX\n)", false);
+    expect(found.commands).toEqual(["sh <<X <HEREDOC:sha256:ab08508fdf5c>\n"]);
+    expect([...(found.scripts ?? [])]).toEqual([
+      ["<HEREDOC:sha256:ab08508fdf5c>", ["echo hi\n"]],
+    ]);
+  });
+
+  test("keeps the scripts of the heredocs in a command bash 3.2 ends early", () => {
+    const body = "sh <<'E'\n$(\nE\nsh <<'E'\n$((\nE)case x in x)\nE\n))";
+    const scripts = [...(heredocBodyCommands(body, false).scripts ?? [])];
+    expect(scripts.flatMap(([, texts]) => texts)).toContain(
+      "$((\nE)case x in x)\n",
+    );
+  });
+
+  test("keeps no scripts for a body whose commands hold no heredoc", () => {
+    expect(heredocBodyCommands("$(echo a)", false).scripts).toBeUndefined();
   });
 });
 

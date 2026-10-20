@@ -4,6 +4,7 @@ import {
   type BodyCommands,
   heredocBodyCommands,
 } from "./heredoc-body-commands.ts";
+import { keepBodyScripts, NO_SCRIPTS } from "./heredoc-scripts.ts";
 
 /** Adds commands to `into`, with whether their bodies were unresolved. A
  *  collector that is not there is a reading that keeps none. */
@@ -17,7 +18,8 @@ export function keepBodyCommands(
   into.unresolved ||= unresolved;
 }
 
-/** Adds the commands of one unquoted body to `into`. */
+/** Adds the commands of one unquoted body to `into`, with the scripts of the
+ *  heredocs in them. */
 export function addBodyCommands(
   into: BodyCommands,
   body: string,
@@ -25,4 +27,5 @@ export function addBodyCommands(
 ): void {
   const found = heredocBodyCommands(body, tabStripped);
   keepBodyCommands(into, found.commands, found.unresolved);
+  keepBodyScripts(into, found.scripts ?? NO_SCRIPTS);
 }

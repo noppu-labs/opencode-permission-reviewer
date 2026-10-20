@@ -8,7 +8,7 @@ import type { ScriptFeed } from "../shell-script-feeds.ts";
 import type { ShellSegment, ShellToken } from "../shell-token.ts";
 import type { Redirection } from "./capability-types.ts";
 import { type BodyCommands, MAX_BODY_DEPTH } from "./heredoc-body-commands.ts";
-import { feedsAfterWalk } from "./walk-feeds.ts";
+import { feedsAfterWalk, walkScripts } from "./walk-feeds.ts";
 
 /** What a walk collects: the segments, the effective command of each and its
  *  redirections, and whether any limit stopped the analysis short. */
@@ -85,7 +85,8 @@ interface Queued {
  * `feeds` are the scripts the command's shells and ssh read from a heredoc
  * or here-string, which are walked the same way, as are the scripts the
  * commands of those read in turn. A limit that stops a walk stops the rest,
- * which shares the one budget.
+ * which shares the one budget. The heredocs of each are read in the
+ * `scripts` the command recorded and those every walked text adds.
  */
 export function walkBodyCommands(
   commands: string[],
@@ -93,6 +94,7 @@ export function walkBodyCommands(
   budget: AnalysisBudget,
   into: Walked,
   feeds: readonly ScriptFeed[] = [],
+  scripts: readonly ReadonlyMap<string, readonly string[]>[] = [],
 ): void {
   const strings = takeBodies(budget);
   into.truncated = into.truncated || unresolved || strings.unresolved;
@@ -108,6 +110,7 @@ export function walkBodyCommands(
       remote,
     })),
   ];
+  const known = walkScripts(scripts);
   for (const next of queue) {
     const lex = lexSegmentsBounded(next.command);
     const first = {
@@ -122,7 +125,13 @@ export function walkBodyCommands(
       into.truncated = true;
       return;
     }
-    const read = feedsAfterWalk(into, first.parts, next.command, lex.scripts);
+    const read = feedsAfterWalk(
+      into,
+      first.parts,
+      next.command,
+      lex.scripts,
+      known,
+    );
     const nested = [...lex.bodyCommands, ...deeper.commands];
     into.truncated = queueDeeper(queue, nested, read, next) || into.truncated;
   }

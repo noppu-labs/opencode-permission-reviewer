@@ -11,6 +11,7 @@ import { earlyEndCommands } from "./heredoc-body-early-ends.ts";
 import { bodyTextStep, expandedBody } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
 import { chargeScan, startScanBudget } from "./heredoc-scan-budget.ts";
+import { keepBodyScripts, NO_SCRIPTS } from "./heredoc-scripts.ts";
 
 /** How many bodies deep the scanner nests: a command found in a body may hold
  *  a heredoc of its own, whose body is scanned in turn. */
@@ -61,7 +62,7 @@ export function heredocBodyCommands(
   }
 }
 
-interface Scan {
+interface Scan extends Pick<BodyCommands, "scripts"> {
   text: string;
   commands: string[];
   probes: ProbeCache;
@@ -88,11 +89,14 @@ function scanBody(text: string): BodyCommands {
   while (index < text.length && !scan.unresolved) index = step(scan, index);
   if (scan.unresolved) return { commands: scan.commands, unresolved: true };
   const early = earlyEndCommands(text, scan.ends);
+  keepBodyScripts(scan, early.scripts ?? NO_SCRIPTS);
   const listed = new Set(scan.commands);
   const added = early.commands.filter((command) => !listed.has(command));
+  const { scripts } = scan;
   return {
     commands: [...scan.commands, ...added],
     unresolved: early.unresolved,
+    ...(scripts && { scripts }),
   };
 }
 
@@ -144,5 +148,6 @@ function keepCommand(
   const read = backtick ? sanitizedText(found.text) : found;
   scan.commands.push(read.text);
   for (const command of read.bodyCommands) scan.commands.push(command);
+  keepBodyScripts(scan, read.scripts);
   scan.unresolved ||= read.bodyUnresolved;
 }

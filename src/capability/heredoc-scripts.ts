@@ -11,6 +11,10 @@ import {
  *  to. */
 export const NO_SCRIPTS: ReadonlyMap<string, readonly string[]> = new Map();
 
+/** Where scripts are kept: a body-command collector, or a scan that fills
+ *  one. */
+type ScriptCollector = Pick<BodyCommands, "scripts">;
+
 /** The token that stands for a body in a sanitized command, from the sha256
  *  of the body. */
 export function heredocPlaceholder(sha256: string): string {
@@ -61,7 +65,7 @@ export function recordHeredocScript(
 /** Adds the scripts of `scripts` to `into`. The collector allocates its map
  *  with the first script, so a reading with none costs nothing. */
 export function keepBodyScripts(
-  into: BodyCommands | undefined,
+  into: ScriptCollector | undefined,
   scripts: ReadonlyMap<string, readonly string[]>,
 ): void {
   if (into === undefined || scripts.size === 0) return;
@@ -79,7 +83,7 @@ export function feedsOf(into: BodyCommands): BodyCommands {
   return into.feeds;
 }
 
-function noteNoScript(into: BodyCommands, placeholder: string): void {
+function noteNoScript(into: ScriptCollector, placeholder: string): void {
   into.scripts ??= new Map();
   if (!into.scripts.has(placeholder)) into.scripts.set(placeholder, []);
 }
@@ -111,7 +115,7 @@ export function holdsGluedPlaceholder(word: string): boolean {
  *  distinct text it was recorded with, each as an item of its own: a consumer
  *  lexes them one by one, and none changes how another is read. */
 function addScript(
-  into: BodyCommands,
+  into: ScriptCollector,
   placeholder: string,
   text: string,
 ): void {

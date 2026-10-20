@@ -34,6 +34,8 @@ interface Row {
   keep?: Facts;
   /** What differs now. */
   now?: Partial<Facts>;
+  /** A command of a script the analysis reads whole. */
+  runs?: string;
 }
 
 const rows = JSON.parse(
@@ -98,6 +100,19 @@ describe("scripts that a shell or ssh reads from a heredoc or here-string", () =
       expect(verdict(row.command)).toBeUndefined();
     },
   );
+
+  test.each(
+    rows.flatMap((row) =>
+      row.runs === undefined ? [] : [[row.id, row.form, row] as const],
+    ),
+  )("%s reads the script of %s", (_id, _form, row) => {
+    const parsed = parseCommand(row.command);
+    const commands = parsed.effective.map((words) =>
+      words.map((word) => word.value).join(" "),
+    );
+    expect(parsed.analysisTruncated).toBe(false);
+    expect(commands).toContain(row.runs ?? "");
+  });
 
   test.each(twins.map((row) => [row.id, row.form, row] as const))(
     "%s reads %s like its command-string twin",

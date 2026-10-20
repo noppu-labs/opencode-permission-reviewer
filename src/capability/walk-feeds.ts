@@ -12,17 +12,31 @@ type Scripts = ReadonlyMap<string, readonly string[]>;
 const NO_FEEDS: ScriptFeed[] = [];
 
 /** The scripts the commands of the segments of `text`, walked from part
- *  `from` on, read: none without a `<<` in `text`. The walk records what they
- *  show: an interpreter that runs code from a heredoc or here-string, and a
- *  heredoc whose body is not known, which leaves the analysis incomplete. */
+ *  `from` on, read: none without a `<<` in `text`. Their heredocs are read in
+ *  `known`, the scripts the walk recorded so far, once `lexScripts`, those of
+ *  `text` itself, join it: a body command keeps the placeholders of the text
+ *  it came from. The walk records what they show: an interpreter that runs
+ *  code from a heredoc or here-string, and a heredoc whose body is not known,
+ *  which leaves the analysis incomplete. */
 export function feedsAfterWalk(
   into: Walked,
   from: number,
   text: string,
   lexScripts: Scripts,
+  known: Map<string, string[]>,
 ): ScriptFeed[] {
   if (!text.includes("<<")) return NO_FEEDS;
-  return noteFeeds(into, analyzeFeeds(into.parts.slice(from), lexScripts));
+  addAll(known, lexScripts);
+  return noteFeeds(into, analyzeFeeds(into.parts.slice(from), known));
+}
+
+/** The scripts of every source, in a map of their own that a walk adds to. */
+export function walkScripts(
+  sources: readonly Scripts[],
+): Map<string, string[]> {
+  const known = new Map<string, string[]>();
+  for (const scripts of sources) addAll(known, scripts);
+  return known;
 }
 
 /** The feeds of the command `sanitized` that `walked` walked from `lexScripts`

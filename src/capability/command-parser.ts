@@ -58,6 +58,7 @@ function parse(rawCommand: string): ParsedCommand {
     budget,
     walked,
     feeds,
+    [extraction.scripts, lex.scripts],
   );
 
   return {
