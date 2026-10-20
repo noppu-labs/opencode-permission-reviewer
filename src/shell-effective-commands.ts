@@ -65,6 +65,8 @@ export function analyzeSegmentRedirections(
     truncated: false,
     budget: budget ?? newAnalysisBudget(),
     segmentRedirections: [],
+    bareSsh: [],
+    stdinShells: [],
   };
   walk(segment.tokens, sink, [], 0);
   return {
@@ -72,5 +74,7 @@ export function analyzeSegmentRedirections(
     redirections: sink.redirections,
     truncated: sink.truncated,
     segmentRedirections: sink.segmentRedirections,
+    bareSsh: sink.bareSsh,
+    stdinShells: sink.stdinShells,
   };
 }

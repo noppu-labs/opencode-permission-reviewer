@@ -3,7 +3,12 @@
 
 import { elementAt } from "../element-at.ts";
 import type { PendingLine } from "./heredoc-bodies.ts";
-import type { Frame, ScanContext } from "./heredoc-scan-context.ts";
+import {
+  closingFrame,
+  type Frame,
+  fallBackFromArithmetic,
+  type ScanContext,
+} from "./heredoc-scan-context.ts";
 
 /** Whether the shell reads no heredoc body at this `<<`. The nearest
  *  expansion, substitution or backtick open at the operator decides: an
@@ -31,7 +36,7 @@ export type DropScan = PendingLine &
 /** Drop the starts opened inside `frame`, whose close the shell reads on
  *  the operator's own line: no body follows them, so each operator and its
  *  delimiter word return to the command as text. */
-export function dropSubstitutedStarts(scan: DropScan, frame: Frame): void {
+function dropSubstitutedStarts(scan: DropScan, frame: Frame): void {
   let first = scan.pending.length;
   while (first > 0 && scan.pending[first - 1]?.frame === frame) first -= 1;
   const dropped = scan.pending.splice(first);
@@ -70,5 +75,27 @@ export function closeBacktickFrames(scan: DropScan & ScanContext): boolean {
     if (closedFrame.kind === "substitution" || closedFrame.kind === "backtick")
       dropSubstitutedStarts(scan, closedFrame);
   }
+  return true;
+}
+
+/** Close the construct ending at `scan.i`, or fall back a lone `)` out of
+ *  arithmetic. A substitution or backtick that ends on the operator's own
+ *  line ends no heredoc: the shell reads the close before any body line, so
+ *  the starts opened inside it are dropped and their operator text stays in
+ *  the command. */
+export function closeFrame(
+  scan: DropScan & ScanContext & { readAllOperators: boolean },
+): boolean {
+  const frame = closingFrame(scan);
+  if (frame === undefined) return fallBackFromArithmetic(scan);
+  scan.frames.pop();
+  if (frame.kind === "backtick") scan.backtickAt = -1;
+  scan.quote = frame.quote;
+  scan.i += frame.close.length;
+  if (
+    !scan.readAllOperators &&
+    (frame.kind === "substitution" || frame.kind === "backtick")
+  )
+    dropSubstitutedStarts(scan, frame);
   return true;
 }

@@ -202,6 +202,7 @@ describe("nested bodies", () => {
         truncated: false,
         bodyCommands: calls < MAX_BODY_DEPTH ? ["x"] : [],
         bodyUnresolved: false,
+        scripts: new Map(),
       };
     });
     const walked = newWalked();
@@ -223,6 +224,7 @@ describe("nested bodies", () => {
         truncated: false,
         bodyCommands: ["x"],
         bodyUnresolved: false,
+        scripts: new Map(),
       };
     });
     const walked = newWalked();

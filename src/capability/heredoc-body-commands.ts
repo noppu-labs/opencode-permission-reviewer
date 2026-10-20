@@ -6,10 +6,12 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "../shell-substitution.ts";
+import { knownArithmetic } from "../shell-substitution-arithmetic.ts";
 import { earlyEndCommands } from "./heredoc-body-early-ends.ts";
 import { bodyTextStep, expandedBody } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
 import { chargeScan, startScanBudget } from "./heredoc-scan-budget.ts";
+import { keepBodyScripts, NO_SCRIPTS } from "./heredoc-scripts.ts";
 
 /** How many bodies deep the scanner nests: a command found in a body may hold
  *  a heredoc of its own, whose body is scanned in turn. */
@@ -20,28 +22,13 @@ export interface BodyCommands {
   commands: string[];
   /** The body has a `$(` or backtick with no end, or nests past the depth. */
   unresolved: boolean;
-}
-
-/** Adds commands to `into`, with whether their bodies were unresolved. A
- *  collector that is not there is a reading that keeps none. */
-export function keepBodyCommands(
-  into: BodyCommands | undefined,
-  commands: string[],
-  unresolved: boolean,
-): void {
-  if (into === undefined || (commands.length === 0 && !unresolved)) return;
-  for (const command of commands) into.commands.push(command);
-  into.unresolved ||= unresolved;
-}
-
-/** Adds the commands of one unquoted body to `into`. */
-export function addBodyCommands(
-  into: BodyCommands,
-  body: string,
-  tabStripped: boolean,
-): void {
-  const found = heredocBodyCommands(body, tabStripped);
-  keepBodyCommands(into, found.commands, found.unresolved);
+  /** The texts the collapsed bodies give the command that reads them, by
+   *  placeholder, each distinct reading apart (heredoc-scripts.ts). Set by the
+   *  first one recorded. */
+  scripts?: Map<string, string[]>;
+  /** The scripts that shells and ssh read from a heredoc or here-string, and
+   *  whether one of them is not known. Set by the first one found. */
+  feeds?: BodyCommands;
 }
 
 /** Bodies the scanner is inside, across the calls that recurse into each
@@ -75,7 +62,7 @@ export function heredocBodyCommands(
   }
 }
 
-interface Scan {
+interface Scan extends Pick<BodyCommands, "scripts"> {
   text: string;
   commands: string[];
   probes: ProbeCache;
@@ -102,11 +89,14 @@ function scanBody(text: string): BodyCommands {
   while (index < text.length && !scan.unresolved) index = step(scan, index);
   if (scan.unresolved) return { commands: scan.commands, unresolved: true };
   const early = earlyEndCommands(text, scan.ends);
+  keepBodyScripts(scan, early.scripts ?? NO_SCRIPTS);
   const listed = new Set(scan.commands);
   const added = early.commands.filter((command) => !listed.has(command));
+  const { scripts } = scan;
   return {
     commands: [...scan.commands, ...added],
     unresolved: early.unresolved,
+    ...(scripts && { scripts }),
   };
 }
 
@@ -118,7 +108,8 @@ function step(scan: Scan, index: number): number {
 
 function substitute(scan: Scan, index: number): number {
   const { text } = scan;
-  if (opensKnownArithmetic(text, index, scan.closes)) return index + 3;
+  if (text.startsWith("$((", index) && knownArithmetic(scan.closes, index))
+    return index + 3;
   const backtick = text.charAt(index) === "`";
   const found = substitutionAt(
     text,
@@ -145,19 +136,6 @@ function substitute(scan: Scan, index: number): number {
   return index + 3;
 }
 
-/** Whether the `$((` at `index` is one the end-finder already closed as
- *  arithmetic: its subshell frame closes right before its own. */
-function opensKnownArithmetic(
-  text: string,
-  index: number,
-  closes: FrameCloses,
-): boolean {
-  if (!text.startsWith("$((", index)) return false;
-  const outer = closes.get(index) ?? closes.get(index + 1);
-  const inner = closes.get(index + 2);
-  return outer !== undefined && inner !== undefined && outer === inner + 1;
-}
-
 /** A command a substitution runs, then the commands that heredocs in it run.
  *  A backtick body in a heredoc keeps `\"` as written, which the double-quote
  *  reading of `substitutionAt` would drop, so a backtick is read as unquoted
@@ -170,5 +148,6 @@ function keepCommand(
   const read = backtick ? sanitizedText(found.text) : found;
   scan.commands.push(read.text);
   for (const command of read.bodyCommands) scan.commands.push(command);
+  keepBodyScripts(scan, read.scripts);
   scan.unresolved ||= read.bodyUnresolved;
 }

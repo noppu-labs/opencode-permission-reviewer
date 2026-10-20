@@ -8,11 +8,18 @@ export function expandedBody(body: string, tabStripped: boolean): string {
   return tabStripped ? stripTabs(joined) : joined;
 }
 
-function stripTabs(body: string): string {
+/** The body with the leading tabs of every line removed. */
+export function stripTabs(body: string): string {
   return body
     .split("\n")
     .map((line) => line.replace(/^\t+/, ""))
     .join("\n");
+}
+
+/** An unquoted body as the shell hands it on: a backslash before `$`, a
+ *  backtick or another backslash is dropped, and the character stays. */
+export function unescapedBody(body: string): string {
+  return body.includes("\\") ? body.replace(/\\([$`\\])/g, "$1") : body;
 }
 
 /** The body without its backslash-newline pairs; `\\` stays a pair. */

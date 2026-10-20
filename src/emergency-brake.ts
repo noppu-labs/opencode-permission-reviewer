@@ -8,11 +8,10 @@ import {
   ANALYSIS_LIMIT_REASON,
   brakeReadingsReason,
 } from "./brake-readings.ts";
-import {
-  type BodyCommands,
-  keepBodyCommands,
-} from "./capability/heredoc-body-commands.ts";
+import { keepBodyCommands } from "./capability/heredoc-body-collector.ts";
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
 import { withScanBudget } from "./capability/heredoc-scan-budget.ts";
+import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import { MAX_ANALYSIS_INPUT_CHARS } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
@@ -37,9 +36,11 @@ import type { PermissionRequest } from "./types.ts";
  * root destruction (target resolves to `/`). The commands that the
  * substitutions of an unquoted heredoc body run are the exception: bash runs
  * them, so each is judged as a command of its own, to MAX_BODY_DEPTH levels of
- * nested bodies. A body the scan cannot read to its end, or more body
- * commands than one request's budget, gives the analysis limit. Such a check
- * only adds blocks after the checks above allow.
+ * nested bodies. So is the script a shell or ssh reads from a heredoc or
+ * here-string, after the body commands. A body the scan cannot read to its
+ * end, a script that was not recorded, or more body commands and scripts than
+ * one request's budget, gives the analysis limit. Such a check only adds
+ * blocks after the checks above allow.
  *
  * Each reading of the command is lexed and destructured under its own
  * analysis budget (input size, tokens, depth, re-lexed text, and total
@@ -79,23 +80,43 @@ export function emergencyBrakeReason(
 
 /** The reason the brake gives for `command`, a command at `depth`: the
  *  readings checks first, then the commands its heredoc bodies run, each
- *  judged here at depth + 1 under the request's one `budget`. */
+ *  judged here at depth + 1 under the request's one `budget`. A body command
+ *  keeps the heredoc placeholders of the text it came from, so it reads them
+ *  in the `scripts` that text recorded. */
 function commandReason(
   command: string,
   depth: number,
   budget: BodyBudget,
+  scripts?: Map<string, string[]>,
 ): string | undefined {
-  const bodies: BodyCommands = { commands: [], unresolved: false };
-  const { extraction } = heredocTexts(command);
+  const bodies: BodyCommands = {
+    commands: [],
+    unresolved: false,
+    ...(scripts && { scripts }),
+  };
+  const { extraction, allOperatorsScripts } = heredocTexts(command);
   keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
+  keepBodyScripts(bodies, extraction.scripts);
+  keepBodyScripts(bodies, allOperatorsScripts);
   const reason = readingsReason(command, bodies);
   if (reason !== undefined) return reason;
-  return bodyCommandsReason(
-    bodies.commands,
-    bodies.unresolved,
-    depth + 1,
-    (body, level) => commandReason(body, level, budget),
-    budget,
+  const judge = (body: string, level: number): string | undefined =>
+    commandReason(body, level, budget, bodies.scripts);
+  return (
+    bodyCommandsReason(
+      bodies.commands,
+      bodies.unresolved,
+      depth + 1,
+      judge,
+      budget,
+    ) ??
+    bodyCommandsReason(
+      bodies.feeds?.commands ?? [],
+      bodies.feeds?.unresolved ?? false,
+      depth + 1,
+      judge,
+      budget,
+    )
   );
 }
 

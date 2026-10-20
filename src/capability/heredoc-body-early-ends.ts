@@ -12,10 +12,13 @@ import {
 import { bodyTextStep } from "./heredoc-body-reading.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
 import { chargeScan } from "./heredoc-scan-budget.ts";
+import { keepBodyScripts } from "./heredoc-scripts.ts";
 
 export interface EarlyEndCommands {
   commands: string[];
   unresolved: boolean;
+  /** The scripts of the heredocs in those commands, by placeholder. */
+  scripts?: Map<string, string[]>;
 }
 
 interface EarlyScan extends EarlyEndCommands, ArithmeticReads {
@@ -53,7 +56,8 @@ export function earlyEndCommands(
       : bodyTextStep(text, index);
     index = after < 0 ? substitute(scan, index) : after;
   }
-  return { commands: scan.commands, unresolved: scan.unresolved };
+  const { commands, unresolved, scripts } = scan;
+  return { commands, unresolved, ...(scripts && { scripts }) };
 }
 
 /** The index after the substitution at `index`, or -1 where bash 3.2
@@ -103,6 +107,7 @@ function keep(scan: EarlyScan, text: string): void {
   const read = sanitizedText(text);
   scan.commands.push(read.text);
   for (const nested of read.bodyCommands) scan.commands.push(nested);
+  keepBodyScripts(scan, read.scripts);
   scan.unresolved ||= read.bodyUnresolved;
 }
 

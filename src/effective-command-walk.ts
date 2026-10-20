@@ -1,19 +1,15 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
-import {
-  type BodyCommands,
-  keepBodyCommands,
-} from "./capability/heredoc-body-commands.ts";
-import { sanitizedText } from "./capability/heredoc-sanitized.ts";
+import { keepStringBodies } from "./capability/heredoc-string-bodies.ts";
 import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
+import { operandTailIndex } from "./operand-tail-index.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
 import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
 import type { SubstitutionBudget } from "./shell-lex-state.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
-  MAX_EFFECTIVE_COMMANDS,
 } from "./shell-lexer.ts";
 import { TRANSPARENT_WRAPPERS } from "./shell-lexer-tables.ts";
 import {
@@ -21,27 +17,28 @@ import {
   type ShellRedirection,
 } from "./shell-redirections.ts";
 import { lexSegments } from "./shell-scanner.ts";
+import { shellReadsStdin } from "./shell-script-readers.ts";
 import type { ShellToken } from "./shell-token.ts";
 import {
-  chrootCommandIndex,
   commandStart,
   skipWrapperArguments,
   timeoutCommandIndex,
 } from "./shell-wrapper-options.ts";
 import { sshRemoteCommand } from "./ssh-remote-command.ts";
+import { walkLimitReached } from "./walk-limits.ts";
 import { peelWatch } from "./watch-command.ts";
 
-/** Ceiling on command-string re-entry (`sh -c`, `env -S`, watch, ssh,
- *  busybox, chroot). Deeper nesting than this is not a legitimate review
- *  shape; the walk stops descending and the unanalyzed remainder stays the
- *  model reviewer's job, keeping unbounded input from exhausting the stack. */
-const MAX_WALK_DEPTH = 32;
-
-/** Where every level of one walk collects its effective commands, and the
- *  redirections each level's segment carries itself. */
+/** Where every level of one walk collects its effective commands, the
+ *  redirections each level's segment carries itself, and the redirections of
+ *  each `ssh` that has no remote command: it yields no effective command,
+ *  and the login shell on the far side reads its stdin. */
 export interface WalkSink extends EffectiveCommandsAnalysis {
   budget: AnalysisBudget;
   segmentRedirections: ShellRedirection[];
+  bareSsh: ShellRedirection[][];
+  /** The redirections of each shell run with `-c` and `-s`: after its
+   *  command string it reads a script from stdin. */
+  stdinShells: ShellRedirection[][];
 }
 
 /** One level of the walk: the redirections its commands carry, inherited
@@ -62,11 +59,7 @@ export function walk(
   // command text, so both bounds are hard stops, not tuning knobs. Hitting
   // either one marks the analysis truncated so downstream gates know the
   // collected commands do not cover the whole command.
-  if (
-    depth > MAX_WALK_DEPTH ||
-    sink.commands.length >= MAX_EFFECTIVE_COMMANDS ||
-    sink.budget.remainingCommands <= 0
-  ) {
+  if (walkLimitReached(sink, depth)) {
     sink.truncated = true;
     return;
   }
@@ -114,17 +107,18 @@ function peelCommand(
   base: string,
   level: WalkLevel,
 ): void {
-  if (reanalyzeIfPresent(wrapperCommandString(words, i, base), level)) return;
+  const commandString = wrapperCommandString(words, i, base);
+  if (commandString !== null && shellReadsStdin(words, i))
+    level.sink.stdinShells.push(level.redirections);
+  if (reanalyzeIfPresent(commandString, level)) return;
   if (base === "ssh") {
-    reanalyzeIfPresent(sshRemoteCommand(words, i), level);
+    if (!reanalyzeIfPresent(sshRemoteCommand(words, i), level))
+      level.sink.bareSsh.push(level.redirections);
     return;
   }
-  if (base === "busybox") {
-    walkTail(words, i + 1, level);
-    return;
-  }
-  if (base === "chroot") {
-    walkTail(words, chrootCommandIndex(words, i), level);
+  const tail = operandTailIndex(words, i, base);
+  if (tail !== undefined) {
+    walkTail(words, tail, level);
     return;
   }
   const { sink } = level;
@@ -165,16 +159,6 @@ function reanalyze(text: string, level: WalkLevel): void {
   if (lexBudget.tokensRemaining <= 0) sink.truncated = true;
   for (const sub of segments)
     walk(sub.tokens, sink, level.redirections, level.depth + 1);
-}
-
-/** Keeps the commands the heredoc bodies of command string `text` run. */
-function keepStringBodies(
-  bodies: BodyCommands | undefined,
-  text: string,
-): void {
-  if (bodies === undefined || !text.includes("<<")) return;
-  const read = sanitizedText(text);
-  keepBodyCommands(bodies, read.bodyCommands, read.bodyUnresolved);
 }
 
 /** Walk the operand tail from `start` one level deeper, if any is left. */

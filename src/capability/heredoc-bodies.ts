@@ -2,7 +2,8 @@
 
 import { elementAt } from "../element-at.ts";
 import type { HeredocRecord } from "./capability-types.ts";
-import { addBodyCommands, type BodyCommands } from "./heredoc-body-commands.ts";
+import { addBodyCommands } from "./heredoc-body-collector.ts";
+import type { BodyCommands } from "./heredoc-body-commands.ts";
 import {
   type BodyRecord,
   bodyRecord,
@@ -10,6 +11,11 @@ import {
   type PendingStart,
   readBody,
 } from "./heredoc-body-records.ts";
+import {
+  heredocPlaceholder,
+  recordHeredocScript,
+  recordNoScript,
+} from "./heredoc-scripts.ts";
 
 /** The part of the heredoc scan state a start line's bodies are read into:
  *  `pieces` holds the start line, with each pending operator in its place,
@@ -60,8 +66,7 @@ export function consumeBodies(
     if (read.unterminated) scan.unterminated = true;
     const record = bodyRecord(scan.command, start, read, lineEnd, targets);
     if (record.dynamic) scan.hasDynamicConstructs = true;
-    if (scan.bodies !== undefined && start.resolved && !start.quoted)
-      addBodyCommands(scan.bodies, read.body, start.operator === "<<-");
+    keepBody(scan.bodies, start, read, record.sha256);
     records.push(record);
   }
   scan.out += sanitizedStartLine(scan, records);
@@ -72,6 +77,24 @@ export function consumeBodies(
   scan.pending.length = 0;
   scan.pieces = [];
   return position;
+}
+
+/** Keeps what one read body gives the collector: the commands its
+ *  substitutions run, when its delimiter is unquoted, and the text the command
+ *  that reads it gets, when it has its terminator line. */
+function keepBody(
+  bodies: BodyCommands | undefined,
+  start: PendingStart,
+  read: { body: string; unterminated: boolean },
+  sha256: string,
+): void {
+  if (bodies === undefined) return;
+  if (!start.resolved || read.unterminated) recordNoScript(bodies, sha256);
+  if (!start.resolved) return;
+  const tabStripped = start.operator === "<<-";
+  if (!start.quoted) addBodyCommands(bodies, read.body, tabStripped);
+  if (!read.unterminated)
+    recordHeredocScript(bodies, sha256, read.body, start.quoted, tabStripped);
 }
 
 /** The current start line with each operator and its word replaced by the
@@ -89,7 +112,7 @@ function sanitizedStartLine(scan: PendingLine, records: BodyRecord[]): string {
     const safe = /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(shown)
       ? shown
       : `'${shown.replace(/'/g, "'\\''")}'`;
-    assembled += `${start.operator}${safe} <HEREDOC:sha256:${record.sha256.slice(0, 12)}>`;
+    assembled += `${start.operator}${safe} ${heredocPlaceholder(record.sha256)}`;
   }
   return assembled;
 }

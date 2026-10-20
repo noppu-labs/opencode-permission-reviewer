@@ -1,6 +1,7 @@
 // Lexes the command a substitution runs into segments of its own, for the scan of the word that holds it.
 
-import { keepBodyCommands } from "./capability/heredoc-body-commands.ts";
+import { keepBodyCommands } from "./capability/heredoc-body-collector.ts";
+import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import {
   appendValue,
   type LexState,
@@ -13,6 +14,7 @@ import {
   type SubstitutionBody,
   substitutionAt,
 } from "./shell-substitution.ts";
+import { knownArithmetic } from "./shell-substitution-arithmetic.ts";
 import { uncertainRegion } from "./shell-substitution-trust.ts";
 
 type CommandBody = Extract<SubstitutionBody, { kind: "command" }>;
@@ -26,6 +28,7 @@ function lexBody(
 ): void {
   const { text, end } = body;
   keepBodyCommands(budget.bodies, body.bodyCommands, body.bodyUnresolved);
+  keepBodyScripts(budget.bodies, body.scripts);
   lex.substitutionEnd = end;
   budget.substitutionCharsRemaining -= text.length;
   if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
@@ -40,14 +43,6 @@ function lexBody(
 interface Walk {
   index: number;
   closes: FrameCloses;
-}
-
-/** Whether the `$((` at `index` is arithmetic, by the frames the end-finder
- *  already closed: its subshell frame closes right before its own. */
-function knownArithmetic(closes: FrameCloses, index: number): boolean {
-  const outer = closes.get(index) ?? closes.get(index + 1);
-  const inner = closes.get(index + 2);
-  return outer !== undefined && inner !== undefined && outer === inner + 1;
 }
 
 /** Charge the text of a probe that found arithmetic to the substitution

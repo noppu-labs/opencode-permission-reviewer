@@ -1,41 +1,15 @@
-// Lexing entry points: per-request analysis budgets, the bounded lexing pass, and token-value segments for evidence consumers.
+// Lexing entry points: per-request analysis budgets, and the bounded lexing pass.
 
 import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
+import { NO_SCRIPTS } from "./capability/heredoc-scripts.ts";
 import {
   type HeredocReading,
   MAX_SUBSTITUTION_CHARS,
   type ShellQuoting,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
-import { normalizeShellRedirections } from "./shell-redirections.ts";
 import { lexSegments } from "./shell-scanner.ts";
 import type { ShellSegment } from "./shell-token.ts";
-
-/** Segments flattened to plain token values plus the separators around each
- *  segment. This is the shared surface evidence consumers (SSH, Git, local
- *  scripts) build on, so the brake's lexer stays the one tokenizer. */
-export interface CommandSegment {
-  tokens: string[];
-  preceding?: string;
-  endedBy?: string;
-}
-
-export function commandSegments(command: string): CommandSegment[] {
-  const segments = lexSegments(command, {
-    tokensRemaining: Number.POSITIVE_INFINITY,
-    substitutions: "skip",
-  });
-  return segments.map((segment) => {
-    const normalized = normalizeShellRedirections(segment.tokens);
-    return {
-      tokens: normalized.tokens.map((token) => token.value),
-      ...(segment.precededBy === undefined
-        ? {}
-        : { preceding: segment.precededBy }),
-      ...(segment.endedBy === undefined ? {} : { endedBy: segment.endedBy }),
-    };
-  });
-}
 
 /** Ceiling on collected effective commands. Command strings can expand
  *  combinatorially (a level duplicating its script doubles the output), so
@@ -101,6 +75,9 @@ export interface LexAnalysis {
    *  lexed. Empty under the previous release's heredoc reading. */
   bodyCommands: string[];
   bodyUnresolved: boolean;
+  /** The text each of those heredoc bodies gives the command that reads it,
+   *  by placeholder. */
+  scripts: ReadonlyMap<string, readonly string[]>;
 }
 
 export function lexSegmentsBounded(
@@ -114,6 +91,7 @@ export function lexSegmentsBounded(
       truncated: true,
       bodyCommands: [],
       bodyUnresolved: false,
+      scripts: NO_SCRIPTS,
     };
   const bodies: BodyCommands = { commands: [], unresolved: false };
   const state: SubstitutionBudget = {
@@ -130,6 +108,7 @@ export function lexSegmentsBounded(
     truncated: state.tokensRemaining <= 0,
     bodyCommands: bodies.commands,
     bodyUnresolved: bodies.unresolved,
+    scripts: bodies.scripts ?? NO_SCRIPTS,
   };
 }
 

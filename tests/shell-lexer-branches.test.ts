@@ -81,6 +81,7 @@ describe("shell lexer token budget", () => {
       truncated: true,
       bodyCommands: [],
       bodyUnresolved: false,
+      scripts: new Map(),
     });
     const underCap = lexSegmentsBounded("a ".repeat(16_383));
     expect(underCap.truncated).toBe(false);
@@ -91,6 +92,7 @@ describe("shell lexer token budget", () => {
       truncated: true,
       bodyCommands: [],
       bodyUnresolved: false,
+      scripts: new Map(),
     });
     expect(lexSegmentsBounded("a".repeat(131_072)).truncated).toBe(false);
   });

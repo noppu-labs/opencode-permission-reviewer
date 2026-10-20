@@ -19,9 +19,24 @@ export interface ShellRedirection {
  *  It is evidence metadata, not another input redirection. */
 const HEREDOC_MARKER = /^<HEREDOC:sha256:[a-f0-9]+>$/;
 
+/** The operator of a heredoc redirection, with its descriptor if any. */
+const HEREDOC_OPERATOR = /^[0-9]*<<-?$/;
+
 interface RedirectionSplit {
   words: ShellToken[];
   redirections: ShellRedirection[];
+  /** When given, the marker of each heredoc redirection by its index. */
+  markers?: Map<number, string>;
+}
+
+/** The marker the extractor put right after a heredoc's delimiter belongs to
+ *  that redirection, the last one pushed. */
+function noteMarker(split: RedirectionSplit, marker: string): void {
+  const index = split.redirections.length - 1;
+  const last = split.redirections[index];
+  if (split.markers === undefined || last === undefined) return;
+  if (!HEREDOC_OPERATOR.test(last.operator) || split.markers.has(index)) return;
+  split.markers.set(index, marker);
 }
 
 function pushRedirection(
@@ -88,7 +103,10 @@ function splitWord(
 ): string | undefined {
   // The marker is evidence metadata: it is neither a command word nor a
   // redirection, so it leaves the words and the redirection list alone.
-  if (HEREDOC_MARKER.test(token.value)) return undefined;
+  if (HEREDOC_MARKER.test(token.value)) {
+    noteMarker(split, token.value);
+    return undefined;
+  }
   const operators = redirectionsIn(token);
   if (operators.length === 0) {
     split.words.push(token);
@@ -117,6 +135,31 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
   redirections: ShellRedirection[];
 } {
   const split: RedirectionSplit = { words: [], redirections: [] };
+  splitTokens(tokens, split);
+  return { tokens: split.words, redirections: split.redirections };
+}
+
+/**
+ * The heredoc marker of each redirection that `normalizeShellRedirections`
+ * returns for `tokens`, by index: `undefined` for a redirection that is not
+ * a heredoc, or whose heredoc left no marker. Empty when `tokens` hold no
+ * marker, which costs one pass over them.
+ */
+export function heredocPlaceholders(
+  tokens: readonly ShellToken[],
+): (string | undefined)[] {
+  if (!tokens.some((token) => HEREDOC_MARKER.test(token.value))) return [];
+  const split: RedirectionSplit = {
+    words: [],
+    redirections: [],
+    markers: new Map(),
+  };
+  splitTokens([...tokens], split);
+  const { markers } = split;
+  return split.redirections.map((_, index) => markers?.get(index));
+}
+
+function splitTokens(tokens: ShellToken[], split: RedirectionSplit): void {
   for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
     const token = elementAt(tokens, tokenIndex, "tokens");
     const dangling = splitWord(token, split);
@@ -131,5 +174,4 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
     pushRedirection(split, dangling, candidate);
     tokenIndex += 1;
   }
-  return { tokens: split.words, redirections: split.redirections };
 }

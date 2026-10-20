@@ -1,0 +1,178 @@
+[
+  {
+    "id": "t.01",
+    "form": "plain lines",
+    "body": "printf A\nprintf B\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "printf A\nprintf B\n"
+  },
+  {
+    "id": "t.02",
+    "form": "empty body",
+    "body": "",
+    "quoted": false,
+    "tabStripped": false,
+    "script": ""
+  },
+  {
+    "id": "t.03",
+    "form": "continuation joined",
+    "body": "line1 \\\nline2\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "line1 line2\n"
+  },
+  {
+    "id": "t.04",
+    "form": "escaped dollar, backslash and backtick",
+    "body": "a\\$b \\\\ c \\` d\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "a$b \\ c ` d\n"
+  },
+  {
+    "id": "t.05",
+    "form": "other escapes stay",
+    "body": "e \\\" f \\x g \\n\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "e \\\" f \\x g \\n\n"
+  },
+  {
+    "id": "t.06",
+    "form": "substitutions stay as written",
+    "body": "$v ${v} $(printf SUB) `printf BT` $((1+2))\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "$v ${v} $(printf SUB) `printf BT` $((1+2))\n"
+  },
+  {
+    "id": "t.07",
+    "form": "escaped substitution opens",
+    "body": "printf %s \\$(printf INNER)\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "printf %s $(printf INNER)\n"
+  },
+  {
+    "id": "t.08",
+    "form": "escaped backtick opens",
+    "body": "printf %s \\`printf INNER\\`\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "printf %s `printf INNER`\n"
+  },
+  {
+    "id": "t.09",
+    "form": "escaped backslash then substitution",
+    "body": "printf %s \\\\$(printf X)\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "printf %s \\$(printf X)\n"
+  },
+  {
+    "id": "t.10",
+    "form": "continuation then escape",
+    "body": "a\\\n\\$b\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "a$b\n"
+  },
+  {
+    "id": "t.11",
+    "form": "tabs kept without dash",
+    "body": "\ttab1 \\\n\ttab2\n\t\tdeep\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "\ttab1 \ttab2\n\t\tdeep\n"
+  },
+  {
+    "id": "t.12",
+    "form": "dash strips leading tabs",
+    "body": "\ttab1\n\t\tdeep\nend\n",
+    "quoted": false,
+    "tabStripped": true,
+    "script": "tab1\ndeep\nend\n"
+  },
+  {
+    "id": "t.13",
+    "form": "dash continuation keeps its tab",
+    "body": "\ttab1 \\\n\ttab2-cont\n\t\tdeep\n",
+    "quoted": false,
+    "tabStripped": true,
+    "script": "tab1 \ttab2-cont\ndeep\n"
+  },
+  {
+    "id": "t.14",
+    "form": "dash with escapes",
+    "body": "\tprintf \\$HOME\n",
+    "quoted": false,
+    "tabStripped": true,
+    "script": "printf $HOME\n"
+  },
+  {
+    "id": "t.15",
+    "form": "quoted raw",
+    "body": "printf A \\\nB\n",
+    "quoted": true,
+    "tabStripped": false,
+    "script": "printf A \\\nB\n"
+  },
+  {
+    "id": "t.16",
+    "form": "quoted escapes raw",
+    "body": "echo \\$(x) \\\\ \\`y\\`\n",
+    "quoted": true,
+    "tabStripped": false,
+    "script": "echo \\$(x) \\\\ \\`y\\`\n"
+  },
+  {
+    "id": "t.17",
+    "form": "quoted substitution raw",
+    "body": "$(rm -rf /)\n`rm -rf /`\n",
+    "quoted": true,
+    "tabStripped": false,
+    "script": "$(rm -rf /)\n`rm -rf /`\n"
+  },
+  {
+    "id": "t.18",
+    "form": "quoted tabs kept without dash",
+    "body": "\ta\n\t\tb\n",
+    "quoted": true,
+    "tabStripped": false,
+    "script": "\ta\n\t\tb\n"
+  },
+  {
+    "id": "t.19",
+    "form": "quoted dash strips each line",
+    "body": "\ttab1 \\\n\ttab2\n\t\tdeep\n",
+    "quoted": true,
+    "tabStripped": true,
+    "script": "tab1 \\\ntab2\ndeep\n"
+  },
+  {
+    "id": "t.20",
+    "form": "quoted dash keeps continuation",
+    "body": "\tA \\\n\tB\n",
+    "quoted": true,
+    "tabStripped": true,
+    "script": "A \\\nB\n"
+  },
+  {
+    "id": "t.21",
+    "form": "no trailing newline",
+    "body": "printf A",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "printf A"
+  },
+  {
+    "id": "t.22",
+    "form": "blank lines",
+    "body": "\n\nprintf A\n\n",
+    "quoted": false,
+    "tabStripped": false,
+    "script": "\n\nprintf A\n\n"
+  }
+]

@@ -66,6 +66,13 @@ export interface ParsedCommand {
    *  resolution early; `effective` is then a prefix of the real structure and
    *  deterministic facts do not cover the whole command. */
   analysisTruncated: boolean;
+  /** The effective commands that run on the far side of an ssh with no
+   *  remote command, from the script it reads. They are among `effective`
+   *  too. */
+  remoteCommands?: import("../shell-token.ts").ShellToken[][];
+  /** An interpreter among the commands runs code from a heredoc or
+   *  here-string. */
+  stdinCode?: boolean;
 }
 
 /** What the action can do, what it appears to do, and analysis confidence. */

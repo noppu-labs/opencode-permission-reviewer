@@ -30,6 +30,87 @@ const quotedRedirectionShapes: [string, string][] = [
   ["dollar-quoted redirections", "$'\\'>&".repeat(21_845)],
 ];
 
+// Commands whose heredocs and here-strings feed scripts to shells and ssh,
+// at the input cap.
+const scriptFeedShapes: [string, string][] = [
+  [
+    "distinct script feeds at the input cap",
+    Array.from({ length: 5_600 }, (_, i) => `sh <<'E'\necho ${i}\nE\n`).join(
+      "",
+    ),
+  ],
+  [
+    "distinct script feeds through cat at the input cap",
+    Array.from(
+      { length: 3_800 },
+      (_, i) => `cat <<'E' | sh\necho ${i}\nE\n`,
+    ).join(""),
+  ],
+  [
+    "distinct here-string feeds at the input cap",
+    Array.from({ length: 9_000 }, (_, i) => `sh <<<'e${i}';`).join(""),
+  ],
+  [
+    "script feeds in command strings",
+    Array.from(
+      { length: 1_200 },
+      (_, i) => `bash -c "sh <<'E'\necho ${i}\nE"; `,
+    ).join(""),
+  ],
+  [
+    "script feeds in substitutions",
+    Array.from(
+      { length: 2_900 },
+      (_, i) => `echo "$(sh <<'E'\necho ${i}\nE\n)"\n`,
+    ).join(""),
+  ],
+  [
+    "one script that fills the input cap",
+    `sh <<'E'\n${`echo ${"x".repeat(1_000)}\n`.repeat(125)}E`,
+  ],
+  [
+    "a script of unclosed backticks at the input cap",
+    `sh <<'E'\n${"`".repeat(120_000)}\nE`,
+  ],
+  [
+    "a here-string script of unclosed backticks at the input cap",
+    `sh <<<'${"`".repeat(120_000)}'`,
+  ],
+  [
+    "scripts nested to the depth cap, repeated at the input cap",
+    nestedScripts(7).repeat(Math.floor(131_072 / nestedScripts(7).length)),
+  ],
+  [
+    "shells in a command string inheriting a heredoc and 2,000 redirections at the input cap",
+    inheritedRedirections("<<A", 400, 2_000),
+  ],
+  [
+    "shells in a command string inheriting a here-string and 2,000 redirections at the input cap",
+    inheritedRedirections("<<<x", 400, 2_000),
+  ],
+];
+
+// A command string of `commands` shells that all inherit the stdin and the
+// `redirections` written after it, padded with a comment to the input cap. The
+// padding leaves room for the placeholder that replaces a heredoc body.
+function inheritedRedirections(
+  stdin: "<<A" | "<<<x",
+  commands: number,
+  redirections: number,
+): string {
+  const body = stdin === "<<A" ? "A\n" : "";
+  const text = `sh -c '${"sh;".repeat(commands)}' ${stdin} ${"<A ".repeat(redirections)}\n${body}`;
+  return `${text}# ${"x".repeat(131_072 - 64 - text.length - 2)}`;
+}
+
+// A shell whose script feeds a shell, `levels` deep.
+function nestedScripts(levels: number): string {
+  let script = "echo RAN";
+  for (let level = 0; level < levels; level += 1)
+    script = `sh <<'E${level}'\n${script}\nE${level}`;
+  return script;
+}
+
 // Heredocs at `size` whose bodies nest arithmetic substitutions 320 deep.
 function nestedArithmeticBodies(size: number): string {
   const unit = `cat <<E\n${"$((".repeat(320)}1${"))".repeat(320)}\nE\n`;
@@ -269,6 +350,7 @@ describe("stress and adversarial robustness", () => {
       "heredocs whose bodies nest quoted arithmetic at the input cap",
       quotedArithmeticBodies(131_072),
     ],
+    ...scriptFeedShapes,
     ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
     [
       "backtick-wrapped dollar-quoted escapes at the input cap",
@@ -324,6 +406,53 @@ describe("stress and adversarial robustness", () => {
     "parses heredocs whose bodies nest quoted arithmetic %s in linear time",
     (_, size) => {
       const command = quotedArithmeticBodies(size);
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    [
+      "sh <<<x;",
+      "cat <<A | sh\nx\nA\n",
+      "cat <<A|sh\nx\nA\n",
+      "ssh h <<<x;",
+      "sh <<'E'\necho RAN\nE\n",
+    ].flatMap((unit) => [
+      [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
+      [
+        `${JSON.stringify(unit)} at eight times the input cap`,
+        unit,
+        8 * 131_072,
+      ] as const,
+    ]),
+  )(
+    "parses script feeds of %s in linear time",
+    (_, unit, size) => {
+      const command = unit.repeat(Math.floor(size / unit.length));
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    (["<<A", "<<<x"] as const).flatMap((stdin) => [
+      [
+        `${stdin} and 16,000 redirections at the input cap`,
+        inheritedRedirections(stdin, 4_000, 16_000),
+      ],
+      [
+        `${stdin} and 16,000 redirections at eight times the input cap`,
+        inheritedRedirections(stdin, 4_000, 16_000).repeat(8),
+      ],
+    ]),
+  )(
+    "parses 4,000 shells in a command string inheriting %s in linear time",
+    (_, command) => {
       const started = Date.now();
       parseCommand(command);
       expect(Date.now() - started).toBeLessThan(1_000);
