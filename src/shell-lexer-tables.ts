@@ -184,6 +184,24 @@ export const SHELL_BINARIES = new Set([
 ]);
 export const SU_BINARIES = new Set(["su", "runuser", "super"]);
 
+/** The shells whose stdin script is judged: `SHELL_BINARIES` but `fish`,
+ *  whose options are its own. */
+export const STDIN_SCRIPT_SHELLS: ReadonlySet<string> = new Set(
+  [...SHELL_BINARIES].filter((name) => name !== "fish"),
+);
+
+/** Long options of those shells that take the next word as their value. */
+export const SHELL_LONG_VALUE_OPTIONS: ReadonlySet<string> = new Set([
+  "--rcfile",
+  "--init-file",
+]);
+
+/** Long options after which a shell runs nothing. */
+export const SHELL_NO_RUN_LONG_OPTIONS: ReadonlySet<string> = new Set([
+  "--version",
+  "--help",
+]);
+
 export const SHELL_KEYWORDS = new Set([
   "{",
   "}",

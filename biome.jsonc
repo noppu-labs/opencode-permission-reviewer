@@ -79,6 +79,11 @@
       ],
       "formatter": { "lineWidth": 280 }
     },
+    // The same for the script-feed rows, whose widest row is 139 characters.
+    {
+      "includes": ["tests/fixtures/shell-script-feed-rows.json"],
+      "formatter": { "lineWidth": 150 }
+    },
     // Test directories only: see docs/DEVELOPMENT.md, "Test files".
     {
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],

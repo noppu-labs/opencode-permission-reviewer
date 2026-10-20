@@ -33,11 +33,14 @@ import { peelWatch } from "./watch-command.ts";
  *  model reviewer's job, keeping unbounded input from exhausting the stack. */
 const MAX_WALK_DEPTH = 32;
 
-/** Where every level of one walk collects its effective commands, and the
- *  redirections each level's segment carries itself. */
+/** Where every level of one walk collects its effective commands, the
+ *  redirections each level's segment carries itself, and the redirections of
+ *  each `ssh` that has no remote command: it yields no effective command,
+ *  and the login shell on the far side reads its stdin. */
 export interface WalkSink extends EffectiveCommandsAnalysis {
   budget: AnalysisBudget;
   segmentRedirections: ShellRedirection[];
+  bareSsh: ShellRedirection[][];
 }
 
 /** One level of the walk: the redirections its commands carry, inherited
@@ -112,7 +115,8 @@ function peelCommand(
 ): void {
   if (reanalyzeIfPresent(wrapperCommandString(words, i, base), level)) return;
   if (base === "ssh") {
-    reanalyzeIfPresent(sshRemoteCommand(words, i), level);
+    if (!reanalyzeIfPresent(sshRemoteCommand(words, i), level))
+      level.sink.bareSsh.push(level.redirections);
     return;
   }
   const tail = operandTailIndex(words, i, base);

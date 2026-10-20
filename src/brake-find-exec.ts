@@ -60,6 +60,7 @@ export function joinExecCommands(runs: readonly ExecCommands[]): ExecCommands {
     commands: runs.flatMap((run) => run.commands),
     redirections: runs.flatMap((run) => run.redirections),
     segmentRedirections: runs.flatMap((run) => run.segmentRedirections),
+    bareSsh: runs.flatMap((run) => run.bareSsh),
     truncated: runs.some((run) => run.truncated),
   };
 }
@@ -83,7 +84,13 @@ function chargeArgv(
 }
 
 function noCommands(truncated: boolean): ExecCommands {
-  return { commands: [], redirections: [], segmentRedirections: [], truncated };
+  return {
+    commands: [],
+    redirections: [],
+    segmentRedirections: [],
+    bareSsh: [],
+    truncated,
+  };
 }
 
 /** An `rm` that find runs is destructive when it is recursive: find hands it
