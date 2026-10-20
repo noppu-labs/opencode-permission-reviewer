@@ -1,6 +1,6 @@
 // Lexes the command a substitution runs into segments of its own, for the scan of the word that holds it.
 
-import { keepBodyCommands } from "./capability/heredoc-body-commands.ts";
+import { keepBodyCommands } from "./capability/heredoc-body-collector.ts";
 import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import {
   appendValue,

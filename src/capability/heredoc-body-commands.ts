@@ -30,28 +30,6 @@ export interface BodyCommands {
   feeds?: BodyCommands;
 }
 
-/** Adds commands to `into`, with whether their bodies were unresolved. A
- *  collector that is not there is a reading that keeps none. */
-export function keepBodyCommands(
-  into: BodyCommands | undefined,
-  commands: string[],
-  unresolved: boolean,
-): void {
-  if (into === undefined || (commands.length === 0 && !unresolved)) return;
-  for (const command of commands) into.commands.push(command);
-  into.unresolved ||= unresolved;
-}
-
-/** Adds the commands of one unquoted body to `into`. */
-export function addBodyCommands(
-  into: BodyCommands,
-  body: string,
-  tabStripped: boolean,
-): void {
-  const found = heredocBodyCommands(body, tabStripped);
-  keepBodyCommands(into, found.commands, found.unresolved);
-}
-
 /** Bodies the scanner is inside, across the calls that recurse into each
  *  other. */
 let depth = 0;

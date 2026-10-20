@@ -53,7 +53,7 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "bba58769165bb1f56654f33b9b939ce535cffc3c",
+  "src/emergency-brake.ts": "fa0b288f9b29a4a53fff7846225b961e0f62cba5",
   "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
   "src/brake-heredoc-texts.ts": "2b9b769c197731583803857cd5a5aa98a835e69d",
   "src/brake-readings.ts": "6b61c782994334c139b9a450cf02dc3f029d0610",
@@ -109,7 +109,7 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-text.ts": "97160652d1fe23dc1b88f721563f5bc122bfaa1f",
   "src/shell-substitution-frames.ts":
     "821a5ebd99243275446315a17ea58b1e38125537",
-  "src/shell-substitution-lex.ts": "285f476841d742ad3fdfb57c90d68ec22dbd1a6f",
+  "src/shell-substitution-lex.ts": "1edfec322835af950a8d784a9c2a48ebd32e53c6",
   "src/shell-substitution-heredoc.ts":
     "f8c477a063ef0377579590164f3b5d2036ab0af7",
   "src/shell-substitution-pairs.ts": "0680bc2448e940ae0660dce3640bfde59461322b",
@@ -168,7 +168,7 @@ export const PINNED_BLOBS = {
   "src/capability/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/capability/heredoc-bodies.ts":
-    "bd89692fe06f53b91a121a499ac912acd851ff52",
+    "0710879e125adf446ff7f9874a91f8b520accaeb",
   "src/capability/heredoc-body-records.ts":
     "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
   "src/capability/heredoc-frame-bounds.ts":
@@ -183,7 +183,7 @@ export const PINNED_BLOBS = {
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
   "src/capability/command-walk.ts": "7bf907e9dba9e53f8fbaa4a25e5dab238938ef3f",
   "src/capability/heredoc-body-commands.ts":
-    "63ba5e9b1d2c1e937bb611ff674910c6ea2d727b",
+    "5a3c8e072cd66c3025914e86a1229c7ce68098d0",
   "src/capability/heredoc-sanitized.ts":
     "ffc33dd404eadd7200a0582ef36f7cb5c8b9e7eb",
   "src/capability/heredoc-body-reading.ts":
@@ -198,7 +198,7 @@ export const PINNED_BLOBS = {
     "4ab2e937255ad8398eb6dbfa71ebe5d690c49b4c",
   "src/brake-find-walk.ts": "0422241bc9bae5a5540a5e9b277293fe1e8425ef",
   "src/capability/heredoc-string-bodies.ts":
-    "a0407387c1f45a4d00aee9d80d16f3c00fa43b83",
+    "e436d6566237ded3188250020a7dc8c22512e6a4",
   "src/command-segments.ts": "aab403c9c02eca17ccade79727035a9c5d3cddec",
   "src/shell-substitution-arithmetic.ts":
     "c999a306376d875de0baac214c79edcd844602de",
@@ -212,10 +212,12 @@ export const PINNED_BLOBS = {
   "src/shell-stdin-source.ts": "1497d79e62583dcf8f69ad300970ea4aebefd3dc",
   "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
   "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",
-  "src/brake-analyzed-segments.ts": "02a5eda0b11c6c9c5b88904986df548a5c2fd607",
+  "src/brake-analyzed-segments.ts": "0d2bae9dd5b06ff14188a7b293a88ea1cd0cc01d",
   "src/brake-script-feeds.ts": "bdc57a64b5950296b3c0b784e08e206c0ad5c39c",
   "src/capability/script-feed-analysis.ts":
     "a12b1dd82810897a65c790f021d385104ae43785",
   "src/capability/walk-feeds.ts": "9c800b528471f96708b0afce41a9c66655069510",
   "src/interpreter-stdin.ts": "b25a6c727a5841b1555949599375b01894b51f7b",
+  "src/capability/heredoc-body-collector.ts":
+    "1597ee64e84beb9d66e90a60498ec85512be5f45",
 };

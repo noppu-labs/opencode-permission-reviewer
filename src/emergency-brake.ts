@@ -8,10 +8,8 @@ import {
   ANALYSIS_LIMIT_REASON,
   brakeReadingsReason,
 } from "./brake-readings.ts";
-import {
-  type BodyCommands,
-  keepBodyCommands,
-} from "./capability/heredoc-body-commands.ts";
+import { keepBodyCommands } from "./capability/heredoc-body-collector.ts";
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
 import { withScanBudget } from "./capability/heredoc-scan-budget.ts";
 import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import { reviewedCommand } from "./reviewed-command.ts";

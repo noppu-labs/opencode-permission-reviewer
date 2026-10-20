@@ -5,10 +5,8 @@ import type { FindCommand } from "./brake-find-root.ts";
 import { analyzeFinds } from "./brake-find-walk.ts";
 import { keepFeedsUnresolved, keepScriptFeeds } from "./brake-script-feeds.ts";
 import type { Redirection } from "./capability/capability-types.ts";
-import {
-  type BodyCommands,
-  keepBodyCommands,
-} from "./capability/heredoc-body-commands.ts";
+import { keepBodyCommands } from "./capability/heredoc-body-collector.ts";
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
 import {
   keepBodyScripts,
   NO_SCRIPTS,

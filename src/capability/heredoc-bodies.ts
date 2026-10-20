@@ -2,7 +2,8 @@
 
 import { elementAt } from "../element-at.ts";
 import type { HeredocRecord } from "./capability-types.ts";
-import { addBodyCommands, type BodyCommands } from "./heredoc-body-commands.ts";
+import { addBodyCommands } from "./heredoc-body-collector.ts";
+import type { BodyCommands } from "./heredoc-body-commands.ts";
 import {
   type BodyRecord,
   bodyRecord,

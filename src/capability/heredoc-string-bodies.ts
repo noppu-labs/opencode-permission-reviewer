@@ -1,9 +1,7 @@
 // Keeping what the heredoc bodies of a command string run and are read as.
 
-import {
-  type BodyCommands,
-  keepBodyCommands,
-} from "./heredoc-body-commands.ts";
+import { keepBodyCommands } from "./heredoc-body-collector.ts";
+import type { BodyCommands } from "./heredoc-body-commands.ts";
 import { sanitizedText } from "./heredoc-sanitized.ts";
 import { feedsOf, keepBodyScripts } from "./heredoc-scripts.ts";
 
