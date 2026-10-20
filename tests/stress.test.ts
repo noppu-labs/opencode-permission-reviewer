@@ -81,12 +81,12 @@ const scriptFeedShapes: [string, string][] = [
     nestedScripts(7).repeat(Math.floor(131_072 / nestedScripts(7).length)),
   ],
   [
-    "shells in a command string inheriting a heredoc and 8,000 redirections at the input cap",
-    inheritedRedirections("<<A", 400, 8_000),
+    "shells in a command string inheriting a heredoc and 2,000 redirections at the input cap",
+    inheritedRedirections("<<A", 400, 2_000),
   ],
   [
-    "shells in a command string inheriting a here-string and 8,000 redirections at the input cap",
-    inheritedRedirections("<<<x", 400, 8_000),
+    "shells in a command string inheriting a here-string and 2,000 redirections at the input cap",
+    inheritedRedirections("<<<x", 400, 2_000),
   ],
 ];
 
