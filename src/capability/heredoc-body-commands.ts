@@ -25,6 +25,9 @@ export interface BodyCommands {
    *  placeholder, each distinct reading apart (heredoc-scripts.ts). Set by the
    *  first one recorded. */
   scripts?: Map<string, string[]>;
+  /** The scripts that shells and ssh read from a heredoc or here-string, and
+   *  whether one of them is not known. Set by the first one found. */
+  feeds?: BodyCommands;
 }
 
 /** Adds commands to `into`, with whether their bodies were unresolved. A

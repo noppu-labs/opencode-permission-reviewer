@@ -49,6 +49,8 @@ export interface ScriptFeedResult {
 export interface StdinScripts {
   scripts: string[];
   unresolved: boolean;
+  /** The stdin is a heredoc or here-string, whatever its text. */
+  fed: boolean;
 }
 
 /** The scripts that run, one feed per distinct reading. */
@@ -118,9 +120,12 @@ function readings(
   scripts: ReadonlyMap<string, readonly string[]>,
 ): StdinScripts {
   if (source.kind === "text")
-    return { scripts: [source.text], unresolved: false };
-  if (source.kind !== "script") return { scripts: [], unresolved: false };
+    return { scripts: [source.text], unresolved: false, fed: true };
+  if (source.kind === "unrecorded")
+    return { scripts: [], unresolved: false, fed: true };
+  if (source.kind !== "script")
+    return { scripts: [], unresolved: false, fed: false };
   const held = scripts.get(source.placeholder);
-  if (held === undefined) return { scripts: [], unresolved: true };
-  return { scripts: [...held], unresolved: false };
+  if (held === undefined) return { scripts: [], unresolved: true, fed: true };
+  return { scripts: [...held], unresolved: false, fed: true };
 }

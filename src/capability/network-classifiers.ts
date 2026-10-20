@@ -35,12 +35,21 @@ export function classifySshTool(
   facts.remoteEnabled = true;
   facts.childProcesses = true;
   // ssh with a remote command that mutates → remote mutation hint.
+  classifyRemoteCommand(cmd, facts);
+  claimClass(facts, "remote-operation");
+}
+
+/** A command that runs on the far side of an ssh: one that mutates is a
+ *  remote mutation hint. */
+export function classifyRemoteCommand(
+  cmd: ShellToken[],
+  facts: CapabilityFacts,
+): void {
   if (
     cmd.some((t) => GIT_MUTATION_SUBCOMMANDS.has(t.value) || t.value === "rm")
   ) {
     facts.remoteMutation = true;
   }
-  claimClass(facts, "remote-operation");
 }
 
 export function classifyGit(

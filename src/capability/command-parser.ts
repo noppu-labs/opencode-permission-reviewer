@@ -4,6 +4,7 @@ import type { ParsedCommand } from "./capability-types.ts";
 import { newWalked, walkBodyCommands, walkSegments } from "./command-walk.ts";
 import { extractHeredocs } from "./heredoc-extractor.ts";
 import { withScanBudget } from "./heredoc-scan-budget.ts";
+import { mainFeeds } from "./walk-feeds.ts";
 
 /*
  * Reusable command parser.
@@ -45,11 +46,18 @@ function parse(rawCommand: string): ParsedCommand {
   // The commands the heredoc bodies run, the command strings' among them,
   // come after the command's own, and leave the dynamic flags as the command
   // alone sets them.
+  const feeds = mainFeeds(
+    sanitizedCommand,
+    walked,
+    extraction.scripts,
+    lex.scripts,
+  );
   walkBodyCommands(
     [...extraction.bodyCommands, ...lex.bodyCommands],
     extraction.bodyUnresolved || lex.bodyUnresolved,
     budget,
     walked,
+    feeds,
   );
 
   return {
@@ -60,6 +68,8 @@ function parse(rawCommand: string): ParsedCommand {
     heredocs,
     hasDynamicConstructs: dynamic,
     analysisTruncated: walked.truncated,
+    ...(walked.remote.length > 0 && { remoteCommands: walked.remote }),
+    ...(walked.stdinCode && { stdinCode: true }),
   };
 }
 

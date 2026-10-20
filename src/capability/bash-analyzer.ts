@@ -15,6 +15,7 @@ import type {
 } from "./capability-types.ts";
 import { classifyEffectiveCommand } from "./effective-command-classifiers.ts";
 import type { CommandContext } from "./execution-classifiers.ts";
+import { classifyRemoteCommand } from "./network-classifiers.ts";
 import { classifySegmentHeads } from "./segment-heads.ts";
 import { classifyCredentialReads } from "./sensitive-path-reads.ts";
 
@@ -54,11 +55,24 @@ export function analyzeCapability(
   classifySegmentHeads(parsed.segments, facts);
   for (const cmd of parsed.effective)
     classifyEffectiveCommand(cmd, facts, context);
+  classifyScriptFeeds(parsed, facts);
   classifyCredentialReads(parsed, facts);
   recordRedirectionWrites(parsed.redirections, facts, context);
   recordHeredocWrites(parsed.heredocs, facts, context);
   resolveActionClass(facts);
   return assessmentFrom(parsed, facts);
+}
+
+/** The commands that an ssh with no remote command runs on its far side are
+ *  judged as an ssh with a remote command is, and an interpreter that runs
+ *  code from a heredoc or here-string creates ad-hoc code. */
+function classifyScriptFeeds(
+  parsed: ParsedCommand,
+  facts: CapabilityFacts,
+): void {
+  for (const cmd of parsed.remoteCommands ?? [])
+    classifyRemoteCommand(cmd, facts);
+  if (parsed.stdinCode === true) facts.createsAdHocCode = true;
 }
 
 function recordRedirectionWrites(

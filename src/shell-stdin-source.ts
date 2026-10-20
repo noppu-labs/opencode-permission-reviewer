@@ -15,11 +15,14 @@ export type StdinSource =
   | { kind: "text"; text: string }
   /** What the command inherits, a pipe when one feeds it. */
   | { kind: "pipe" }
-  /** A file, a closed descriptor, or a heredoc whose body is not recorded. */
+  /** A heredoc that has no placeholder: one in text that was lexed as written. */
+  | { kind: "unrecorded" }
+  /** A file or a closed descriptor. */
   | { kind: "other" };
 
 const PIPE: StdinSource = { kind: "pipe" };
 const OTHER: StdinSource = { kind: "other" };
+const UNRECORDED: StdinSource = { kind: "unrecorded" };
 
 /** The source of the command's stdin. The redirections apply in order: the
  *  last one on descriptor 0 wins, and `<&N` copies what descriptor N holds
@@ -53,7 +56,7 @@ function sourceOf(
 
 function heredocSource(redirection: ScriptRedirection): StdinSource {
   return redirection.placeholder === undefined
-    ? OTHER
+    ? UNRECORDED
     : { kind: "script", placeholder: redirection.placeholder };
 }
 

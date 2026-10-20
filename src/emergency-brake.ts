@@ -87,17 +87,29 @@ function commandReason(
   budget: BodyBudget,
 ): string | undefined {
   const bodies: BodyCommands = { commands: [], unresolved: false };
-  const { extraction } = heredocTexts(command);
+  const { extraction, allOperatorsScripts } = heredocTexts(command);
   keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
   keepBodyScripts(bodies, extraction.scripts);
+  keepBodyScripts(bodies, allOperatorsScripts);
   const reason = readingsReason(command, bodies);
   if (reason !== undefined) return reason;
-  return bodyCommandsReason(
-    bodies.commands,
-    bodies.unresolved,
-    depth + 1,
-    (body, level) => commandReason(body, level, budget),
-    budget,
+  const judge = (body: string, level: number): string | undefined =>
+    commandReason(body, level, budget);
+  return (
+    bodyCommandsReason(
+      bodies.commands,
+      bodies.unresolved,
+      depth + 1,
+      judge,
+      budget,
+    ) ??
+    bodyCommandsReason(
+      bodies.feeds?.commands ?? [],
+      bodies.feeds?.unresolved ?? false,
+      depth + 1,
+      judge,
+      budget,
+    )
   );
 }
 

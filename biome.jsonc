@@ -84,6 +84,11 @@
       "includes": ["tests/fixtures/shell-script-feed-rows.json"],
       "formatter": { "lineWidth": 150 }
     },
+    // The same for the script-judgement rows, whose widest row is 250 characters.
+    {
+      "includes": ["tests/fixtures/heredoc-script-judgement-rows.json"],
+      "formatter": { "lineWidth": 260 }
+    },
     // Test directories only: see docs/DEVELOPMENT.md, "Test files".
     {
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],

@@ -53,9 +53,9 @@ export const PINNED_BLOBS = {
   "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
   "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
   "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "ab68bea7a4a244ea14c1a6bde485aa15c095d5d7",
+  "src/emergency-brake.ts": "bba58769165bb1f56654f33b9b939ce535cffc3c",
   "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
-  "src/brake-heredoc-texts.ts": "912e96820c37ee43c4221ef5a1ada0e6db5b2f66",
+  "src/brake-heredoc-texts.ts": "2b9b769c197731583803857cd5a5aa98a835e69d",
   "src/brake-readings.ts": "6b61c782994334c139b9a450cf02dc3f029d0610",
   "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/reviewed-command.ts": "d7f4893e9f590680cfc10d2e4b9ffc1743fb17b7",
@@ -76,8 +76,8 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "6ee04a5a05687dd004973a85858b89f60b16bfa0",
-  "src/capability/bash-analyzer.ts": "74fc89978ba4f023c9238d662933c4d2a987edea",
+    "2aa9f62b91dd659074b2e37b704df60329e469b8",
+  "src/capability/bash-analyzer.ts": "ab5599857930aae2d1ea7517e3d498f52b00cd7a",
   "src/capability/bash-command-tables.ts":
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
@@ -149,7 +149,7 @@ export const PINNED_BLOBS = {
   "src/capability/file-effect-classifiers.ts":
     "b03fa54cda5b0c69752aad779d8e6123bbd3f320",
   "src/capability/network-classifiers.ts":
-    "b80906f712349b3df832ea319806ac470b733215",
+    "a01e0f81f18ecb21f0cff292556f0c9af84c043a",
   "src/capability/process-classifiers.ts":
     "b578ec0a5ff7535fab34e1fc2a1ca74af454b699",
   "src/capability/mutation-operands.ts":
@@ -181,9 +181,9 @@ export const PINNED_BLOBS = {
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
   "src/capability/heredoc-operator-scan.ts":
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
-  "src/capability/command-walk.ts": "728cdbe623e1f38bd7ab8f9784641cd2535b861a",
+  "src/capability/command-walk.ts": "7bf907e9dba9e53f8fbaa4a25e5dab238938ef3f",
   "src/capability/heredoc-body-commands.ts":
-    "efeacc0f771a80c9d7cf2738c282a3979166ce4a",
+    "63ba5e9b1d2c1e937bb611ff674910c6ea2d727b",
   "src/capability/heredoc-sanitized.ts":
     "ffc33dd404eadd7200a0582ef36f7cb5c8b9e7eb",
   "src/capability/heredoc-body-reading.ts":
@@ -198,19 +198,23 @@ export const PINNED_BLOBS = {
     "4ab2e937255ad8398eb6dbfa71ebe5d690c49b4c",
   "src/brake-find-walk.ts": "0422241bc9bae5a5540a5e9b277293fe1e8425ef",
   "src/capability/heredoc-string-bodies.ts":
-    "5b53db9a7f1d1663870ca37d49f91e5b87ab7da3",
+    "a0407387c1f45a4d00aee9d80d16f3c00fa43b83",
   "src/command-segments.ts": "aab403c9c02eca17ccade79727035a9c5d3cddec",
   "src/shell-substitution-arithmetic.ts":
     "c999a306376d875de0baac214c79edcd844602de",
   "src/shell-substitution-expansion.ts":
     "64fdafee4a5034fd8d24e1b5e661e27cfd786974",
   "src/capability/heredoc-scripts.ts":
-    "5997c175abc1d01360803a974da4227716d36bd8",
-  "src/shell-script-feeds.ts": "30e89799f322ec4fee1a7635965fd270d5ee26c4",
+    "c22ee74eb53dea9b804c09cac6aba6ba88400bdb",
+  "src/shell-script-feeds.ts": "048135051a9cb125eba88fafa298cf99f2102bc9",
   "src/shell-script-feed-input.ts": "b9edd80a1df71c66cd0e7c9599e374635261102c",
   "src/shell-script-readers.ts": "8f8223d64ee0ffb2d8b5ff936fa104b0d51d97ba",
-  "src/shell-stdin-source.ts": "1c003b31ae9ebc6f5d996ebed403860b9a643dd5",
+  "src/shell-stdin-source.ts": "1497d79e62583dcf8f69ad300970ea4aebefd3dc",
   "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
   "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",
-  "src/brake-analyzed-segments.ts": "6a79c259ba5e42779c6c1b178c245aacbeede755",
+  "src/brake-analyzed-segments.ts": "02a5eda0b11c6c9c5b88904986df548a5c2fd607",
+  "src/brake-script-feeds.ts": "bdc57a64b5950296b3c0b784e08e206c0ad5c39c",
+  "src/capability/script-feed-analysis.ts":
+    "eab7a0866dc6bbfa19e70cea1de083666e2bc8d4",
+  "src/capability/walk-feeds.ts": "30c2cbb21ab86142dabd1cf5c4e793b2563ac7c2",
 };

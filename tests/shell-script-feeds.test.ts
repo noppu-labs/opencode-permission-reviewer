@@ -228,7 +228,7 @@ describe("the stdin source of a redirection list", () => {
   });
 
   test("a heredoc without a placeholder is not a script", () => {
-    expect(stdinSource([re("<<", "A")])).toEqual({ kind: "other" });
+    expect(stdinSource([re("<<", "A")])).toEqual({ kind: "unrecorded" });
   });
 
   test("a heredoc carries its placeholder and a here-string its word", () => {

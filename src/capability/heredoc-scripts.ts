@@ -71,6 +71,14 @@ export function keepBodyScripts(
   }
 }
 
+/** The scripts that shells and ssh read from a heredoc or here-string, and the
+ *  command strings that hold a heredoc, found while `into` was filled: the
+ *  checks that judge them run after those of the bodies' commands. */
+export function feedsOf(into: BodyCommands): BodyCommands {
+  into.feeds ??= { commands: [], unresolved: false };
+  return into.feeds;
+}
+
 function noteNoScript(into: BodyCommands, placeholder: string): void {
   into.scripts ??= new Map();
   if (!into.scripts.has(placeholder)) into.scripts.set(placeholder, []);

@@ -11,6 +11,8 @@ import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
 export interface HeredocTexts {
   extraction: HeredocExtraction;
   allOperators: string;
+  /** The text each body of that reading gives the command that reads it. */
+  allOperatorsScripts: HeredocExtraction["scripts"];
   legacy: string;
 }
 
@@ -20,10 +22,11 @@ let last: { command: string; texts: HeredocTexts } | undefined;
  *  each quote reading in turn, so the last command's readings are kept. */
 export function heredocTexts(command: string): HeredocTexts {
   if (last?.command === command) return last.texts;
+  const all = extractHeredocs(command, { readAllOperators: true });
   const texts: HeredocTexts = {
     extraction: extractHeredocs(command),
-    allOperators: extractHeredocs(command, { readAllOperators: true })
-      .sanitizedCommand,
+    allOperators: all.sanitizedCommand,
+    allOperatorsScripts: all.scripts,
     legacy: legacySanitizedCommand(command),
   };
   last = { command, texts };
