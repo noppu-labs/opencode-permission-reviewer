@@ -15,8 +15,10 @@ interface OptionScan {
   stdinFlag: boolean;
   /** `-c`: the first operand is a command string. */
   command: boolean;
-  /** `-n`, `--version`, `--help`: nothing runs. */
+  /** `--version`, `--help`: nothing runs. */
   noRun: boolean;
+  /** `-n`, not turned off again after: the script is read and not run. */
+  noExec: boolean;
   /** A word names a script file. */
   operand: boolean;
 }
@@ -34,7 +36,7 @@ export function shellReadsStdin(
   const head = words[from]?.value ?? "";
   if (!STDIN_SCRIPT_SHELLS.has(shellBasename(head))) return false;
   const scan = scanOptions(words, from + 1);
-  if (scan.noRun) return false;
+  if (scan.noRun || scan.noExec) return false;
   return scan.stdinFlag || (!scan.command && !scan.operand);
 }
 
@@ -50,6 +52,7 @@ function scanOptions(words: readonly ShellToken[], from: number): OptionScan {
     stdinFlag: false,
     command: false,
     noRun: false,
+    noExec: false,
     operand: false,
   };
   let skip = 0;
@@ -58,29 +61,29 @@ function scanOptions(words: readonly ShellToken[], from: number): OptionScan {
       skip -= 1;
       continue;
     }
-    const word = words[index]?.value ?? "";
-    const taken = scanWord(word, index + 1 < words.length, scan);
+    const taken = scanWord(words, index, scan);
     if (taken === undefined) break;
     skip = taken;
   }
   return scan;
 }
 
-/** Notes one word. Returns the words it takes after itself, or `undefined`
- *  when it ends the options: `-` and `--` make a following word an operand,
- *  and any other plain word is one. */
+/** Notes the word at `index`. Returns the words it takes after itself, or
+ *  `undefined` when it ends the options: `-` and `--` make a following word
+ *  an operand, and any other plain word is one. */
 function scanWord(
-  word: string,
-  more: boolean,
+  words: readonly ShellToken[],
+  index: number,
   scan: OptionScan,
 ): number | undefined {
+  const word = words[index]?.value ?? "";
   if (word === "-" || word === "--") {
-    scan.operand = more;
+    scan.operand = index + 1 < words.length;
     return undefined;
   }
   if (word.startsWith("--")) return longOption(word, scan);
   if (word.length > 1 && (word.startsWith("-") || word.startsWith("+")))
-    return optionCluster(word, scan);
+    return optionCluster(words, index, scan);
   scan.operand = true;
   return undefined;
 }
@@ -91,17 +94,32 @@ function longOption(word: string, scan: OptionScan): number {
   return SHELL_LONG_VALUE_OPTIONS.has(word) ? 1 : 0;
 }
 
-/** Notes the letters of a `-abc` or `+abc` cluster and returns the words its
- *  value letters (`o`, `O`) take after it. A `+` cluster only unsets. */
-function optionCluster(word: string, scan: OptionScan): number {
+/** Notes the letters of the `-abc` or `+abc` cluster at `index` and returns
+ *  the words its value letters (`o`, `O`) take after it. `-n` turns reading
+ *  without running on, and `+n` and `+o noexec` turn it off again: the last
+ *  one given wins. `-o noexec` is left out, so it still counts as running. A
+ *  `+` cluster only unsets. */
+function optionCluster(
+  words: readonly ShellToken[],
+  index: number,
+  scan: OptionScan,
+): number {
+  const word = words[index]?.value ?? "";
   const sets = word.startsWith("-");
   let values = 0;
   for (const letter of word.slice(1)) {
-    if (letter === "o" || letter === "O") values += 1;
-    else if (!sets) continue;
-    else if (letter === "s") scan.stdinFlag = true;
-    else if (letter === "c") scan.command = true;
-    else if (letter === "n") scan.noRun = true;
+    if (letter === "o" || letter === "O") {
+      values += 1;
+      if (!sets && letter === "o" && words[index + values]?.value === "noexec")
+        scan.noExec = false;
+    } else noteLetter(letter, sets, scan);
   }
   return values;
+}
+
+function noteLetter(letter: string, sets: boolean, scan: OptionScan): void {
+  if (letter === "n") scan.noExec = sets;
+  else if (!sets) return;
+  else if (letter === "s") scan.stdinFlag = true;
+  else if (letter === "c") scan.command = true;
 }

@@ -208,7 +208,7 @@ export const PINNED_BLOBS = {
     "996dfb53b998a929b242a80d33b12fb5585dbe57",
   "src/shell-script-feeds.ts": "c159e9360c355c42a3e6ea4226036a21029bab93",
   "src/shell-script-feed-input.ts": "828330ad112a108658a7eee58112015dfbea37a8",
-  "src/shell-script-readers.ts": "8f8223d64ee0ffb2d8b5ff936fa104b0d51d97ba",
+  "src/shell-script-readers.ts": "6be003b106f5104fe88d8f0c8feb9856c7edb4c8",
   "src/shell-stdin-source.ts": "d9c14f3f836cd9328afb4a8551477b2f4ff137f2",
   "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
   "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",

@@ -275,5 +275,17 @@
   { "id": "f.274", "command": "cat <<<'s' |\nsh", "feeds": ["s"], "remote": [] },
   { "id": "f.275", "command": "cat <<'E' |\nb\nE\nssh h", "feeds": [], "remote": ["b\n"] },
   { "id": "f.276", "command": "cat <<'E' ;\nb\nE\nsh", "feeds": [], "remote": [] },
-  { "id": "f.277", "command": "cat <<'E'|\nb\nE\nsh", "feeds": ["b\n"], "remote": [] }
+  { "id": "f.277", "command": "cat <<'E'|\nb\nE\nsh", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.278", "command": "sh -n +n <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.279", "command": "sh +n -n <<'E'\nb\nE\n", "feeds": [], "remote": [] },
+  { "id": "f.280", "command": "sh -n +n -n <<'E'\nb\nE\n", "feeds": [], "remote": [] },
+  { "id": "f.281", "command": "bash -en +n <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.282", "command": "sh -n +o noexec <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.283", "command": "sh -o noexec <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.284", "command": "sh -n +x <<'E'\nb\nE\n", "feeds": [], "remote": [] },
+  { "id": "f.285", "command": "sh -n -s +n <<<'b'", "feeds": ["b"], "remote": [] },
+  { "id": "f.286", "command": "sh --version +n <<'E'\nb\nE\n", "feeds": [], "remote": [] },
+  { "id": "f.287", "command": "sh -s -c cmd -n +n <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.288", "command": "sh -n +nn <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.289", "command": "sh -n +n -- a <<'E'\nb\nE\n", "feeds": [], "remote": [] }
 ]
