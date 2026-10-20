@@ -87,8 +87,11 @@
     { "id": "h.14", "word": "ssh://b@[::1]", "user": "b", "host": "::1" },
     { "id": "h.15", "word": "ssh://", "host": "ssh://" },
     { "id": "h.16", "word": "ssh://@h", "host": "ssh://@h" },
-    { "id": "h.17", "word": "ssh://b%zz@h", "user": "b%zz", "host": "h" },
-    { "id": "h.18", "word": "ssh://h:x", "host": "h" }
+    { "id": "h.17", "word": "ssh://b%zz@h", "host": "ssh://b%zz@h" },
+    { "id": "h.18", "word": "ssh://h:x", "host": "h" },
+    { "id": "h.19", "word": "ssh://b%00@h", "host": "ssh://b%00@h" },
+    { "id": "h.20", "word": "ssh://b%4@h", "host": "ssh://b%4@h" },
+    { "id": "h.21", "word": "ssh://b%ff@h", "user": "b\ufffd", "host": "h" }
   ],
   "commands": [
     { "id": "c.01", "form": "-S before the host", "command": "ssh -S c h rm x", "commands": [["rm", "x"]] },

@@ -2,6 +2,8 @@
 
 import { basename } from "node:path";
 import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
+import { sshDestinationHost } from "./ssh-destination.ts";
+import { sshLoginUser } from "./ssh-login-user.ts";
 import { recordSshOptions, type SshOptions } from "./ssh-option-values.ts";
 import {
   sshDestinationIndex,
@@ -28,9 +30,8 @@ export function parseSsh(
 ): SshInvocation | undefined {
   const { destination, index, options } = scanSshArguments(tokens, sshIndex);
   if (!destination) return;
-  const at = destination.lastIndexOf("@");
-  const user = at > 0 ? destination.slice(0, at) : undefined;
-  const host = at > 0 ? destination.slice(at + 1) : destination;
+  const { host } = sshDestinationHost(destination);
+  const user = sshLoginUser(tokens, sshIndex + 1);
   const { port, identityFile, strictHostKeyChecking } = options;
   return {
     destination,
@@ -54,6 +55,7 @@ function scanSshArguments(
   const destination = sshDestinationIndex(tokens, sshIndex + 1);
   const remote = sshRemoteCommandIndex(tokens, destination);
   recordSshOptions(tokens, sshIndex + 1, destination.index, options);
+  options.port ??= sshDestinationHost(tokens[destination.index] ?? "").port;
   recordSshOptions(tokens, destination.index + 1, remote, options);
   return { destination: tokens[destination.index], index: remote, options };
 }

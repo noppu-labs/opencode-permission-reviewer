@@ -5,7 +5,9 @@ import { sshValueOption } from "./ssh-value-options.ts";
 
 /** The value options scanned around the destination; a value can be missing. */
 export type SshOptions = {
-  [K in "port" | "identityFile" | "strictHostKeyChecking"]?: string | undefined;
+  [K in "port" | "identityFile" | "strictHostKeyChecking" | "user"]?:
+    | string
+    | undefined;
 };
 
 /** Records the value options in `tokens[start..end)`; a `--` closing the range is skipped. */
@@ -35,6 +37,7 @@ function consumeSshOption(
   const value = valued.attached ?? next;
   if (valued.option === "-i") options.identityFile ??= value;
   if (valued.option === "-p") options.port ??= value;
+  if (valued.option === "-l") options.user ??= value;
   if (valued.option === "-o" && value) recordConfigOption(value, options);
   return valued.attached === undefined ? 2 : 1;
 }
@@ -43,6 +46,7 @@ const CONFIG_OPTION_FIELDS: ReadonlyMap<string, keyof SshOptions> = new Map([
   ["port", "port"],
   ["identityfile", "identityFile"],
   ["stricthostkeychecking", "strictHostKeyChecking"],
+  ["user", "user"],
 ]);
 
 /** An `-o` value is an ssh_config line: a case-insensitive keyword, then

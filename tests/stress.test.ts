@@ -12,6 +12,7 @@ import { enrichGitEvidence } from "../src/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
+import { parseSsh } from "../src/ssh-command-segments.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import {
   createUiStatus,
@@ -22,6 +23,10 @@ import { ReviewUiState } from "../src/ui-state.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
+
+function repeated(unit: string[], count: number): string[] {
+  return Array.from({ length: Math.floor(count) }, () => unit).flat();
+}
 
 // Commands whose tokens are dense with quoted redirections, at the input cap.
 const quotedRedirectionShapes: [string, string][] = [
@@ -462,6 +467,60 @@ describe("stress and adversarial robustness", () => {
       const command = unit.repeat(Math.floor(size / unit.length));
       const started = Date.now();
       parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    (
+      [
+        [
+          "-l a options before the host",
+          (n: number): string[] => [
+            "ssh",
+            ...repeated(["-l", "a"], n / 5),
+            "h",
+          ],
+        ],
+        [
+          "-l a options after the host",
+          (n: number): string[] => [
+            "ssh",
+            "h",
+            ...repeated(["-l", "a"], n / 5),
+          ],
+        ],
+        [
+          "-o User=a options",
+          (n: number): string[] => [
+            "ssh",
+            ...repeated(["-o", "User=a"], n / 10),
+            "h",
+          ],
+        ],
+        [
+          "a URI user of escapes",
+          (n: number): string[] => ["ssh", `ssh://${"%41".repeat(n / 3)}@h`],
+        ],
+        [
+          "a URI user ending in a bad escape",
+          (n: number): string[] => ["ssh", `ssh://${"%41".repeat(n / 3)}%zz@h`],
+        ],
+        [
+          "a URI user of plus signs",
+          (n: number): string[] => ["ssh", `ssh://${"+".repeat(n)}@h`],
+        ],
+      ] satisfies [string, (size: number) => string[]][]
+    ).flatMap(([name, build]) => [
+      [`${name} at the input cap`, build(131_072)] as const,
+      [`${name} at eight times the input cap`, build(8 * 131_072)] as const,
+    ]),
+  )(
+    "reads the login user of ssh calls with %s in linear time",
+    (_, tokens) => {
+      const started = Date.now();
+      parseSsh(tokens, 0);
       expect(Date.now() - started).toBeLessThan(1_000);
     },
     60_000,

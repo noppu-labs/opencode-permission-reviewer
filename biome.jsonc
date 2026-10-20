@@ -94,6 +94,11 @@
       "includes": ["tests/fixtures/ssh-argument-rows.json"],
       "formatter": { "lineWidth": 220 }
     },
+    // The same for the ssh login-user rows, whose widest row is 219 characters.
+    {
+      "includes": ["tests/fixtures/ssh-login-user-rows.json"],
+      "formatter": { "lineWidth": 220 }
+    },
     // Test directories only: see docs/DEVELOPMENT.md, "Test files".
     {
       "includes": ["tests/**", "benchmarks/permission-reviewer/tests/**"],
