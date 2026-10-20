@@ -1,12 +1,10 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
-import { keepStringBodies } from "./capability/heredoc-string-bodies.ts";
 import { elementAt } from "./element-at.ts";
 import { envSplitString } from "./env-split-string.ts";
 import { operandTailIndex } from "./operand-tail-index.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
 import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
-import type { SubstitutionBudget } from "./shell-lex-state.ts";
 import {
   type AnalysisBudget,
   shellBasename as basename,
@@ -16,7 +14,6 @@ import {
   normalizeShellRedirections,
   type ShellRedirection,
 } from "./shell-redirections.ts";
-import { lexSegments } from "./shell-scanner.ts";
 import { shellReadsStdin } from "./shell-script-readers.ts";
 import type { ShellToken } from "./shell-token.ts";
 import {
@@ -26,6 +23,7 @@ import {
 } from "./shell-wrapper-options.ts";
 import { sshRemoteCommand } from "./ssh-remote-command.ts";
 import { walkLimitReached } from "./walk-limits.ts";
+import { reanalysisSegments } from "./walk-reanalysis.ts";
 import { peelWatch } from "./watch-command.ts";
 
 /** Where every level of one walk collects its effective commands, the
@@ -133,32 +131,10 @@ function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
   return true;
 }
 
-/** Re-lex a command string and walk each of its segments one level deeper.
- *  Its length is charged to the re-analysis budget first, then each
- *  substitution body as it is lexed. The commands its heredoc bodies run go
- *  to the budget's `bodies`, when it has them. */
+/** Re-lex a command string and walk each of its segments one level deeper. */
 function reanalyze(text: string, level: WalkLevel): void {
-  const { sink } = level;
-  sink.budget.remainingReanalysisChars -= text.length;
-  if (sink.budget.remainingReanalysisChars < 0) {
-    sink.truncated = true;
-    return;
-  }
-  const { bodies } = sink.budget;
-  const lexBudget: SubstitutionBudget = {
-    tokensRemaining: Number.POSITIVE_INFINITY,
-    substitutions: "lex",
-    substitutionCharsRemaining: sink.budget.remainingReanalysisChars,
-    reading: sink.budget.reading ?? "default",
-    quoting: sink.budget.quoting ?? "bash",
-  };
-  if (bodies !== undefined) lexBudget.bodies = bodies;
-  keepStringBodies(bodies, text);
-  const segments = lexSegments(text, lexBudget);
-  sink.budget.remainingReanalysisChars = lexBudget.substitutionCharsRemaining;
-  if (lexBudget.tokensRemaining <= 0) sink.truncated = true;
-  for (const sub of segments)
-    walk(sub.tokens, sink, level.redirections, level.depth + 1);
+  for (const sub of reanalysisSegments(text, level.sink) ?? [])
+    walk(sub.tokens, level.sink, level.redirections, level.depth + 1);
 }
 
 /** Walk the operand tail from `start` one level deeper, if any is left. */
