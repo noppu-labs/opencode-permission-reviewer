@@ -70,6 +70,7 @@ function parse(rawCommand: string): ParsedCommand {
     heredocs,
     hasDynamicConstructs: dynamic,
     analysisTruncated: walked.truncated,
+    heads: walked.heads,
     ...(walked.remote.length > 0 && { remoteCommands: walked.remote }),
     ...(walked.stdinCode && { stdinCode: true }),
   };

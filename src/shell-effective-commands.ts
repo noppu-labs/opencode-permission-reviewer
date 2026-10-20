@@ -15,7 +15,7 @@ import { walk } from "./effective-command-walk.ts";
 import { type AnalysisBudget, newAnalysisBudget } from "./shell-lexer.ts";
 import type { ShellRedirection } from "./shell-redirections.ts";
 import type { ShellSegment, ShellToken } from "./shell-token.ts";
-import type { WalkSink } from "./walk-sink.ts";
+import type { PeeledHead, WalkSink } from "./walk-sink.ts";
 
 /**
  * Resolve a segment into its "effective commands" — the token lists starting
@@ -53,14 +53,17 @@ export function analyzeEffectiveCommands(
 
 /** The effective-command analysis plus the redirections that the segment and
  *  every segment of its command strings carry themselves, whether or not
- *  those segments yield an effective command (`exec > file` yields none). */
+ *  those segments yield an effective command (`exec > file` yields none).
+ *  The walk adds every command it resolves to `heads`, when given. */
 export type SegmentRedirectionsAnalysis = Omit<WalkSink, "budget">;
 
 export function analyzeSegmentRedirections(
   segment: ShellSegment,
   budget?: AnalysisBudget,
+  heads?: PeeledHead[],
 ): SegmentRedirectionsAnalysis {
   const sink: WalkSink = {
+    ...(heads !== undefined && { heads }),
     commands: [],
     redirections: [],
     truncated: false,

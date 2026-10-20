@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
 import { analyzeBashCommand } from "../src/context/command-evidence.ts";
@@ -557,6 +558,33 @@ describe("stress and adversarial robustness", () => {
         directory: "/tmp",
         worktree: "/tmp",
       });
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    (
+      [
+        ["nohup in an ssh remote command", "ssh h '", "nohup ", "rm'"],
+        ["sudo in a command string", "sh -c '", "sudo ", "id'"],
+        ["commands in an ssh remote command", "ssh h '", "echo a; ", "'"],
+      ] as const
+    ).flatMap(([name, head, unit, tail]) =>
+      [131_000, 8 * 131_072].map(
+        (size) =>
+          [
+            `${name} at ${size === 131_000 ? "the input cap" : "eight times the input cap"}`,
+            `${head}${unit.repeat(Math.floor(size / unit.length))}${tail}`,
+          ] as const,
+      ),
+    ),
+  )(
+    "classifies the wrappers of %s in linear time",
+    (_, command) => {
+      const parsed = parseCommand(command);
+      const started = Date.now();
+      analyzeCapability(parsed, "/tmp", "/tmp");
       expect(Date.now() - started).toBeLessThan(1_000);
     },
     60_000,

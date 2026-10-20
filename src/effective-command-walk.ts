@@ -28,6 +28,7 @@ export function walk(
   sink: WalkSink,
   inheritedRedirections: ShellRedirection[],
   depth: number,
+  remote = false,
 ): void {
   // Depth and expansion budget: recursion here is driven by the (untrusted)
   // command text, so both bounds are hard stops, not tuning knobs. Hitting
@@ -44,6 +45,7 @@ export function walk(
     sink,
     redirections: [...inheritedRedirections, ...normalized.redirections],
     depth,
+    remote,
   };
   let i: number | undefined = commandStart(words);
   while (i !== undefined && i < words.length) i = peel(words, i, level);
@@ -59,6 +61,12 @@ function peel(
   const word = elementAt(words, i, "tokens").value;
   if (word === "--") return undefined;
   const base = basename(word);
+  level.sink.heads?.push({
+    head: base,
+    tokens: words,
+    index: i,
+    remote: level.remote,
+  });
   if (base === "env" && reanalyzeIfPresent(envSplitString(words, i), level))
     return undefined;
   if (base === "timeout") {
@@ -92,8 +100,9 @@ function peelCommand(
     level.sink.budget.previousSsh === true,
   );
   if (remotes !== undefined) {
+    const remote = { ...level, remote: true };
     for (const text of remotes)
-      if (!reanalyzeIfPresent(text, level))
+      if (!reanalyzeIfPresent(text, remote))
         level.sink.bareSsh.push(level.redirections);
     return;
   }
@@ -117,11 +126,14 @@ function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
 /** Re-lex a command string and walk each of its segments one level deeper. */
 function reanalyze(text: string, level: WalkLevel): void {
   for (const sub of reanalysisSegments(text, level.sink) ?? [])
-    walk(sub.tokens, level.sink, level.redirections, level.depth + 1);
+    walkDeeper(sub.tokens, level);
 }
 
 /** Walk the operand tail from `start` one level deeper, if any is left. */
 function walkTail(words: ShellToken[], start: number, level: WalkLevel): void {
-  if (start < words.length)
-    walk(words.slice(start), level.sink, level.redirections, level.depth + 1);
+  if (start < words.length) walkDeeper(words.slice(start), level);
+}
+
+function walkDeeper(tokens: ShellToken[], level: WalkLevel): void {
+  walk(tokens, level.sink, level.redirections, level.depth + 1, level.remote);
 }

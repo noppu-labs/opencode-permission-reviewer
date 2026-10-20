@@ -1,0 +1,33 @@
+{
+  "rows": [
+    { "id": "w.01", "form": "command string holding sudo", "command": "sh -c \"sudo id\"", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.02", "form": "command string holding nohup", "command": "bash -c \"nohup sleep 1 &\"", "twin": "nohup sleep 1 &", "class": "persistence", "heads": ["persistence"] },
+    { "id": "w.03", "form": "env -S holding sudo", "command": "env -S \"sudo id\"", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.04", "form": "watch holding sudo", "command": "watch sudo reboot", "twin": "sudo reboot", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.05", "form": "watch -x holding sudo", "command": "watch -x sudo reboot", "twin": "sudo reboot", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.06", "form": "ssh remote command string holding sudo", "command": "ssh h \"sudo id\"", "twin": "ssh h sudo id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
+    { "id": "w.07", "form": "timeout and command string holding ssh", "command": "timeout 5 sh -c \"ssh h rm x\"", "twin": "ssh h rm x", "class": "remote-operation", "heads": ["remote", "remoteMutation"] },
+    { "id": "w.08", "form": "su -c holding nohup", "command": "su -c \"nohup x\"", "twin": "su -c x; nohup x", "class": "persistence", "heads": ["privilegeEscalation", "persistence"] },
+    { "id": "w.09", "form": "command string inside a command string", "command": "sh -c \"bash -c 'sudo id'\"", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.10", "form": "env -S holding ssh", "command": "env -S \"ssh h rm x\"", "twin": "ssh h rm x", "class": "remote-operation", "heads": ["remote", "remoteMutation"] },
+    { "id": "w.11", "form": "watch holding ssh", "command": "watch ssh h ls", "twin": "ssh h ls", "class": "remote-operation", "heads": ["remote"] },
+    { "id": "w.12", "form": "command string holding run0", "command": "sh -c \"run0 id\"", "twin": "run0 id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "r.01", "form": "remote sudo counts", "command": "ssh h sudo id", "twin": "sudo ssh h id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
+    { "id": "r.02", "form": "remote nohup counts", "command": "ssh h nohup x", "twin": "nohup ssh h x", "class": "remote-operation", "heads": ["persistence", "remote"] },
+    { "id": "r.03", "form": "mosh remote sudo counts", "command": "mosh h sudo id", "twin": "sudo mosh h id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
+    { "id": "r.04", "form": "autossh remote sudo counts", "command": "autossh -M 0 h sudo id", "twin": "sudo autossh -M 0 h id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
+    { "id": "r.05", "form": "ssh inside an ssh remote command", "command": "ssh h ssh g sudo id", "twin": "sudo ssh h id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
+    { "id": "r.06", "form": "remote command string holding git push", "command": "ssh h 'git push'", "twin": "ssh h git push", "class": "remote-operation", "heads": ["remote", "remoteMutation"] },
+    { "id": "r.07", "form": "mosh remote command after --", "command": "mosh h -- rm x", "twin": "ssh h rm x", "class": "remote-operation", "heads": ["remote", "remoteMutation"] },
+    { "id": "l.01", "form": "heredoc before ssh, with a body", "command": "<<EOF ssh h\nls\nEOF", "twin": "ssh h <<EOF\nls\nEOF", "class": "remote-operation", "heads": ["remote"] },
+    { "id": "l.02", "form": "heredoc before ssh, no body", "command": "<<EOF ssh h", "twin": "ssh h <<EOF", "class": "remote-operation", "heads": ["remote"] },
+    { "id": "l.03", "form": "here-string before ssh", "command": "<<<x ssh h", "twin": "ssh h <<<x", "class": "remote-operation", "heads": ["remote"] },
+    { "id": "l.04", "form": "stderr redirection before ssh", "command": "2>/dev/null ssh h rm x", "twin": "ssh h rm x 2>/dev/null", "class": "remote-operation", "heads": ["remote", "remoteMutation"] },
+    { "id": "l.05", "form": "heredoc between sudo and ssh", "command": "sudo <<EOF ssh h\nls\nEOF", "twin": "sudo ssh h <<EOF\nls\nEOF", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
+    { "id": "l.06", "form": "output redirection before sudo", "command": ">f sudo id", "twin": "sudo id >f", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "l.07", "form": "input redirection before nohup", "command": "<f nohup x", "twin": "nohup x <f", "class": "persistence", "heads": ["persistence"] },
+    { "id": "l.08", "form": "stderr redirection before sudo", "command": "2>/dev/null sudo x", "twin": "sudo x 2>/dev/null", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "l.09", "form": "heredoc before cat stays read-only", "command": "cat <<EOF\nhi\nEOF", "twin": "cat <<EOF\nhi\nEOF", "class": "read-only", "heads": [] },
+    { "id": "l.10", "form": "input redirection before wc stays read-only", "command": "<f wc -l", "twin": "wc -l <f", "class": "read-only", "heads": [] }
+  ]
+}

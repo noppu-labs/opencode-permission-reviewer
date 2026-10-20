@@ -76,14 +76,14 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "0a7bf98c1907299dee63f319d0b2d3c2ea522452",
-  "src/capability/bash-analyzer.ts": "ab5599857930aae2d1ea7517e3d498f52b00cd7a",
+    "d1adecd07956749aff25a2cffd2a040f7ca94ca4",
+  "src/capability/bash-analyzer.ts": "23a25c44049515706c92ba0a9b7dbeb3625c73d9",
   "src/capability/bash-command-tables.ts":
-    "73211db1442714db02f6fbb79f47a1548c4a5e86",
+    "cd2340a5e08bc3b2828e023f8ce4d5fc385bc496",
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "e7abc1607cc2c7e01f95e0ea6684e7d60850bede",
-  "src/shell-effective-commands.ts": "460c061c7c26310f03cf3da728b411e4b35006dc",
-  "src/effective-command-walk.ts": "a477ac3e503ba8bb3cb6e4f0aa793ea124ca0b9c",
+  "src/shell-effective-commands.ts": "c20b3abacb45665ed48a2177953630361ac51483",
+  "src/effective-command-walk.ts": "62cf9454656c3d0b8dda8bd5f0c465e5f198b7bd",
   "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
@@ -136,7 +136,7 @@ export const PINNED_BLOBS = {
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
     "91e3d8b4ef18becfd7d0bb66dd2b76b80368d343",
-  "src/capability/segment-heads.ts": "0966f7a888e487113f548b6c90868a20a78debe4",
+  "src/capability/segment-heads.ts": "0196350ef50443e2bb0faf8195cba043c6536a72",
   "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
   "src/capability/sensitive-path-reads.ts":
     "abfae5e5adccfe21f419a9d4fe3ca077d7fa1573",
@@ -149,7 +149,7 @@ export const PINNED_BLOBS = {
   "src/capability/file-effect-classifiers.ts":
     "b03fa54cda5b0c69752aad779d8e6123bbd3f320",
   "src/capability/network-classifiers.ts":
-    "a01e0f81f18ecb21f0cff292556f0c9af84c043a",
+    "a8d26ce60a64cd6012cd4e4864681302a96e1c10",
   "src/capability/process-classifiers.ts":
     "b578ec0a5ff7535fab34e1fc2a1ca74af454b699",
   "src/capability/mutation-operands.ts":
@@ -181,7 +181,7 @@ export const PINNED_BLOBS = {
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
   "src/capability/heredoc-operator-scan.ts":
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
-  "src/capability/command-walk.ts": "75c01304ca4005fae33e923efb1b4799350be2fa",
+  "src/capability/command-walk.ts": "6be43167cdcdb93b44ac22794a953a2299f276a6",
   "src/capability/heredoc-body-commands.ts":
     "526a59419b776f0d176a54ad0b423ae5aa90dbab",
   "src/capability/heredoc-sanitized.ts":

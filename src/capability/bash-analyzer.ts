@@ -52,7 +52,7 @@ export function analyzeCapability(
       parsed.heredocs.map((h) => h.outputTarget).filter(Boolean) as string[],
     ),
   };
-  classifySegmentHeads(parsed.segments, facts);
+  classifySegmentHeads(parsed.heads, facts);
   for (const cmd of parsed.effective)
     classifyEffectiveCommand(cmd, facts, context);
   classifyScriptFeeds(parsed, facts);

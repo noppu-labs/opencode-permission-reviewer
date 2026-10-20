@@ -70,6 +70,9 @@ export interface ParsedCommand {
    *  remote command, from the script it reads. They are among `effective`
    *  too. */
   remoteCommands?: import("../shell-token.ts").ShellToken[][];
+  /** Every command the walk resolves, wrappers among them, at every level:
+   *  command strings, `env -S`, `watch` and ssh remote commands. */
+  heads: readonly import("../walk-sink.ts").PeeledHead[];
   /** An interpreter among the commands runs code from a heredoc or
    *  here-string. */
   stdinCode?: boolean;

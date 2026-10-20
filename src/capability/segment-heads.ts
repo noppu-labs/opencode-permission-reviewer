@@ -1,74 +1,38 @@
-// Wrapper detection on the original segment heads, for the wrappers the lexer peels out of `effective`.
+// Wrapper detection on the commands the effective-command walk resolves, for the wrappers it peels out of `effective`.
 
-import { elementAt } from "../element-at.ts";
-import { shellBasename } from "../shell-lexer.ts";
-import { TRANSPARENT_WRAPPERS } from "../shell-lexer-tables.ts";
-import type { ShellSegment, ShellToken } from "../shell-token.ts";
-import {
-  chrootCommandIndex,
-  commandStart,
-  skipWrapperArguments,
-  timeoutCommandIndex,
-} from "../shell-wrapper-options.ts";
+import type { ShellToken } from "../shell-token.ts";
+import type { PeeledHead } from "../walk-sink.ts";
 import { claimUnsetClass } from "./action-class.ts";
 import {
-  GIT_MUTATION_SUBCOMMANDS,
   PERSISTENCE_WRAPPERS,
   PRIVILEGE_WRAPPERS,
   SSH_TOOLS,
 } from "./bash-command-tables.ts";
 import type { CapabilityFacts } from "./capability-facts.ts";
+import { classifyRemoteCommand } from "./network-classifiers.ts";
 
-/** Wrappers the lexer peels (sudo, nohup, ssh, …) must be detected on the
- *  original segment heads, because `effective` starts at the real executable
- *  after peeling. Wrapped commands are located with the walk's own option
- *  skipping. */
+/** Wrappers the walk peels (sudo, nohup, ssh, …) must be detected on the
+ *  commands it resolves, because `effective` starts at the real executable
+ *  after peeling. The walk reports each one at every level it re-enters, so
+ *  a command string, `env -S`, `watch` or an ssh remote command counts as
+ *  the same command run directly does. */
 export function classifySegmentHeads(
-  segments: ShellSegment[],
+  heads: readonly PeeledHead[],
   facts: CapabilityFacts,
 ): void {
-  for (const segment of segments) classifySegmentHead(segment.tokens, facts);
-}
-
-/** Classify the head at the command start and each command it wraps, so
- *  `sudo ssh …`, `busybox ssh …` and `chroot /r ssh …` reach the checks. */
-function classifySegmentHead(
-  tokens: ShellToken[],
-  facts: CapabilityFacts,
-): void {
-  let k: number | undefined = commandStart(tokens);
-  while (k !== undefined && k < tokens.length) {
-    const head = shellBasename(elementAt(tokens, k, "tokens").value);
-    classifyHead(tokens, k, head, facts);
-    k = wrappedCommandIndex(tokens, k, head);
+  let scanned: readonly ShellToken[] | undefined;
+  for (const peeled of heads) {
+    classifyHead(peeled.head, facts);
+    // The commands of one level come in order, so the first one inside an
+    // ssh remote command already covers the words of the ones after it.
+    if (peeled.remote && peeled.tokens !== scanned) {
+      scanned = peeled.tokens;
+      classifyRemoteCommand(peeled.tokens, facts, peeled.index);
+    }
   }
 }
 
-function wrappedCommandIndex(
-  tokens: ShellToken[],
-  k: number,
-  head: string,
-): number | undefined {
-  if (head === "timeout")
-    return tailStart(tokens, timeoutCommandIndex(tokens, k));
-  if (head === "busybox") return tailStart(tokens, k + 1);
-  if (head === "chroot")
-    return tailStart(tokens, chrootCommandIndex(tokens, k));
-  if (TRANSPARENT_WRAPPERS.has(head))
-    return skipWrapperArguments(tokens, k, head);
-  return undefined;
-}
-
-function tailStart(tokens: ShellToken[], start: number): number {
-  return start + commandStart(tokens.slice(start));
-}
-
-function classifyHead(
-  tokens: ShellToken[],
-  k: number,
-  head: string,
-  facts: CapabilityFacts,
-): void {
+function classifyHead(head: string, facts: CapabilityFacts): void {
   if (PRIVILEGE_WRAPPERS.has(head)) {
     facts.privilegeEscalation = true;
     facts.childProcesses = true;
@@ -77,18 +41,9 @@ function classifyHead(
     facts.persistence = true;
     facts.childProcesses = true;
   }
-  if (SSH_TOOLS.has(head)) classifySshHead(tokens.slice(k + 1), facts);
-}
-
-function classifySshHead(tail: ShellToken[], facts: CapabilityFacts): void {
-  facts.remoteEnabled = true;
-  facts.childProcesses = true;
-  // A remote command that mutates is a remote-mutation hint. The remote
-  // command may be a single quoted token (`ssh host 'rm -rf /'`), so split
-  // each tail token on whitespace before searching for mutation signals.
-  const words = tail.flatMap((t) => t.value.split(/\s+/));
-  if (words.some((v) => GIT_MUTATION_SUBCOMMANDS.has(v) || v === "rm")) {
-    facts.remoteMutation = true;
+  if (SSH_TOOLS.has(head)) {
+    facts.remoteEnabled = true;
+    facts.childProcesses = true;
+    claimUnsetClass(facts, "remote-operation");
   }
-  claimUnsetClass(facts, "remote-operation");
 }
