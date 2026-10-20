@@ -30,10 +30,15 @@ export interface WalkSink extends EffectiveCommandsAnalysis {
   heads?: PeeledHead[];
 }
 
-/** Which tables a level reads env's options with: both the current and
- *  the previous release's until they first find different commands, then
- *  each one alone. */
-export type EnvOptionsReading = "both" | "current" | "previous";
+/** One way of reading env's options: the previous release's value options,
+ *  the current ones as written, or the current ones with each abbreviated
+ *  long option written in full. */
+export type EnvOptionsTable = "previous" | "exact" | "spelled";
+
+/** Which tables a level reads env's options with: `both` for all of them
+ *  until they first find different commands, then each group of tables
+ *  that agree alone. */
+export type EnvOptionsReading = "both" | readonly EnvOptionsTable[];
 
 /** One level of the walk: the redirections its commands carry, inherited
  *  ones first, its command-string re-entry depth, whether it is inside an

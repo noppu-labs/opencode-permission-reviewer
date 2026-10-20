@@ -1,5 +1,7 @@
 // What the effective-command walk does with an `env`: re-read its -S string, or resume at the command after its options.
 
+import { elementAt } from "./element-at.ts";
+import { envLongOptionSpellings } from "./env-long-options.ts";
 import { envSplitTexts } from "./env-split-string.ts";
 import {
   ENV_VALUE_OPTIONS,
@@ -7,7 +9,7 @@ import {
 } from "./shell-lexer-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
 import { skipWrapperArguments } from "./shell-wrapper-options.ts";
-import type { WalkLevel } from "./walk-sink.ts";
+import type { EnvOptionsTable, WalkLevel } from "./walk-sink.ts";
 
 /** One reading of an `env`: the command strings its -S option carries, or
  *  the index of the command after its options. */
@@ -20,39 +22,69 @@ export interface EnvWalk {
   walkTail(words: ShellToken[], start: number, level: WalkLevel): void;
 }
 
+const TABLES: readonly EnvOptionsTable[] = ["previous", "exact", "spelled"];
+
 function readEnv(
   words: ShellToken[],
   i: number,
-  reading: Exclude<WalkLevel["reading"], "both">,
+  table: EnvOptionsTable,
 ): EnvReading {
-  const options =
-    reading === "current" ? ENV_VALUE_OPTIONS : PREVIOUS_ENV_VALUE_OPTIONS;
+  if (table === "previous")
+    return readOptions(words, i, PREVIOUS_ENV_VALUE_OPTIONS);
+  if (table === "exact") return readOptions(words, i, ENV_VALUE_OPTIONS);
+  // The full spellings stand in for the abbreviations while env is read.
+  const spellings = envLongOptionSpellings(words, i, ENV_VALUE_OPTIONS);
+  const written = spellings.map(([j]) => elementAt(words, j, "tokens"));
+  for (const [j, token] of spellings) words[j] = token;
+  try {
+    return readOptions(words, i, ENV_VALUE_OPTIONS);
+  } finally {
+    spellings.forEach(([j], k) => {
+      words[j] = elementAt(written, k, "written");
+    });
+  }
+}
+
+function readOptions(
+  words: ShellToken[],
+  i: number,
+  options: ReadonlySet<string>,
+): EnvReading {
   const texts = envSplitTexts(words, i, options);
   if (texts !== null) return { texts };
   return { resume: skipWrapperArguments(words, i, "env", options) };
 }
 
 /** Peel the `env` at `i` and return where `level` goes on, `undefined`
- *  once it is done. A level read under `both` readings of env's options
- *  stays so while they agree. At the first `env` where the previous
- *  release's reading finds another command, that command is walked under the
- *  previous reading alone, and the level goes on under the current one, so
- *  each reading is followed once. */
+ *  once it is done. The tables a level reads env's options with stay
+ *  together while they find the same command. At an `env` where they
+ *  differ, each group of tables that agree walks its command one level
+ *  deeper under those tables alone, and the level goes on under the last
+ *  group found, so each table is followed once. */
 export function peelEnv(
   words: ShellToken[],
   i: number,
   level: WalkLevel,
   walk: EnvWalk,
 ): number | undefined {
-  if (level.reading !== "both")
-    return follow(readEnv(words, i, level.reading), words, level, walk);
-  const current = readEnv(words, i, "current");
-  const previous = readEnv(words, i, "previous");
-  if (JSON.stringify(current) !== JSON.stringify(previous)) {
-    follow(previous, words, { ...level, reading: "previous" }, walk, true);
-    level.reading = "current";
+  const tables = level.reading === "both" ? TABLES : level.reading;
+  const groups = new Map<
+    string,
+    { env: EnvReading; tables: EnvOptionsTable[] }
+  >();
+  for (const table of tables) {
+    const env = readEnv(words, i, table);
+    const key = JSON.stringify(env);
+    const group = groups.get(key);
+    if (group === undefined) groups.set(key, { env, tables: [table] });
+    else group.tables.push(table);
   }
-  return follow(current, words, level, walk);
+  const all = [...groups.values()];
+  const main = elementAt(all, all.length - 1, "groups");
+  for (const side of all.slice(0, -1))
+    follow(side.env, words, { ...level, reading: side.tables }, walk, true);
+  if (all.length > 1) level.reading = main.tables;
+  return follow(main.env, words, level, walk);
 }
 
 /** Go on with one reading in `level`; a `side` reading walks its command

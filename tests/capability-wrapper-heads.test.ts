@@ -39,6 +39,7 @@ interface ReadRow {
 interface SplitRow {
   id: string;
   script: string;
+  unset?: boolean;
   words: string[] | null;
 }
 
@@ -171,7 +172,7 @@ describe("the words env splits an -S string into", () => {
   test.each(split.map((row) => [`${row.id} ${row.script}`, row] as const))(
     "%s",
     (_title, row) => {
-      expect(gnuSplitWords(row.script) ?? null).toEqual(row.words);
+      expect(gnuSplitWords(row.script, row.unset) ?? null).toEqual(row.words);
     },
   );
 });

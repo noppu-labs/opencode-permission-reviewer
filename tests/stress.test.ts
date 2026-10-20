@@ -591,16 +591,18 @@ describe("stress and adversarial robustness", () => {
   );
 
   test.each([
-    ["env -a x", "env -a x "],
-    ["env -S '#'", "env -S '#' "],
-  ])("parses a chain of %s in linear time", (_, unit) => {
-    const command = `${unit.repeat(5_400)}id`;
+    ["env -a x", "env -a x ", 5_400],
+    ["env --arg x", "env --arg x ", 5_400],
+    ["env -S '#' id;", "env -S '#' id; ", 4_000],
+  ])("parses %s repeated in linear time", (_, unit, count) => {
+    const command = `${unit.repeat(count)}id`;
     const started = Date.now();
     emergencyBrakeReason(
       request({ patterns: [command], metadata: { command } }),
     );
-    parseCommand(command);
+    const parsed = parseCommand(command);
     expect(Date.now() - started).toBeLessThan(1_000);
+    expect(parsed.analysisTruncated).toBe(false);
   });
 
   test.each([

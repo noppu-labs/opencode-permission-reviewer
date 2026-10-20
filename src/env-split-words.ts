@@ -7,6 +7,7 @@ interface SplitState {
   separated: boolean;
   single: boolean;
   double: boolean;
+  unset: boolean;
 }
 
 const ESCAPES: Readonly<Record<string, string>> = {
@@ -29,14 +30,19 @@ const VARIABLE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/y;
  *  single-quoted and a `${NAME}` as a double-quoted expansion. A `#` that
  *  starts a word and a `\c` end the string. `undefined` when env rejects
  *  the string (an unknown escape, an unclosed quote, a `$` without a name)
- *  and runs nothing. */
-export function gnuSplitWords(script: string): string[] | undefined {
+ *  and runs nothing. With `unset`, every `${NAME}` is read as unset: it
+ *  adds nothing and starts no word. */
+export function gnuSplitWords(
+  script: string,
+  unset = false,
+): string[] | undefined {
   const state: SplitState = {
     words: [],
     literal: "",
     separated: true,
     single: false,
     double: false,
+    unset,
   };
   let k = 0;
   while (k < script.length) {
@@ -100,6 +106,7 @@ function variableStep(script: string, k: number, state: SplitState): Step {
   VARIABLE.lastIndex = k;
   const match = VARIABLE.exec(script);
   if (match === null) return undefined;
+  if (state.unset) return k + match[0].length;
   startWord(state);
   flushLiteral(state);
   state.words[state.words.length - 1] += `"\${${match[1]}}"`;

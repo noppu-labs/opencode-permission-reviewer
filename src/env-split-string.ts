@@ -1,21 +1,17 @@
 // `env -S` / `--split-string` command-string search, getopt clusters included.
 
 import { elementAt } from "./element-at.ts";
-import { gnuSplitWords, shellQuote } from "./env-split-words.ts";
+import { envSplitReadings } from "./env-split-readings.ts";
 import type { ShellToken } from "./shell-token.ts";
 
 type ValueOptions = ReadonlySet<string>;
 
 /** `env -S 'command string'` (or unquoted: `env -S cmd args…`) carries a
  *  parsed command line, and any operands after the string are appended to
- *  it. The concatenation is what gets re-analyzed, so `env -S rm -rf /` and
- *  `env -iS rm -rf /` are both caught. env reads the words of the string
- *  as its own arguments again, so one that starts with an option or `--`
- *  stays env's: `env -S '-- rm'` runs `rm`. A string with a backslash or a
- *  `#` is also read as env splits it, its escapes and comment included,
- *  with the operands after it as env's words again (`env -S '#' rm` runs
- *  `rm`). `null` when there is no non-empty split string; the options are
- *  read with `valueOptions` taking a value. */
+ *  it. The texts `envSplitReadings` makes of the two are what gets
+ *  re-analyzed, so `env -S rm -rf /` and `env -iS rm -rf /` are both caught.
+ *  `null` when there is no non-empty split string; the options are read
+ *  with `valueOptions` taking a value. */
 export function envSplitTexts(
   words: ShellToken[],
   i: number,
@@ -24,17 +20,8 @@ export function envSplitTexts(
   const s = findEnvSCommand(words, i + 1, valueOptions);
   if (s === null || s.script.length === 0) return null;
   const operands = words.slice(s.tailIndex).map((t) => t.value);
-  const tail = operands.join(" ");
-  const text = tail ? `${s.script} ${tail}` : s.script;
-  const texts = [OPTION_FIRST.test(text) ? `env ${text}` : text];
-  const split = /[\\#]/.test(s.script) ? gnuSplitWords(s.script) : undefined;
-  if (split !== undefined)
-    texts.push(["env", ...split, ...operands.map(shellQuote)].join(" "));
-  return texts;
+  return envSplitReadings(s.script, operands);
 }
-
-/** A first word that, with its quotes and escapes removed, starts with `-`. */
-const OPTION_FIRST = /^\s*['"\\]*-/;
 
 /** The command string an `env -S` option carries, and the index of the first
  *  operand after it. */

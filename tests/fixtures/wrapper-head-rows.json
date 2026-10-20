@@ -65,7 +65,24 @@
     { "id": "b.16", "form": "env -S words separated by \\_", "command": "env -S 'rm\\_-rf\\_/'", "reason": "destruction" },
     { "id": "b.17", "form": "env -S \\c ends the string, then the operands", "command": "env -S '\\c' rm -rf /", "reason": "destruction" },
     { "id": "b.18", "form": "harmless env -S comment twin", "command": "env -S '#' ls /" },
-    { "id": "b.19", "form": "harmless env -a twin", "command": "env -a x ls /" }
+    { "id": "b.19", "form": "harmless env -a twin", "command": "env -a x ls /" },
+    { "id": "b.20", "form": "env -S string led by a dash and a path", "command": "env -S-/rm -rf /", "reason": "destruction" },
+    { "id": "b.21", "form": "env --split-string= led by a dash and a path", "command": "env --split-string=-/rm -rf /", "reason": "destruction" },
+    { "id": "b.22", "form": "a second env -S string after an option string", "command": "env -S '-i' -S 'rm\\_-rf\\_/'", "reason": "destruction" },
+    { "id": "b.23", "form": "an operand read as the -S string", "command": "env -S '-S' 'rm\\_-rf\\_/'", "reason": "destruction" },
+    { "id": "b.24", "form": "an operand read as a nested -S comment", "command": "env -S 'env -S' '#' rm -rf /", "reason": "destruction" },
+    { "id": "b.25", "form": "an operand kept as one word", "command": "env -S 'sh -c' 'rm -rf /'", "reason": "destruction" },
+    { "id": "b.26", "form": "an unset variable starts no word", "command": "env -S '${NOPE}' rm -rf /", "reason": "destruction" },
+    { "id": "b.27", "form": "an unset variable before a command name", "command": "env -S '${NOPE}rm' -rf /", "reason": "destruction" },
+    { "id": "b.28", "form": "an unset variable after a wrapper", "command": "env -S 'nice ${NOPE}' rm -rf /", "reason": "destruction" },
+    { "id": "b.29", "form": "form feeds separate env -S words", "command": "env -S $'rm\\f-rf\\f/'", "reason": "destruction" },
+    { "id": "b.30", "form": "abbreviated --argv0 takes a value", "command": "env --arg x rm -rf /", "reason": "destruction" },
+    { "id": "b.31", "form": "abbreviated --env0-from takes a value", "command": "env --env0 f rm -rf /", "reason": "destruction" },
+    { "id": "b.32", "form": "abbreviated --quoting-style takes a value", "command": "env --quot c rm -rf /", "reason": "destruction" },
+    { "id": "b.33", "form": "abbreviated --split-string=", "command": "env --split='rm -rf /'", "reason": "destruction" },
+    { "id": "b.34", "form": "harmless operand twin", "command": "env -S 'sh -c' 'ls /'" },
+    { "id": "b.35", "form": "harmless unset variable twin", "command": "env -S '${NOPE}' ls /" },
+    { "id": "b.36", "form": "harmless abbreviated option twin", "command": "env --arg x ls /" }
   ],
   "reads": [
     { "id": "c.01", "form": "env -S leading to ssh", "command": "env -S '-i ssh h' < ~/.ssh/id_rsa" },
@@ -92,6 +109,11 @@
     { "id": "s.14", "script": "\"open", "words": null },
     { "id": "s.15", "script": "''", "words": ["''"] },
     { "id": "s.16", "script": "\\#a", "words": ["'#a'"] },
-    { "id": "s.17", "script": "\"it's\"", "words": ["'it'\\''s'"] }
+    { "id": "s.17", "script": "\"it's\"", "words": ["'it'\\''s'"] },
+    { "id": "s.18", "script": "${NOPE}rm", "unset": true, "words": ["'rm'"] },
+    { "id": "s.19", "script": "a ${X} b", "unset": true, "words": ["'a'", "'b'"] },
+    { "id": "s.20", "script": "\"${X}\"", "unset": true, "words": ["''"] },
+    { "id": "s.21", "script": "rm\f-rf\u000b/\r", "words": ["'rm'", "'-rf'", "'/'"] },
+    { "id": "s.22", "script": "${X}rm", "words": ["\"${X}\"'rm'"] }
   ]
 }

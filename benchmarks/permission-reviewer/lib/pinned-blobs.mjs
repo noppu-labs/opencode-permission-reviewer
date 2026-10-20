@@ -73,7 +73,7 @@ export const PINNED_BLOBS = {
   "src/brake-device-tools.ts": "c595f135a7abe9cee8bb096ee084ae1fc6cb4a72",
   "src/brake-network-export.ts": "f44ec03d976cce0833d3e232b56a2924408c0888",
   "src/gnu-long-options.ts": "30c8898cdc53a467422f0e0341a466ffff6246a5",
-  "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
+  "src/gnu-long-option-tables.ts": "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
     "07263cbc851fcad9d4b4e7aaba1601dc05b82182",
@@ -86,7 +86,7 @@ export const PINNED_BLOBS = {
   "src/effective-command-walk.ts": "d546580e1ea054f10daaa012dbfaee79bdb009df",
   "src/shell-wrapper-options.ts": "e05970b8231162248f2c311ce230b092b5c142e4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
-  "src/env-split-string.ts": "3bcfbab8f7777dd74dcbebfc48ab40c5158a8327",
+  "src/env-split-string.ts": "a62dd852fb6cc9788a76217f99e9cc34a1474333",
   "src/ssh-remote-command.ts": "ecf35d452055d243f9289a76eef4ced50f36e014",
   "src/shell-lexer.ts": "172ac061a1739823cef2aa6cf4eda7ef90d20b50",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
