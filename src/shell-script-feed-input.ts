@@ -85,9 +85,11 @@ function hasGluedWord({ segment }: SegmentFeedParts): boolean {
 /** For each effective command of `segments` (`counts[k]` of them in segment
  *  `k`), the index of the effective command whose stdout feeds it through a
  *  `|` or `|&`, or `undefined`. The producer is the one command of the
- *  segment right before it, when that segment ended in the same pipe. */
+ *  segment right before it, when that segment ended in a pipe: the segment
+ *  after a pipe that ends a line starts after a newline, and the shell still
+ *  reads it as the pipe's consumer. */
 export function pipedFromSegments(
-  segments: readonly Pick<ShellSegment, "precededBy" | "endedBy">[],
+  segments: readonly Pick<ShellSegment, "endedBy">[],
   counts: readonly number[],
 ): (number | undefined)[] {
   const producers = segmentProducers(segments, counts);
@@ -98,20 +100,17 @@ export function pipedFromSegments(
 
 /** Per segment, the index of the effective command that pipes into it. */
 function segmentProducers(
-  segments: readonly Pick<ShellSegment, "precededBy" | "endedBy">[],
+  segments: readonly Pick<ShellSegment, "endedBy">[],
   counts: readonly number[],
 ): (number | undefined)[] {
   const producers: (number | undefined)[] = [];
   let start = 0;
   let previousStart = 0;
-  segments.forEach((segment, index) => {
+  segments.forEach((_, index) => {
     const before = segments[index - 1];
     const single = counts[index - 1] === 1;
     producers.push(
-      single &&
-        before !== undefined &&
-        isPipe(segment.precededBy) &&
-        isPipe(before.endedBy)
+      single && before !== undefined && isPipe(before.endedBy)
         ? previousStart
         : undefined,
     );

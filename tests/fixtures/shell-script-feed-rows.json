@@ -266,5 +266,14 @@
   { "id": "f.265", "command": "cat -n <<'E' | python3\nb\nE\n", "feeds": [], "remote": [], "stdin": [] },
   { "id": "f.266", "command": "echo x | python3", "feeds": [], "remote": [], "stdin": [] },
   { "id": "f.267", "command": "python3 <<'E'\nb\nE\n", "feeds": [], "remote": [], "dropScripts": true, "stdin": [], "stdinUnresolved": true },
-  { "id": "f.268", "command": "sh <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [], "stdin": ["b\n"] }
+  { "id": "f.268", "command": "sh <<'E'\nb\nE\n", "feeds": ["b\n"], "remote": [], "stdin": ["b\n"] },
+  { "id": "f.269", "command": "cat <<'E' |\nb\nE\nsh", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.270", "command": "cat <<'E' |&\nb\nE\nbash -s", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.271", "command": "cat <<'E' |\n\nb\nE\n\nsh", "feeds": ["\nb\n"], "remote": [] },
+  { "id": "f.272", "command": "cat <<'E' | # c\nb\nE\nsh", "feeds": ["b\n"], "remote": [] },
+  { "id": "f.273", "command": "cat <<'E' |\nb\nE\nwc -l", "feeds": [], "remote": [] },
+  { "id": "f.274", "command": "cat <<<'s' |\nsh", "feeds": ["s"], "remote": [] },
+  { "id": "f.275", "command": "cat <<'E' |\nb\nE\nssh h", "feeds": [], "remote": ["b\n"] },
+  { "id": "f.276", "command": "cat <<'E' ;\nb\nE\nsh", "feeds": [], "remote": [] },
+  { "id": "f.277", "command": "cat <<'E'|\nb\nE\nsh", "feeds": ["b\n"], "remote": [] }
 ]

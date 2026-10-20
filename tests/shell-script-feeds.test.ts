@@ -183,6 +183,12 @@ describe("the pipe producer of each effective command", () => {
     ).toEqual([undefined, 0]);
   });
 
+  test("a pipe that ends a line links the segment after the newline", () => {
+    expect(
+      pipedFromSegments([link(undefined, "|"), link(";", ";")], [1, 1]),
+    ).toEqual([undefined, 0]);
+  });
+
   test("`|&` links too", () => {
     expect(
       pipedFromSegments([link(undefined, "|&"), link("|&", ";")], [1, 1]),
