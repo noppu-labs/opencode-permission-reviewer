@@ -1,25 +1,36 @@
 // `env -S` / `--split-string` command-string search, getopt clusters included.
 
 import { elementAt } from "./element-at.ts";
-import { ENV_VALUE_OPTIONS } from "./shell-lexer-tables.ts";
+import { gnuSplitWords, shellQuote } from "./env-split-words.ts";
 import type { ShellToken } from "./shell-token.ts";
+
+type ValueOptions = ReadonlySet<string>;
 
 /** `env -S 'command string'` (or unquoted: `env -S cmd args…`) carries a
  *  parsed command line, and any operands after the string are appended to
  *  it. The concatenation is what gets re-analyzed, so `env -S rm -rf /` and
  *  `env -iS rm -rf /` are both caught. env reads the words of the string
  *  as its own arguments again, so one that starts with an option or `--`
- *  stays env's: `env -S '-- rm'` runs `rm`. `null` when there is no
- *  non-empty split string. */
-export function envSplitString(words: ShellToken[], i: number): string | null {
-  const s = findEnvSCommand(words, i + 1);
+ *  stays env's: `env -S '-- rm'` runs `rm`. A string with a backslash or a
+ *  `#` is also read as env splits it, its escapes and comment included,
+ *  with the operands after it as env's words again (`env -S '#' rm` runs
+ *  `rm`). `null` when there is no non-empty split string; the options are
+ *  read with `valueOptions` taking a value. */
+export function envSplitTexts(
+  words: ShellToken[],
+  i: number,
+  valueOptions: ValueOptions,
+): string[] | null {
+  const s = findEnvSCommand(words, i + 1, valueOptions);
   if (s === null || s.script.length === 0) return null;
-  const tail = words
-    .slice(s.tailIndex)
-    .map((t) => t.value)
-    .join(" ");
+  const operands = words.slice(s.tailIndex).map((t) => t.value);
+  const tail = operands.join(" ");
   const text = tail ? `${s.script} ${tail}` : s.script;
-  return OPTION_FIRST.test(text) ? `env ${text}` : text;
+  const texts = [OPTION_FIRST.test(text) ? `env ${text}` : text];
+  const split = /[\\#]/.test(s.script) ? gnuSplitWords(s.script) : undefined;
+  if (split !== undefined)
+    texts.push(["env", ...split, ...operands.map(shellQuote)].join(" "));
+  return texts;
 }
 
 /** A first word that, with its quotes and escapes removed, starts with `-`. */
@@ -46,52 +57,60 @@ type EnvOptionStep = EnvSplitString | null | number;
 function findEnvSCommand(
   tokens: ShellToken[],
   start: number,
+  valueOptions: ValueOptions,
 ): EnvSplitString | null {
   let i = start;
   while (i < tokens.length) {
-    const step = envOptionStep(tokens, i);
+    const step = envOptionStep(tokens, i, valueOptions);
     if (typeof step !== "number") return step;
     i = step;
   }
   return null;
 }
 
-function envOptionStep(tokens: ShellToken[], i: number): EnvOptionStep {
+function envOptionStep(
+  tokens: ShellToken[],
+  i: number,
+  valueOptions: ValueOptions,
+): EnvOptionStep {
   const value = elementAt(tokens, i, "tokens").value;
   if (value === "--") return null;
-  if (value.startsWith("--")) return longEnvOptionStep(tokens, i, value);
+  if (value.startsWith("--"))
+    return longEnvOptionStep(tokens, i, value, valueOptions);
   if (!value.startsWith("-") || value.length <= 1) return null;
-  return envClusterStep(tokens, i, value.slice(1));
+  return envClusterStep(tokens, i, value.slice(1), valueOptions);
 }
 
 function longEnvOptionStep(
   tokens: ShellToken[],
   i: number,
   value: string,
+  valueOptions: ValueOptions,
 ): EnvOptionStep {
   if (value === "--split-string") return splitStringOperand(tokens, i + 1);
   if (value.startsWith("--split-string="))
     return { script: value.slice("--split-string=".length), tailIndex: i + 1 };
-  return ENV_VALUE_OPTIONS.has(value) ? i + 2 : i + 1;
+  return valueOptions.has(value) ? i + 2 : i + 1;
 }
 
-/** The first letter that `ENV_VALUE_OPTIONS` lists decides the cluster;
- *  other letters are flags. */
+/** The first letter that `valueOptions` lists decides the cluster; other
+ *  letters are flags. */
 function envClusterStep(
   tokens: ShellToken[],
   i: number,
   letters: string,
+  valueOptions: ValueOptions,
 ): EnvOptionStep {
   const position = letters
     .split("")
-    .findIndex((letter) => ENV_VALUE_OPTIONS.has(`-${letter}`));
+    .findIndex((letter) => valueOptions.has(`-${letter}`));
   if (position === -1) return i + 1;
   const last = position === letters.length - 1;
   if (letters.charAt(position) === "S")
     return last
       ? splitStringOperand(tokens, i + 1)
       : { script: letters.slice(position + 1), tailIndex: i + 1 };
-  // -u/-C/-P consume a value: the rest of the cluster, or the next
+  // -a/-u/-C/-P consume a value: the rest of the cluster, or the next
   // token when the letter ends the cluster.
   return last ? i + 2 : i + 1;
 }

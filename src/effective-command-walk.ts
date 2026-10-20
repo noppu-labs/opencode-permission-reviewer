@@ -1,7 +1,7 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
 import { elementAt } from "./element-at.ts";
-import { envSplitString } from "./env-split-string.ts";
+import { peelEnv } from "./env-readings.ts";
 import { operandTailIndex } from "./operand-tail-index.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
 import { shellBasename as basename } from "./shell-lexer.ts";
@@ -20,7 +20,7 @@ import {
 import { remoteCommandTexts } from "./ssh-remote-command.ts";
 import { walkLimitReached } from "./walk-limits.ts";
 import { reanalysisSegments } from "./walk-reanalysis.ts";
-import type { WalkLevel, WalkSink } from "./walk-sink.ts";
+import type { EnvOptionsReading, WalkLevel, WalkSink } from "./walk-sink.ts";
 import { peelWatch } from "./watch-command.ts";
 
 export function walk(
@@ -29,6 +29,7 @@ export function walk(
   inheritedRedirections: ShellRedirection[],
   depth: number,
   remote = false,
+  reading: EnvOptionsReading = "both",
 ): void {
   // Depth and expansion budget: recursion here is driven by the (untrusted)
   // command text, so both bounds are hard stops, not tuning knobs. Hitting
@@ -46,6 +47,7 @@ export function walk(
     redirections: [...inheritedRedirections, ...normalized.redirections],
     depth,
     remote,
+    reading,
   };
   let i: number | undefined = commandStart(words);
   while (i !== undefined && i < words.length) i = peel(words, i, level);
@@ -67,8 +69,7 @@ function peel(
     index: i,
     remote: level.remote,
   });
-  if (base === "env" && reanalyzeIfPresent(envSplitString(words, i), level))
-    return undefined;
+  if (base === "env") return peelEnv(words, i, level, { reanalyze, walkTail });
   if (base === "timeout") {
     walkTail(words, timeoutCommandIndex(words, i), level);
     return undefined;
@@ -135,5 +136,6 @@ function walkTail(words: ShellToken[], start: number, level: WalkLevel): void {
 }
 
 function walkDeeper(tokens: ShellToken[], level: WalkLevel): void {
-  walk(tokens, level.sink, level.redirections, level.depth + 1, level.remote);
+  const { sink, redirections, depth, remote, reading } = level;
+  walk(tokens, sink, redirections, depth + 1, remote, reading);
 }

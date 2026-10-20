@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { gnuSplitWords } from "../src/env-split-words.ts";
 import { capabilityProfile } from "./capability-profile.ts";
 import { request } from "./helpers.ts";
 
@@ -29,12 +30,29 @@ interface BrakeRow {
   reason?: "destruction";
 }
 
-const { rows, brake } = JSON.parse(
+interface ReadRow {
+  id: string;
+  form: string;
+  command: string;
+}
+
+interface SplitRow {
+  id: string;
+  script: string;
+  words: string[] | null;
+}
+
+const { rows, brake, reads, split } = JSON.parse(
   readFileSync(
     join(import.meta.dir, "fixtures/wrapper-head-rows.json"),
     "utf8",
   ),
-) as { rows: HeadRow[]; brake: BrakeRow[] };
+) as {
+  rows: HeadRow[];
+  brake: BrakeRow[];
+  reads: ReadRow[];
+  split: SplitRow[];
+};
 
 const DESTRUCTION =
   "Emergency brake: command contains unmistakable broad system destruction.";
@@ -136,4 +154,24 @@ describe("writes of redirections on a command that resolves to none", () => {
       `writeEffects.${write}`,
     );
   });
+});
+
+describe("credential reads of input redirections on a command that resolves to none", () => {
+  test.each(reads.map((row) => [`${row.id} ${row.form}`, row] as const))(
+    "%s",
+    (_title, row) => {
+      expect(capabilityProfile(row.command).split(" | ")[2]).toContain(
+        "credentialRead",
+      );
+    },
+  );
+});
+
+describe("the words env splits an -S string into", () => {
+  test.each(split.map((row) => [`${row.id} ${row.script}`, row] as const))(
+    "%s",
+    (_title, row) => {
+      expect(gnuSplitWords(row.script) ?? null).toEqual(row.words);
+    },
+  );
 });

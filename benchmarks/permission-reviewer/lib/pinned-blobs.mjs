@@ -83,14 +83,14 @@ export const PINNED_BLOBS = {
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "2d3270f7b3585f690d5bc7c1c0724a2cda838ccb",
   "src/shell-effective-commands.ts": "c20b3abacb45665ed48a2177953630361ac51483",
-  "src/effective-command-walk.ts": "62cf9454656c3d0b8dda8bd5f0c465e5f198b7bd",
-  "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
+  "src/effective-command-walk.ts": "d546580e1ea054f10daaa012dbfaee79bdb009df",
+  "src/shell-wrapper-options.ts": "e05970b8231162248f2c311ce230b092b5c142e4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
-  "src/env-split-string.ts": "e6a6d4a1c2f5d01ff1fea66065ea6cb80ddb7e93",
+  "src/env-split-string.ts": "3bcfbab8f7777dd74dcbebfc48ab40c5158a8327",
   "src/ssh-remote-command.ts": "ecf35d452055d243f9289a76eef4ced50f36e014",
   "src/shell-lexer.ts": "172ac061a1739823cef2aa6cf4eda7ef90d20b50",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
-  "src/shell-lexer-tables.ts": "3d460657d502a816f23bd4f57984c4f7afc25094",
+  "src/shell-lexer-tables.ts": "8bd5f261d6d1ad58765a02987afb79ab368225a3",
   "src/shell-token.ts": "f3bf94abd5cad440aa52cac8063fe768f215c873",
   "src/shell-redirections.ts": "16d83568088a609bfa9d0353fa5b1e9dc3565d31",
   "src/shell-redirection-operators.ts":
@@ -139,7 +139,7 @@ export const PINNED_BLOBS = {
   "src/capability/segment-heads.ts": "dd29bd314876b803f710ae164bf4d37d5a0d6f3c",
   "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
   "src/capability/sensitive-path-reads.ts":
-    "abfae5e5adccfe21f419a9d4fe3ca077d7fa1573",
+    "15078b6220ddb9fd61cd2504c9bf0c1a737d68f0",
   "src/capability/effective-command-classifiers.ts":
     "ab58f309f3c719e607a77687ee2a4aec4ebc51a7",
   "src/capability/executable-recognition.ts":

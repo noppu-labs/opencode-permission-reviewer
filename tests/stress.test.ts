@@ -591,6 +591,19 @@ describe("stress and adversarial robustness", () => {
   );
 
   test.each([
+    ["env -a x", "env -a x "],
+    ["env -S '#'", "env -S '#' "],
+  ])("parses a chain of %s in linear time", (_, unit) => {
+    const command = `${unit.repeat(5_400)}id`;
+    const started = Date.now();
+    emergencyBrakeReason(
+      request({ patterns: [command], metadata: { command } }),
+    );
+    parseCommand(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  });
+
+  test.each([
     ["sudo", `${"true;".repeat(4_100)} ${"sudo ".repeat(12_000)}x`],
     ["timeout 5", `${"true;".repeat(4_100)} ${"timeout 5 ".repeat(6_000)}x`],
   ])(

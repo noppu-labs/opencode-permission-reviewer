@@ -32,7 +32,19 @@
     { "id": "l.07", "form": "input redirection before nohup", "command": "<f nohup x", "twin": "nohup x <f", "class": "persistence", "heads": ["persistence"] },
     { "id": "l.08", "form": "stderr redirection before sudo", "command": "2>/dev/null sudo x", "twin": "sudo x 2>/dev/null", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
     { "id": "l.09", "form": "heredoc before cat stays read-only", "command": "cat <<EOF\nhi\nEOF", "twin": "cat <<EOF\nhi\nEOF", "class": "read-only", "heads": [] },
-    { "id": "l.10", "form": "input redirection before wc stays read-only", "command": "<f wc -l", "twin": "wc -l <f", "class": "read-only", "heads": [] }
+    { "id": "l.10", "form": "input redirection before wc stays read-only", "command": "<f wc -l", "twin": "wc -l <f", "class": "read-only", "heads": [] },
+    { "id": "w.17", "form": "env -a value before the command", "command": "env -a x sudo id", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.18", "form": "env -S comment, then the operands", "command": "env -S '#' sudo id", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.19", "form": "env -S words separated by \\_", "command": "env -S 'sudo\\_id'", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.20", "form": "input redirection on env -S leading to ssh", "command": "env -S '-i ssh h' < ~/.ssh/id_rsa", "twin": "ssh h < ~/.ssh/id_rsa", "class": "remote-operation", "heads": ["remote"] },
+    {
+      "id": "w.21",
+      "form": "input redirection on env -S leading to sudo",
+      "command": "env -S '-i sudo' < ~/.ssh/id_rsa",
+      "twin": "sudo < ~/.ssh/id_rsa",
+      "class": "privilege-escalation",
+      "heads": ["privilegeEscalation"]
+    }
   ],
   "brake": [
     { "id": "b.01", "form": "env -S string that starts with --", "command": "env -S -- rm -rf /", "reason": "destruction" },
@@ -43,6 +55,43 @@
     { "id": "b.06", "form": "autossh drops the -- that -o takes, then ssh reads -- as the end", "command": "autossh -M 0 h -o -- -- rm -rf /", "reason": "destruction" },
     { "id": "b.07", "form": "autossh drops the -- that -o takes, then ssh reads a config line", "command": "autossh -M 0 h -o -- User=a rm -rf /", "reason": "destruction" },
     { "id": "b.08", "form": "harmless env -S twin", "command": "env -S -- ls /" },
-    { "id": "b.09", "form": "harmless autossh twin", "command": "autossh -M 0 h -o -- -- ls /" }
+    { "id": "b.09", "form": "harmless autossh twin", "command": "autossh -M 0 h -o -- -- ls /" },
+    { "id": "b.10", "form": "env -a takes a value", "command": "env -a x rm -rf /", "reason": "destruction" },
+    { "id": "b.11", "form": "env --argv0 takes a value", "command": "env --argv0 x rm -rf /", "reason": "destruction" },
+    { "id": "b.12", "form": "env -S string with -a", "command": "env -S '-a x rm -rf /'", "reason": "destruction" },
+    { "id": "b.13", "form": "env --env0-from takes a value", "command": "env --env0-from f rm -rf /", "reason": "destruction" },
+    { "id": "b.14", "form": "env --quoting-style takes a value", "command": "env --quoting-style c rm -rf /", "reason": "destruction" },
+    { "id": "b.15", "form": "env -S comment, then the operands", "command": "env -S '#' rm -rf /", "reason": "destruction" },
+    { "id": "b.16", "form": "env -S words separated by \\_", "command": "env -S 'rm\\_-rf\\_/'", "reason": "destruction" },
+    { "id": "b.17", "form": "env -S \\c ends the string, then the operands", "command": "env -S '\\c' rm -rf /", "reason": "destruction" },
+    { "id": "b.18", "form": "harmless env -S comment twin", "command": "env -S '#' ls /" },
+    { "id": "b.19", "form": "harmless env -a twin", "command": "env -a x ls /" }
+  ],
+  "reads": [
+    { "id": "c.01", "form": "env -S leading to ssh", "command": "env -S '-i ssh h' < ~/.ssh/id_rsa" },
+    { "id": "c.02", "form": "env -S leading to sudo with no command", "command": "env -S '-i sudo' < ~/.ssh/id_rsa" },
+    { "id": "c.03", "form": "env -S with no command", "command": "env -S '-i' < ~/.ssh/id_rsa" },
+    { "id": "c.04", "form": "ssh with no remote command", "command": "ssh h < ~/.ssh/id_rsa" },
+    { "id": "c.05", "form": "exec with no command", "command": "exec < ~/.ssh/id_rsa" },
+    { "id": "c.06", "form": "env with no command", "command": "env < ~/.ssh/id_rsa" }
+  ],
+  "split": [
+    { "id": "s.01", "script": "rm\\_-rf\\_/", "words": ["'rm'", "'-rf'", "'/'"] },
+    { "id": "s.02", "script": "#", "words": [] },
+    { "id": "s.03", "script": "a #b", "words": ["'a'"] },
+    { "id": "s.04", "script": "a#b", "words": ["'a#b'"] },
+    { "id": "s.05", "script": "ls\\c x", "words": ["'ls'"] },
+    { "id": "s.06", "script": "\"a b\" c", "words": ["'a b'", "'c'"] },
+    { "id": "s.07", "script": "'a\\b'", "words": ["'a\\b'"] },
+    { "id": "s.08", "script": "\"\\_\"", "words": ["' '"] },
+    { "id": "s.09", "script": "\"\\c\"", "words": null },
+    { "id": "s.10", "script": "a\\q", "words": null },
+    { "id": "s.11", "script": "${HOME}/x", "words": ["\"${HOME}\"'/x'"] },
+    { "id": "s.12", "script": "$HOME", "words": null },
+    { "id": "s.13", "script": "'${X}'", "words": ["'${X}'"] },
+    { "id": "s.14", "script": "\"open", "words": null },
+    { "id": "s.15", "script": "''", "words": ["''"] },
+    { "id": "s.16", "script": "\\#a", "words": ["'#a'"] },
+    { "id": "s.17", "script": "\"it's\"", "words": ["'it'\\''s'"] }
   ]
 }

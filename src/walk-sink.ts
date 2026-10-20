@@ -30,12 +30,18 @@ export interface WalkSink extends EffectiveCommandsAnalysis {
   heads?: PeeledHead[];
 }
 
+/** Which tables a level reads env's options with: both the current and
+ *  the previous release's until they first find different commands, then
+ *  each one alone. */
+export type EnvOptionsReading = "both" | "current" | "previous";
+
 /** One level of the walk: the redirections its commands carry, inherited
- *  ones first, its command-string re-entry depth, and whether it is inside
- *  an ssh remote command. */
+ *  ones first, its command-string re-entry depth, whether it is inside an
+ *  ssh remote command, and how it reads env's options. */
 export interface WalkLevel {
   sink: WalkSink;
   redirections: ShellRedirection[];
   depth: number;
   remote: boolean;
+  reading: EnvOptionsReading;
 }

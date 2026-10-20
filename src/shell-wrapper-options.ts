@@ -96,13 +96,14 @@ function afterDoubleDash(
 
 /** Skip the options of the transparent `wrapper` at `index` and the
  *  env-style VAR=value arguments that may follow it (e.g. `env FOO=bar …`),
- *  and return the index of the wrapped command. */
+ *  and return the index of the wrapped command, with `valueOpts` the options
+ *  that take a value. */
 export function skipWrapperArguments(
   words: ShellToken[],
   index: number,
   wrapper: string,
+  valueOpts: ReadonlySet<string> = valueOptionsOf(wrapper),
 ): number {
-  const valueOpts = valueOptionsOf(wrapper);
   let i = index + 1;
   while (i < words.length) {
     const opt = elementAt(words, i, "tokens").value;

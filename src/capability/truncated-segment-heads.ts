@@ -2,7 +2,11 @@
 
 import { elementAt } from "../element-at.ts";
 import { shellBasename } from "../shell-lexer.ts";
-import { SHELL_KEYWORDS, TRANSPARENT_WRAPPERS } from "../shell-lexer-tables.ts";
+import {
+  PREVIOUS_ENV_VALUE_OPTIONS,
+  SHELL_KEYWORDS,
+  TRANSPARENT_WRAPPERS,
+} from "../shell-lexer-tables.ts";
 import type { ShellSegment, ShellToken } from "../shell-token.ts";
 import {
   chrootCommandIndex,
@@ -55,6 +59,8 @@ function wrappedCommandIndex(
   if (head === "busybox") return tailStart(tokens, k + 1);
   if (head === "chroot")
     return tailStart(tokens, chrootCommandIndex(tokens, k));
+  if (head === "env")
+    return skipWrapperArguments(tokens, k, head, PREVIOUS_ENV_VALUE_OPTIONS);
   if (TRANSPARENT_WRAPPERS.has(head))
     return skipWrapperArguments(tokens, k, head);
   return undefined;
