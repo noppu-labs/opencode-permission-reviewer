@@ -21,9 +21,10 @@ export interface BodyCommands {
   commands: string[];
   /** The body has a `$(` or backtick with no end, or nests past the depth. */
   unresolved: boolean;
-  /** The text each collapsed body gives the command that reads it, by
-   *  placeholder (heredoc-scripts.ts). Set by the first one recorded. */
-  scripts?: Map<string, string>;
+  /** The texts the collapsed bodies give the command that reads them, by
+   *  placeholder, each distinct reading apart (heredoc-scripts.ts). Set by the
+   *  first one recorded. */
+  scripts?: Map<string, string[]>;
 }
 
 /** Adds commands to `into`, with whether their bodies were unresolved. A

@@ -77,7 +77,7 @@ export interface LexAnalysis {
   bodyUnresolved: boolean;
   /** The text each of those heredoc bodies gives the command that reads it,
    *  by placeholder. */
-  scripts: ReadonlyMap<string, string>;
+  scripts: ReadonlyMap<string, readonly string[]>;
 }
 
 export function lexSegmentsBounded(

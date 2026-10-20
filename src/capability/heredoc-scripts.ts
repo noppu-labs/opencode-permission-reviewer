@@ -9,7 +9,7 @@ import {
 
 /** What a reading that found no heredoc holds. It is shared, never written
  *  to. */
-export const NO_SCRIPTS: ReadonlyMap<string, string> = new Map();
+export const NO_SCRIPTS: ReadonlyMap<string, readonly string[]> = new Map();
 
 /** The token that stands for a body in a sanitized command, from the sha256
  *  of the body. */
@@ -55,16 +55,17 @@ export function recordHeredocScript(
  *  with the first script, so a reading with none costs nothing. */
 export function keepBodyScripts(
   into: BodyCommands | undefined,
-  scripts: ReadonlyMap<string, string>,
+  scripts: ReadonlyMap<string, readonly string[]>,
 ): void {
   if (into === undefined || scripts.size === 0) return;
-  for (const [placeholder, text] of scripts) addScript(into, placeholder, text);
+  for (const [placeholder, texts] of scripts)
+    for (const text of texts) addScript(into, placeholder, text);
 }
 
 /** Bodies that are alike share a placeholder, and a quoted and an unquoted
- *  one of the same text read differently, so a placeholder holds each text it
- *  was recorded with, one after the other, and a text it already holds as
- *  whole lines is not added again. */
+ *  one of the same text read differently, so a placeholder holds every
+ *  distinct text it was recorded with, each as an item of its own: a consumer
+ *  lexes them one by one, and none changes how another is read. */
 function addScript(
   into: BodyCommands,
   placeholder: string,
@@ -72,7 +73,6 @@ function addScript(
 ): void {
   into.scripts ??= new Map();
   const held = into.scripts.get(placeholder);
-  if (held === undefined) into.scripts.set(placeholder, text);
-  else if (held !== text && !`\n${held}\n`.includes(`\n${text}\n`))
-    into.scripts.set(placeholder, `${held}\n${text}`);
+  if (held === undefined) into.scripts.set(placeholder, [text]);
+  else if (!held.includes(text)) held.push(text);
 }

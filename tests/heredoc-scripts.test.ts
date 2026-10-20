@@ -33,7 +33,8 @@ interface SiteRow {
   site: Site;
   command: string;
   body: string;
-  script: string;
+  /** The distinct readings of the body, in the order they were recorded. */
+  scripts: string[];
 }
 
 /** What the previous release gave a row's command as written (`seg`), its
@@ -89,7 +90,9 @@ function redirectionsOf(segments: ShellSegment[]): string {
     .join(" / ");
 }
 
-function commandStringScripts(command: string): ReadonlyMap<string, string> {
+function commandStringScripts(
+  command: string,
+): ReadonlyMap<string, readonly string[]> {
   const bodies: BodyCommands = { commands: [], unresolved: false };
   const budget = newAnalysisBudget("default", "bash", bodies);
   for (const segment of lexSegmentsBounded(command).segments)
@@ -97,7 +100,14 @@ function commandStringScripts(command: string): ReadonlyMap<string, string> {
   return bodies.scripts ?? new Map();
 }
 
-function scriptsAt(site: Site, command: string): ReadonlyMap<string, string> {
+function lexed(text: string): string {
+  return project(lexSegmentsBounded(text).segments);
+}
+
+function scriptsAt(
+  site: Site,
+  command: string,
+): ReadonlyMap<string, readonly string[]> {
   if (site === "top") return extractHeredocs(command).scripts;
   if (site === "sanitized") return sanitizedText(command).scripts;
   if (site === "string") return commandStringScripts(command);
@@ -121,9 +131,19 @@ describe("scripts recorded per placeholder", () => {
     (_id, _site, row) => {
       const scripts = scriptsAt(row.site, row.command);
       expect(scripts.size).toBe(1);
-      expect(scripts.get(placeholderOf(row.body))).toBe(row.script);
+      expect(scripts.get(placeholderOf(row.body))).toEqual(row.scripts);
     },
   );
+
+  test.each(
+    siteRows
+      .filter((row) => row.scripts.length > 1)
+      .map((row) => [row.id, row.site, row] as const),
+  )("%s keeps each reading apart at the %s site", (_id, _site, row) => {
+    const held = scriptsAt(row.site, row.command).get(placeholderOf(row.body));
+    expect(held?.map(lexed)).toEqual(row.scripts.map(lexed));
+    expect(new Set(held).size).toBe(row.scripts.length);
+  });
 
   test("the placeholder is the token the sanitized command holds", () => {
     const body = "printf A\n";
@@ -137,7 +157,7 @@ describe("scripts recorded per placeholder", () => {
     const scripts = lexSegmentsBounded(
       'echo "$(sh <<EOF\nprintf A \\\nB\nEOF\n)"',
     ).scripts;
-    expect([...scripts.values()]).toEqual(["printf A B\n"]);
+    expect([...scripts.values()]).toEqual([["printf A B\n"]]);
   });
 
   test("each heredoc of a line has its own entry", () => {
@@ -147,15 +167,15 @@ describe("scripts recorded per placeholder", () => {
       `sh <<EOF <<-'IN'\n${first}EOF\n${second}IN\n`,
     );
     expect(scripts.size).toBe(2);
-    expect(scripts.get(placeholderOf(first))).toBe(first);
-    expect(scripts.get(placeholderOf(second))).toBe("printf B\n");
+    expect(scripts.get(placeholderOf(first))).toEqual([first]);
+    expect(scripts.get(placeholderOf(second))).toEqual(["printf B\n"]);
   });
 
   test("the whole body is recorded past the bytes a record keeps", () => {
     const body = `${"printf AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n".repeat(600)}`;
     expect(body.length).toBeGreaterThan(20_000);
     const extraction = extractHeredocs(`sh <<'EOF'\n${body}EOF\n`);
-    expect(extraction.scripts.get(placeholderOf(body))).toBe(body);
+    expect(extraction.scripts.get(placeholderOf(body))).toEqual([body]);
     expect(extraction.heredocs[0]?.truncated).toBe(true);
   });
 
@@ -172,7 +192,7 @@ describe("scripts recorded per placeholder", () => {
     const bodies: BodyCommands = { commands: [], unresolved: false };
     const command = `echo "$(sh <<EOF\n${body}EOF\n)"`;
     expect(brakeReadingsReason(command, "finder", bodies)).toBeUndefined();
-    expect(bodies.scripts?.get(placeholderOf(body))).toBe(body);
+    expect(bodies.scripts?.get(placeholderOf(body))).toEqual([body]);
   });
 
   test("a command with no heredoc shares one empty map", () => {
@@ -200,12 +220,22 @@ describe("one placeholder for bodies read two ways", () => {
   const body = "printf A \\\nB\n";
   const joined = "printf A B\n";
 
-  test("a quoted and an unquoted heredoc of one body keep both texts", () => {
+  test("a quoted and an unquoted heredoc of one body keep both texts apart", () => {
     const { scripts } = extractHeredocs(
       `sh <<EOF; sh <<'EOF'\n${body}EOF\n${body}EOF\n`,
     );
     expect(scripts.size).toBe(1);
-    expect(scripts.get(placeholderOf(body))).toBe(`${joined}\n${body}`);
+    expect(scripts.get(placeholderOf(body))).toEqual([joined, body]);
+  });
+
+  test("an unclosed quote in one reading leaves the other's lines their own", () => {
+    const text = "#\\\nrm -rf /\necho '\n";
+    const held = extractHeredocs(
+      `sh <<EOF; sh <<'EOF'\n${text}EOF\n${text}EOF\n`,
+    ).scripts.get(placeholderOf(text));
+    expect(held).toHaveLength(2);
+    const quoted = lexSegmentsBounded(held?.[1] ?? "").segments;
+    expect(quoted.map((segment) => segment.tokens[0]?.value)).toContain("rm");
   });
 
   test("keeping the same map again changes nothing", () => {
@@ -216,12 +246,14 @@ describe("one placeholder for bodies read two ways", () => {
     keepBodyScripts(into, scripts);
     keepBodyScripts(into, scripts);
     keepBodyScripts(into, scripts);
-    expect(into.scripts).toEqual(new Map(scripts));
+    expect(JSON.stringify([...(into.scripts ?? [])])).toBe(
+      JSON.stringify([...scripts]),
+    );
   });
 
   test("a collector that is not there keeps nothing", () => {
     expect(() =>
-      keepBodyScripts(undefined, new Map([["k", "v"]])),
+      keepBodyScripts(undefined, new Map([["k", ["v"]]])),
     ).not.toThrow();
   });
 

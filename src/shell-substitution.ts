@@ -25,7 +25,7 @@ export type SubstitutionBody =
       bodyUnresolved: boolean;
       /** The text each of those heredoc bodies gives the command that reads
        *  it. */
-      scripts: ReadonlyMap<string, string>;
+      scripts: ReadonlyMap<string, readonly string[]>;
     }
   | { kind: "arithmetic"; end: number; closes: FrameCloses | undefined }
   | { kind: "expansion"; end: number; closes: FrameCloses };

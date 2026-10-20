@@ -70,7 +70,7 @@ export interface HeredocExtraction {
    *  scanner reads. */
   bodyUnresolved: boolean;
   /** The text each body gives the command that reads it, by placeholder. */
-  scripts: ReadonlyMap<string, string>;
+  scripts: ReadonlyMap<string, readonly string[]>;
 }
 
 /** Options for `extractHeredocs`. */

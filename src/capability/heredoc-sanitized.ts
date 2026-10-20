@@ -9,7 +9,7 @@ export interface SanitizedText {
   bodyCommands: string[];
   bodyUnresolved: boolean;
   /** The text each collapsed body gives the command that reads it. */
-  scripts: ReadonlyMap<string, string>;
+  scripts: ReadonlyMap<string, readonly string[]>;
 }
 
 /** `text` with its heredoc bodies collapsed by the current extractor. */
