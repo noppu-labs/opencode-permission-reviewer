@@ -15,6 +15,7 @@ import {
   type BodyCommands,
   keepBodyCommands,
 } from "./capability/heredoc-body-commands.ts";
+import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import {
   analyzeSegmentRedirections,
   type SegmentRedirectionsAnalysis,
@@ -90,6 +91,7 @@ function analyzeSegments(
 ): AnalyzedSegment[] | undefined {
   const lex = lexSegmentsBounded(command, reading, quoting);
   keepBodyCommands(bodies, lex.bodyCommands, lex.bodyUnresolved);
+  keepBodyScripts(bodies, lex.scripts);
   if (lex.truncated) return undefined;
   const budget = newAnalysisBudget(reading, quoting, bodies);
   const analyzed: AnalyzedSegment[] = [];

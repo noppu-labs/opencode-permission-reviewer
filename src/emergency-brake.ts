@@ -13,6 +13,7 @@ import {
   keepBodyCommands,
 } from "./capability/heredoc-body-commands.ts";
 import { withScanBudget } from "./capability/heredoc-scan-budget.ts";
+import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
 import { MAX_ANALYSIS_INPUT_CHARS } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
@@ -88,6 +89,7 @@ function commandReason(
   const bodies: BodyCommands = { commands: [], unresolved: false };
   const { extraction } = heredocTexts(command);
   keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
+  keepBodyScripts(bodies, extraction.scripts);
   const reason = readingsReason(command, bodies);
   if (reason !== undefined) return reason;
   return bodyCommandsReason(

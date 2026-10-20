@@ -15,6 +15,7 @@ import {
   scanQuoteOrEscape,
   skipComment,
 } from "./heredoc-scan-context.ts";
+import { NO_SCRIPTS } from "./heredoc-scripts.ts";
 
 /*
  * Heredoc extraction.
@@ -68,6 +69,8 @@ export interface HeredocExtraction {
   /** Some body has a substitution with no end, or nests past the depth the
    *  scanner reads. */
   bodyUnresolved: boolean;
+  /** The text each body gives the command that reads it, by placeholder. */
+  scripts: ReadonlyMap<string, string>;
 }
 
 /** Options for `extractHeredocs`. */
@@ -128,6 +131,7 @@ export function extractHeredocs(
     hasDynamicConstructs: scan.hasDynamicConstructs,
     bodyCommands: bodies.commands,
     bodyUnresolved: bodies.unresolved,
+    scripts: bodies.scripts ?? NO_SCRIPTS,
   };
 }
 
@@ -140,6 +144,7 @@ function unchanged(command: string): HeredocExtraction {
     hasDynamicConstructs: false,
     bodyCommands: [],
     bodyUnresolved: false,
+    scripts: NO_SCRIPTS,
   };
 }
 

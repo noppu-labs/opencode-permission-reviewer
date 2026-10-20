@@ -1,6 +1,7 @@
 // Lexing entry points: per-request analysis budgets, and the bounded lexing pass.
 
 import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
+import { NO_SCRIPTS } from "./capability/heredoc-scripts.ts";
 import {
   type HeredocReading,
   MAX_SUBSTITUTION_CHARS,
@@ -74,6 +75,9 @@ export interface LexAnalysis {
    *  lexed. Empty under the previous release's heredoc reading. */
   bodyCommands: string[];
   bodyUnresolved: boolean;
+  /** The text each of those heredoc bodies gives the command that reads it,
+   *  by placeholder. */
+  scripts: ReadonlyMap<string, string>;
 }
 
 export function lexSegmentsBounded(
@@ -87,6 +91,7 @@ export function lexSegmentsBounded(
       truncated: true,
       bodyCommands: [],
       bodyUnresolved: false,
+      scripts: NO_SCRIPTS,
     };
   const bodies: BodyCommands = { commands: [], unresolved: false };
   const state: SubstitutionBudget = {
@@ -103,6 +108,7 @@ export function lexSegmentsBounded(
     truncated: state.tokensRemaining <= 0,
     bodyCommands: bodies.commands,
     bodyUnresolved: bodies.unresolved,
+    scripts: bodies.scripts ?? NO_SCRIPTS,
   };
 }
 

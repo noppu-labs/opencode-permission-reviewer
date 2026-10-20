@@ -2,6 +2,7 @@
 
 import { legacySanitizedCommand } from "./capability/heredoc-legacy.ts";
 import { sanitizedText } from "./capability/heredoc-sanitized.ts";
+import { NO_SCRIPTS } from "./capability/heredoc-scripts.ts";
 import type {
   HeredocReading,
   ProbeCache,
@@ -22,6 +23,9 @@ export type SubstitutionBody =
        *  one of their bodies could not be read to the end. */
       bodyCommands: string[];
       bodyUnresolved: boolean;
+      /** The text each of those heredoc bodies gives the command that reads
+       *  it. */
+      scripts: ReadonlyMap<string, string>;
     }
   | { kind: "arithmetic"; end: number; closes: FrameCloses | undefined }
   | { kind: "expansion"; end: number; closes: FrameCloses };
@@ -70,6 +74,7 @@ function commandBody(
       text: sanitize ? legacySanitizedCommand(text) : text,
       bodyCommands: [],
       bodyUnresolved: false,
+      scripts: NO_SCRIPTS,
       end,
     };
   const read = sanitizedText(text);
@@ -78,6 +83,7 @@ function commandBody(
     text: read.text,
     bodyCommands: read.bodyCommands,
     bodyUnresolved: read.bodyUnresolved,
+    scripts: read.scripts,
     end,
   };
 }

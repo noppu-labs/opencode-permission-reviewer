@@ -1,6 +1,7 @@
 // Lexes the command a substitution runs into segments of its own, for the scan of the word that holds it.
 
 import { keepBodyCommands } from "./capability/heredoc-body-commands.ts";
+import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import {
   appendValue,
   type LexState,
@@ -27,6 +28,7 @@ function lexBody(
 ): void {
   const { text, end } = body;
   keepBodyCommands(budget.bodies, body.bodyCommands, body.bodyUnresolved);
+  keepBodyScripts(budget.bodies, body.scripts);
   lex.substitutionEnd = end;
   budget.substitutionCharsRemaining -= text.length;
   if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
