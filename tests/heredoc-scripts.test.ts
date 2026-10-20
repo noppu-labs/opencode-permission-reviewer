@@ -179,12 +179,31 @@ describe("scripts recorded per placeholder", () => {
     expect(extraction.heredocs[0]?.truncated).toBe(true);
   });
 
-  test("a body with no terminator line records nothing", () => {
-    expect(extractHeredocs("sh <<EOF\nprintf A\n").scripts.size).toBe(0);
+  test("a body with no terminator line holds no reading", () => {
+    const body = "printf A\n";
+    const { scripts } = extractHeredocs("sh <<EOF\nprintf A\n");
+    expect([...scripts]).toEqual([[placeholderOf(body), []]]);
   });
 
-  test("a delimiter that cannot be known records nothing", () => {
-    expect(extractHeredocs("sh <<$x\nprintf A\n").scripts.size).toBe(0);
+  test("a delimiter that cannot be known holds no reading", () => {
+    const { scripts } = extractHeredocs("sh <<$x\nprintf A\n");
+    expect([...scripts.values()]).toEqual([[]]);
+  });
+
+  test("a terminated body of the same text keeps its reading", () => {
+    const body = "printf A\n";
+    const { scripts } = extractHeredocs("sh <<EOF\nprintf A\n");
+    const both = extractHeredocs(
+      "sh <<'E'\nprintf A\nE\nsh <<EOF\nprintf A\n",
+    ).scripts;
+    expect(scripts.get(placeholderOf(body))).toEqual([]);
+    expect(both.get(placeholderOf(body))).toEqual([body]);
+  });
+
+  test("keeping a map that holds a placeholder without a reading", () => {
+    const into: BodyCommands = { commands: [], unresolved: false };
+    keepBodyScripts(into, new Map([["<P>", []]]));
+    expect(into.scripts?.get("<P>")).toEqual([]);
   });
 
   test("the brake's readings keep the scripts of the text they lex", () => {

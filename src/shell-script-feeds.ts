@@ -15,8 +15,9 @@ export interface ScriptFeed {
   remote: boolean;
 }
 
-/** An ssh with no remote command, which yields no effective command. */
-export interface RemoteReader {
+/** A command that reads stdin but is not an effective command of its own: an
+ *  ssh with no remote command, or a shell run with `-c` and `-s`. */
+export interface StdinReader {
   redirections: readonly ScriptRedirection[];
   pipedFrom: number | undefined;
 }
@@ -29,7 +30,13 @@ export interface ScriptFeedInput {
   pipedFrom: readonly (number | undefined)[];
   /** The readings of each heredoc body, by placeholder. */
   scripts: ReadonlyMap<string, readonly string[]>;
-  remote?: readonly RemoteReader[];
+  /** The ssh commands with no remote command. */
+  remote?: readonly StdinReader[];
+  /** The shells run with `-c` and `-s`. */
+  shells?: readonly StdinReader[];
+  /** A word of the command holds a placeholder together with other text, so
+   *  the command was not read the way it was written. */
+  glued?: boolean;
 }
 
 export interface ScriptFeedResult {
@@ -61,9 +68,11 @@ export function scriptFeeds(input: ScriptFeedInput): ScriptFeedResult {
   input.effective.forEach((words, index) => {
     if (shellReadsStdin(words)) take(stdinScripts(input, index), false);
   });
+  for (const reader of input.shells ?? [])
+    take(scriptsOf(input, reader.redirections, reader.pipedFrom), false);
   for (const reader of input.remote ?? [])
     take(scriptsOf(input, reader.redirections, reader.pipedFrom), true);
-  return { feeds, unresolved };
+  return { feeds, unresolved: unresolved || input.glued === true };
 }
 
 /** The script readings the stdin of effective command `index` carries, the

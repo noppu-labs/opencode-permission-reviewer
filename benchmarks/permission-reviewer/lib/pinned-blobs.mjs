@@ -64,7 +64,7 @@ export const PINNED_BLOBS = {
   "src/brake-root-target.ts": "82548f17b0fc651c65cf30decb1e0d848d097a10",
   "src/brake-root-rm.ts": "8389ffd387fec486d49fa6583b713fbb4df28b21",
   "src/brake-find-root.ts": "2ebefecea8bfc28a165ea41739319a4dd3c7738e",
-  "src/brake-find-exec.ts": "2fa3e90a5acf5685297452b18dad854782b241d8",
+  "src/brake-find-exec.ts": "e5cba7d73c58e3989789ab1a0163f446c40d1921",
   "src/brake-block-device.ts": "5bb4118f73203cbf4dae217c55351b7b8a8fd936",
   "src/brake-device-copy.ts": "d11bbd124821d2c7f5258b5d2682d8e9ec13fe1c",
   "src/brake-partition-tools.ts": "2d7e552d88f20157cdcede7ad7e87c613660254c",
@@ -82,8 +82,8 @@ export const PINNED_BLOBS = {
     "73211db1442714db02f6fbb79f47a1548c4a5e86",
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
   "src/capability/bash-mutation.ts": "e7abc1607cc2c7e01f95e0ea6684e7d60850bede",
-  "src/shell-effective-commands.ts": "e33b7f9ee53207e6efe0429ff890856a26b00d72",
-  "src/effective-command-walk.ts": "4023b89fbcb0fb2acf89a56ccd18117ddcf8b264",
+  "src/shell-effective-commands.ts": "61f90d6c6d0db7c4892d785b2a43470e3628ee29",
+  "src/effective-command-walk.ts": "050fc4c5902cf0a876f12eb62b2dc1a29ca9897b",
   "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
@@ -168,7 +168,7 @@ export const PINNED_BLOBS = {
   "src/capability/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/capability/heredoc-bodies.ts":
-    "be0215ac3ff87ca27313a315958e0c4217a4623a",
+    "bd89692fe06f53b91a121a499ac912acd851ff52",
   "src/capability/heredoc-body-records.ts":
     "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
   "src/capability/heredoc-frame-bounds.ts":
@@ -205,10 +205,10 @@ export const PINNED_BLOBS = {
   "src/shell-substitution-expansion.ts":
     "64fdafee4a5034fd8d24e1b5e661e27cfd786974",
   "src/capability/heredoc-scripts.ts":
-    "79c6fb2e1a0c810e0ea5e1ac7a5d82374e73c8ce",
-  "src/shell-script-feeds.ts": "0c1519b2af918eb44b52aecd98d47d5a9c872752",
-  "src/shell-script-feed-input.ts": "c2adb2bd79f92dcbdddf35c7511b05a43235b9da",
-  "src/shell-script-readers.ts": "5168b9181fc6cdb0b86438af66677db9424b6c94",
+    "5997c175abc1d01360803a974da4227716d36bd8",
+  "src/shell-script-feeds.ts": "30e89799f322ec4fee1a7635965fd270d5ee26c4",
+  "src/shell-script-feed-input.ts": "b9edd80a1df71c66cd0e7c9599e374635261102c",
+  "src/shell-script-readers.ts": "8f8223d64ee0ffb2d8b5ff936fa104b0d51d97ba",
   "src/shell-stdin-source.ts": "1c003b31ae9ebc6f5d996ebed403860b9a643dd5",
   "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
   "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",

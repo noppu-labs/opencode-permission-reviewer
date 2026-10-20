@@ -24,13 +24,16 @@ interface OptionScan {
 /** The words `cat` may have and still pass its stdin on as it is. */
 const CAT_PLAIN_WORDS = new Set(["-u", "-", "--"]);
 
-/** Whether the shell `words` start reads its script from stdin: with `-s`,
+/** Whether the shell at `from` in `words` reads its script from stdin: with `-s`,
  *  or with neither `-c` nor an operand before the first non-option word.
  *  Where shells disagree on a form, it counts. */
-export function shellReadsStdin(words: readonly ShellToken[]): boolean {
-  const head = words[0]?.value ?? "";
+export function shellReadsStdin(
+  words: readonly ShellToken[],
+  from = 0,
+): boolean {
+  const head = words[from]?.value ?? "";
   if (!STDIN_SCRIPT_SHELLS.has(shellBasename(head))) return false;
-  const scan = scanOptions(words);
+  const scan = scanOptions(words, from + 1);
   if (scan.noRun) return false;
   return scan.stdinFlag || (!scan.command && !scan.operand);
 }
@@ -42,7 +45,7 @@ export function catPassesStdin(words: readonly ShellToken[]): boolean {
   return words.slice(1).every((word) => CAT_PLAIN_WORDS.has(word.value));
 }
 
-function scanOptions(words: readonly ShellToken[]): OptionScan {
+function scanOptions(words: readonly ShellToken[], from: number): OptionScan {
   const scan: OptionScan = {
     stdinFlag: false,
     command: false,
@@ -50,7 +53,7 @@ function scanOptions(words: readonly ShellToken[]): OptionScan {
     operand: false,
   };
   let skip = 0;
-  for (let index = 1; index < words.length; index += 1) {
+  for (let index = from; index < words.length; index += 1) {
     if (skip > 0) {
       skip -= 1;
       continue;

@@ -1,13 +1,14 @@
 // Puts the segments a walk produced into the shape `scriptFeeds` reads: which effective command each pipe feeds, and the placeholder of each heredoc.
 
+import { holdsGluedPlaceholder } from "./capability/heredoc-scripts.ts";
 import {
   heredocPlaceholders,
   type ShellRedirection,
 } from "./shell-redirections.ts";
 import {
-  type RemoteReader,
   type ScriptFeedInput,
   type ScriptFeedResult,
+  type StdinReader,
   scriptFeeds,
 } from "./shell-script-feeds.ts";
 import type { ScriptRedirection } from "./shell-stdin-source.ts";
@@ -20,6 +21,8 @@ export interface SegmentFeedParts {
   redirections: readonly (readonly ShellRedirection[])[];
   /** The redirections of each ssh in it that has no remote command. */
   bareSsh: readonly (readonly ShellRedirection[])[];
+  /** The redirections of each shell in it run with `-c` and `-s`. */
+  stdinShells: readonly (readonly ShellRedirection[])[];
 }
 
 /** The scripts that run for the segments of one command, under the heredoc
@@ -41,7 +44,8 @@ export function buildFeedInput(
   const effective: (readonly ShellToken[])[] = [];
   const redirections: (readonly ScriptRedirection[])[] = [];
   const pipedFrom: (number | undefined)[] = [];
-  const remote: RemoteReader[] = [];
+  const remote: StdinReader[] = [];
+  const shells: StdinReader[] = [];
   parts.forEach((part, index) => {
     const placeholders = heredocPlaceholders(part.segment.tokens);
     const producer = producers[index];
@@ -53,12 +57,36 @@ export function buildFeedInput(
       pipedFrom.push(producer);
     });
     for (const own of part.bareSsh)
-      remote.push({
-        redirections: markRedirections(own, placeholders),
-        pipedFrom: producer,
-      });
+      remote.push(readerOf(own, placeholders, producer));
+    for (const own of part.stdinShells)
+      shells.push(readerOf(own, placeholders, producer));
   });
-  return { effective, redirections, pipedFrom, scripts, remote };
+  return {
+    effective,
+    redirections,
+    pipedFrom,
+    scripts,
+    remote,
+    shells,
+    glued: scripts.size > 0 && parts.some(hasGluedWord),
+  };
+}
+
+function readerOf(
+  own: readonly ShellRedirection[],
+  placeholders: readonly (string | undefined)[],
+  producer: number | undefined,
+): StdinReader {
+  return {
+    redirections: markRedirections(own, placeholders),
+    pipedFrom: producer,
+  };
+}
+
+/** Whether a word of the segment holds a placeholder together with other
+ *  text, which only a command lexed without `separatePlaceholders` has. */
+function hasGluedWord({ segment }: SegmentFeedParts): boolean {
+  return segment.tokens.some((token) => holdsGluedPlaceholder(token.value));
 }
 
 /** `redirections` with the placeholder of each heredoc among the first of

@@ -61,6 +61,7 @@ export function joinExecCommands(runs: readonly ExecCommands[]): ExecCommands {
     redirections: runs.flatMap((run) => run.redirections),
     segmentRedirections: runs.flatMap((run) => run.segmentRedirections),
     bareSsh: runs.flatMap((run) => run.bareSsh),
+    stdinShells: runs.flatMap((run) => run.stdinShells),
     truncated: runs.some((run) => run.truncated),
   };
 }
@@ -89,6 +90,7 @@ function noCommands(truncated: boolean): ExecCommands {
     redirections: [],
     segmentRedirections: [],
     bareSsh: [],
+    stdinShells: [],
     truncated,
   };
 }

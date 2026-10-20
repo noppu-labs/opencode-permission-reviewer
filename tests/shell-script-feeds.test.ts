@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import { separatePlaceholders } from "../src/capability/heredoc-scripts.ts";
 import { analyzeSegmentRedirections } from "../src/shell-effective-commands.ts";
 import { lexSegmentsBounded, newAnalysisBudget } from "../src/shell-lexer.ts";
 import { heredocPlaceholders } from "../src/shell-redirections.ts";
@@ -32,6 +33,7 @@ interface FeedRow {
   dropScripts?: boolean;
   stdin?: string[];
   stdinUnresolved?: boolean;
+  unspaced?: boolean;
 }
 
 const rows = JSON.parse(
@@ -43,12 +45,18 @@ const rows = JSON.parse(
 
 /** The parts of `command` the way the walks produce them, and the scripts
  *  its heredocs recorded. */
-function partsOf(command: string): {
+function partsOf(
+  command: string,
+  separated = true,
+): {
   parts: SegmentFeedParts[];
   scripts: ReadonlyMap<string, readonly string[]>;
 } {
   const extraction = extractHeredocs(command);
-  const lex = lexSegmentsBounded(extraction.sanitizedCommand);
+  const text = separated
+    ? separatePlaceholders(extraction.sanitizedCommand)
+    : extraction.sanitizedCommand;
+  const lex = lexSegmentsBounded(text);
   const budget = newAnalysisBudget("default", "bash", {
     commands: [],
     unresolved: false,
@@ -60,6 +68,7 @@ function partsOf(command: string): {
       effective: analysis.commands,
       redirections: analysis.redirections,
       bareSsh: analysis.bareSsh,
+      stdinShells: analysis.stdinShells,
     };
   });
   return { parts, scripts: extraction.scripts };
@@ -72,7 +81,7 @@ describe("script feeds per effective command", () => {
 
   for (const row of rows) {
     test(`${row.id}: ${JSON.stringify(row.command)}`, () => {
-      const { parts, scripts } = partsOf(row.command);
+      const { parts, scripts } = partsOf(row.command, row.unspaced !== true);
       const used = row.dropScripts === true ? new Map() : scripts;
       const result = scriptFeedsOfSegments(parts, used);
       const feeds: ScriptFeed[] = result.feeds;

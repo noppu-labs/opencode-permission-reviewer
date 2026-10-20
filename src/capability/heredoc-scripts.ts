@@ -34,6 +34,13 @@ export function heredocScriptText(
   return unescapedBody(expandedBody(body, tabStripped));
 }
 
+/** Notes that the body under `sha256` has no script to read: it has no
+ *  terminator line, or its delimiter cannot be known. The placeholder then
+ *  holds no reading, which differs from a placeholder that is missing. */
+export function recordNoScript(into: BodyCommands, sha256: string): void {
+  noteNoScript(into, heredocPlaceholder(sha256));
+}
+
 /** Records the script of one body under its placeholder. A collector that is
  *  not there is a reading that keeps none. */
 export function recordHeredocScript(
@@ -58,8 +65,37 @@ export function keepBodyScripts(
   scripts: ReadonlyMap<string, readonly string[]>,
 ): void {
   if (into === undefined || scripts.size === 0) return;
-  for (const [placeholder, texts] of scripts)
+  for (const [placeholder, texts] of scripts) {
+    noteNoScript(into, placeholder);
     for (const text of texts) addScript(into, placeholder, text);
+  }
+}
+
+function noteNoScript(into: BodyCommands, placeholder: string): void {
+  into.scripts ??= new Map();
+  if (!into.scripts.has(placeholder)) into.scripts.set(placeholder, []);
+}
+
+/** A placeholder right before an operator character, as the extractor leaves
+ *  it after a delimiter that an operator follows (`<<EOF|sh`, `<<EOF>f`).
+ *  The lexer reads the two as one word. */
+const GLUED_PLACEHOLDER = /(<HEREDOC:sha256:[a-f0-9]{12}>)(?=[|&<>])/g;
+const GLUED_WORD = /<HEREDOC:sha256:[a-f0-9]{12}>(?=[|&<>])/;
+
+/** The sanitized `text` with a space between each placeholder and the
+ *  operator glued to it, so that a lexer reads the placeholder as a word of
+ *  its own and the operator as the one the command had. The text is returned
+ *  as it is when it has none. */
+export function separatePlaceholders(text: string): string {
+  return text.includes("<HEREDOC:")
+    ? text.replace(GLUED_PLACEHOLDER, "$1 ")
+    : text;
+}
+
+/** Whether a word of a lexed sanitized command holds a placeholder together
+ *  with other text: a command that was not given `separatePlaceholders`. */
+export function holdsGluedPlaceholder(word: string): boolean {
+  return GLUED_WORD.test(word);
 }
 
 /** Bodies that are alike share a placeholder, and a quoted and an unquoted

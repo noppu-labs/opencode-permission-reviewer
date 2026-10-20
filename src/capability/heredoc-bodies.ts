@@ -10,7 +10,11 @@ import {
   type PendingStart,
   readBody,
 } from "./heredoc-body-records.ts";
-import { heredocPlaceholder, recordHeredocScript } from "./heredoc-scripts.ts";
+import {
+  heredocPlaceholder,
+  recordHeredocScript,
+  recordNoScript,
+} from "./heredoc-scripts.ts";
 
 /** The part of the heredoc scan state a start line's bodies are read into:
  *  `pieces` holds the start line, with each pending operator in its place,
@@ -83,7 +87,9 @@ function keepBody(
   read: { body: string; unterminated: boolean },
   sha256: string,
 ): void {
-  if (bodies === undefined || !start.resolved) return;
+  if (bodies === undefined) return;
+  if (!start.resolved || read.unterminated) recordNoScript(bodies, sha256);
+  if (!start.resolved) return;
   const tabStripped = start.operator === "<<-";
   if (!start.quoted) addBodyCommands(bodies, read.body, tabStripped);
   if (!read.unterminated)

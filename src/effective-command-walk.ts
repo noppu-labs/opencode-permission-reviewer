@@ -17,6 +17,7 @@ import {
   type ShellRedirection,
 } from "./shell-redirections.ts";
 import { lexSegments } from "./shell-scanner.ts";
+import { shellReadsStdin } from "./shell-script-readers.ts";
 import type { ShellToken } from "./shell-token.ts";
 import {
   commandStart,
@@ -35,6 +36,9 @@ export interface WalkSink extends EffectiveCommandsAnalysis {
   budget: AnalysisBudget;
   segmentRedirections: ShellRedirection[];
   bareSsh: ShellRedirection[][];
+  /** The redirections of each shell run with `-c` and `-s`: after its
+   *  command string it reads a script from stdin. */
+  stdinShells: ShellRedirection[][];
 }
 
 /** One level of the walk: the redirections its commands carry, inherited
@@ -103,7 +107,10 @@ function peelCommand(
   base: string,
   level: WalkLevel,
 ): void {
-  if (reanalyzeIfPresent(wrapperCommandString(words, i, base), level)) return;
+  const commandString = wrapperCommandString(words, i, base);
+  if (commandString !== null && shellReadsStdin(words, i))
+    level.sink.stdinShells.push(level.redirections);
+  if (reanalyzeIfPresent(commandString, level)) return;
   if (base === "ssh") {
     if (!reanalyzeIfPresent(sshRemoteCommand(words, i), level))
       level.sink.bareSsh.push(level.redirections);
