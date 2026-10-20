@@ -215,6 +215,7 @@ export const PINNED_BLOBS = {
   "src/brake-analyzed-segments.ts": "02a5eda0b11c6c9c5b88904986df548a5c2fd607",
   "src/brake-script-feeds.ts": "bdc57a64b5950296b3c0b784e08e206c0ad5c39c",
   "src/capability/script-feed-analysis.ts":
-    "eab7a0866dc6bbfa19e70cea1de083666e2bc8d4",
-  "src/capability/walk-feeds.ts": "30c2cbb21ab86142dabd1cf5c4e793b2563ac7c2",
+    "a12b1dd82810897a65c790f021d385104ae43785",
+  "src/capability/walk-feeds.ts": "9c800b528471f96708b0afce41a9c66655069510",
+  "src/interpreter-stdin.ts": "b25a6c727a5841b1555949599375b01894b51f7b",
 };

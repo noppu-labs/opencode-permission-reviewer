@@ -1,12 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { analyzeSegments } from "../src/brake-analyzed-segments.ts";
 import { MAX_BODY_COMMANDS } from "../src/brake-body-commands.ts";
 import { keepScriptFeeds } from "../src/brake-script-feeds.ts";
 import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
 import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import type { BodyCommands } from "../src/capability/heredoc-body-commands.ts";
+import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { analyzeSegmentRedirections } from "../src/shell-effective-commands.ts";
 import { lexSegmentsBounded } from "../src/shell-lexer.ts";
@@ -254,6 +256,26 @@ describe("a script that is not known", () => {
     expect(bodies.feeds).toBeUndefined();
   });
 
+  // Reading the placeholders apart adds a token to each glued word, so a
+  // command just under the token cap in one reading is over it in the other.
+  const NEAR_CAP = "cat <<A|sh\nx\nA\n".repeat(3150);
+
+  test("a command that cannot be read apart leaves the brake's feeds unresolved", () => {
+    const sanitized = extractHeredocs(NEAR_CAP).sanitizedCommand;
+    const bodies: BodyCommands = { commands: [], unresolved: false };
+    expect(
+      analyzeSegments(sanitized, "default", "finder", bodies),
+    ).toBeDefined();
+    expect(bodies.feeds?.unresolved).toBe(true);
+  });
+
+  test("a command that cannot be read apart is a truncated analysis", () => {
+    expect(parseCommand(NEAR_CAP).analysisTruncated).toBe(true);
+    expect(
+      parseCommand("cat <<A|sh\nx\nA\n".repeat(100)).analysisTruncated,
+    ).toBe(false);
+  });
+
   test("a placeholder inside a substitution cannot be read apart, so the limit applies", () => {
     const command = 'echo "$(timeout 5 /bin/sh <<"EOF">f\n# rm -rf /\nEOF\n)"';
     expect(verdict(command)).toBe(REASONS.limit);
@@ -326,6 +348,13 @@ describe("what the analysis records of a script", () => {
       "sh <<<'echo RAN'",
       "python3 <<'EOF'\nprint(1)\nEOF",
       "node <<<'console.log(1)'",
+      "python3 - <<EOF\nx\nEOF",
+      "python3 -u <<EOF\nx\nEOF",
+      "python3 -W ignore <<EOF\nx\nEOF",
+      "python3 -- <<EOF\nx\nEOF",
+      "node - <<<'console.log(1)'",
+      "ruby - <<<'puts 1'",
+      "perl - <<<'print 1'",
     ]) {
       expect(parseCommand(command).stdinCode).toBe(true);
       expect(assess(command).facts.createsAdHocCode.value).toBe(true);
@@ -340,6 +369,13 @@ describe("what the analysis records of a script", () => {
       "sh < file",
       "sh <<EOF <file\nx\nEOF",
       "sh 3<<EOF\nx\nEOF",
+      "python3 run.py <<EOF\nx\nEOF",
+      "node app.js <<EOF\nx\nEOF",
+      "fish script.fish <<EOF\nx\nEOF",
+      "python3 -m http.server <<EOF\nx\nEOF",
+      "python3 --version <<EOF\nx\nEOF",
+      "python3 -- run.py <<EOF\nx\nEOF",
+      "awk '{print}' <<EOF\nx\nEOF",
     ]) {
       expect(parseCommand(command).stdinCode).toBeUndefined();
       expect(assess(command).facts.createsAdHocCode.value).toBe("unknown");
@@ -349,6 +385,12 @@ describe("what the analysis records of a script", () => {
   test("a command string that holds a heredoc has its shell read it as code", () => {
     const parsed = parseCommand("env -S 'sh <<EOF\necho RAN\nEOF'");
     expect(parsed.stdinCode).toBe(true);
+  });
+
+  test("inline code stays ad-hoc code through the existing rule, not the heredoc", () => {
+    const command = "perl -e 'print 1' <<EOF\nx\nEOF";
+    expect(parseCommand(command).stdinCode).toBeUndefined();
+    expect(assess(command).facts.createsAdHocCode.value).toBe(true);
   });
 
   test("a command with no heredoc or here-string records nothing", () => {

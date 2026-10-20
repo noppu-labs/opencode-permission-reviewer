@@ -1,5 +1,6 @@
 // What the commands of lexed segments read as scripts from a heredoc or here-string, and which interpreters run code written on the spot.
 
+import { interpreterReadsStdin } from "../interpreter-stdin.ts";
 import { shellBasename } from "../shell-lexer.ts";
 import { STDIN_SCRIPT_SHELLS } from "../shell-lexer-tables.ts";
 import {
@@ -59,10 +60,13 @@ export function analyzeFeeds(
   return { ...scriptFeeds(input), stdinCode };
 }
 
-/** An interpreter that would run what its stdin carries: a shell reads it
- *  only without a script file or command string. */
+/** An interpreter that would run what its stdin carries: without a script
+ *  file or command string for a shell, without a script operand for the
+ *  rest. */
 function runsStdinCode(words: readonly ShellToken[]): boolean {
   const head = shellBasename(words[0]?.value ?? "");
   if (!INTERPRETERS.has(head)) return false;
-  return !STDIN_SCRIPT_SHELLS.has(head) || shellReadsStdin(words);
+  return STDIN_SCRIPT_SHELLS.has(head)
+    ? shellReadsStdin(words)
+    : interpreterReadsStdin(words);
 }

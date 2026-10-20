@@ -37,21 +37,27 @@ export function mainFeeds(
 ): ScriptFeed[] {
   if (!sanitized.includes("<<")) return NO_FEEDS;
   const separated = separatePlaceholders(sanitized);
-  const parts =
-    separated === sanitized ? walked.parts : separatedParts(separated);
+  const apart = separated === sanitized ? undefined : separatedParts(separated);
+  if (apart?.truncated === true) walked.truncated = true;
+  const parts = apart?.parts ?? walked.parts;
   const scripts = mergeScripts([extracted, lexScripts]);
   return noteFeeds(walked, analyzeFeeds(parts, scripts));
 }
 
-function separatedParts(separated: string): Walked["parts"] {
+/** The text read again with its placeholders apart from the operators, and
+ *  whether a limit stopped that reading short. */
+function separatedParts(separated: string): {
+  parts: Walked["parts"];
+  truncated: boolean;
+} {
   const walked = newWalked();
   const lex = lexSegmentsBounded(separated);
   const budget = newAnalysisBudget("default", "bash", {
     commands: [],
     unresolved: false,
   });
-  walkSegments(lex.segments, budget, walked);
-  return walked.parts;
+  const stopped = walkSegments(lex.segments, budget, walked);
+  return { parts: walked.parts, truncated: lex.truncated || stopped };
 }
 
 function noteFeeds(into: Walked, found: FeedAnalysis): ScriptFeed[] {
