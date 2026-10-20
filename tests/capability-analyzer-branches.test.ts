@@ -119,6 +119,7 @@ describe("analyzeCapability credential operands", () => {
       hasDynamicConstructs: false,
       analysisTruncated: false,
       heads: [],
+      segmentRedirections: [],
     };
     expect(capabilityProfile(parsed)).toBe("unknown/low | unknown | ");
   });

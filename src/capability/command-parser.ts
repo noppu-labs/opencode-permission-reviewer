@@ -71,6 +71,7 @@ function parse(rawCommand: string): ParsedCommand {
     hasDynamicConstructs: dynamic,
     analysisTruncated: walked.truncated,
     heads: walked.heads,
+    segmentRedirections: walked.parts.map((part) => part.segmentRedirections),
     ...(walked.remote.length > 0 && { remoteCommands: walked.remote }),
     ...(walked.stdinCode && { stdinCode: true }),
   };

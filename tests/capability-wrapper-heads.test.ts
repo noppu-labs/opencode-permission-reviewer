@@ -2,12 +2,16 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseCommand } from "../src/capability/command-parser.ts";
+import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { capabilityProfile } from "./capability-profile.ts";
+import { request } from "./helpers.ts";
 
 // Wrapper and remote facts come from every command the shell walk resolves:
 // inside command strings, `env -S`, `watch` and ssh remote commands, and
 // after a leading redirection. Each row's command gets the same profile as
-// its twin, which runs the same commands directly.
+// its twin, which runs the same commands directly. The brake reads the
+// command that `env -S` options lead to, and the wrapper facts of a command
+// past the walk's limits are kept.
 
 interface HeadRow {
   id: string;
@@ -18,12 +22,22 @@ interface HeadRow {
   heads: string[];
 }
 
-const { rows } = JSON.parse(
+interface BrakeRow {
+  id: string;
+  form: string;
+  command: string;
+  reason?: "destruction";
+}
+
+const { rows, brake } = JSON.parse(
   readFileSync(
     join(import.meta.dir, "fixtures/wrapper-head-rows.json"),
     "utf8",
   ),
-) as { rows: HeadRow[] };
+) as { rows: HeadRow[]; brake: BrakeRow[] };
+
+const DESTRUCTION =
+  "Emergency brake: command contains unmistakable broad system destruction.";
 
 const HEAD_FACTS: Record<string, string> = {
   "process.privilegeEscalation": "privilegeEscalation",
@@ -77,5 +91,49 @@ describe("wrapper and remote facts from the walk", () => {
   test("lists the commands after a leading redirection", () => {
     const { heads } = parseCommand("2>/dev/null nohup ls");
     expect(heads.map((h) => h.head)).toEqual(["nohup", "ls"]);
+  });
+});
+
+describe("the command after env -S options", () => {
+  test.each(brake.map((row) => [`${row.id} ${row.form}`, row] as const))(
+    "%s",
+    (_title, row) => {
+      const { command } = row;
+      expect(
+        emergencyBrakeReason(
+          request({ patterns: [command], metadata: { command } }),
+        ),
+      ).toBe(row.reason === undefined ? undefined : DESTRUCTION);
+    },
+  );
+});
+
+describe("wrapper facts past the walk limits", () => {
+  const commands = "true;".repeat(4_100);
+  test.each([
+    [`${commands} sudo x`, "sudo x"],
+    [`${commands} nohup x`, "nohup x"],
+    [`${commands} ssh h 'rm x'`, "ssh h 'rm x'"],
+    [`${commands} timeout 5 busybox nohup x`, "nohup x"],
+    [`${"timeout 5 ".repeat(40)}sudo id`, "sudo id"],
+    [`${"busybox ".repeat(40)}run0 id`, "run0 id"],
+  ])("%#", (command, twin) => {
+    expect(parseCommand(command).analysisTruncated).toBe(true);
+    expect(headFacts(capabilityProfile(command))).toEqual(
+      headFacts(capabilityProfile(twin)),
+    );
+  });
+});
+
+describe("writes of redirections on a command that resolves to none", () => {
+  test.each([
+    [">f ssh h", "workspaceWrite"],
+    [">f env -S '-i ssh h'", "workspaceWrite"],
+    ["2>/dev/null env -S '- -- rm x'", "temporaryWrite"],
+    ["exec >f", "workspaceWrite"],
+  ])("%s", (command, write) => {
+    expect(capabilityProfile(command).split(" | ")[2]).toContain(
+      `writeEffects.${write}`,
+    );
   });
 });

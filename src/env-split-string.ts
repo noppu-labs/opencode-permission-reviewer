@@ -7,8 +7,10 @@ import type { ShellToken } from "./shell-token.ts";
 /** `env -S 'command string'` (or unquoted: `env -S cmd args…`) carries a
  *  parsed command line, and any operands after the string are appended to
  *  it. The concatenation is what gets re-analyzed, so `env -S rm -rf /` and
- *  `env -iS rm -rf /` are both caught. `null` when there is no non-empty
- *  split string. */
+ *  `env -iS rm -rf /` are both caught. env reads the words of the string
+ *  as its own arguments again, so one that starts with an option or `--`
+ *  stays env's: `env -S '-- rm'` runs `rm`. `null` when there is no
+ *  non-empty split string. */
 export function envSplitString(words: ShellToken[], i: number): string | null {
   const s = findEnvSCommand(words, i + 1);
   if (s === null || s.script.length === 0) return null;
@@ -16,8 +18,12 @@ export function envSplitString(words: ShellToken[], i: number): string | null {
     .slice(s.tailIndex)
     .map((t) => t.value)
     .join(" ");
-  return tail ? `${s.script} ${tail}` : s.script;
+  const text = tail ? `${s.script} ${tail}` : s.script;
+  return OPTION_FIRST.test(text) ? `env ${text}` : text;
 }
+
+/** A first word that, with its quotes and escapes removed, starts with `-`. */
+const OPTION_FIRST = /^\s*['"\\]*-/;
 
 /** The command string an `env -S` option carries, and the index of the first
  *  operand after it. */

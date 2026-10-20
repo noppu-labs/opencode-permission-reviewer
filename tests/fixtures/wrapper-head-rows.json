@@ -12,6 +12,10 @@
     { "id": "w.10", "form": "env -S holding ssh", "command": "env -S \"ssh h rm x\"", "twin": "ssh h rm x", "class": "remote-operation", "heads": ["remote", "remoteMutation"] },
     { "id": "w.11", "form": "watch holding ssh", "command": "watch ssh h ls", "twin": "ssh h ls", "class": "remote-operation", "heads": ["remote"] },
     { "id": "w.12", "form": "command string holding run0", "command": "sh -c \"run0 id\"", "twin": "run0 id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.13", "form": "env -S string that starts with --", "command": "env -S -- ssh h ls", "twin": "ssh h ls", "class": "remote-operation", "heads": ["remote"] },
+    { "id": "w.14", "form": "env -S quoted string that starts with --", "command": "env -S '-- sudo id'", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
+    { "id": "w.15", "form": "env -S string that starts with an option", "command": "env -S '-i nohup x'", "twin": "nohup x", "class": "persistence", "heads": ["persistence"] },
+    { "id": "w.16", "form": "env -S at the end of a cluster, then --", "command": "env -iS -- sudo id", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
     { "id": "r.01", "form": "remote sudo counts", "command": "ssh h sudo id", "twin": "sudo ssh h id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
     { "id": "r.02", "form": "remote nohup counts", "command": "ssh h nohup x", "twin": "nohup ssh h x", "class": "remote-operation", "heads": ["persistence", "remote"] },
     { "id": "r.03", "form": "mosh remote sudo counts", "command": "mosh h sudo id", "twin": "sudo mosh h id", "class": "remote-operation", "heads": ["privilegeEscalation", "remote"] },
@@ -29,5 +33,16 @@
     { "id": "l.08", "form": "stderr redirection before sudo", "command": "2>/dev/null sudo x", "twin": "sudo x 2>/dev/null", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
     { "id": "l.09", "form": "heredoc before cat stays read-only", "command": "cat <<EOF\nhi\nEOF", "twin": "cat <<EOF\nhi\nEOF", "class": "read-only", "heads": [] },
     { "id": "l.10", "form": "input redirection before wc stays read-only", "command": "<f wc -l", "twin": "wc -l <f", "class": "read-only", "heads": [] }
+  ],
+  "brake": [
+    { "id": "b.01", "form": "env -S string that starts with --", "command": "env -S -- rm -rf /", "reason": "destruction" },
+    { "id": "b.02", "form": "env -S quoted string that starts with --", "command": "env -S '-- rm -rf /'", "reason": "destruction" },
+    { "id": "b.03", "form": "env -S string that starts with an option", "command": "env -S -i rm -rf /", "reason": "destruction" },
+    { "id": "b.04", "form": "env -S at the end of a cluster, then --", "command": "env -iS -- rm -rf /", "reason": "destruction" },
+    { "id": "b.05", "form": "env -S string with a value option", "command": "env -S '-u X rm -rf /'", "reason": "destruction" },
+    { "id": "b.06", "form": "autossh drops the -- that -o takes, then ssh reads -- as the end", "command": "autossh -M 0 h -o -- -- rm -rf /", "reason": "destruction" },
+    { "id": "b.07", "form": "autossh drops the -- that -o takes, then ssh reads a config line", "command": "autossh -M 0 h -o -- User=a rm -rf /", "reason": "destruction" },
+    { "id": "b.08", "form": "harmless env -S twin", "command": "env -S -- ls /" },
+    { "id": "b.09", "form": "harmless autossh twin", "command": "autossh -M 0 h -o -- -- ls /" }
   ]
 }

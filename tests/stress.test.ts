@@ -590,6 +590,19 @@ describe("stress and adversarial robustness", () => {
     60_000,
   );
 
+  test.each([
+    ["sudo", `${"true;".repeat(4_100)} ${"sudo ".repeat(12_000)}x`],
+    ["timeout 5", `${"true;".repeat(4_100)} ${"timeout 5 ".repeat(6_000)}x`],
+  ])(
+    "classifies a chain of %s past the walk limits in linear time",
+    (_, command) => {
+      const parsed = parseCommand(command);
+      const started = Date.now();
+      analyzeCapability(parsed, "/tmp", "/tmp");
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+  );
+
   test("survives 10,000 encoded TUI transitions without cross-request corruption", () => {
     const state = new ReviewUiState({
       model: "openai/gpt-5.6-luna",

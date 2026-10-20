@@ -22,7 +22,7 @@ export function classifySegmentHeads(
 ): void {
   let scanned: readonly ShellToken[] | undefined;
   for (const peeled of heads) {
-    classifyHead(peeled.head, facts);
+    classifyWrapperHead(peeled.head, facts);
     // The commands of one level come in order, so the first one inside an
     // ssh remote command already covers the words of the ones after it.
     if (peeled.remote && peeled.tokens !== scanned) {
@@ -32,7 +32,12 @@ export function classifySegmentHeads(
   }
 }
 
-function classifyHead(head: string, facts: CapabilityFacts): void {
+/** The facts a wrapper head carries itself: privilege, persistence, and an
+ *  ssh that makes the command a remote operation. */
+export function classifyWrapperHead(
+  head: string,
+  facts: CapabilityFacts,
+): void {
   if (PRIVILEGE_WRAPPERS.has(head)) {
     facts.privilegeEscalation = true;
     facts.childProcesses = true;

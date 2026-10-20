@@ -76,17 +76,17 @@ export const PINNED_BLOBS = {
   "src/gnu-long-option-tables.ts": "1dbd4ced0748f8b185aa7dea3d2ca0c0f1095f38",
   "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
   "src/capability/command-parser.ts":
-    "d1adecd07956749aff25a2cffd2a040f7ca94ca4",
-  "src/capability/bash-analyzer.ts": "23a25c44049515706c92ba0a9b7dbeb3625c73d9",
+    "07263cbc851fcad9d4b4e7aaba1601dc05b82182",
+  "src/capability/bash-analyzer.ts": "cc35c600c92807dcaf85da8de94856b215c0e450",
   "src/capability/bash-command-tables.ts":
     "cd2340a5e08bc3b2828e023f8ce4d5fc385bc496",
   "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
-  "src/capability/bash-mutation.ts": "e7abc1607cc2c7e01f95e0ea6684e7d60850bede",
+  "src/capability/bash-mutation.ts": "2d3270f7b3585f690d5bc7c1c0724a2cda838ccb",
   "src/shell-effective-commands.ts": "c20b3abacb45665ed48a2177953630361ac51483",
   "src/effective-command-walk.ts": "62cf9454656c3d0b8dda8bd5f0c465e5f198b7bd",
   "src/shell-wrapper-options.ts": "79dab2c3dab7d845f3dc14da5affbfe7573ed1c4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
-  "src/env-split-string.ts": "a111921edee4bc7fc2672229619bf3a9e37a2305",
+  "src/env-split-string.ts": "e6a6d4a1c2f5d01ff1fea66065ea6cb80ddb7e93",
   "src/ssh-remote-command.ts": "ecf35d452055d243f9289a76eef4ced50f36e014",
   "src/shell-lexer.ts": "172ac061a1739823cef2aa6cf4eda7ef90d20b50",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
@@ -136,7 +136,7 @@ export const PINNED_BLOBS = {
     "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
   "src/capability/capability-report.ts":
     "91e3d8b4ef18becfd7d0bb66dd2b76b80368d343",
-  "src/capability/segment-heads.ts": "0196350ef50443e2bb0faf8195cba043c6536a72",
+  "src/capability/segment-heads.ts": "dd29bd314876b803f710ae164bf4d37d5a0d6f3c",
   "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
   "src/capability/sensitive-path-reads.ts":
     "abfae5e5adccfe21f419a9d4fe3ca077d7fa1573",

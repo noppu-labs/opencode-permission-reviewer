@@ -73,6 +73,10 @@ export interface ParsedCommand {
   /** Every command the walk resolves, wrappers among them, at every level:
    *  command strings, `env -S`, `watch` and ssh remote commands. */
   heads: readonly import("../walk-sink.ts").PeeledHead[];
+  /** The redirections each walked segment and command string carries
+   *  itself, whether or not it yields an effective command: the shell
+   *  opens them before it runs anything (`>f ssh h`). */
+  segmentRedirections: readonly (readonly Redirection[])[];
   /** An interpreter among the commands runs code from a heredoc or
    *  here-string. */
   stdinCode?: boolean;
