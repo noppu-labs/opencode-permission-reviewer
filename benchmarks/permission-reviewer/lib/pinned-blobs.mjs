@@ -56,7 +56,7 @@ export const PINNED_BLOBS = {
   "src/emergency-brake.ts": "ab68bea7a4a244ea14c1a6bde485aa15c095d5d7",
   "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
   "src/brake-heredoc-texts.ts": "912e96820c37ee43c4221ef5a1ada0e6db5b2f66",
-  "src/brake-readings.ts": "7497a42605fdffcf73a99f45fd17f165bbd52c1b",
+  "src/brake-readings.ts": "6b61c782994334c139b9a450cf02dc3f029d0610",
   "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/reviewed-command.ts": "d7f4893e9f590680cfc10d2e4b9ffc1743fb17b7",
   "src/brake-arguments.ts": "9e67d27ca7194e5dca9023a4e2265931263ed328",
@@ -212,4 +212,5 @@ export const PINNED_BLOBS = {
   "src/shell-stdin-source.ts": "1c003b31ae9ebc6f5d996ebed403860b9a643dd5",
   "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
   "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",
+  "src/brake-analyzed-segments.ts": "6a79c259ba5e42779c6c1b178c245aacbeede755",
 };
