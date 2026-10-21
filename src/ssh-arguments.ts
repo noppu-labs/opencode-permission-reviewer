@@ -4,7 +4,7 @@ import { readSshArguments, type SshCall } from "./ssh-value-options.ts";
 
 /** The options of autossh's getopt string (`autossh.c` OPTION_STRING) that
  *  take a value. */
-const AUTOSSH_VALUE_LETTERS: ReadonlySet<string> = new Set(
+export const AUTOSSH_VALUE_LETTERS: ReadonlySet<string> = new Set(
   "M b c e i l m o p w D E F I L O Q R S W".split(" "),
 );
 
@@ -59,8 +59,11 @@ function autosshToSshArguments(
   return { kept, origin };
 }
 
-/** The destination and remote command of autossh's arguments from `start`:
- *  the ssh reading of what autossh hands to ssh. */
+/** The destination and remote command of autossh's arguments from `start`,
+ *  in the order given: the ssh reading of what autossh hands to ssh. glibc's
+ *  getopt may first move autossh's options ahead of its operands, which can
+ *  change where the remote command starts; `permuteAutosshWords` gives that
+ *  order, and the walk reads the remote command in both. */
 export function readAutosshArguments(
   words: readonly string[],
   start: number,

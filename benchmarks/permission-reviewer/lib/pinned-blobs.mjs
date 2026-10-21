@@ -87,7 +87,7 @@ export const PINNED_BLOBS = {
   "src/shell-wrapper-options.ts": "e05970b8231162248f2c311ce230b092b5c142e4",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a62dd852fb6cc9788a76217f99e9cc34a1474333",
-  "src/ssh-remote-command.ts": "ecf35d452055d243f9289a76eef4ced50f36e014",
+  "src/ssh-remote-command.ts": "99326adbd82894883df7923e5dfefd273d1eccbf",
   "src/shell-lexer.ts": "172ac061a1739823cef2aa6cf4eda7ef90d20b50",
   "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/shell-lexer-tables.ts": "8bd5f261d6d1ad58765a02987afb79ab368225a3",

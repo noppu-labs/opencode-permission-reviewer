@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
+import { permuteAutosshWords } from "../src/autossh-permutation.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { analyzeEffectiveCommands } from "../src/shell-effective-commands.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
@@ -21,6 +22,13 @@ interface ReadRow {
   destination: number | null;
   remoteCommand: number | null;
   terminated?: boolean;
+}
+
+interface PermutedRow {
+  id: string;
+  form: string;
+  words: string[];
+  permuted: string[];
 }
 
 interface HostRow {
@@ -52,6 +60,7 @@ const fixtures = JSON.parse(
   ),
 ) as {
   reads: ReadRow[];
+  permuted: PermutedRow[];
   hosts: HostRow[];
   commands: CommandsRow[];
   brake: BrakeRow[];
@@ -93,6 +102,13 @@ describe("ssh, mosh and autossh arguments", () => {
       expect(call.remoteCommand ?? null).toBe(row.remoteCommand);
       if (row.terminated !== undefined)
         expect(call.terminated).toBe(row.terminated);
+    },
+  );
+
+  test.each(fixtures.permuted.map((row) => [row.id, row.form, row] as const))(
+    "%s orders autossh's words: %s",
+    (_id, _form, row) => {
+      expect(permuteAutosshWords(row.words, 1)).toEqual(row.permuted);
     },
   );
 
