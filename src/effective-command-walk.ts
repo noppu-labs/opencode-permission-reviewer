@@ -1,22 +1,15 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
-import { keepStringBodies } from "./capability/heredoc-string-bodies.ts";
 import { elementAt } from "./element-at.ts";
-import { envSplitString } from "./env-split-string.ts";
+import { peelEnv } from "./env-readings.ts";
 import { operandTailIndex } from "./operand-tail-index.ts";
 import { wrapperCommandString } from "./shell-command-strings.ts";
-import type { EffectiveCommandsAnalysis } from "./shell-effective-commands.ts";
-import type { SubstitutionBudget } from "./shell-lex-state.ts";
-import {
-  type AnalysisBudget,
-  shellBasename as basename,
-} from "./shell-lexer.ts";
+import { shellBasename as basename } from "./shell-lexer.ts";
 import { TRANSPARENT_WRAPPERS } from "./shell-lexer-tables.ts";
 import {
   normalizeShellRedirections,
   type ShellRedirection,
 } from "./shell-redirections.ts";
-import { lexSegments } from "./shell-scanner.ts";
 import { shellReadsStdin } from "./shell-script-readers.ts";
 import type { ShellToken } from "./shell-token.ts";
 import {
@@ -24,36 +17,19 @@ import {
   skipWrapperArguments,
   timeoutCommandIndex,
 } from "./shell-wrapper-options.ts";
-import { sshRemoteCommand } from "./ssh-remote-command.ts";
+import { remoteCommandTexts } from "./ssh-remote-command.ts";
 import { walkLimitReached } from "./walk-limits.ts";
+import { reanalysisSegments } from "./walk-reanalysis.ts";
+import type { EnvOptionsReading, WalkLevel, WalkSink } from "./walk-sink.ts";
 import { peelWatch } from "./watch-command.ts";
-
-/** Where every level of one walk collects its effective commands, the
- *  redirections each level's segment carries itself, and the redirections of
- *  each `ssh` that has no remote command: it yields no effective command,
- *  and the login shell on the far side reads its stdin. */
-export interface WalkSink extends EffectiveCommandsAnalysis {
-  budget: AnalysisBudget;
-  segmentRedirections: ShellRedirection[];
-  bareSsh: ShellRedirection[][];
-  /** The redirections of each shell run with `-c` and `-s`: after its
-   *  command string it reads a script from stdin. */
-  stdinShells: ShellRedirection[][];
-}
-
-/** One level of the walk: the redirections its commands carry, inherited
- *  ones first, and its command-string re-entry depth. */
-interface WalkLevel {
-  sink: WalkSink;
-  redirections: ShellRedirection[];
-  depth: number;
-}
 
 export function walk(
   tokens: ShellToken[],
   sink: WalkSink,
   inheritedRedirections: ShellRedirection[],
   depth: number,
+  remote = false,
+  reading: EnvOptionsReading = "both",
 ): void {
   // Depth and expansion budget: recursion here is driven by the (untrusted)
   // command text, so both bounds are hard stops, not tuning knobs. Hitting
@@ -70,6 +46,8 @@ export function walk(
     sink,
     redirections: [...inheritedRedirections, ...normalized.redirections],
     depth,
+    remote,
+    reading,
   };
   let i: number | undefined = commandStart(words);
   while (i !== undefined && i < words.length) i = peel(words, i, level);
@@ -85,8 +63,13 @@ function peel(
   const word = elementAt(words, i, "tokens").value;
   if (word === "--") return undefined;
   const base = basename(word);
-  if (base === "env" && reanalyzeIfPresent(envSplitString(words, i), level))
-    return undefined;
+  level.sink.heads?.push({
+    head: base,
+    tokens: words,
+    index: i,
+    remote: level.remote,
+  });
+  if (base === "env") return peelEnv(words, i, level, { reanalyze, walkTail });
   if (base === "timeout") {
     walkTail(words, timeoutCommandIndex(words, i), level);
     return undefined;
@@ -111,9 +94,17 @@ function peelCommand(
   if (commandString !== null && shellReadsStdin(words, i))
     level.sink.stdinShells.push(level.redirections);
   if (reanalyzeIfPresent(commandString, level)) return;
-  if (base === "ssh") {
-    if (!reanalyzeIfPresent(sshRemoteCommand(words, i), level))
-      level.sink.bareSsh.push(level.redirections);
+  const remotes = remoteCommandTexts(
+    words,
+    i,
+    base,
+    level.sink.budget.previousSsh === true,
+  );
+  if (remotes !== undefined) {
+    const remote = { ...level, remote: true };
+    for (const text of remotes)
+      if (!reanalyzeIfPresent(text, remote))
+        level.sink.bareSsh.push(level.redirections);
     return;
   }
   const tail = operandTailIndex(words, i, base);
@@ -133,36 +124,18 @@ function reanalyzeIfPresent(text: string | null, level: WalkLevel): boolean {
   return true;
 }
 
-/** Re-lex a command string and walk each of its segments one level deeper.
- *  Its length is charged to the re-analysis budget first, then each
- *  substitution body as it is lexed. The commands its heredoc bodies run go
- *  to the budget's `bodies`, when it has them. */
+/** Re-lex a command string and walk each of its segments one level deeper. */
 function reanalyze(text: string, level: WalkLevel): void {
-  const { sink } = level;
-  sink.budget.remainingReanalysisChars -= text.length;
-  if (sink.budget.remainingReanalysisChars < 0) {
-    sink.truncated = true;
-    return;
-  }
-  const { bodies } = sink.budget;
-  const lexBudget: SubstitutionBudget = {
-    tokensRemaining: Number.POSITIVE_INFINITY,
-    substitutions: "lex",
-    substitutionCharsRemaining: sink.budget.remainingReanalysisChars,
-    reading: sink.budget.reading ?? "default",
-    quoting: sink.budget.quoting ?? "bash",
-  };
-  if (bodies !== undefined) lexBudget.bodies = bodies;
-  keepStringBodies(bodies, text);
-  const segments = lexSegments(text, lexBudget);
-  sink.budget.remainingReanalysisChars = lexBudget.substitutionCharsRemaining;
-  if (lexBudget.tokensRemaining <= 0) sink.truncated = true;
-  for (const sub of segments)
-    walk(sub.tokens, sink, level.redirections, level.depth + 1);
+  for (const sub of reanalysisSegments(text, level.sink) ?? [])
+    walkDeeper(sub.tokens, level);
 }
 
 /** Walk the operand tail from `start` one level deeper, if any is left. */
 function walkTail(words: ShellToken[], start: number, level: WalkLevel): void {
-  if (start < words.length)
-    walk(words.slice(start), level.sink, level.redirections, level.depth + 1);
+  if (start < words.length) walkDeeper(words.slice(start), level);
+}
+
+function walkDeeper(tokens: ShellToken[], level: WalkLevel): void {
+  const { sink, redirections, depth, remote, reading } = level;
+  walk(tokens, sink, redirections, depth + 1, remote, reading);
 }

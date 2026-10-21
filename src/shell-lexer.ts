@@ -41,6 +41,9 @@ export interface AnalysisBudget {
   /** Where the commands that heredoc bodies in the re-lexed command strings
    *  run are kept; a walk that does not judge them leaves it unset. */
   bodies?: BodyCommands;
+  /** Also judge the remote command that the previous release's reading of
+   *  ssh's arguments found, when it differs from the current one. */
+  previousSsh?: true;
 }
 
 export function newAnalysisBudget(

@@ -18,6 +18,7 @@ import type { CommandContext } from "./execution-classifiers.ts";
 import { classifyRemoteCommand } from "./network-classifiers.ts";
 import { classifySegmentHeads } from "./segment-heads.ts";
 import { classifyCredentialReads } from "./sensitive-path-reads.ts";
+import { classifyTruncatedSegmentHeads } from "./truncated-segment-heads.ts";
 
 /*
  * Bash capability analyzer.
@@ -52,12 +53,15 @@ export function analyzeCapability(
       parsed.heredocs.map((h) => h.outputTarget).filter(Boolean) as string[],
     ),
   };
-  classifySegmentHeads(parsed.segments, facts);
+  classifySegmentHeads(parsed.heads, facts);
+  if (parsed.analysisTruncated)
+    classifyTruncatedSegmentHeads(parsed.segments, facts);
   for (const cmd of parsed.effective)
     classifyEffectiveCommand(cmd, facts, context);
   classifyScriptFeeds(parsed, facts);
   classifyCredentialReads(parsed, facts);
   recordRedirectionWrites(parsed.redirections, facts, context);
+  recordRedirectionWrites(parsed.segmentRedirections, facts, context);
   recordHeredocWrites(parsed.heredocs, facts, context);
   resolveActionClass(facts);
   return assessmentFrom(parsed, facts);
@@ -76,7 +80,7 @@ function classifyScriptFeeds(
 }
 
 function recordRedirectionWrites(
-  redirections: Redirection[][],
+  redirections: readonly (readonly Redirection[])[],
   facts: CapabilityFacts,
   roots: AnalysisRoots,
 ): void {

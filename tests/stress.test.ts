@@ -3,6 +3,7 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
 import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
 import { analyzeBashCommand } from "../src/context/command-evidence.ts";
@@ -12,6 +13,7 @@ import { enrichGitEvidence } from "../src/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
+import { parseSsh } from "../src/ssh-command-segments.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import {
   createUiStatus,
@@ -22,6 +24,10 @@ import { ReviewUiState } from "../src/ui-state.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
+
+function repeated(unit: string[], count: number): string[] {
+  return Array.from({ length: Math.floor(count) }, () => unit).flat();
+}
 
 // Commands whose tokens are dense with quoted redirections, at the input cap.
 const quotedRedirectionShapes: [string, string][] = [
@@ -131,6 +137,30 @@ function quotedArithmeticBodies(size: number): string {
 beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
 });
+
+function linearParseRows(
+  units: readonly string[],
+): (readonly [string, string, number])[] {
+  return units.flatMap((unit) => [
+    [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
+    [
+      `${JSON.stringify(unit)} at eight times the input cap`,
+      unit,
+      8 * 131_072,
+    ] as const,
+  ]);
+}
+
+function parsesRepeatedInLinearTime(
+  _: string,
+  unit: string,
+  size: number,
+): void {
+  const command = unit.repeat(Math.floor(size / unit.length));
+  const started = Date.now();
+  parseCommand(command);
+  expect(Date.now() - started).toBeLessThan(1_000);
+}
 
 function mutateDecision(base: Record<string, unknown>, item: number): void {
   switch (item % 5) {
@@ -414,26 +444,84 @@ describe("stress and adversarial robustness", () => {
   );
 
   test.each(
-    [
+    linearParseRows([
       "sh <<<x;",
       "cat <<A | sh\nx\nA\n",
       "cat <<A|sh\nx\nA\n",
       "ssh h <<<x;",
       "sh <<'E'\necho RAN\nE\n",
-    ].flatMap((unit) => [
-      [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
-      [
-        `${JSON.stringify(unit)} at eight times the input cap`,
-        unit,
-        8 * 131_072,
-      ] as const,
     ]),
   )(
     "parses script feeds of %s in linear time",
-    (_, unit, size) => {
-      const command = unit.repeat(Math.floor(size / unit.length));
+    parsesRepeatedInLinearTime,
+    60_000,
+  );
+
+  test.each(
+    linearParseRows([
+      "ssh -S c h x;",
+      "ssh -o -- h -x x;",
+      "mosh --ssh y h -- x;",
+      "autossh -M 0 -f h x;",
+      "ssh -S c h ",
+      "mosh h -- ",
+      "autossh -M 0 h ",
+    ]),
+  )(
+    "parses ssh, mosh and autossh calls of %s in linear time",
+    parsesRepeatedInLinearTime,
+    60_000,
+  );
+
+  test.each(
+    (
+      [
+        [
+          "-l a options before the host",
+          (n: number): string[] => [
+            "ssh",
+            ...repeated(["-l", "a"], n / 5),
+            "h",
+          ],
+        ],
+        [
+          "-l a options after the host",
+          (n: number): string[] => [
+            "ssh",
+            "h",
+            ...repeated(["-l", "a"], n / 5),
+          ],
+        ],
+        [
+          "-o User=a options",
+          (n: number): string[] => [
+            "ssh",
+            ...repeated(["-o", "User=a"], n / 10),
+            "h",
+          ],
+        ],
+        [
+          "a URI user of escapes",
+          (n: number): string[] => ["ssh", `ssh://${"%41".repeat(n / 3)}@h`],
+        ],
+        [
+          "a URI user ending in a bad escape",
+          (n: number): string[] => ["ssh", `ssh://${"%41".repeat(n / 3)}%zz@h`],
+        ],
+        [
+          "a URI user of plus signs",
+          (n: number): string[] => ["ssh", `ssh://${"+".repeat(n)}@h`],
+        ],
+      ] satisfies [string, (size: number) => string[]][]
+    ).flatMap(([name, build]) => [
+      [`${name} at the input cap`, build(131_072)] as const,
+      [`${name} at eight times the input cap`, build(8 * 131_072)] as const,
+    ]),
+  )(
+    "reads the login user of ssh calls with %s in linear time",
+    (_, tokens) => {
       const started = Date.now();
-      parseCommand(command);
+      parseSsh(tokens, 0);
       expect(Date.now() - started).toBeLessThan(1_000);
     },
     60_000,
@@ -473,6 +561,59 @@ describe("stress and adversarial robustness", () => {
       expect(Date.now() - started).toBeLessThan(1_000);
     },
     60_000,
+  );
+
+  test.each(
+    (
+      [
+        ["nohup in an ssh remote command", "ssh h '", "nohup ", "rm'"],
+        ["sudo in a command string", "sh -c '", "sudo ", "id'"],
+        ["commands in an ssh remote command", "ssh h '", "echo a; ", "'"],
+      ] as const
+    ).flatMap(([name, head, unit, tail]) =>
+      [131_000, 8 * 131_072].map(
+        (size) =>
+          [
+            `${name} at ${size === 131_000 ? "the input cap" : "eight times the input cap"}`,
+            `${head}${unit.repeat(Math.floor(size / unit.length))}${tail}`,
+          ] as const,
+      ),
+    ),
+  )(
+    "classifies the wrappers of %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      analyzeCapability(parseCommand(command), "/tmp", "/tmp");
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["env -a x", "env -a x ", 5_400],
+    ["env --arg x", "env --arg x ", 5_400],
+    ["env -S '#' id;", "env -S '#' id; ", 4_000],
+  ])("parses %s repeated in linear time", (_, unit, count) => {
+    const command = `${unit.repeat(count)}id`;
+    const started = Date.now();
+    emergencyBrakeReason(
+      request({ patterns: [command], metadata: { command } }),
+    );
+    const parsed = parseCommand(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(parsed.analysisTruncated).toBe(false);
+  });
+
+  test.each([
+    ["sudo", `${"true;".repeat(4_100)} ${"sudo ".repeat(12_000)}x`],
+    ["timeout 5", `${"true;".repeat(4_100)} ${"timeout 5 ".repeat(6_000)}x`],
+  ])(
+    "classifies a chain of %s past the walk limits in linear time",
+    (_, command) => {
+      const started = Date.now();
+      analyzeCapability(parseCommand(command), "/tmp", "/tmp");
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
   );
 
   test("survives 10,000 encoded TUI transitions without cross-request corruption", () => {

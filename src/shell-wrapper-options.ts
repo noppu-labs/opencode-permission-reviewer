@@ -10,13 +10,13 @@ import {
 } from "./shell-lexer-tables.ts";
 import type { ShellToken } from "./shell-token.ts";
 
-const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
+export const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 export const NO_VALUE_OPTIONS: ReadonlySet<string> = new Set();
 
 /** Skip leading keywords, then leading VAR=value assignments (env-style,
- *  only at the head). */
-export function commandStart(words: ShellToken[]): number {
-  let i = 0;
+ *  only at the head), from `start`. */
+export function commandStart(words: ShellToken[], start = 0): number {
+  let i = start;
   while (
     i < words.length &&
     SHELL_KEYWORDS.has(elementAt(words, i, "tokens").value)
@@ -96,13 +96,14 @@ function afterDoubleDash(
 
 /** Skip the options of the transparent `wrapper` at `index` and the
  *  env-style VAR=value arguments that may follow it (e.g. `env FOO=bar …`),
- *  and return the index of the wrapped command. */
+ *  and return the index of the wrapped command, with `valueOpts` the options
+ *  that take a value. */
 export function skipWrapperArguments(
   words: ShellToken[],
   index: number,
   wrapper: string,
+  valueOpts: ReadonlySet<string> = valueOptionsOf(wrapper),
 ): number {
-  const valueOpts = valueOptionsOf(wrapper);
   let i = index + 1;
   while (i < words.length) {
     const opt = elementAt(words, i, "tokens").value;

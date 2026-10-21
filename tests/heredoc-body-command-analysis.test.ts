@@ -2,13 +2,14 @@ import { describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
+import { walkBodyCommands } from "../src/capability/body-command-walk.ts";
 import type {
   CapabilityAssessment,
   ParsedCommand,
   ParserCompleteness,
 } from "../src/capability/capability-types.ts";
 import { parseCommand } from "../src/capability/command-parser.ts";
-import { newWalked, walkBodyCommands } from "../src/capability/command-walk.ts";
+import { newWalked } from "../src/capability/command-walk.ts";
 import { MAX_BODY_DEPTH } from "../src/capability/heredoc-body-commands.ts";
 import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
 import type { ShellQuoting } from "../src/shell-lex-state.ts";

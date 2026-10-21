@@ -5,7 +5,9 @@ import { normalize, resolve, sep } from "node:path";
 import type { ShellToken } from "../shell-token.ts";
 import type { Redirection } from "./capability-types.ts";
 
-export function hasWriteRedirect(redirections: Redirection[]): boolean {
+export function hasWriteRedirect(
+  redirections: readonly Redirection[],
+): boolean {
   return redirections.some(redirectionWritesPath);
 }
 

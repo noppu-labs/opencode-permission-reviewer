@@ -230,3 +230,22 @@ export const CHROOT_LONG_OPTIONS: readonly LongOption[] = [
   none("help"),
   none("version"),
 ];
+
+/** GNU env's `longopts` (coreutils `env.c`). */
+export const ENV_LONG_OPTIONS: readonly LongOption[] = [
+  required("argv0"),
+  none("ignore-environment"),
+  required("env0-from"),
+  none("null"),
+  required("unset"),
+  required("chdir"),
+  optional("default-signal"),
+  optional("ignore-signal"),
+  optional("block-signal"),
+  none("list-signal-handling"),
+  none("debug"),
+  required("quoting-style"),
+  required("split-string"),
+  none("help"),
+  none("version"),
+];

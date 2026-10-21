@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   catSource,
   findSshIndex,
   parseSsh,
 } from "../src/ssh-command-segments.ts";
+import { sshLoginUser } from "../src/ssh-login-user.ts";
 
 // Characterisation rows for parseSsh at the index findSshIndex returns. Some
 // look odd and are pinned as they are: a bare `-` is taken as the
@@ -95,7 +98,7 @@ const SSH_CASES: ReadonlyArray<[string[], ReturnType<typeof parseSsh>]> = [
   ],
   [
     ["ssh", "-l", "root", "h"],
-    { destination: "h", host: "h", remoteCommand: "" },
+    { destination: "h", host: "h", user: "root", remoteCommand: "" },
   ],
   [
     ["ssh", "@host", "ls"],
@@ -361,5 +364,58 @@ const SSH_BATCH_16_CASES: ReadonlyArray<
 describe("evidence hardening batch 16", () => {
   test.each(SSH_BATCH_16_CASES)("records case %#", (tokens, expected) => {
     expect(parseSsh(tokens, findSshIndex(tokens))).toStrictEqual(expected);
+  });
+});
+
+interface LoginUserRow {
+  id: string;
+  form: string;
+  words: string[];
+  head?: number;
+  user?: string;
+  host: string;
+}
+
+const LOGIN_USER_ROWS: LoginUserRow[] = (
+  JSON.parse(
+    readFileSync(
+      join(import.meta.dir, "fixtures/ssh-login-user-rows.json"),
+      "utf8",
+    ),
+  ) as { users: LoginUserRow[] }
+).users;
+
+describe("ssh login user", () => {
+  test.each(LOGIN_USER_ROWS.map((row) => [row.id, row.form, row] as const))(
+    "%s reads %s",
+    (_id, _form, row) => {
+      const head = row.head ?? 0;
+      expect(sshLoginUser(row.words, head + 1)).toBe(row.user);
+      const parsed = parseSsh(row.words, head);
+      expect(parsed?.user).toBe(row.user);
+      expect(parsed?.host).toBe(row.host);
+    },
+  );
+
+  test("the user field keeps its place in the record", () => {
+    expect(
+      Object.keys(parseSsh(["ssh", "-l", "a", "-p1", "h", "ls"], 0) ?? {}),
+    ).toEqual(["destination", "host", "user", "port", "remoteCommand"]);
+  });
+});
+
+const URI_PORT_CASES: ReadonlyArray<[string[], string | undefined]> = [
+  [["ssh", "ssh://b@h:2222"], "2222"],
+  [["ssh", "-p", "22", "ssh://b@h:2222"], "22"],
+  [["ssh", "-o", "Port=22", "ssh://h:2222"], "22"],
+  [["ssh", "ssh://h:2222", "-p", "22"], "2222"],
+  [["ssh", "ssh://h", "-p", "22"], "22"],
+  [["ssh", "ssh://b%zz@h:2222"], undefined],
+  [["ssh", "h:2222"], undefined],
+];
+
+describe("ssh port from a URI destination", () => {
+  test.each(URI_PORT_CASES)("%p", (tokens, port) => {
+    expect(parseSsh(tokens, 0)?.port).toBe(port);
   });
 });
