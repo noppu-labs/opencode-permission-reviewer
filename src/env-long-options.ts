@@ -4,8 +4,7 @@ import { elementAt } from "./element-at.ts";
 import { ENV_LONG_OPTIONS } from "./gnu-long-option-tables.ts";
 import { resolveGnuLongOption } from "./gnu-long-options.ts";
 import type { ShellToken } from "./shell-token.ts";
-
-const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
+import { ASSIGNMENT } from "./shell-wrapper-options.ts";
 
 /** The abbreviated long options of the `env` at `i`, each with its index
  *  and the token written in full, so `--arg x` reads as `--argv0 x` and

@@ -37,14 +37,7 @@
     { "id": "w.18", "form": "env -S comment, then the operands", "command": "env -S '#' sudo id", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
     { "id": "w.19", "form": "env -S words separated by \\_", "command": "env -S 'sudo\\_id'", "twin": "sudo id", "class": "privilege-escalation", "heads": ["privilegeEscalation"] },
     { "id": "w.20", "form": "input redirection on env -S leading to ssh", "command": "env -S '-i ssh h' < ~/.ssh/id_rsa", "twin": "ssh h < ~/.ssh/id_rsa", "class": "remote-operation", "heads": ["remote"] },
-    {
-      "id": "w.21",
-      "form": "input redirection on env -S leading to sudo",
-      "command": "env -S '-i sudo' < ~/.ssh/id_rsa",
-      "twin": "sudo < ~/.ssh/id_rsa",
-      "class": "privilege-escalation",
-      "heads": ["privilegeEscalation"]
-    }
+    { "id": "w.21", "form": "input redirection on env -S to sudo", "command": "env -S '-i sudo' < ~/.ssh/id_rsa", "twin": "sudo < ~/.ssh/id_rsa", "class": "privilege-escalation", "heads": ["privilegeEscalation"] }
   ],
   "brake": [
     { "id": "b.01", "form": "env -S string that starts with --", "command": "env -S -- rm -rf /", "reason": "destruction" },
@@ -82,7 +75,11 @@
     { "id": "b.33", "form": "abbreviated --split-string=", "command": "env --split='rm -rf /'", "reason": "destruction" },
     { "id": "b.34", "form": "harmless operand twin", "command": "env -S 'sh -c' 'ls /'" },
     { "id": "b.35", "form": "harmless unset variable twin", "command": "env -S '${NOPE}' ls /" },
-    { "id": "b.36", "form": "harmless abbreviated option twin", "command": "env --arg x ls /" }
+    { "id": "b.36", "form": "harmless abbreviated option twin", "command": "env --arg x ls /" },
+    { "id": "b.37", "form": "-a value read as a command too", "command": "env -a rm -rf /", "reason": "destruction" },
+    { "id": "b.38", "form": "--argv0 value read as a command too", "command": "env --argv0 rm -rf /", "reason": "destruction" },
+    { "id": "b.39", "form": "--quoting-style value read as a command too", "command": "env --quoting-style rm -rf /", "reason": "destruction" },
+    { "id": "b.40", "form": "-a in a cluster, its value read as a command too", "command": "env -ia rm -rf /", "reason": "destruction" }
   ],
   "reads": [
     { "id": "c.01", "form": "env -S leading to ssh", "command": "env -S '-i ssh h' < ~/.ssh/id_rsa" },

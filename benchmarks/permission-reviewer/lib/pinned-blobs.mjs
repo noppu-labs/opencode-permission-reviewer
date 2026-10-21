@@ -84,7 +84,7 @@ export const PINNED_BLOBS = {
   "src/capability/bash-mutation.ts": "2d3270f7b3585f690d5bc7c1c0724a2cda838ccb",
   "src/shell-effective-commands.ts": "c20b3abacb45665ed48a2177953630361ac51483",
   "src/effective-command-walk.ts": "d546580e1ea054f10daaa012dbfaee79bdb009df",
-  "src/shell-wrapper-options.ts": "e05970b8231162248f2c311ce230b092b5c142e4",
+  "src/shell-wrapper-options.ts": "1a66e621d8664bb0dbb1fe35657564f2b3066a3d",
   "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
   "src/env-split-string.ts": "a62dd852fb6cc9788a76217f99e9cc34a1474333",
   "src/ssh-remote-command.ts": "99326adbd82894883df7923e5dfefd273d1eccbf",

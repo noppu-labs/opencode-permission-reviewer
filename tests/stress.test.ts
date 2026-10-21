@@ -138,6 +138,30 @@ beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
 });
 
+function linearParseRows(
+  units: readonly string[],
+): (readonly [string, string, number])[] {
+  return units.flatMap((unit) => [
+    [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
+    [
+      `${JSON.stringify(unit)} at eight times the input cap`,
+      unit,
+      8 * 131_072,
+    ] as const,
+  ]);
+}
+
+function parsesRepeatedInLinearTime(
+  _: string,
+  unit: string,
+  size: number,
+): void {
+  const command = unit.repeat(Math.floor(size / unit.length));
+  const started = Date.now();
+  parseCommand(command);
+  expect(Date.now() - started).toBeLessThan(1_000);
+}
+
 function mutateDecision(base: Record<string, unknown>, item: number): void {
   switch (item % 5) {
     case 0:
@@ -420,33 +444,21 @@ describe("stress and adversarial robustness", () => {
   );
 
   test.each(
-    [
+    linearParseRows([
       "sh <<<x;",
       "cat <<A | sh\nx\nA\n",
       "cat <<A|sh\nx\nA\n",
       "ssh h <<<x;",
       "sh <<'E'\necho RAN\nE\n",
-    ].flatMap((unit) => [
-      [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
-      [
-        `${JSON.stringify(unit)} at eight times the input cap`,
-        unit,
-        8 * 131_072,
-      ] as const,
     ]),
   )(
     "parses script feeds of %s in linear time",
-    (_, unit, size) => {
-      const command = unit.repeat(Math.floor(size / unit.length));
-      const started = Date.now();
-      parseCommand(command);
-      expect(Date.now() - started).toBeLessThan(1_000);
-    },
+    parsesRepeatedInLinearTime,
     60_000,
   );
 
   test.each(
-    [
+    linearParseRows([
       "ssh -S c h x;",
       "ssh -o -- h -x x;",
       "mosh --ssh y h -- x;",
@@ -454,22 +466,10 @@ describe("stress and adversarial robustness", () => {
       "ssh -S c h ",
       "mosh h -- ",
       "autossh -M 0 h ",
-    ].flatMap((unit) => [
-      [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
-      [
-        `${JSON.stringify(unit)} at eight times the input cap`,
-        unit,
-        8 * 131_072,
-      ] as const,
     ]),
   )(
     "parses ssh, mosh and autossh calls of %s in linear time",
-    (_, unit, size) => {
-      const command = unit.repeat(Math.floor(size / unit.length));
-      const started = Date.now();
-      parseCommand(command);
-      expect(Date.now() - started).toBeLessThan(1_000);
-    },
+    parsesRepeatedInLinearTime,
     60_000,
   );
 
@@ -582,9 +582,8 @@ describe("stress and adversarial robustness", () => {
   )(
     "classifies the wrappers of %s in linear time",
     (_, command) => {
-      const parsed = parseCommand(command);
       const started = Date.now();
-      analyzeCapability(parsed, "/tmp", "/tmp");
+      analyzeCapability(parseCommand(command), "/tmp", "/tmp");
       expect(Date.now() - started).toBeLessThan(1_000);
     },
     60_000,
@@ -611,9 +610,8 @@ describe("stress and adversarial robustness", () => {
   ])(
     "classifies a chain of %s past the walk limits in linear time",
     (_, command) => {
-      const parsed = parseCommand(command);
       const started = Date.now();
-      analyzeCapability(parsed, "/tmp", "/tmp");
+      analyzeCapability(parseCommand(command), "/tmp", "/tmp");
       expect(Date.now() - started).toBeLessThan(1_000);
     },
   );

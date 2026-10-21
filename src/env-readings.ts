@@ -34,15 +34,27 @@ function readEnv(
   if (table === "exact") return readOptions(words, i, ENV_VALUE_OPTIONS);
   // The full spellings stand in for the abbreviations while env is read.
   const spellings = envLongOptionSpellings(words, i, ENV_VALUE_OPTIONS);
-  const written = spellings.map(([j]) => elementAt(words, j, "tokens"));
-  for (const [j, token] of spellings) words[j] = token;
-  try {
-    return readOptions(words, i, ENV_VALUE_OPTIONS);
-  } finally {
-    spellings.forEach(([j], k) => {
-      words[j] = elementAt(written, k, "written");
-    });
-  }
+  if (spellings.length === 0) return readOptions(words, i, ENV_VALUE_OPTIONS);
+  return readOptions(spelledView(words, spellings), i, ENV_VALUE_OPTIONS);
+}
+
+/** `words` with the tokens of `spellings` at their indices, as a view that
+ *  leaves `words` unchanged and copies none of it. */
+function spelledView(
+  words: ShellToken[],
+  spellings: [number, ShellToken][],
+): ShellToken[] {
+  const spelled = new Map(spellings.map(([j, token]) => [String(j), token]));
+  return new Proxy(words, {
+    get: (
+      target: ShellToken[],
+      key: string | symbol,
+      receiver: unknown,
+    ): unknown =>
+      typeof key === "string" && spelled.has(key)
+        ? spelled.get(key)
+        : Reflect.get(target, key, receiver),
+  });
 }
 
 function readOptions(

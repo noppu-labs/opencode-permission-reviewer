@@ -4,7 +4,6 @@ import { elementAt } from "../element-at.ts";
 import { shellBasename } from "../shell-lexer.ts";
 import {
   PREVIOUS_ENV_VALUE_OPTIONS,
-  SHELL_KEYWORDS,
   TRANSPARENT_WRAPPERS,
 } from "../shell-lexer-tables.ts";
 import type { ShellSegment, ShellToken } from "../shell-token.ts";
@@ -55,26 +54,16 @@ function wrappedCommandIndex(
   head: string,
 ): number | undefined {
   if (head === "timeout")
-    return tailStart(tokens, timeoutCommandIndex(tokens, k));
-  if (head === "busybox") return tailStart(tokens, k + 1);
+    return commandStart(tokens, timeoutCommandIndex(tokens, k));
+  if (head === "busybox") return commandStart(tokens, k + 1);
   if (head === "chroot")
-    return tailStart(tokens, chrootCommandIndex(tokens, k));
+    return commandStart(tokens, chrootCommandIndex(tokens, k));
   if (head === "env")
     return skipWrapperArguments(tokens, k, head, PREVIOUS_ENV_VALUE_OPTIONS);
   if (TRANSPARENT_WRAPPERS.has(head))
     return skipWrapperArguments(tokens, k, head);
   return undefined;
 }
-
-/** `commandStart` from `start`, without copying the words after it. */
-function tailStart(tokens: ShellToken[], start: number): number {
-  let i = start;
-  while (i < tokens.length && SHELL_KEYWORDS.has(valueAt(tokens, i))) i += 1;
-  while (i < tokens.length && ASSIGNMENT.test(valueAt(tokens, i))) i += 1;
-  return i;
-}
-
-const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 
 function valueAt(tokens: readonly ShellToken[], k: number): string {
   return elementAt(tokens, k, "tokens").value;
