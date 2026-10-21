@@ -1,6 +1,6 @@
 {
   "name": "@noppu-labs/opencode-permission-reviewer",
-  "version": "3.0.0",
+  "version": "3.1.0",
   "description": "Policy-aware permission reviewer for OpenCode V1 and V2",
   "type": "module",
   "main": "./dist/index.js",
