@@ -175,14 +175,14 @@ describe("command segments with directory tracking", () => {
 });
 
 describe("SSH evidence enrichment", () => {
-  test("pipeline stdin attaches the file the producer actually reads", async () => {
+  const producerStdin = async (pipe: string): Promise<void> => {
     const directory = await fixture();
     await writeFile(join(directory, "p.py"), "ROOT-SENTINEL\n");
     await mkdir(join(directory, "sub"));
     await writeFile(join(directory, "sub", "p.py"), "SUB-SENTINEL\n");
     // The group's cd only affects the producer: ssh runs in the outer
     // directory, but the stdin bytes come from sub/p.py.
-    const command = "(cd sub && cat p.py) | ssh host python -";
+    const command = `(cd sub && cat p.py) ${pipe} ssh host python -`;
     const result = await enrichSshEvidence(
       request({ patterns: [command], metadata: { command } }),
       directory,
@@ -194,6 +194,14 @@ describe("SSH evidence enrichment", () => {
     };
     expect(record.stdin.path).toBe(join(directory, "sub", "p.py"));
     expect(record.stdin.content).toBe("SUB-SENTINEL\n");
+  };
+
+  test("pipeline stdin attaches the file the producer actually reads", async () => {
+    await producerStdin("|");
+  });
+
+  test("stderr-piped stdin attaches the file the producer actually reads", async () => {
+    await producerStdin("|&");
   });
 
   test("a command after a closed subshell resolves in the post-cd directory", async () => {

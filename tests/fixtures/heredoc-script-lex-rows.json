@@ -1,0 +1,218 @@
+[
+  {
+    "id": "l.01",
+    "command": "cat <<EOF | sh\nrm -rf /\nEOF\n",
+    "q": "*",
+    "seg": ">cat <<EOF<| / |>sh<; / ;>rm -rf /<; / ;>EOF<;",
+    "san": ">cat <<EOF <HEREDOC:sha256:3732c5421473><| / |>sh<;",
+    "red": "<<:EOF / "
+  },
+  {
+    "id": "l.02",
+    "command": "sh <<'EOF'\n$(rm -rf /)\nEOF\n",
+    "q": "*",
+    "seg": ">sh <<'EOF'=<<EOF<; / ;>$<( / (>rm -rf /<) / ;>EOF<;",
+    "san": ">sh <<EOF <HEREDOC:sha256:b144f6788c48><;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.03",
+    "command": "bash -s <<-EOF\n\tprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">bash -s <<-EOF<; / ;>printf A<; / ;>EOF<;",
+    "san": ">bash -s <<-EOF <HEREDOC:sha256:4cbe904746d6><;",
+    "red": "<<-:EOF"
+  },
+  {
+    "id": "l.04",
+    "command": "echo \"$(sh <<EOF\nprintf A\nEOF\n)\"",
+    "q": "*",
+    "seg": ">echo \"$(sh <<EOF\nprintf A\nEOF\n)\"=$(sh <<EOF\nprintf A\nEOF\n)< / >sh <<EOF <HEREDOC:sha256:cafb511835cb><;",
+    "san": ">echo \"$(sh <<EOF\nprintf A\nEOF\n)\"=$(sh <<EOF\nprintf A\nEOF\n)< / >sh <<EOF <HEREDOC:sha256:cafb511835cb><;",
+    "red": " / <<:EOF"
+  },
+  {
+    "id": "l.05",
+    "command": "echo `sh <<'EOF'\nprintf A\nEOF\n`",
+    "q": "bash",
+    "seg": ">echo `sh <<'EOF'\nprintf A\nEOF\n`< / >sh <<'EOF'=<<EOF<; / ;>printf A<; / ;>EOF<;",
+    "san": ">echo `sh <<EOF <HEREDOC:sha256:cafb511835cb><; / >sh <<EOF <HEREDOC:sha256:cafb511835cb><; / ;>`<",
+    "red": "<<:EOF / <<:EOF / "
+  },
+  {
+    "id": "l.05",
+    "command": "echo `sh <<'EOF'\nprintf A\nEOF\n`",
+    "q": "rescan",
+    "seg": ">echo `sh <<'EOF'=<<EOF<; / >sh <<'EOF'=<<EOF<; / ;>printf A<; / ;>EOF<; / ;>printf A<; / ;>EOF<; / ;>`<",
+    "san": ">echo `sh <<EOF <HEREDOC:sha256:cafb511835cb><; / >sh <<EOF <HEREDOC:sha256:cafb511835cb><; / ;>`<",
+    "red": "<<:EOF / <<:EOF / "
+  },
+  {
+    "id": "l.05",
+    "command": "echo `sh <<'EOF'\nprintf A\nEOF\n`",
+    "q": "undecoded",
+    "seg": ">echo `sh <<'EOF'=<<EOF<; / >sh <<'EOF'=<<EOF<; / ;>printf A<; / ;>EOF<; / ;>printf A<; / ;>EOF<; / ;>`<",
+    "san": ">echo `sh <<EOF <HEREDOC:sha256:cafb511835cb><; / >sh <<EOF <HEREDOC:sha256:cafb511835cb><; / ;>`<",
+    "red": "<<:EOF / <<:EOF / "
+  },
+  {
+    "id": "l.05",
+    "command": "echo `sh <<'EOF'\nprintf A\nEOF\n`",
+    "q": "previous",
+    "seg": ">echo `sh <<'EOF'=<<EOF<; / >sh <<'EOF'=<<EOF<; / ;>printf A<; / ;>EOF<; / ;>printf A<; / ;>EOF<; / ;>`<",
+    "san": ">echo `sh <<EOF <HEREDOC:sha256:cafb511835cb><; / >sh <<EOF <HEREDOC:sha256:cafb511835cb><; / ;>`<",
+    "red": "<<:EOF / <<:EOF / "
+  },
+  {
+    "id": "l.06",
+    "command": "bash -c 'sh <<EOF\nprintf A\nEOF'",
+    "q": "*",
+    "seg": ">bash -c 'sh <<EOF\nprintf A\nEOF'=sh <<EOF\nprintf A\nEOF<",
+    "san": ">bash -c 'sh <<EOF\nprintf A\nEOF'=sh <<EOF\nprintf A\nEOF<",
+    "red": ""
+  },
+  {
+    "id": "l.07",
+    "command": "ssh h <<'EOF'\nuptime\nEOF\n",
+    "q": "*",
+    "seg": ">ssh h <<'EOF'=<<EOF<; / ;>uptime<; / ;>EOF<;",
+    "san": ">ssh h <<EOF <HEREDOC:sha256:7d88e721e241><;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.08",
+    "command": "sh <<<'printf A'",
+    "q": "*",
+    "seg": ">sh <<<'printf A'=<<<printf A<",
+    "san": ">sh <<<'printf A'=<<<printf A<",
+    "red": "<<<:printf A"
+  },
+  {
+    "id": "l.09",
+    "command": "cat <<<'printf A' | sh",
+    "q": "*",
+    "seg": ">cat <<<'printf A'=<<<printf A<| / |>sh<",
+    "san": ">cat <<<'printf A'=<<<printf A<| / |>sh<",
+    "red": "<<<:printf A / "
+  },
+  {
+    "id": "l.10",
+    "command": "cat <<EOF | sh\nprintf A \\\nB\nEOF\n",
+    "q": "*",
+    "seg": ">cat <<EOF<| / |>sh<; / ;>printf A B<; / ;>EOF<;",
+    "san": ">cat <<EOF <HEREDOC:sha256:050e1cb3db1b><| / |>sh<;",
+    "red": "<<:EOF / "
+  },
+  {
+    "id": "l.11",
+    "command": "sh 0<<EOF\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">sh 0<<EOF<; / ;>printf A<; / ;>EOF<;",
+    "san": ">sh 0<<EOF <HEREDOC:sha256:cafb511835cb><;",
+    "red": "0<<:EOF"
+  },
+  {
+    "id": "l.12",
+    "command": "sh 3<<EOF\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">sh 3<<EOF<; / ;>printf A<; / ;>EOF<;",
+    "san": ">sh 3<<EOF <HEREDOC:sha256:cafb511835cb><;",
+    "red": "3<<:EOF"
+  },
+  {
+    "id": "l.13",
+    "command": "tee f <<EOF | sh\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">tee f <<EOF<| / |>sh<; / ;>printf A<; / ;>EOF<;",
+    "san": ">tee f <<EOF <HEREDOC:sha256:cafb511835cb><| / |>sh<;",
+    "red": "<<:EOF / "
+  },
+  {
+    "id": "l.14",
+    "command": "<<EOF sh\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": "><<EOF sh<; / ;>printf A<; / ;>EOF<;",
+    "san": "><<EOF <HEREDOC:sha256:cafb511835cb> sh<;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.15",
+    "command": "sh <<EOF <f\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">sh <<EOF <f<; / ;>printf A<; / ;>EOF<;",
+    "san": ">sh <<EOF <HEREDOC:sha256:cafb511835cb> <f<;",
+    "red": "<<:EOF,<:f"
+  },
+  {
+    "id": "l.16",
+    "command": "sudo -u x bash -s -- a b <<EOF\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">sudo -u x bash -s -- a b <<EOF<; / ;>printf A<; / ;>EOF<;",
+    "san": ">sudo -u x bash -s -- a b <<EOF <HEREDOC:sha256:cafb511835cb><;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.17",
+    "command": "x=$(sh <<'EOF'\nprintf A\nEOF\n)",
+    "q": "*",
+    "seg": ">x=$<( / (>sh <<'EOF'=<<EOF<; / ;>printf A<; / ;>EOF<; / ;><)",
+    "san": ">x=$<( / (>sh <<EOF <HEREDOC:sha256:cafb511835cb><; / ;><)",
+    "red": " / <<:EOF / "
+  },
+  {
+    "id": "l.18",
+    "command": "sh <<A <<B\nprintf A\nA\nprintf B\nB\n",
+    "q": "*",
+    "seg": ">sh <<A <<B<; / ;>printf A<; / ;>A<; / ;>printf B<; / ;>B<;",
+    "san": ">sh <<A <HEREDOC:sha256:cafb511835cb> <<B <HEREDOC:sha256:7a598a6b0252><;",
+    "red": "<<:A,<<:B"
+  },
+  {
+    "id": "l.19",
+    "command": "cat - <<EOF | sh\nprintf A\nEOF\n",
+    "q": "*",
+    "seg": ">cat - <<EOF<| / |>sh<; / ;>printf A<; / ;>EOF<;",
+    "san": ">cat - <<EOF <HEREDOC:sha256:cafb511835cb><| / |>sh<;",
+    "red": "<<:EOF / "
+  },
+  {
+    "id": "l.20",
+    "command": "sh <<EOF\nprintf A",
+    "q": "*",
+    "seg": ">sh <<EOF<; / ;>printf A<",
+    "san": ">sh <<EOF <HEREDOC:sha256:cafb511835cb><;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.21",
+    "command": "echo \"$(cat <<'IN'\n$(printf A)\nIN\n)\" | sh",
+    "q": "*",
+    "seg": ">echo \"$(cat <<'IN'\n$(printf A)\nIN\n)\"=$(cat <<'IN'\n$(printf A)\nIN\n)<| / >cat <<IN <HEREDOC:sha256:685e6cdca421><; / |>sh<",
+    "san": ">echo \"$(cat <<'IN'\n$(printf A)\nIN\n)\"=$(cat <<'IN'\n$(printf A)\nIN\n)<| / >cat <<IN <HEREDOC:sha256:685e6cdca421><; / |>sh<",
+    "red": " / <<:IN / "
+  },
+  {
+    "id": "l.22",
+    "command": "env -i sh <<EOF\n$(printf A)\nEOF\n",
+    "q": "*",
+    "seg": ">env -i sh <<EOF<; / ;>$<( / (>printf A<) / ;>EOF<;",
+    "san": ">env -i sh <<EOF <HEREDOC:sha256:685e6cdca421><;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.23",
+    "command": "sh <<EOF\n`printf A`\nEOF\n",
+    "q": "*",
+    "seg": ">sh <<EOF<; / ;>`printf A`<; / >printf A< / ;>EOF<;",
+    "san": ">sh <<EOF <HEREDOC:sha256:3f2d89e96e24><;",
+    "red": "<<:EOF"
+  },
+  {
+    "id": "l.24",
+    "command": "ls",
+    "q": "*",
+    "seg": ">ls<",
+    "san": ">ls<",
+    "red": ""
+  }
+]

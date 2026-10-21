@@ -1,0 +1,32 @@
+{
+  "block": [
+    "echo \"$(echo \")\")\" ; rm -rf /",
+    "echo \"$(echo \")\"; rm -rf /)\"",
+    "echo \"$(echo ')'; rm -rf /)\"",
+    "echo \"$(echo ')')\" ; rm -rf /",
+    "echo \"$(echo \"$(echo ')')\")\" ; rm -rf /",
+    "echo \"$(echo `echo a`)\" ; rm -rf /",
+    "echo \"$(( $(echo 1) + 1 ))\" && rm -rf /",
+    "echo \"$( case x in x) echo RAN;; esac )\" ; rm -rf /",
+    "echo `echo \")\"` ; rm -rf /",
+    "echo \"$(echo ')')\"; rm -rf /"
+  ],
+  "allow": [
+    "echo \"$(date)\"",
+    "git commit -m \"$(cat msg)\"",
+    "echo `pwd`",
+    "x=\"$((1 + 2))\"",
+    "cd \"$(dirname \"$0\")\"",
+    "echo \"${x:-default}\"",
+    "echo a\"$(b)\"c",
+    "echo a`b`c",
+    "echo \"$(echo \")\")\" ; echo RAN"
+  ],
+  "rescanOnly": [
+    "echo \"$(echo \")\")\"$'' rm -rf /",
+    "\"$(echo \")\")\"$'' rm -rf /",
+    "x\"$(echo \")\")\"$'' rm -rf /",
+    "\"$(${\"bash -c '`bash -c ';; rm -rf /$'"
+  ],
+  "finderOnly": ["`((( <<)) )'`;rm -rf /", "`((( <<E\nE\n)) )#`;rm -rf /"]
+}

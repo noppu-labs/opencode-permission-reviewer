@@ -66,6 +66,20 @@ export interface ParsedCommand {
    *  resolution early; `effective` is then a prefix of the real structure and
    *  deterministic facts do not cover the whole command. */
   analysisTruncated: boolean;
+  /** The effective commands that run on the far side of an ssh with no
+   *  remote command, from the script it reads. They are among `effective`
+   *  too. */
+  remoteCommands?: import("../shell-token.ts").ShellToken[][];
+  /** Every command the walk resolves, wrappers among them, at every level:
+   *  command strings, `env -S`, `watch` and ssh remote commands. */
+  heads: readonly import("../walk-sink.ts").PeeledHead[];
+  /** The redirections each walked segment and command string carries
+   *  itself, whether or not it yields an effective command: the shell
+   *  opens them before it runs anything (`>f ssh h`). */
+  segmentRedirections: readonly (readonly Redirection[])[];
+  /** An interpreter among the commands runs code from a heredoc or
+   *  here-string. */
+  stdinCode?: boolean;
 }
 
 /** What the action can do, what it appears to do, and analysis confidence. */

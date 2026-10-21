@@ -1,0 +1,247 @@
+[
+  {
+    "id": "x.01",
+    "site": "top",
+    "command": "cat <<EOF\nprintf A \\\nB\nEOF\n",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A B\n"]
+  },
+  {
+    "id": "x.02",
+    "site": "top",
+    "command": "cat <<'EOF'\nprintf A \\\nB\nEOF\n",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.03",
+    "site": "top",
+    "command": "cat <<-EOF\n\tprintf A \\\n\tB\n\tprintf \\$HOME\nEOF\n",
+    "body": "\tprintf A \\\n\tB\n\tprintf \\$HOME\n",
+    "scripts": ["printf A \tB\nprintf $HOME\n"]
+  },
+  {
+    "id": "x.04",
+    "site": "top",
+    "command": "cat <<-'EOF'\n\tprintf A \\\n\tB\nEOF\n",
+    "body": "\tprintf A \\\n\tB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.05",
+    "site": "top",
+    "command": "cat <<\"EOF\"\n$(rm -rf /)\nEOF\n",
+    "body": "$(rm -rf /)\n",
+    "scripts": ["$(rm -rf /)\n"]
+  },
+  {
+    "id": "x.06",
+    "site": "top",
+    "command": "cat <<\\EOF\necho \\$(x)\nEOF\n",
+    "body": "echo \\$(x)\n",
+    "scripts": ["echo \\$(x)\n"]
+  },
+  {
+    "id": "x.07",
+    "site": "top",
+    "command": "cat <<EOF\n$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\nEOF\n",
+    "body": "$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\n",
+    "scripts": ["$(rm -rf /) $(rm -rf /) `x` `x`\n"]
+  },
+  {
+    "id": "x.08",
+    "site": "sanitized",
+    "command": "cat <<EOF\nprintf A \\\nB\nEOF\n",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A B\n"]
+  },
+  {
+    "id": "x.09",
+    "site": "sanitized",
+    "command": "cat <<'EOF'\nprintf A \\\nB\nEOF\n",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.10",
+    "site": "sanitized",
+    "command": "cat <<-EOF\n\tprintf A \\\n\tB\n\tprintf \\$HOME\nEOF\n",
+    "body": "\tprintf A \\\n\tB\n\tprintf \\$HOME\n",
+    "scripts": ["printf A \tB\nprintf $HOME\n"]
+  },
+  {
+    "id": "x.11",
+    "site": "sanitized",
+    "command": "cat <<-'EOF'\n\tprintf A \\\n\tB\nEOF\n",
+    "body": "\tprintf A \\\n\tB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.12",
+    "site": "sanitized",
+    "command": "cat <<\"EOF\"\n$(rm -rf /)\nEOF\n",
+    "body": "$(rm -rf /)\n",
+    "scripts": ["$(rm -rf /)\n"]
+  },
+  {
+    "id": "x.13",
+    "site": "sanitized",
+    "command": "cat <<\\EOF\necho \\$(x)\nEOF\n",
+    "body": "echo \\$(x)\n",
+    "scripts": ["echo \\$(x)\n"]
+  },
+  {
+    "id": "x.14",
+    "site": "sanitized",
+    "command": "cat <<EOF\n$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\nEOF\n",
+    "body": "$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\n",
+    "scripts": ["$(rm -rf /) $(rm -rf /) `x` `x`\n"]
+  },
+  {
+    "id": "x.15",
+    "site": "dq",
+    "command": "echo \"$(sh <<EOF\nprintf A \\\nB\nEOF\n)\"",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A B\n"]
+  },
+  {
+    "id": "x.16",
+    "site": "dq",
+    "command": "echo \"$(sh <<'EOF'\nprintf A \\\nB\nEOF\n)\"",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.17",
+    "site": "dq",
+    "command": "echo \"$(sh <<-EOF\n\tprintf A \\\n\tB\n\tprintf \\$HOME\nEOF\n)\"",
+    "body": "\tprintf A \\\n\tB\n\tprintf \\$HOME\n",
+    "scripts": ["printf A \tB\nprintf $HOME\n"]
+  },
+  {
+    "id": "x.18",
+    "site": "dq",
+    "command": "echo \"$(sh <<-'EOF'\n\tprintf A \\\n\tB\nEOF\n)\"",
+    "body": "\tprintf A \\\n\tB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.19",
+    "site": "dq",
+    "command": "echo \"$(sh <<\"EOF\"\n$(rm -rf /)\nEOF\n)\"",
+    "body": "$(rm -rf /)\n",
+    "scripts": ["$(rm -rf /)\n"]
+  },
+  {
+    "id": "x.20",
+    "site": "dq",
+    "command": "echo \"$(sh <<\\EOF\necho \\$(x)\nEOF\n)\"",
+    "body": "echo \\$(x)\n",
+    "scripts": ["echo \\$(x)\n"]
+  },
+  {
+    "id": "x.21",
+    "site": "dq",
+    "command": "echo \"$(sh <<EOF\n$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\nEOF\n)\"",
+    "body": "$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\n",
+    "scripts": ["$(rm -rf /) $(rm -rf /) `x` `x`\n"]
+  },
+  {
+    "id": "x.22",
+    "site": "backtick",
+    "command": "echo \"`sh <<EOF\nprintf A \\\nB\nEOF\n`\"",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A B\n"]
+  },
+  {
+    "id": "x.23",
+    "site": "backtick",
+    "command": "echo \"`sh <<'EOF'\nprintf A \\\nB\nEOF\n`\"",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.24",
+    "site": "backtick",
+    "command": "echo \"`sh <<-'EOF'\n\tprintf A \\\n\tB\nEOF\n`\"",
+    "body": "\tprintf A \\\n\tB\n",
+    "scripts": ["printf A \\\nB\n"]
+  },
+  {
+    "id": "x.25",
+    "site": "string",
+    "command": "bash -c 'sh <<EOF\nprintf A \\\nB\nEOF'",
+    "body": "printf A \\\nB\n",
+    "scripts": ["printf A B\n"]
+  },
+  {
+    "id": "x.26",
+    "site": "string",
+    "command": "bash -c 'sh <<-EOF\n\tprintf A \\\n\tB\n\tprintf \\$HOME\nEOF'",
+    "body": "\tprintf A \\\n\tB\n\tprintf \\$HOME\n",
+    "scripts": ["printf A \tB\nprintf $HOME\n"]
+  },
+  {
+    "id": "x.27",
+    "site": "string",
+    "command": "bash -c 'sh <<\"EOF\"\n$(rm -rf /)\nEOF'",
+    "body": "$(rm -rf /)\n",
+    "scripts": ["$(rm -rf /)\n"]
+  },
+  {
+    "id": "x.28",
+    "site": "string",
+    "command": "bash -c 'sh <<\\EOF\necho \\$(x)\nEOF'",
+    "body": "echo \\$(x)\n",
+    "scripts": ["echo \\$(x)\n"]
+  },
+  {
+    "id": "x.29",
+    "site": "string",
+    "command": "bash -c 'sh <<EOF\n$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\nEOF'",
+    "body": "$(rm -rf /) \\$(rm -rf /) `x` \\`x\\`\n",
+    "scripts": ["$(rm -rf /) $(rm -rf /) `x` `x`\n"]
+  },
+  {
+    "id": "x.30",
+    "site": "top",
+    "command": "sh <<EOF; sh <<'EOF'\n#\\\nrm -rf /\necho '\nEOF\n#\\\nrm -rf /\necho '\nEOF\n",
+    "body": "#\\\nrm -rf /\necho '\n",
+    "scripts": ["#rm -rf /\necho '\n", "#\\\nrm -rf /\necho '\n"]
+  },
+  {
+    "id": "x.31",
+    "site": "sanitized",
+    "command": "sh <<EOF; sh <<'EOF'\n#\\\nrm -rf /\necho '\nEOF\n#\\\nrm -rf /\necho '\nEOF\n",
+    "body": "#\\\nrm -rf /\necho '\n",
+    "scripts": ["#rm -rf /\necho '\n", "#\\\nrm -rf /\necho '\n"]
+  },
+  {
+    "id": "x.32",
+    "site": "top",
+    "command": "sh <<EOF; sh <<'EOF'\na\\\\\\\nEOF\na\\\\\\\nEOF\n",
+    "body": "a\\\\\\\n",
+    "scripts": ["a\\", "a\\\\\\\n"]
+  },
+  {
+    "id": "x.33",
+    "site": "top",
+    "command": "sh <<-EOF; sh <<EOF\n\t#\\\n\trm -rf /\necho '\nEOF\n\t#\\\n\trm -rf /\necho '\nEOF\n",
+    "body": "\t#\\\n\trm -rf /\necho '\n",
+    "scripts": ["#\trm -rf /\necho '\n", "\t#\trm -rf /\necho '\n"]
+  },
+  {
+    "id": "x.34",
+    "site": "top",
+    "command": "sh <<-'EOF'; sh <<'EOF'\n\t#\\\n\trm -rf /\necho '\nEOF\n\t#\\\n\trm -rf /\necho '\nEOF\n",
+    "body": "\t#\\\n\trm -rf /\necho '\n",
+    "scripts": ["#\\\nrm -rf /\necho '\n", "\t#\\\n\trm -rf /\necho '\n"]
+  },
+  {
+    "id": "x.35",
+    "site": "dq",
+    "command": "echo \"$(sh <<EOF; sh <<'EOF'\n#\\\nrm -rf /\necho '\nEOF\n#\\\nrm -rf /\necho '\nEOF\n)\"",
+    "body": "#\\\nrm -rf /\necho '\n",
+    "scripts": ["#rm -rf /\necho '\n", "#\\\nrm -rf /\necho '\n"]
+  }
+]

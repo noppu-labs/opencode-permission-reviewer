@@ -15,7 +15,11 @@ import {
   evidenceFields,
   traceAndAskFields,
 } from "./review-audit-facts.ts";
-import { escalationFields, outcomeFields } from "./review-audit-outcome.ts";
+import {
+  configWarningsField,
+  escalationFields,
+  outcomeFields,
+} from "./review-audit-outcome.ts";
 
 export type AuditRecordScope = Pick<
   CoordinatorState,
@@ -65,6 +69,7 @@ export function buildReviewAuditRecord(
     nativeAction: request.permission,
     pluginVersion: packageInfo.version,
     effectiveConfigHash,
+    ...configWarningsField(scope.config),
     actionFingerprint: `v1:${hash}`,
     application: isSuperseded(scope, request)
       ? "superseded"

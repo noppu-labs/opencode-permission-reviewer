@@ -1,7 +1,13 @@
+import { resolveConfig } from "../../src/config.ts";
 import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import type { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
+import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
 import type { SystemOnePrimaryBasis } from "../../src/system-one/system-one-types.ts";
-import type { ReviewEnvelope, ReviewExecutionResult } from "../../src/types.ts";
+import type {
+  ReviewEnvelope,
+  ReviewExecutionResult,
+  ReviewerConfig,
+  SystemOneEscalationMode,
+} from "../../src/types.ts";
 
 // Deliberately a hand copy, not SYSTEM_ONE_BASES: it is the only test pin of the 11-basis
 // wire contract (parseChoice's exactKeys).
@@ -80,6 +86,152 @@ export function response(overrides: Record<string, unknown> = {}): {
   };
 }
 
+export const JEV_MODEL = "opencode/jev-1.13-free";
+export const REASONING_MODEL = "openai/gpt-5.6-luna";
+const OUTCOMES = ["allow", "deny", "escalate"] as const;
+export const RISKS = ["low", "medium", "high", "critical"] as const;
+const SCOPES = ["aligned", "partial", "misaligned", "unknown"] as const;
+
+export const noul = (value: number): { type: string; noul: number } => ({
+  type: "noul",
+  noul: value,
+});
+
+type JevAnswerName =
+  | "cleanAllow"
+  | "cleanDeny"
+  | "uncertainAllow"
+  | "uncertainGatedAllow"
+  | "clearEscalate"
+  | "plausibleEscalate"
+  | "criticalGatedAllow"
+  | "misalignedGatedAllow"
+  | "uncertainDeny";
+
+/** Jev answers for each row of the spec's routing table. */
+export const JEV_ANSWERS: Record<JevAnswerName, Record<string, unknown>> = {
+  cleanAllow: {},
+  cleanDeny: {
+    outcome: choice("deny", OUTCOMES),
+    primary_basis: choice("destructive_effect", PRIMARY_BASES),
+  },
+  // A restrictive basis on an allow is a contradiction.
+  uncertainAllow: {
+    primary_basis: choice("destructive_effect", PRIMARY_BASES),
+  },
+  uncertainGatedAllow: {
+    primary_basis: choice("destructive_effect", PRIMARY_BASES),
+    risk_level: choice("critical", RISKS),
+  },
+  // P(allow) + P(deny) = 0, below the 0.38 threshold.
+  clearEscalate: { outcome: choice("escalate", OUTCOMES) },
+  // P(allow) + P(deny) = 0.4, at or above the threshold.
+  plausibleEscalate: { outcome: choice("escalate", OUTCOMES, 0.6) },
+  // Consistent allows that a deterministic gate stops.
+  criticalGatedAllow: { risk_level: choice("critical", RISKS) },
+  misalignedGatedAllow: {
+    scope_alignment: choice("misaligned", SCOPES),
+    within_intent_scope: noul(0.5),
+  },
+  // Outcome confidence 0.35 is below systemOneConfidenceThreshold 0.4.
+  uncertainDeny: {
+    outcome: choice("deny", OUTCOMES, 0.35),
+    primary_basis: choice("destructive_effect", PRIMARY_BASES),
+  },
+};
+
+/** Jev's answer overrides, or an invalid answer, or a thrown transport error. */
+export type JevScript = Record<string, unknown> | "invalid" | "failure";
+
+function jevInvoke(script: JevScript): () => Promise<unknown> {
+  if (script === "invalid")
+    return async (): Promise<unknown> => ({ ...response(), model: "not-jev" });
+  if (script === "failure")
+    return async (): Promise<unknown> => {
+      throw new Error("synthetic transport failure");
+    };
+  return async (): Promise<unknown> => response(script);
+}
+
+/** A Jev config with a reasoning reviewer and the two routing settings. */
+export function routingConfig(
+  systemOneEscalation: SystemOneEscalationMode,
+  systemOneDenialReview = false,
+  overrides: Record<string, unknown> = {},
+): ReviewerConfig {
+  return resolveConfig({
+    model: JEV_MODEL,
+    escalationReviewer: { model: REASONING_MODEL },
+    systemOneEscalation,
+    systemOneDenialReview,
+    ...overrides,
+  });
+}
+
+export const REASONING_DENY: ReviewExecutionResult = {
+  kind: "deny",
+  reason: "Reasoning reviewer denied the action.",
+  decisionSource: "llm-reviewer",
+};
+
+export function reasoningAllow(
+  evidence: "sufficient" | "partial",
+  rationale = "The action is supported by complete evidence.",
+): ReviewExecutionResult {
+  return {
+    kind: "allow",
+    reason: rationale,
+    decisionSource: "llm-reviewer",
+    reviewerOutcome: "allow",
+    decision: {
+      version: 2,
+      outcome: "allow",
+      risk_level: "low",
+      user_authorization: "high",
+      scope_alignment: "aligned",
+      evidence_completeness: evidence,
+      rationale,
+      confidence: 0.95,
+    },
+  };
+}
+
+export const REASONING_ESCALATE: ReviewExecutionResult = {
+  kind: "escalate",
+  reason: "The reasoning reviewer wants a person to decide.",
+  decisionSource: "llm-reviewer",
+  reviewerOutcome: "escalate",
+};
+
+/** What a reasoning backend returns after its own timeout: already disposed. */
+export const REASONING_UNAVAILABLE: ReviewExecutionResult = {
+  kind: "escalate",
+  reason: "reviewer backend failed (TimeoutError): synthetic reasoning timeout",
+  decisionSource: "failure-safe",
+  escalationDisposition: "manual",
+};
+
+/** A backend whose Jev answers per `jev` and whose reasoning reviewer
+ *  returns `reasoning`, counting the reasoning calls. */
+export function routedBackend(
+  config: ReviewerConfig,
+  jev: JevScript,
+  reasoning: () => Promise<ReviewExecutionResult> = async (): Promise<ReviewExecutionResult> =>
+    REASONING_DENY,
+): { backend: SystemOneReviewerBackend; calls: () => number } {
+  let calls = 0;
+  const backend = new SystemOneReviewerBackend(
+    config,
+    (): Promise<ReviewExecutionResult> => {
+      calls++;
+      return reasoning();
+    },
+    REASONING_MODEL,
+    jevInvoke(jev),
+  );
+  return { backend, calls: () => calls };
+}
+
 export function envelope(): ReviewEnvelope {
   return {
     request: {
@@ -99,8 +251,24 @@ export function envelope(): ReviewEnvelope {
   };
 }
 
-export function reviewOnce(
+/** One review on a 60 s attempt (above the hand-off floor), closed after. */
+export async function reviewOnce(
   backend: SystemOneReviewerBackend,
+  attempt = new ReviewAttempt("generation", 60_000),
 ): Promise<ReviewExecutionResult> {
-  return backend.review(envelope(), new ReviewAttempt("generation", 10_000));
+  try {
+    return await backend.review(envelope(), attempt);
+  } finally {
+    attempt.close("finished");
+  }
+}
+
+/** A 60 s attempt on a fixed clock that has `remainingMs` left. The caller
+ *  closes it (reviewOnce does). */
+export function attemptWithRemaining(remainingMs: number): ReviewAttempt {
+  let now = 0;
+  const budget = 60_000;
+  const attempt = new ReviewAttempt("generation", budget, () => now);
+  now = budget - remainingMs;
+  return attempt;
 }

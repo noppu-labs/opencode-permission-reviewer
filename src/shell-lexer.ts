@@ -1,38 +1,15 @@
-// Lexing entry points: per-request analysis budgets, the bounded lexing pass, and token-value segments for evidence consumers.
+// Lexing entry points: per-request analysis budgets, and the bounded lexing pass.
 
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
+import { NO_SCRIPTS } from "./capability/heredoc-scripts.ts";
 import {
+  type HeredocReading,
   MAX_SUBSTITUTION_CHARS,
+  type ShellQuoting,
   type SubstitutionBudget,
 } from "./shell-lex-state.ts";
-import { normalizeShellRedirections } from "./shell-redirections.ts";
 import { lexSegments } from "./shell-scanner.ts";
 import type { ShellSegment } from "./shell-token.ts";
-
-/** Segments flattened to plain token values plus the separators around each
- *  segment. This is the shared surface evidence consumers (SSH, Git, local
- *  scripts) build on, so the brake's lexer stays the one tokenizer. */
-export interface CommandSegment {
-  tokens: string[];
-  preceding?: string;
-  endedBy?: string;
-}
-
-export function commandSegments(command: string): CommandSegment[] {
-  const segments = lexSegments(command, {
-    tokensRemaining: Number.POSITIVE_INFINITY,
-    substitutions: "skip",
-  });
-  return segments.map((segment) => {
-    const normalized = normalizeShellRedirections(segment.tokens);
-    return {
-      tokens: normalized.tokens.map((token) => token.value),
-      ...(segment.precededBy === undefined
-        ? {}
-        : { preceding: segment.precededBy }),
-      ...(segment.endedBy === undefined ? {} : { endedBy: segment.endedBy }),
-    };
-  });
-}
 
 /** Ceiling on collected effective commands. Command strings can expand
  *  combinatorially (a level duplicating its script doubles the output), so
@@ -55,13 +32,33 @@ const MAX_REANALYSIS_CHARS = 262_144;
 export interface AnalysisBudget {
   remainingCommands: number;
   remainingReanalysisChars: number;
+  /** Heredoc reading for every command string and substitution this budget
+   *  covers. Absent means the default reading. */
+  reading?: HeredocReading;
+  /** Quote reading for every command string and substitution this budget
+   *  covers. Absent means bash's reading. */
+  quoting?: ShellQuoting;
+  /** Where the commands that heredoc bodies in the re-lexed command strings
+   *  run are kept; a walk that does not judge them leaves it unset. */
+  bodies?: BodyCommands;
+  /** Also judge the remote command that the previous release's reading of
+   *  ssh's arguments found, when it differs from the current one. */
+  previousSsh?: true;
 }
 
-export function newAnalysisBudget(): AnalysisBudget {
-  return {
+export function newAnalysisBudget(
+  reading: HeredocReading = "default",
+  quoting: ShellQuoting = "bash",
+  bodies?: BodyCommands,
+): AnalysisBudget {
+  const budget: AnalysisBudget = {
     remainingCommands: MAX_EFFECTIVE_COMMANDS,
     remainingReanalysisChars: MAX_REANALYSIS_CHARS,
+    reading,
+    quoting,
   };
+  if (bodies !== undefined) budget.bodies = bodies;
+  return budget;
 }
 
 function basename(exe: string): string {
@@ -75,18 +72,47 @@ function basename(exe: string): string {
 export interface LexAnalysis {
   segments: ShellSegment[];
   truncated: boolean;
+  /** The commands the heredocs inside substitution bodies run, in source
+   *  order, and whether one of those bodies could not be read to the end.
+   *  They are kept beside the segments, which hold only the text as it was
+   *  lexed. Empty under the previous release's heredoc reading. */
+  bodyCommands: string[];
+  bodyUnresolved: boolean;
+  /** The text each of those heredoc bodies gives the command that reads it,
+   *  by placeholder. */
+  scripts: ReadonlyMap<string, readonly string[]>;
 }
 
-export function lexSegmentsBounded(command: string): LexAnalysis {
+export function lexSegmentsBounded(
+  command: string,
+  reading: HeredocReading = "default",
+  quoting: ShellQuoting = "bash",
+): LexAnalysis {
   if (command.length > MAX_ANALYSIS_INPUT_CHARS)
-    return { segments: [], truncated: true };
+    return {
+      segments: [],
+      truncated: true,
+      bodyCommands: [],
+      bodyUnresolved: false,
+      scripts: NO_SCRIPTS,
+    };
+  const bodies: BodyCommands = { commands: [], unresolved: false };
   const state: SubstitutionBudget = {
     tokensRemaining: MAX_LEX_TOKENS,
     substitutions: "lex",
     substitutionCharsRemaining: MAX_SUBSTITUTION_CHARS,
+    reading,
+    quoting,
+    bodies,
   };
   const segments = lexSegments(command, state);
-  return { segments, truncated: state.tokensRemaining <= 0 };
+  return {
+    segments,
+    truncated: state.tokensRemaining <= 0,
+    bodyCommands: bodies.commands,
+    bodyUnresolved: bodies.unresolved,
+    scripts: bodies.scripts ?? NO_SCRIPTS,
+  };
 }
 
 export { basename as shellBasename };

@@ -21,6 +21,11 @@ export function classifyCredentialReads(
   for (const [index, cmd] of parsed.effective.entries()) {
     classifyCredentialCommand(cmd, parsed.redirections[index] ?? [], facts);
   }
+  // The shell opens a segment's input redirections whether or not it yields
+  // an effective command: `ssh h < key` sends the file.
+  for (const redirects of parsed.segmentRedirections)
+    if (redirects.some(inputRedirectReadsCredential))
+      facts.credentialRead = true;
 }
 
 function classifyCredentialCommand(
@@ -42,7 +47,7 @@ function classifyCredentialCommand(
   }
 }
 
-function inputRedirectReadsCredential(r: Redirection): boolean {
+function inputRedirectReadsCredential(r: Readonly<Redirection>): boolean {
   return (
     r.operator === "<" &&
     isLiteralPathValue(r.target) &&

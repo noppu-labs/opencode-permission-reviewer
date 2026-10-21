@@ -262,7 +262,7 @@ describe("npm pack ship set", () => {
         f === "AGENTS.md" ||
         f === "CONTRIBUTING.md" ||
         f === "CODE_OF_CONDUCT.md" ||
-        f === "tsup.config.ts" ||
+        f === "tsdown.config.ts" ||
         f === "tsconfig.json" ||
         f === "tsconfig.hook.json" ||
         f === "biome.jsonc" ||
@@ -385,7 +385,7 @@ describe("supply-chain surface", () => {
     for (const member of bundles) {
       const bundle = await readFromTarball(packOnce(), member);
       // `effect` may appear as a literal (e.g. permission `"effect": "ask"`),
-      // but never as a module specifier: tsup externalizes it, so an
+      // but never as a module specifier: tsdown externalizes it, so an
       // accidental import stays visible here instead of being silently
       // inlined. The runtime is resolved by the host from @opencode-ai/plugin's
       // own dependency chain, never vendored by us.

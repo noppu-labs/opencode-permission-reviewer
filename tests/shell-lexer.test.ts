@@ -1,13 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import { commandSegments } from "../src/command-segments.ts";
 import {
   analyzeEffectiveCommands,
   effectiveCommands,
 } from "../src/shell-effective-commands.ts";
-import {
-  commandSegments,
-  newAnalysisBudget,
-  shellBasename,
-} from "../src/shell-lexer.ts";
+import { newAnalysisBudget, shellBasename } from "../src/shell-lexer.ts";
 import { lexSegments } from "../src/shell-scanner.ts";
 import {
   type ShellSegment,
@@ -134,6 +132,14 @@ describe("shell lexer", () => {
     expect(
       firstOf(commandSegments("git>/tmp/log add ."), "first segment").tokens,
     ).toEqual(["git", "add", "."]);
+  });
+
+  test("an input-duplication redirect never becomes a command head", () => {
+    expect(firstExecutables("exec 3<&0")).toEqual([]);
+    expect(firstExecutables("cat <&3 | wc -l")).toEqual([
+      ["cat"],
+      ["wc", "-l"],
+    ]);
   });
 
   test("records the separator that ended each segment", () => {
@@ -527,7 +533,7 @@ describe("analyzer hardening batch 10", () => {
     [
       "ls `rm -rf /`",
       [
-        ["ls", "`rm", "-rf", "/`"],
+        ["ls", "`rm -rf /`"],
         ["rm", "-rf", "/"],
       ],
     ],
@@ -546,17 +552,14 @@ describe("analyzer hardening batch 10", () => {
       ],
     ],
     ['a="$(rm -rf /)" b', [["b"], ["rm", "-rf", "/"]]],
-    ["echo `a \\`b\\``", [["echo", "`a", "`b``"], ["a", "`b`"], ["b"]]],
+    ["echo `a \\`b\\``", [["echo", "`a \\`b\\``"], ["a", "`b`"], ["b"]]],
     [
       'echo "$(cat <<EOF\n)\nEOF\n)"',
-      [
-        ["echo", "$(cat <<EOF\n)\nEOF\n)"],
-        ["cat", "<HEREDOC:sha256:fafba0527c39>"],
-      ],
+      [["echo", "$(cat <<EOF\n)\nEOF\n)"], ["cat"]],
     ],
     ["echo '`a`' \\`b\\` \"\\$(c)\"", [["echo", "`a`", "`b`", "$(c)"]]],
     ['echo "$((1 + 2))"', [["echo", "$((1 + 2))"]]],
-    ['x="$(echo "a b")"', [["b)"], ["echo", "a b"]]],
+    ['x="$(echo "a b")"', [["echo", "a b"]]],
   ])("resolves each command %#", (command, expected) => {
     expect(firstExecutables(command)).toEqual(expected);
   });
@@ -582,5 +585,14 @@ describe("analyzer hardening batch 15", () => {
     const command = `${'"$('.repeat(1000)} ; ssh h 'x'`;
     const segments = commandSegments(command);
     expect(segments.some((segment) => segment.tokens[0] === "ssh")).toBe(true);
+  });
+});
+
+describe("heredoc placeholder in the analyzer", () => {
+  test("a heredoc before the command word leaves the command as the head", () => {
+    const { sanitizedCommand } = extractHeredocs("<<EOF rm -rf /tmp/x\nEOF");
+    expect(firstExecutables(sanitizedCommand)).toEqual([
+      ["rm", "-rf", "/tmp/x"],
+    ]);
   });
 });

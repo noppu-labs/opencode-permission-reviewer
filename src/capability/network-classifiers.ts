@@ -1,5 +1,6 @@
 // Network, remote and git classifiers for one effective command. Each one that matches may claim the action class, so their call order decides it.
 
+import { elementAt } from "../element-at.ts";
 import type { ShellToken } from "../shell-token.ts";
 import { claimClass } from "./action-class.ts";
 import {
@@ -35,12 +36,24 @@ export function classifySshTool(
   facts.remoteEnabled = true;
   facts.childProcesses = true;
   // ssh with a remote command that mutates → remote mutation hint.
-  if (
-    cmd.some((t) => GIT_MUTATION_SUBCOMMANDS.has(t.value) || t.value === "rm")
-  ) {
-    facts.remoteMutation = true;
-  }
+  classifyRemoteCommand(cmd, facts);
   claimClass(facts, "remote-operation");
+}
+
+/** A command that runs on the far side of an ssh, from its word at `from`:
+ *  one that mutates is a remote mutation hint. */
+export function classifyRemoteCommand(
+  cmd: readonly ShellToken[],
+  facts: CapabilityFacts,
+  from = 0,
+): void {
+  for (let k = from; k < cmd.length; k += 1) {
+    const { value } = elementAt(cmd, k, "cmd");
+    if (GIT_MUTATION_SUBCOMMANDS.has(value) || value === "rm") {
+      facts.remoteMutation = true;
+      return;
+    }
+  }
 }
 
 export function classifyGit(

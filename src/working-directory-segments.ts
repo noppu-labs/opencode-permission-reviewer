@@ -2,13 +2,13 @@
 // shared by the ssh, local-script, package-script and git evidence.
 
 import { basename, resolve } from "node:path";
+import { commandSegments } from "./command-segments.ts";
 import {
   applyGrouping,
   applyPendingCd,
   type DirectoryTracker,
   recordCd,
 } from "./directory-tracker.ts";
-import { commandSegments } from "./shell-lexer.ts";
 
 export interface ShellCommandSegmentWithDirectory {
   tokens: string[];

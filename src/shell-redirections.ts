@@ -1,8 +1,13 @@
 // Splits shell redirections (`2>log`, `cmd>out`, `<<<word`) away from command words.
 
 import { elementAt } from "./element-at.ts";
-import { nextRedirection } from "./shell-redirection-operators.ts";
-import { hasQuotedChar, type ShellToken, sliceToken } from "./shell-token.ts";
+import { redirectionsIn } from "./shell-redirection-operators.ts";
+import {
+  hasQuotedChar,
+  indexSpans,
+  type ShellToken,
+  sliceIndexed,
+} from "./shell-token.ts";
 
 export interface ShellRedirection {
   operator: string;
@@ -14,9 +19,24 @@ export interface ShellRedirection {
  *  It is evidence metadata, not another input redirection. */
 const HEREDOC_MARKER = /^<HEREDOC:sha256:[a-f0-9]+>$/;
 
+/** The operator of a heredoc redirection, with its descriptor if any. */
+const HEREDOC_OPERATOR = /^[0-9]*<<-?$/;
+
 interface RedirectionSplit {
   words: ShellToken[];
   redirections: ShellRedirection[];
+  /** When given, the marker of each heredoc redirection by its index. */
+  markers?: Map<number, string>;
+}
+
+/** The marker the extractor put right after a heredoc's delimiter belongs to
+ *  that redirection, the last one pushed. */
+function noteMarker(split: RedirectionSplit, marker: string): void {
+  const index = split.redirections.length - 1;
+  const last = split.redirections[index];
+  if (split.markers === undefined || last === undefined) return;
+  if (!HEREDOC_OPERATOR.test(last.operator) || split.markers.has(index)) return;
+  split.markers.set(index, marker);
 }
 
 function pushRedirection(
@@ -40,11 +60,12 @@ function splitLeadingWord(
   cursor: number,
   found: { index: number; operator: string },
   words: ShellToken[],
+  slice: (start: number, end: number) => ShellToken,
 ): string {
   const prefix = token.value.slice(cursor, found.index);
   if (cursor === 0 && /^[0-9]+$/.test(prefix))
     return `${prefix}${found.operator}`;
-  if (found.index > cursor) words.push(sliceToken(token, cursor, found.index));
+  if (found.index > cursor) words.push(slice(cursor, found.index));
   return found.operator;
 }
 
@@ -53,23 +74,24 @@ function splitLeadingWord(
  *  it, so the caller can take the next word as its target. */
 function splitWordRedirections(
   token: ShellToken,
-  first: { index: number; operator: string },
+  operators: { index: number; operator: string }[],
   split: RedirectionSplit,
 ): string | undefined {
-  let found: { index: number; operator: string } | undefined = first;
+  const spans = indexSpans(token);
+  const slice = (start: number, end: number): ShellToken =>
+    sliceIndexed(token, spans, start, end);
   let cursor = 0;
   let dangling: string | undefined;
-  while (found !== undefined) {
-    const operator = splitLeadingWord(token, cursor, found, split.words);
+  operators.forEach((found, position) => {
+    const following = operators[position + 1];
+    const operator = splitLeadingWord(token, cursor, found, split.words, slice);
     const targetStart = found.index + found.operator.length;
-    const following = nextRedirection(token, targetStart);
     const end = following?.index ?? token.value.length;
     if (targetStart < end)
-      pushRedirection(split, operator, sliceToken(token, targetStart, end));
+      pushRedirection(split, operator, slice(targetStart, end));
     else if (following === undefined) dangling = operator;
     cursor = end;
-    found = following;
-  }
+  });
   return dangling;
 }
 
@@ -79,15 +101,28 @@ function splitWord(
   token: ShellToken,
   split: RedirectionSplit,
 ): string | undefined {
-  const found = HEREDOC_MARKER.test(token.value)
-    ? undefined
-    : nextRedirection(token, 0);
-  if (found === undefined) {
+  // The marker is evidence metadata: it is neither a command word nor a
+  // redirection, so it leaves the words and the redirection list alone.
+  if (HEREDOC_MARKER.test(token.value)) {
+    noteMarker(split, token.value);
+    return undefined;
+  }
+  const operators = redirectionsIn(token);
+  if (operators.length === 0) {
     split.words.push(token);
     return undefined;
   }
-  return splitWordRedirections(token, found, split);
+  return splitWordRedirections(token, operators, split);
 }
+
+/** Whether the word's text ends in an empty quote (`<<<''`, `>$""`): the
+ *  lexer leaves an empty quoted span there under bash's reading. */
+function endsInEmptyQuote(token: ShellToken): boolean {
+  const last = token.spans?.at(-1);
+  return last?.quoted === true && last.text === "";
+}
+
+const EMPTY_TARGET: ShellToken = { raw: "", value: "", spans: [] };
 
 /**
  * Split shell redirections away from command words. Shell accepts them before,
@@ -100,14 +135,43 @@ export function normalizeShellRedirections(tokens: ShellToken[]): {
   redirections: ShellRedirection[];
 } {
   const split: RedirectionSplit = { words: [], redirections: [] };
+  splitTokens(tokens, split);
+  return { tokens: split.words, redirections: split.redirections };
+}
+
+/**
+ * The heredoc marker of each redirection that `normalizeShellRedirections`
+ * returns for `tokens`, by index: `undefined` for a redirection that is not
+ * a heredoc, or whose heredoc left no marker. Empty when `tokens` hold no
+ * marker, which costs one pass over them.
+ */
+export function heredocPlaceholders(
+  tokens: readonly ShellToken[],
+): (string | undefined)[] {
+  if (!tokens.some((token) => HEREDOC_MARKER.test(token.value))) return [];
+  const split: RedirectionSplit = {
+    words: [],
+    redirections: [],
+    markers: new Map(),
+  };
+  splitTokens([...tokens], split);
+  const { markers } = split;
+  return split.redirections.map((_, index) => markers?.get(index));
+}
+
+function splitTokens(tokens: ShellToken[], split: RedirectionSplit): void {
   for (let tokenIndex = 0; tokenIndex < tokens.length; tokenIndex += 1) {
-    const dangling = splitWord(elementAt(tokens, tokenIndex, "tokens"), split);
+    const token = elementAt(tokens, tokenIndex, "tokens");
+    const dangling = splitWord(token, split);
     if (dangling === undefined) continue;
+    if (endsInEmptyQuote(token)) {
+      pushRedirection(split, dangling, EMPTY_TARGET);
+      continue;
+    }
     const candidate = tokens[tokenIndex + 1];
-    if (candidate === undefined || nextRedirection(candidate, 0)?.index === 0)
+    if (candidate === undefined || redirectionsIn(candidate)[0]?.index === 0)
       continue;
     pushRedirection(split, dangling, candidate);
     tokenIndex += 1;
   }
-  return { tokens: split.words, redirections: split.redirections };
 }

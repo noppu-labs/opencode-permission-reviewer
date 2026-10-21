@@ -426,6 +426,7 @@ export const PRIVILEGE_WRAPPERS = new Set([
   "sudo",
   "doas",
   "pkexec",
+  "run0",
   "su",
   "runuser",
   "super",

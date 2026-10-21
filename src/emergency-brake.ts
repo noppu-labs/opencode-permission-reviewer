@@ -1,41 +1,20 @@
 import {
-  redirectionWritesBlockDevice,
-  redirectTargetsBlockDevice,
-} from "./brake-block-device.ts";
-import { commandDestroysDevice } from "./brake-device-tools.ts";
-import { joinExecCommands } from "./brake-find-exec.ts";
+  type BodyBudget,
+  bodyCommandsReason,
+  newBodyBudget,
+} from "./brake-body-commands.ts";
+import { heredocTexts } from "./brake-heredoc-texts.ts";
 import {
-  analyzeFind,
-  type FindCommand,
-  isRootFind,
-} from "./brake-find-root.ts";
-import { commandExportsSecret } from "./brake-network-export.ts";
-import { isRootRm } from "./brake-root-rm.ts";
-import type { Redirection } from "./capability/capability-types.ts";
-import { extractHeredocs } from "./capability/heredoc-extractor.ts";
+  ANALYSIS_LIMIT_REASON,
+  brakeReadingsReason,
+} from "./brake-readings.ts";
+import { keepBodyCommands } from "./capability/heredoc-body-collector.ts";
+import type { BodyCommands } from "./capability/heredoc-body-commands.ts";
+import { withScanBudget } from "./capability/heredoc-scan-budget.ts";
+import { keepBodyScripts } from "./capability/heredoc-scripts.ts";
 import { reviewedCommand } from "./reviewed-command.ts";
-import {
-  analyzeSegmentRedirections,
-  type SegmentRedirectionsAnalysis,
-} from "./shell-effective-commands.ts";
-import {
-  type AnalysisBudget,
-  lexSegmentsBounded,
-  MAX_ANALYSIS_INPUT_CHARS,
-  newAnalysisBudget,
-} from "./shell-lexer.ts";
-import type { ShellSegment, ShellToken } from "./shell-token.ts";
+import { MAX_ANALYSIS_INPUT_CHARS } from "./shell-lexer.ts";
 import type { PermissionRequest } from "./types.ts";
-
-/** One segment with its resolved effective commands, computed once per
- *  request and shared by every detector. */
-interface AnalyzedSegment
-  extends Pick<SegmentRedirectionsAnalysis, "segmentRedirections"> {
-  segment: ShellSegment;
-  effective: ShellToken[][];
-  redirections: Redirection[][];
-  finds: FindCommand[];
-}
 
 /*
  * Deterministic emergency brake.
@@ -52,116 +31,37 @@ interface AnalyzedSegment
  * (`sh -c '…'`, `su -c …`, `ssh host …`, `watch …`, `busybox rm …`,
  * `chroot root …`) are peeled before judging the executable.
  *
- * It deliberately does NOT expand variables, globs, command substitutions, or
- * heredocs. Those remain the reviewer's job; the brake only catches literal,
- * unambiguous `rm -rf /`-style root destruction (target resolves to `/`).
+ * It deliberately does NOT expand variables or globs. Those remain the
+ * reviewer's job; the brake only catches literal, unambiguous `rm -rf /`-style
+ * root destruction (target resolves to `/`). The commands that the
+ * substitutions of an unquoted heredoc body run are the exception: bash runs
+ * them, so each is judged as a command of its own, to MAX_BODY_DEPTH levels of
+ * nested bodies. So is the script a shell or ssh reads from a heredoc or
+ * here-string, after the body commands. A body the scan cannot read to its
+ * end, a script that was not recorded, or more body commands and scripts than
+ * one request's budget, gives the analysis limit. Such a check only adds
+ * blocks after the checks above allow.
  *
- * The whole command, including the commands that find exec actions run, is
- * lexed and destructured exactly once per request under a shared analysis
- * budget (input size, tokens, depth, re-lexed text, and total effective
- * commands). When any limit is hit, the brake rejects with a resource-limit
- * reason of its own: the command was NOT proven destructive, only
- * unanalyzable within bounds, and downstream gates must not confuse the two.
+ * Each reading of the command is lexed and destructured under its own
+ * analysis budget (input size, tokens, depth, re-lexed text, and total
+ * effective commands). When any limit is hit, the brake rejects with a
+ * resource-limit reason of its own: the command was NOT proven destructive,
+ * only unanalyzable within bounds, and downstream gates must not confuse the
+ * two.
+ *
+ * The checks in brake-readings.ts run under four quote readings. The first
+ * is the lexer's own bash reading in its finder form: it decodes `$'…'` and
+ * `$"…"` words to the values the shell gives them, and steps over a
+ * substitution body as one unit, keeping the end the end-finder gives even
+ * where the plain bash reading reads a heredoc in a double parenthesis the
+ * previous way.
+ * The rescan reading decodes quotes the same way but scans a substitution
+ * body's text in place, as the release before that step did. The undecoded
+ * reading keeps those words as written, as the default reading did before
+ * this change. The previous release's quote reading ends a `$'…'` string at
+ * its first `'`. The brake runs each heredoc reading under all four, so a
+ * command any of them blocks stays blocked.
  */
-
-const ROOT_DESTRUCTION_REGEX = [
-  // Fork bomb. (Block-device formatting/overwrite and rm/find destruction are
-  // handled by the lexer-based detectors below so that `echo "mkfs …"` and
-  // other non-executable mentions do not trip the brake.)
-  /:\s*\(\s*\)\s*\{\s*:\s*\|\s*:\s*&\s*\}\s*;\s*:/,
-];
-
-const ROOT_DESTRUCTION_REASON =
-  "Emergency brake: command contains unmistakable broad system destruction.";
-const SECRET_EXPORT_REASON =
-  "Emergency brake: command appears to export credential material through a network utility.";
-const ANALYSIS_LIMIT_REASON =
-  "Emergency brake: command exceeded the static analysis budget (input size, token count, or command-string expansion). Split the command into smaller steps and retry. This is a resource limit, not a detected destruction.";
-
-function isRmRootDestruction(analyzed: AnalyzedSegment[]): boolean {
-  return analyzed.some(({ effective }) => effective.some(isRootRm));
-}
-
-function isFindRootDestruction(analyzed: AnalyzedSegment[]): boolean {
-  return analyzed.some(({ finds }) => finds.some(isRootFind));
-}
-
-function isDeviceDestruction(analyzed: AnalyzedSegment[]): boolean {
-  return analyzed.some(
-    ({ segment, effective, redirections, segmentRedirections }) =>
-      redirectTargetsBlockDevice(segment.tokens) ||
-      segmentRedirections.some(redirectionWritesBlockDevice) ||
-      effective.some((command, commandIndex) =>
-        commandDestroysDevice(command, redirections[commandIndex] ?? []),
-      ),
-  );
-}
-
-function isObviousSecretExport(analyzed: AnalyzedSegment[]): boolean {
-  return analyzed.some(({ effective, redirections }) =>
-    effective.some((command, commandIndex) =>
-      commandExportsSecret(command, redirections[commandIndex] ?? []),
-    ),
-  );
-}
-
-/** Lexes the command and resolves every segment's effective commands under
- *  one shared budget, or returns `undefined` when any limit is hit. */
-function analyzeSegments(command: string): AnalyzedSegment[] | undefined {
-  const lex = lexSegmentsBounded(command);
-  if (lex.truncated) return undefined;
-  const budget = newAnalysisBudget();
-  const analyzed: AnalyzedSegment[] = [];
-  for (const segment of lex.segments) {
-    const analysis = analyzeSegment(segment, budget);
-    if (analysis === undefined) return undefined;
-    analyzed.push(analysis);
-  }
-  return analyzed;
-}
-
-/** Resolves one segment and the exec actions of its find commands, or
- *  returns `undefined` when any of those walks hits a limit. The commands
- *  the exec actions run join the segment's effective commands, so every
- *  detector judges them like the segment's own. */
-function analyzeSegment(
-  segment: ShellSegment,
-  budget: AnalysisBudget,
-): AnalyzedSegment | undefined {
-  const analysis = analyzeSegmentRedirections(segment, budget);
-  if (analysis.truncated) return undefined;
-  const finds = analyzeFinds(analysis.commands, budget);
-  if (finds === undefined) return undefined;
-  const all = joinExecCommands([analysis, ...finds.map(({ exec }) => exec)]);
-  return {
-    segment,
-    effective: all.commands,
-    redirections: all.redirections,
-    segmentRedirections: all.segmentRedirections,
-    finds,
-  };
-}
-
-/** The find commands among `commands` and among the commands their exec
- *  actions run, at any depth, or `undefined` when any exec walk hits a limit.
- *  The exec walks of a nested find are charged to the shared `budget` per
- *  argv token, which keeps the nested work linear in the budget. */
-function analyzeFinds(
-  commands: readonly ShellToken[][],
-  budget: AnalysisBudget,
-): FindCommand[] | undefined {
-  const finds: FindCommand[] = [];
-  const pending = commands.map((command) => ({ command, nested: false }));
-  for (let next = pending.pop(); next; next = pending.pop()) {
-    const find = analyzeFind(next.command, budget, next.nested);
-    if (find?.exec.truncated) return undefined;
-    if (find === undefined) continue;
-    finds.push(find);
-    for (const command of find.exec.commands)
-      pending.push({ command, nested: true });
-  }
-  return finds;
-}
 
 export function emergencyBrakeReason(
   request: PermissionRequest,
@@ -171,21 +71,68 @@ export function emergencyBrakeReason(
 
   // Resource limits come first and are their own outcome: an input the static
   // analysis cannot finish is rejected for THAT reason, before any lexing or
-  // detector runs, and is never described as detected destruction. The whole
-  // command is lexed and resolved exactly once here; detectors share the
-  // result instead of re-analyzing the same text once per detector.
+  // detector runs, and is never described as detected destruction.
   if (command.length > MAX_ANALYSIS_INPUT_CHARS) return ANALYSIS_LIMIT_REASON;
-  // Heredoc bodies are shell input data, not command segments. Analyze the
-  // body-free form so quoted payloads cannot trigger false destructive-command
-  // matches; dynamic expansions remain visible to the reviewer evidence.
-  const { sanitizedCommand } = extractHeredocs(command);
-  const analyzed = analyzeSegments(sanitizedCommand);
-  if (analyzed === undefined) return ANALYSIS_LIMIT_REASON;
+  return withScanBudget(command.length, () =>
+    commandReason(command, 0, newBodyBudget()),
+  );
+}
 
-  if (isRmRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
-  if (isFindRootDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
-  if (isDeviceDestruction(analyzed)) return ROOT_DESTRUCTION_REASON;
-  if (ROOT_DESTRUCTION_REGEX.some((pattern) => pattern.test(sanitizedCommand)))
-    return ROOT_DESTRUCTION_REASON;
-  if (isObviousSecretExport(analyzed)) return SECRET_EXPORT_REASON;
+/** The reason the brake gives for `command`, a command at `depth`: the
+ *  readings checks first, then the commands its heredoc bodies run, each
+ *  judged here at depth + 1 under the request's one `budget`. A body command
+ *  keeps the heredoc placeholders of the text it came from, so it reads them
+ *  in the `scripts` that text recorded. */
+function commandReason(
+  command: string,
+  depth: number,
+  budget: BodyBudget,
+  scripts?: Map<string, string[]>,
+): string | undefined {
+  const bodies: BodyCommands = {
+    commands: [],
+    unresolved: false,
+    ...(scripts && { scripts }),
+  };
+  const { extraction, allOperatorsScripts } = heredocTexts(command);
+  keepBodyCommands(bodies, extraction.bodyCommands, extraction.bodyUnresolved);
+  keepBodyScripts(bodies, extraction.scripts);
+  keepBodyScripts(bodies, allOperatorsScripts);
+  const reason = readingsReason(command, bodies);
+  if (reason !== undefined) return reason;
+  const judge = (body: string, level: number): string | undefined =>
+    commandReason(body, level, budget, bodies.scripts);
+  return (
+    bodyCommandsReason(
+      bodies.commands,
+      bodies.unresolved,
+      depth + 1,
+      judge,
+      budget,
+    ) ??
+    bodyCommandsReason(
+      bodies.feeds?.commands ?? [],
+      bodies.feeds?.unresolved ?? false,
+      depth + 1,
+      judge,
+      budget,
+    )
+  );
+}
+
+/** Every check also runs under the rescan, undecoded and previous quote
+ *  readings, even without a `$'` in the text: a command string the wrappers
+ *  re-lex can get one from escapes. The rescan reading keeps the brake at
+ *  least as strict as the release before the substitution step, and the
+ *  undecoded reading as strict as the previous release, on every input. */
+function readingsReason(
+  command: string,
+  bodies: BodyCommands,
+): string | undefined {
+  return (
+    brakeReadingsReason(command, "finder", bodies) ??
+    brakeReadingsReason(command, "rescan", bodies) ??
+    brakeReadingsReason(command, "undecoded", bodies) ??
+    brakeReadingsReason(command, "previous", bodies)
+  );
 }

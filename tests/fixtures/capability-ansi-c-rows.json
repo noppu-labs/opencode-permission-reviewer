@@ -1,0 +1,28 @@
+{
+  "plainTwins": {
+    "$'\\x72m' -rf /": "rm -rf /",
+    "$'\\162m' -rf /": "rm -rf /",
+    "$'\\u0072m' -rf /": "rm -rf /",
+    "$\"rm\" -rf /": "rm -rf /",
+    "r$'m' -rf /": "rm -rf /",
+    "rm $'-rf' /": "rm -rf /",
+    "rm -rf $'/'": "rm -rf /",
+    "rm -rf $'/\\0tmp'": "rm -rf /",
+    "rm -rf $'/tmp/x'": "rm -rf /tmp/x",
+    "bash -c \"\\$'\\\\x72m' -rf /\"": "bash -c \"rm -rf /\"",
+    "sh -c $'rm -rf /'": "sh -c 'rm -rf /'"
+  },
+  "everydayActions": {
+    "IFS=$'\\n'": "unknown",
+    "printf $'a\\tb\\n'": "read-only",
+    "read -d $'\\0' x": "read-only",
+    "git commit -m $'x\\ny'": "git-mutation",
+    "echo $\"Hello\"": "read-only",
+    "echo $'it\\'s'": "read-only",
+    "echo $'\\x3b rm -rf /'": "read-only",
+    "echo $'\\x7c' x": "read-only",
+    "echo $'\\x2a'": "read-only",
+    "echo $'\\x24HOME'": "read-only",
+    "echo $\"$HOME\"": "read-only"
+  }
+}

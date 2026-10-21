@@ -24,7 +24,26 @@ export const TRANSPARENT_WRAPPERS = new Set([
   "exec",
 ]);
 
-export const ENV_VALUE_OPTIONS = new Set([
+/** The env options that take a value: GNU env's (`env.c` shortopts
+ *  `a:C:S:u:` and its required-argument long options) and BSD's `-P`. */
+export const ENV_VALUE_OPTIONS: ReadonlySet<string> = new Set([
+  "-a",
+  "--argv0",
+  "-u",
+  "--unset",
+  "-S",
+  "--split-string",
+  "-C",
+  "--chdir",
+  "--env0-from",
+  "--quoting-style",
+  "-P",
+]);
+
+/** The env options the previous release read as taking a value. Where its
+ *  reading finds another command than `ENV_VALUE_OPTIONS` does, the walk
+ *  judges both. */
+export const PREVIOUS_ENV_VALUE_OPTIONS: ReadonlySet<string> = new Set([
   "-u",
   "--unset",
   "-S",
@@ -44,7 +63,7 @@ export const LONE_DASH_OPTION_WRAPPERS: ReadonlySet<string> = new Set(["env"]);
  * --mount/--pid/…, run0 --mkdir/--no-ask-password) are intentionally absent so
  * the real executable that follows them is not swallowed by mistake.
  */
-export const VALUE_OPTIONS: Record<string, Set<string>> = {
+export const VALUE_OPTIONS: Record<string, ReadonlySet<string>> = {
   sudo: new Set([
     "-u",
     "--user",
@@ -183,6 +202,24 @@ export const SHELL_BINARIES = new Set([
   "fish",
 ]);
 export const SU_BINARIES = new Set(["su", "runuser", "super"]);
+
+/** The shells whose stdin script is judged: `SHELL_BINARIES` but `fish`,
+ *  whose options are its own. */
+export const STDIN_SCRIPT_SHELLS: ReadonlySet<string> = new Set(
+  [...SHELL_BINARIES].filter((name) => name !== "fish"),
+);
+
+/** Long options of those shells that take the next word as their value. */
+export const SHELL_LONG_VALUE_OPTIONS: ReadonlySet<string> = new Set([
+  "--rcfile",
+  "--init-file",
+]);
+
+/** Long options after which a shell runs nothing. */
+export const SHELL_NO_RUN_LONG_OPTIONS: ReadonlySet<string> = new Set([
+  "--version",
+  "--help",
+]);
 
 export const SHELL_KEYWORDS = new Set([
   "{",

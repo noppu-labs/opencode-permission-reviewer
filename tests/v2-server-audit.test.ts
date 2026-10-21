@@ -19,6 +19,7 @@ const AUDIT_KEYS = [
   "reviewerEscalatedFrom",
   "systemOne",
   "effectiveConfigHash",
+  "configWarnings",
   "actionFingerprint",
   "reviewID",
   "requestID",
@@ -40,6 +41,7 @@ const AUDIT_KEYS = [
   "scopeAlignment",
   "confidence",
   "escalationDisposition",
+  "resolution",
   "policyTrace",
   "evidenceCompleteness",
   "warnings",
@@ -57,6 +59,8 @@ const OPTIONAL_RESULT_KEYS = [
   "reviewerEscalatedFrom",
   "systemOne",
   "escalationDisposition",
+  "resolution",
+  "configWarnings",
   "reviewerSessionID",
 ];
 
@@ -88,6 +92,7 @@ function enrichEvidence(script: {
 
 test("v2 audit records keep every field group in their key order", async () => {
   const harness = await start({
+    config: { configWarnings: ["fixture warning"] },
     result: {
       kind: "allow",
       reason: "Fixture outcome",
@@ -98,9 +103,11 @@ test("v2 audit records keep every field group in their key order", async () => {
       reviewerEscalatedFrom: {
         model: "opencode/jev-1.13-free",
         reason: "Jev was unsure.",
+        trigger: "jev-uncertain-allow",
       },
       systemOne: systemOneScores(),
       escalationDisposition: "manual",
+      resolution: "reasoning-escalated",
     },
     inspect: enrichEvidence({ bytes: 12 }),
   });
@@ -115,6 +122,9 @@ test("v2 audit records keep every field group in their key order", async () => {
     application: "evaluation-returned",
     reviewerSessionID: "ses_review",
     escalationDisposition: "manual",
+    configWarnings: ["fixture warning"],
+    resolution: "reasoning-escalated",
+    reviewerEscalatedFrom: { trigger: "jev-uncertain-allow" },
     ssh: [{ destination: "host.invalid" }],
     verifiedScript: { sha256: "a".repeat(64), status: "full", bytes: 12 },
     rootSessionID: "ses_main",
@@ -184,8 +194,10 @@ test.each([
       "revision",
       "outputFormat",
       "model",
+      "escalationReviewerModel",
       "variant",
       "configDegraded",
+      "configWarnings",
       "effectiveConfigHash",
       "connection",
       "eventConnection",

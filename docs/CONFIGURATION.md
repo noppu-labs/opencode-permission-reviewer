@@ -88,8 +88,14 @@ disabled.
 `retainReviewSessions: false` removes the auxiliary session after the review, and `true` keeps it
 for inspection on either host generation. Leave it `false` in normal use.
 
-`reviewBudgetMs` bounds the whole review. Its default is `2 * timeoutMs + 60000`, and retries
-consume this budget.
+`reviewBudgetMs` bounds the whole review, and retries consume it. Its default is
+`timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000`: never less than
+`2 * timeoutMs + 60000`, and longer when the escalation reviewer's timeout is. An
+`escalationReviewer` without its own `timeoutMs` counts its default, `120000`. A hand-off to the
+reasoning reviewer needs 15 seconds of budget left, and the budget also counts the time before
+Jev's call, so a `reviewBudgetMs` at or below `timeoutMs + 15000` leaves no room for one after a
+Jev timeout. An explicit `reviewBudgetMs` under that line raises a
+[config warning](#config-warnings).
 
 ## Cost
 
@@ -103,38 +109,40 @@ raise `confidenceThreshold`.
 Every option is optional. Numeric options are clamped to the bounds below, and an invalid value
 falls back to the default.
 
-| Option                         | Default                                                   | Bounds / type                       | Description                                                                                   |
-| ------------------------------ | --------------------------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------- |
-| `model`                        | `openai/gpt-6-luna`                                       | `provider/model`                    | Reviewer model (override with any provider/model)                                             |
-| `variant`                      | `medium`                                                  | non-empty string                    | Reasoning variant passed to OpenCode                                                          |
-| `outputFormat`                 | `json_schema`                                             | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)           |
-| `escalationReviewer`           | unset                                                     | trusted object                      | Optional reasoning reviewer for valid but difficult Jev decisions                             |
-| `timeoutMs`                    | `120000`                                                  | `5000` to `600000`                  | Review timeout                                                                                |
-| `reviewBudgetMs`               | `2 * timeoutMs + 60000`                                   | `5000` to `900000`                  | Total budget for one review, including retries                                                |
-| `confidenceThreshold`          | `0.7`                                                     | `0.5` to `1`                        | Minimum confidence to auto-act; below it escalates                                            |
-| `systemOneConfidenceThreshold` | `0.4`                                                     | `0.3` to `1`                        | Calibrated Jev outcome-confidence floor; below it escalates                                   |
-| `systemOneReasoningThreshold`  | `0.38`                                                    | `0` to `1`                          | Combined `allow`/`deny` probability required to send an explicit Jev escalation to reasoning  |
-| `maxContextChars`              | `32000`                                                   | `4000` to `200000`                  | Total transcript evidence budget                                                              |
-| `maxPartChars`                 | `8000`                                                    | `500` to `50000`                    | Per-message-part budget                                                                       |
-| `maxEnrichmentChars`           | `24000`                                                   | `1000` to `100000`                  | SSH / script / Git enrichment budget                                                          |
-| `maxIntentChars`               | `8000`                                                    | `1000` to `50000`                   | User-intent history budget                                                                    |
-| `transcriptMessages`           | `12`                                                      | `1` to `100`                        | Recent messages shown to the reviewer                                                         |
-| `intentMessages`               | `8`                                                       | `1` to `50`                         | Genuine user intents kept                                                                     |
-| `historyMessages`              | `200`                                                     | `20` to `500`                       | Operational messages fetched; literal user intent is recovered separately                     |
-| `retainReviewSessions`         | `false`                                                   | boolean                             | Keep reviewer child sessions (debug only)                                                     |
-| `audit`                        | `true`                                                    | boolean                             | Append one JSONL audit record per review                                                      |
-| `auditPath`                    | `~/.local/share/opencode/permission-reviewer-audit.jsonl` | path                                | Audit file location                                                                           |
-| `policy`                       | built-in default                                          | string                              | Full local override of the tenant policy text                                                 |
-| `debug`                        | `false`                                                   | boolean                             | Verbose logs to stderr                                                                        |
-| `enforcementMode`              | `observe`                                                 | `observe` / `enforce`               | `enforce` applies declarative policy routes; `observe` audits them only                       |
-| `escalationMode`               | `manual`                                                  | `manual` / `deny`                   | How final escalations are disposed (`manual` = human; `deny` = fail-closed reject)            |
-| `maxSessionDepth`              | `8`                                                       | `1` to `32`                         | Parent-session lineage walk depth                                                             |
-| `maxParentSessions`            | `8`                                                       | `0` to `32`                         | Max parent sessions resolved for actor context                                                |
-| `actorProfiles`                | `{}`                                                      | name → profile map                  | Trusted agent name → profile (`read-only`, `validation`, `workspace`, …)                      |
-| `riskPolicy`                   | built-in conservative matrix                              | object                              | Override `allow` cells per risk level and failure modes (`onInvalidDecision`, …)              |
-| `repositoryTrust`              | `unknown`                                                 | `trusted` / `untrusted` / `unknown` | Repository trust level used by the policy engine                                              |
-| `policyRules`                  | `[]`                                                      | array                               | Declarative rules (most-restrictive wins); project rules combine with trusted ones            |
-| `askDecisions`                 | `true`                                                    | boolean                             | Show the reviewer what the user answered in agent ask dialogs (scoped authorization evidence) |
+| Option                         | Default                                                            | Bounds / type                       | Description                                                                                                              |
+| ------------------------------ | ------------------------------------------------------------------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `model`                        | `openai/gpt-6-luna`                                                | `provider/model`                    | Reviewer model (override with any provider/model)                                                                        |
+| `variant`                      | `medium`                                                           | non-empty string                    | Reasoning variant passed to OpenCode                                                                                     |
+| `outputFormat`                 | `json_schema`                                                      | `json_schema` / `text`              | How the reviewer returns its decision (`text` for models without structured output)                                      |
+| `escalationReviewer`           | unset                                                              | trusted object                      | Optional reasoning reviewer for difficult Jev decisions, and for `systemOneEscalation` and `systemOneDenialReview`       |
+| `timeoutMs`                    | `120000`                                                           | `5000` to `600000`                  | Review timeout                                                                                                           |
+| `reviewBudgetMs`               | `timeoutMs + max(timeoutMs, escalationReviewer.timeoutMs) + 60000` | `5000` to `900000`                  | Total budget for one review, including retries; a hand-off needs 15 s of it left                                         |
+| `confidenceThreshold`          | `0.7`                                                              | `0.5` to `1`                        | Minimum confidence to auto-act; below it escalates                                                                       |
+| `systemOneConfidenceThreshold` | `0.4`                                                              | `0.3` to `1`                        | Calibrated Jev outcome-confidence floor; below it escalates                                                              |
+| `systemOneReasoningThreshold`  | `0.38`                                                             | `0` to `1`                          | Combined `allow`/`deny` probability required to send an explicit Jev escalation to reasoning                             |
+| `systemOneEscalation`          | `standard`                                                         | `standard` / `reasoning-first`      | `reasoning-first` sends every escalation that starts at Jev to `escalationReviewer` first                                |
+| `systemOneDenialReview`        | `false`                                                            | boolean                             | Send [uncertain Jev denials](REVIEWER-MODELS.md#systemonedenialreview-true) to `escalationReviewer` for a second opinion |
+| `maxContextChars`              | `32000`                                                            | `4000` to `200000`                  | Total transcript evidence budget                                                                                         |
+| `maxPartChars`                 | `8000`                                                             | `500` to `50000`                    | Per-message-part budget                                                                                                  |
+| `maxEnrichmentChars`           | `24000`                                                            | `1000` to `100000`                  | SSH / script / Git enrichment budget                                                                                     |
+| `maxIntentChars`               | `8000`                                                             | `1000` to `50000`                   | User-intent history budget                                                                                               |
+| `transcriptMessages`           | `12`                                                               | `1` to `100`                        | Recent messages shown to the reviewer                                                                                    |
+| `intentMessages`               | `8`                                                                | `1` to `50`                         | Genuine user intents kept                                                                                                |
+| `historyMessages`              | `200`                                                              | `20` to `500`                       | Operational messages fetched; literal user intent is recovered separately                                                |
+| `retainReviewSessions`         | `false`                                                            | boolean                             | Keep reviewer child sessions (debug only)                                                                                |
+| `audit`                        | `true`                                                             | boolean                             | Append one JSONL audit record per review                                                                                 |
+| `auditPath`                    | `~/.local/share/opencode/permission-reviewer-audit.jsonl`          | path                                | Audit file location                                                                                                      |
+| `policy`                       | built-in default                                                   | string                              | Full local override of the tenant policy text                                                                            |
+| `debug`                        | `false`                                                            | boolean                             | Verbose logs to stderr                                                                                                   |
+| `enforcementMode`              | `observe`                                                          | `observe` / `enforce`               | `enforce` applies declarative policy routes; `observe` audits them only                                                  |
+| `escalationMode`               | `manual`                                                           | `manual` / `deny`                   | How final escalations are disposed (`manual` = human; `deny` = fail-closed reject)                                       |
+| `maxSessionDepth`              | `8`                                                                | `1` to `32`                         | Parent-session lineage walk depth                                                                                        |
+| `maxParentSessions`            | `8`                                                                | `0` to `32`                         | Max parent sessions resolved for actor context                                                                           |
+| `actorProfiles`                | `{}`                                                               | name → profile map                  | Trusted agent name → profile (`read-only`, `validation`, `workspace`, …)                                                 |
+| `riskPolicy`                   | built-in conservative matrix                                       | object                              | Override `allow` cells per risk level and failure modes (`onInvalidDecision`, …)                                         |
+| `repositoryTrust`              | `unknown`                                                          | `trusted` / `untrusted` / `unknown` | Repository trust level used by the policy engine                                                                         |
+| `policyRules`                  | `[]`                                                               | array                               | Declarative rules (most-restrictive wins); project rules combine with trusted ones                                       |
+| `askDecisions`                 | `true`                                                             | boolean                             | Show the reviewer what the user answered in agent ask dialogs (scoped authorization evidence)                            |
 
 ## Config layers and the trust boundary
 
@@ -159,6 +167,8 @@ The project layer cannot:
 - Grant `actorProfiles`.
 - Set `repositoryTrust: "trusted"`.
 - Set `enforcementMode` in either direction.
+- Turn on `systemOneEscalation: "reasoning-first"` or `systemOneDenialReview: true`. It may set
+  `"standard"` or `false`, which adds no hand-off to `escalationReviewer`.
 - Relax a trusted `escalationMode: "deny"`, a failure-mode deny knob, `confidenceThreshold`,
   `systemOneConfidenceThreshold`, `systemOneReasoningThreshold`, or `riskPolicy`.
 
@@ -181,10 +191,32 @@ marks the run as degraded:
 - An invalid `escalationReviewer`, `enforcementMode`, or `escalationMode` in the global config.
 
 In a degraded run, reviews still run, but automatic approval stays off and everything escalates
-until the file is fixed. The plugin reports the degradation on stderr.
+until the file is fixed. The plugin reports the degradation on stderr, and `doctor` lists each
+reason under `degraded:`.
 
 A malformed project file is reported and ignored, without degrading the run: the project layer
 can only add restrictions, so losing it never loosens the trusted config.
+
+## Config warnings
+
+A config warning reports a setting that cannot do what it says. Warnings never change a decision
+and never degrade the run. The plugin writes each one to stderr when it loads the config, `doctor`
+lists them under `warning:`, and `config print-effective` shows them as `configWarnings`.
+
+You get a warning when:
+
+- `systemOneEscalation` or `systemOneDenialReview` has an invalid value in the global config or
+  trusted inline options. It falls back to `"standard"` or `false`, which adds no hand-off to
+  `escalationReviewer`, so unlike an invalid `escalationMode` it does not degrade the run. A
+  repository's invalid value is dropped without a warning, and the trusted value stays.
+- `systemOneEscalation: "reasoning-first"` or `systemOneDenialReview: true` is set but inactive,
+  because `model` is not Jev or no valid `escalationReviewer` is configured. For example:
+  `systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev
+  escalations still go to you`.
+- `model` is Jev, a valid `escalationReviewer` is configured, and an explicit `reviewBudgetMs`
+  leaves less than 15000 ms after `timeoutMs`, whichever routing settings are on. Hand-offs to the
+  reasoning reviewer then escalate to you instead. For example: `reviewBudgetMs 20000 leaves less
+  than 15000 ms after timeoutMs; hand-offs to the reasoning reviewer will escalate to you instead`.
 
 ## Declarative policy rules
 
@@ -241,6 +273,17 @@ own case:
 }
 ```
 
+With `systemOneEscalation: "reasoning-first"`, these settings apply to the reasoning reviewer's
+final outcome: a Jev escalation, invalid answer, or failure is handed to the reasoning reviewer
+before any of them is applied. A reasoning approval after a Jev decision rated critical risk
+escalates instead of allowing; see [Reviewer models](REVIEWER-MODELS.md#after-a-hand-off).
+
+With `systemOneDenialReview: true`, an uncertain Jev denial also goes to the reasoning reviewer. An
+uncertain Jev denial is a Jev `deny` that fails at least one of Jev's consistency checks, for
+example an outcome confidence below `systemOneConfidenceThreshold`. Denials with a strong policy or
+safety signal stay final; see
+[Reviewer models](REVIEWER-MODELS.md#systemonedenialreview-true).
+
 ## Audit log
 
 `audit` defaults to `true`. Set `audit: false` to disable it.
@@ -256,9 +299,21 @@ before it receives new records. Each record (`schemaVersion: 3`) contains:
 - Optional `reviewerOutcome` and `escalationDisposition`, which distinguish an explicit deny from a
   fail-closed escalation that became a deny.
 - Optional System One escalation origin.
+- Optional `reviewerEscalatedFrom.trigger`, naming why a Jev result went to the reasoning
+  reviewer: `jev-escalate`, `jev-uncertain-allow`, `jev-gate`, `jev-invalid`, `jev-failure`, or
+  `jev-uncertain-deny`.
+- Optional `resolution` on an escalation from the System One backend: `reviewer`,
+  `reasoning-escalated`, `reasoning-unavailable`, or `budget-exhausted`. It is kept when
+  `escalationMode: "deny"` turns the escalation into a deny.
+- Optional `configWarnings`, present only when the resolved config has warnings (see
+  [Config warnings](#config-warnings)), bounded and redacted like other free text.
 - A bounded SSH summary.
 
 Remote commands are stored as SHA-256, never in clear text.
+
+`audit report` counts records by hand-off trigger and by resolution. A request that reached you
+from Jev alone shows `resolution` `reviewer` or `budget-exhausted` and no `reviewerEscalatedFrom`,
+or no `resolution` at all when an allow gate stopped Jev's approval.
 
 ### System One scores
 

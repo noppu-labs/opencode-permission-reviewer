@@ -9,12 +9,12 @@ import { reviewBudgetMs } from "./config.ts";
 // would evaluate the whole server engine (git/ssh evidence, `node:child_process`)
 // inside the TUI process.
 import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
-import { SPINNER } from "./ui/components.tsx";
+import { ConfigNoticeSlot, SPINNER } from "./ui/components.tsx";
 import { ReviewOverlay } from "./ui/review-overlay.tsx";
 import { ReviewResult } from "./ui/review-result.tsx";
-import { activeStatus, notifyManual } from "./ui/v1-host.ts";
+import { activeStatus, createV1Host } from "./ui/v1-host.ts";
 import { setupTuiV2 } from "./ui/v2.tsx";
-import { decodeUiStatus, type ReviewUiStatus } from "./ui-protocol.ts";
+import type { ReviewUiStatus } from "./ui-protocol.ts";
 import { ReviewUiState } from "./ui-state.ts";
 
 const REVIEW_MODE = "permission-reviewer";
@@ -23,12 +23,17 @@ export const tui: TuiPlugin = async (
   api: TuiPluginApi,
   options: PluginOptions | undefined,
 ) => {
-  const config = loadResolvedConfig(options);
+  // Load inline options as `unknown`, as the server does, so inline routing keys and an inline `escalationReviewer` are dropped here too.
+  // Config warnings reach this TUI through server statuses, not this load.
+  const config = loadResolvedConfig(options, undefined, "unknown", {
+    printConfigWarnings: false,
+  });
   const state = new ReviewUiState({
     model: config.model,
     variant: config.variant,
     timeoutMs: reviewBudgetMs(config),
   });
+  const host = createV1Host(api, state, config.escalationReviewer?.model);
 
   // Signal bumps whenever the UI state changes. Both slot factories read it
   // directly in their bodies, which makes the host re-render each panel:
@@ -70,11 +75,7 @@ export const tui: TuiPlugin = async (
     touch();
   });
   api.event.on("tui.command.execute", (event) => {
-    const status = decodeUiStatus(event.properties.command);
-    if (!status) return;
-    if (!state.apply(status)) return;
-    if (status.phase === "manual") notifyManual(api, status);
-    touch();
+    if (host.apply(event.properties.command)) touch();
   });
 
   // Keep watchdog and result expiry running even when the UI is hidden.
@@ -135,6 +136,15 @@ export const tui: TuiPlugin = async (
               <ReviewResult theme={() => api.theme.current} status={current} />
             )}
           </Show>
+        );
+      },
+      sidebar_content(): JSX.Element {
+        revision();
+        return (
+          <ConfigNoticeSlot
+            theme={() => api.theme.current}
+            line={host.sidebar()}
+          />
         );
       },
     },

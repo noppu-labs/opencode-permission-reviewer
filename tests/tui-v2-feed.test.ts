@@ -1,10 +1,15 @@
 import { afterEach, describe, expect, test } from "bun:test";
+import { FIND_ACTION, FIND_SEGMENTS } from "./action-fixtures.ts";
 import {
+  DIRECTORY,
   event,
   gate,
+  type Host,
   host,
   latest,
+  moveTo,
   push,
+  SECOND,
   snapshot,
   status,
   update,
@@ -145,6 +150,32 @@ describe("V2 TUI reviewer feed", () => {
     ]);
   });
 
+  test("words a manual toast by its resolution", async () => {
+    const running = await start(
+      host({
+        respond: [
+          () =>
+            snapshot([
+              {
+                ...status("manual", { reason: "Both unsure." }),
+                model: "openai/gpt-6-luna",
+                resolution: "reasoning-escalated",
+              },
+            ]),
+        ],
+      }),
+    );
+    await running.until(() => running.state.toasts.length === 1, "toast");
+    expect(running.state.toasts).toEqual([
+      {
+        variant: "warning",
+        title: "Manual review required",
+        message:
+          "gpt-6-luna reviewed this after Jev; it needs your approval: Both unsure.",
+      },
+    ]);
+  });
+
   test("toasts a manual status that arrives as an event", async () => {
     const running = await start(
       host({ respond: [() => snapshot([status("reviewing")])] }),
@@ -207,4 +238,185 @@ describe("V2 TUI reviewer feed", () => {
     );
     await running.sees("Reviewing this permission");
   }, 10_000);
+
+  const INERT =
+    'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+
+  test("reads config warnings from the status RPC and keeps a sidebar line", async () => {
+    const running = await start(
+      host({
+        status: () => ({ configWarnings: [INERT], configDegraded: [] }),
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    await running.until(
+      () => running.state.toasts.length === 1,
+      "config toast",
+    );
+    expect(running.state.statusCalls).toEqual([DIRECTORY]);
+    expect(running.state.toasts).toEqual([
+      {
+        variant: "warning",
+        title: "Permission reviewer config",
+        message: INERT,
+      },
+    ]);
+    expect(await running.sidebarFrame()).toContain(
+      "⚠ reviewer: reasoning-first inactive (no escalationReviewer)",
+    );
+  });
+
+  test("an older server without the status call keeps the feed working with no notice", async () => {
+    const running = await start(
+      host({ respond: [() => snapshot([status("reviewing")])] }),
+    );
+    await running.sees("Reviewing this permission");
+    expect(running.state.statusCalls).toEqual([DIRECTORY]);
+    expect(running.state.toasts).toEqual([]);
+    expect(await running.sidebarFrame()).not.toContain("reviewer:");
+  });
+
+  test("malformed config lists keep only their strings", async () => {
+    const running = await start(
+      host({
+        status: () => ({
+          configWarnings: "broken",
+          configDegraded: [1, "fs broken"],
+        }),
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    await running.until(
+      () => running.state.toasts.length === 1,
+      "config toast",
+    );
+    expect(running.state.toasts).toEqual([
+      {
+        variant: "error",
+        title: "Permission reviewer config degraded",
+        message: "Automatic approval is disabled: fs broken.",
+      },
+    ]);
+    expect(await running.sidebarFrame()).toContain(
+      "✕ reviewer: auto-approval disabled (fs broken)",
+    );
+  });
+
+  test("the mounted sidebar follows the status answer and a directory change", async () => {
+    const pending = gate();
+    const running = await start(
+      host({
+        status: (directory: string): unknown =>
+          directory === DIRECTORY ? pending.promise : {},
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    const sidebar = await running.mountSidebar();
+    await running.sees("Reviewing this permission");
+    expect(sidebar.frame()).not.toContain("reviewer:");
+    pending.resolve({ configWarnings: [INERT] });
+    await sidebar.sees("reasoning-first inactive");
+    moveTo(running.state, SECOND);
+    await sidebar.sees("reviewer:", false);
+  });
+
+  test("renders a segmented action fitted to the terminal width", async () => {
+    const long = {
+      ...status("reviewing"),
+      action: FIND_ACTION,
+      actionSegments: FIND_SEGMENTS,
+    };
+    const running = await start(host({ respond: [() => snapshot([long])] }));
+    await running.sees("⋯ 5 more ⋯ sh");
+    expect(running.frame()).toContain(
+      "bash · $ find . -name '*.ts' -not -path './node_modules/*' | ⋯ 5 more ⋯ sh",
+    );
+  });
+
+  const BUDGET_REASON =
+    "No review time left for the reasoning reviewer after Jev escalated: 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
+  const BUDGET_REST =
+    "4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
+
+  async function budgetToastMessage(
+    statusAnswer: Partial<Host>,
+  ): Promise<string | undefined> {
+    const running = await start(
+      host({
+        ...statusAnswer,
+        respond: [() => snapshot([status("reviewing")])],
+      }),
+    );
+    await running.sees("Reviewing this permission");
+    push(
+      latest(running.state),
+      event(
+        update(2, {
+          ...status("manual", { reason: BUDGET_REASON }),
+          resolution: "budget-exhausted",
+        }),
+      ),
+    );
+    await running.until(
+      () => running.state.toasts.length === 1,
+      "budget toast",
+    );
+    return running.state.toasts[0]?.message;
+  }
+
+  test("the budget toast names the reasoning reviewer's model from the status RPC", async () => {
+    expect(
+      await budgetToastMessage({
+        status: () => ({
+          escalationReviewerModel: "omniroute/auto/gpt-6-luna",
+        }),
+      }),
+    ).toBe(
+      `No review time left for gpt-6-luna after Jev (Jev escalated). ${BUDGET_REST}`,
+    );
+  });
+
+  test("without a model from the status RPC the budget toast keeps the generic name", async () => {
+    expect(await budgetToastMessage({})).toBe(
+      `No review time left for the reasoning reviewer after Jev (Jev escalated). ${BUDGET_REST}`,
+    );
+  });
+
+  test("after a directory change the budget toast drops the previous server's model", async () => {
+    const budget = (directory: string): ReturnType<typeof event> =>
+      event(
+        update(
+          2,
+          {
+            ...status("manual", { reason: BUDGET_REASON }),
+            resolution: "budget-exhausted",
+          },
+          { directory },
+        ),
+        directory,
+      );
+    const state = host({
+      status: (directory: string): unknown =>
+        directory === DIRECTORY
+          ? { escalationReviewerModel: "omniroute/auto/gpt-6-luna" }
+          : Promise.reject(new Error("older server")),
+      respond: [
+        () => snapshot([status("reviewing")]),
+        (directory: string) => snapshot([status("reviewing")], { directory }),
+      ],
+    });
+    const running = await start(state);
+    await running.sees("Reviewing this permission");
+    push(latest(state), budget(DIRECTORY));
+    await running.until(() => state.toasts.length === 1, "first toast");
+    expect(state.toasts[0]?.message).toContain("for gpt-6-luna after Jev");
+    moveTo(state, SECOND);
+    await running.until(() => state.snapshots.length === 2, "second snapshot");
+    await running.sees("Reviewing this permission");
+    push(latest(state), budget(SECOND));
+    await running.until(() => state.toasts.length === 2, "second toast");
+    expect(state.toasts[1]?.message).toBe(
+      `No review time left for the reasoning reviewer after Jev (Jev escalated). ${BUDGET_REST}`,
+    );
+  });
 });

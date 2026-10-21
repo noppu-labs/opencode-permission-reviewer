@@ -12,6 +12,12 @@ const options = {
   timeoutMs: 120_000,
 };
 
+const HANDOFF = {
+  from: "opencode/jev-1.13-free",
+  to: "openai/gpt-6-luna",
+  trigger: "jev-uncertain-deny",
+} as const;
+
 // A status with every optional field set, so each row below changes exactly
 // one field of an otherwise accepted payload.
 function fullStatus(): Record<string, unknown> {
@@ -24,6 +30,17 @@ function fullStatus(): Record<string, unknown> {
       escalationDisposition: "manual",
       actorName: "builder",
       actorProfile: "workspace",
+      handoff: HANDOFF,
+      resolution: "reasoning-escalated",
+      decidedBy: "openai/gpt-6-luna",
+      configWarnings: [
+        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+      ],
+      configDegraded: ["global config file is malformed and was ignored"],
+      actionSegments: [
+        { text: "$ printf a", separator: "|" },
+        { text: "cat <<EOF > out.txt", heredocLines: 2 },
+      ],
     }),
   };
 }
@@ -99,6 +116,54 @@ const REJECTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
   ["actorName as null", { actorName: null }],
   ["unlisted actorProfile", { actorProfile: "admin" }],
   ["actorProfile as null", { actorProfile: null }],
+  ["handoff as null", { handoff: null }],
+  ["handoff as a string", { handoff: "jev-escalate" }],
+  [
+    "unlisted handoff trigger",
+    { handoff: { ...HANDOFF, trigger: "jev-panic" } },
+  ],
+  ["handoff without to", { handoff: { from: "a", trigger: "jev-escalate" } }],
+  ["handoff from as a number", { handoff: { ...HANDOFF, from: 1 } }],
+  [
+    "handoff failureKind as a number",
+    { handoff: { ...HANDOFF, failureKind: 1 } },
+  ],
+  ["unlisted resolution", { resolution: "human" }],
+  ["resolution as null", { resolution: null }],
+  ["decidedBy as a number", { decidedBy: 1 }],
+  ["decidedBy as null", { decidedBy: null }],
+  ["configWarnings as a string", { configWarnings: "inactive" }],
+  ["configWarnings holding a number", { configWarnings: ["inactive", 1] }],
+  ["configDegraded as null", { configDegraded: null }],
+  ["configDegraded as an object", { configDegraded: { first: "x" } }],
+  ["actionSegments as null", { actionSegments: null }],
+  ["actionSegments as an object", { actionSegments: { text: "a" } }],
+  ["an actionSegments entry as a string", { actionSegments: ["a"] }],
+  [
+    "an actionSegments entry without text",
+    { actionSegments: [{ separator: "|" }] },
+  ],
+  ["an actionSegments text as a number", { actionSegments: [{ text: 1 }] }],
+  [
+    "an unlisted actionSegments separator",
+    { actionSegments: [{ text: "a", separator: "(" }] },
+  ],
+  [
+    "a fractional heredocLines",
+    { actionSegments: [{ text: "a", heredocLines: 1.5 }] },
+  ],
+  [
+    "a negative heredocLines",
+    { actionSegments: [{ text: "a", heredocLines: -1 }] },
+  ],
+  [
+    "heredocLines as a string",
+    { actionSegments: [{ text: "a", heredocLines: "2" }] },
+  ],
+  [
+    "an infinite heredocLines",
+    { actionSegments: [{ text: "a", heredocLines: OVERFLOW }] },
+  ],
 ];
 
 const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
@@ -111,6 +176,12 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
       escalationDisposition: undefined,
       actorName: undefined,
       actorProfile: undefined,
+      handoff: undefined,
+      resolution: undefined,
+      decidedBy: undefined,
+      configWarnings: undefined,
+      configDegraded: undefined,
+      actionSegments: undefined,
     },
   ],
   ["the unknown phase", { phase: "unknown" }],
@@ -127,6 +198,7 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
       variant: "",
       reason: "",
       actorName: "",
+      decidedBy: "",
     },
   ],
   ["the deny escalationDisposition", { escalationDisposition: "deny" }],
@@ -144,6 +216,35 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
       },
     },
   ],
+  ["empty config lists", { configWarnings: [], configDegraded: [] }],
+  [
+    "a hand-off with a failure kind",
+    { handoff: { ...HANDOFF, trigger: "jev-failure", failureKind: "timeout" } },
+  ],
+  ...(
+    [
+      "jev-escalate",
+      "jev-uncertain-allow",
+      "jev-gate",
+      "jev-invalid",
+      "jev-failure",
+      "jev-uncertain-deny",
+    ] as const
+  ).map((trigger): [string, Record<string, unknown>] => [
+    `the ${trigger} hand-off trigger`,
+    { handoff: { ...HANDOFF, trigger } },
+  ]),
+  ...(
+    [
+      "reviewer",
+      "reasoning-escalated",
+      "reasoning-unavailable",
+      "budget-exhausted",
+    ] as const
+  ).map((resolution): [string, Record<string, unknown>] => [
+    `the ${resolution} resolution`,
+    { resolution },
+  ]),
   ["unknown extra fields", { extra: { nested: true }, version: 1 }],
   ...(
     [
@@ -167,6 +268,17 @@ const ACCEPTED_FIELDS: ReadonlyArray<[string, Record<string, unknown>]> = [
           user_authorization: risk_level,
         }),
       },
+    ],
+  ),
+  ["an empty actionSegments list", { actionSegments: [] }],
+  [
+    "zero heredoc lines",
+    { actionSegments: [{ text: "cat <<EOF", heredocLines: 0 }] },
+  ],
+  ...(["|", "||", "&&", ";", "&"] as const).map(
+    (separator): [string, Record<string, unknown>] => [
+      `the ${separator} separator`,
+      { actionSegments: [{ text: "a", separator }, { text: "b" }] },
     ],
   ),
 ];

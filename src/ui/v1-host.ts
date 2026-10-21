@@ -1,6 +1,11 @@
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui";
-import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { decodeUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
 import type { ReviewUiState } from "../ui-state.ts";
+import { ConfigNotices, type SidebarLine } from "./config-notices.ts";
+import { manualToast } from "./manual-toast.ts";
+
+const MANUAL_FALLBACK =
+  "The reviewer could not decide. This permission now needs your approval.";
 
 function routeSessionID(api: TuiPluginApi): string | undefined {
   const route = api.route.current;
@@ -17,15 +22,37 @@ function parentSessionID(
   return api.state.session.get(sessionID)?.parentID;
 }
 
-export function notifyManual(api: TuiPluginApi, status: ReviewUiStatus): void {
-  api.ui.toast({
-    variant: "warning",
-    title: "Manual review required",
-    message:
-      status.reason ??
-      "The reviewer could not decide. This permission now needs your approval.",
-    duration: 8_000,
-  });
+const TOAST_MS = 8_000;
+
+export interface V1Host {
+  /** True when the state changed. A stale or undecodable command applies
+   *  nothing, config notices included. */
+  apply(command: string): boolean;
+  sidebar(): SidebarLine | undefined;
+}
+
+export function createV1Host(
+  api: TuiPluginApi,
+  state: ReviewUiState,
+  reasoningModel?: string,
+): V1Host {
+  const notices = new ConfigNotices((toast) =>
+    api.ui.toast({ ...toast, duration: TOAST_MS }),
+  );
+  return {
+    apply(command: string): boolean {
+      const status = decodeUiStatus(command);
+      if (!status || !state.apply(status)) return false;
+      if (status.phase === "manual")
+        api.ui.toast({
+          ...manualToast(status, MANUAL_FALLBACK, reasoningModel),
+          duration: TOAST_MS,
+        });
+      notices.update(status);
+      return true;
+    },
+    sidebar: (): SidebarLine | undefined => notices.sidebar(),
+  };
 }
 
 /** The status the V1 panel shows for the routed session, if any. */

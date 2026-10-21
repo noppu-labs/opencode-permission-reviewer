@@ -43,6 +43,7 @@ const ANSI_C_SIMPLE_ESCAPES: Record<string, string> = {
   "\\": "\\",
   "'": "'",
   '"': '"',
+  "?": "?",
 };
 
 /** The text of the escape whose backslash is at `index`, and the index just
@@ -69,4 +70,99 @@ function ansiCEscape(
     };
   }
   return { text: ANSI_C_SIMPLE_ESCAPES[escaped] ?? escaped, end: index + 2 };
+}
+
+/** The value bash gives a `$'...'` word whose text between the quotes is
+ *  `inner`, as written: escapes decoded, cut at the first NUL. Unknown
+ *  escapes and a bare `\x`, `\u` or `\U` keep their backslash. */
+export function decodeAnsiCWord(inner: string): string {
+  let value = "";
+  let index = 0;
+  while (index < inner.length) {
+    if (inner.charAt(index) !== "\\" || index + 1 === inner.length) {
+      value += inner.charAt(index);
+      index += 1;
+      continue;
+    }
+    const decoded = decodeAnsiCEscape(inner, index);
+    value += decoded.text;
+    index = decoded.end;
+  }
+  const nul = value.indexOf("\0");
+  return nul === -1 ? value : value.slice(0, nul);
+}
+
+const HEX_DIGITS = new Map<string, RegExp>([
+  ["x", /[0-9a-f]{1,2}/iy],
+  ["u", /[0-9a-f]{1,4}/iy],
+  ["U", /[0-9a-f]{1,8}/iy],
+]);
+
+const OCTAL_DIGITS = /[0-7]{1,3}/y;
+
+/** The decoded escape whose backslash is at `index`, and the index just past it. */
+function decodeAnsiCEscape(
+  inner: string,
+  index: number,
+): { text: string; end: number } {
+  const escaped = inner.charAt(index + 1);
+  const simple = ANSI_C_SIMPLE_ESCAPES[escaped];
+  if (simple !== undefined) return { text: simple, end: index + 2 };
+  if (/^[0-7]$/.test(escaped)) {
+    const digits = digitsAt(inner, index + 1, OCTAL_DIGITS);
+    const value = Number.parseInt(digits, 8) & 0xff;
+    return {
+      text: String.fromCharCode(value),
+      end: index + 1 + digits.length,
+    };
+  }
+  if (escaped === "c") return decodeAnsiCControl(inner, index);
+  const hex = HEX_DIGITS.get(escaped);
+  if (hex !== undefined) return decodeAnsiCHex(inner, index, escaped, hex);
+  return { text: `\\${escaped}`, end: index + 2 };
+}
+
+function decodeAnsiCHex(
+  inner: string,
+  index: number,
+  letter: string,
+  pattern: RegExp,
+): { text: string; end: number } {
+  const digits = digitsAt(inner, index + 2, pattern);
+  if (digits === "") return { text: `\\${letter}`, end: index + 2 };
+  const end = index + 2 + digits.length;
+  const value = Number.parseInt(digits, 16);
+  if (letter === "x") return { text: String.fromCharCode(value), end };
+  return { text: codePointText(value), end };
+}
+
+/** The text bash gives a `\u` or `\U` code point. Values above 0x7fffffff
+ *  are dropped; surrogates and values past U+10FFFF are not JavaScript code
+ *  points and become U+FFFD. */
+function codePointText(value: number): string {
+  if (value > 0x7fffffff) return "";
+  if ((value >= 0xd800 && value <= 0xdfff) || value > 0x10ffff) return "\ufffd";
+  return String.fromCodePoint(value);
+}
+
+/** `\cX` is the control character of X, `\c?` is DEL, and `\c\\` is the
+ *  control character of a backslash. */
+function decodeAnsiCControl(
+  inner: string,
+  index: number,
+): { text: string; end: number } {
+  const target = inner.charAt(index + 2);
+  if (target === "") return { text: "\\c", end: index + 2 };
+  if (target === "\\") {
+    const end = inner.charAt(index + 3) === "\\" ? index + 4 : index + 3;
+    return { text: "\x1c", end };
+  }
+  const code = target === "?" ? 0x7f : target.charCodeAt(0) & 0x1f;
+  return { text: String.fromCharCode(code), end: index + 3 };
+}
+
+/** The digits matched by the sticky `pattern` at `start`. */
+function digitsAt(text: string, start: number, pattern: RegExp): string {
+  pattern.lastIndex = start;
+  return pattern.exec(text)?.[0] ?? "";
 }

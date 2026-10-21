@@ -17,8 +17,13 @@ function fullEscalate(): ReviewExecutionResult {
     reviewSessionID: "ses_review",
     decisionSource: "llm-reviewer",
     reviewerModel: "fixture/reviewer",
-    reviewerEscalatedFrom: { model: "fixture/primary", reason: "low margin" },
+    reviewerEscalatedFrom: {
+      model: "fixture/primary",
+      reason: "low margin",
+      trigger: "jev-escalate",
+    },
     systemOne: systemOneScores(),
+    resolution: "reasoning-escalated",
     reviewerOutcome: "allow",
     escalationDisposition: "manual",
   };
@@ -43,6 +48,7 @@ describe("escalation conversion to deny", () => {
       "reviewerModel",
       "reviewerEscalatedFrom",
       "systemOne",
+      "resolution",
       "escalationDisposition",
     ]);
   });
@@ -108,6 +114,24 @@ describe("escalation kept for a human", () => {
       "reviewerOutcome",
       "escalationDisposition",
     ]);
+  });
+
+  test("a manual disposition keeps the trigger and the resolution", () => {
+    const input: ReviewExecutionResult = {
+      kind: "escalate",
+      reason: "no time left",
+      decisionSource: "failure-safe",
+      reviewerEscalatedFrom: {
+        model: "fixture/primary",
+        reason: "low margin",
+        trigger: "jev-failure",
+      },
+      resolution: "reasoning-unavailable",
+    };
+    expect(applyEscalationDisposition(input, DEFAULT_CONFIG)).toEqual({
+      ...input,
+      escalationDisposition: "manual",
+    });
   });
 
   test("without a decision no reviewer outcome is added", () => {

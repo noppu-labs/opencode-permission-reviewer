@@ -82,6 +82,8 @@ async function buildReport(
       repositoryTrust: config.repositoryTrust,
       policyRuleCount: config.policyRules.length,
       effectivePolicyHash: effectiveHash,
+      configWarnings: config.configWarnings ?? [],
+      configDegraded: config.configDegraded ?? [],
     },
     audit: {
       path: auditPath,

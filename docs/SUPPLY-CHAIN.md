@@ -66,9 +66,8 @@ package nor OpenTUI loads it, so the vulnerable code is unreachable at runtime. 
 surveillance test pins `solid-js`, asserts that nothing imports `solid-js/web`, and admits only
 those two advisories.
 
-`esbuild` is a build-time dependency here and is never shipped. The root overrides move it past
-GHSA-g7r4-m6w7-qqqr. That override intentionally does not reach consumers, because consumers
-never install `esbuild` from this package.
+The build toolchain (tsdown, Rolldown and its native bindings) is a dev dependency and is never
+shipped. The consumer surveillance test also asserts that no `esbuild` reaches a consumer tree.
 
 ## The `effect` runtime
 

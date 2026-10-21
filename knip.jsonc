@@ -1,7 +1,7 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
-  // Files that run or ship without an import edge knip can follow. The bun, tsup, node and
-  // github-actions plugins already cover the tsup entries, the bun test files, server.js, the
+  // Files that run or ship without an import edge knip can follow. The bun, tsdown, node and
+  // github-actions plugins already cover the tsdown entries, the bun test files, server.js, the
   // benchmark CLI and scripts/*.ts (run from package.json scripts and release.yml).
   "entry": [
     // Shipped to hosts as-is (package.json "files").

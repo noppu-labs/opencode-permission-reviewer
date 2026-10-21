@@ -72,6 +72,12 @@ function printAuditCounts(s: AuditSummary): void {
   if (Object.keys(s.byPermission).length > 0) {
     console.log(`  by permission:     ${fmtCounts(s.byPermission)}`);
   }
+  if (Object.keys(s.byHandoffTrigger).length > 0) {
+    console.log(`  by hand-off:       ${fmtCounts(s.byHandoffTrigger)}`);
+  }
+  if (Object.keys(s.byResolution).length > 0) {
+    console.log(`  by resolution:     ${fmtCounts(s.byResolution)}`);
+  }
 }
 
 function printAuditProblems(s: AuditSummary): void {

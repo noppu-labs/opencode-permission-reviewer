@@ -1,6 +1,6 @@
 /*
  * Minimal shell-aware tokenizer, NOT a full shell interpreter:
- *   - grouping of single/double quotes (so separators inside quotes do not
+ *   - grouping of quotes, `$'…'` included (so separators inside quotes do not
  *     split a token, and `printf "a; sudo rm -rf /"` stays one argument),
  *   - splitting on logical command separators (`;`, `|`, `&`, newlines),
  *   - stripping `#` comments when they begin a token.
@@ -10,7 +10,8 @@
  * is only a last line of defense for *unmistakable* literal destruction.
  * The command a substitution runs is still lexed: an unquoted `$(` splits at
  * its parentheses, and a backtick form or a `$(` inside double quotes adds
- * the segments of its body after the segment holding it.
+ * the segments of its body after the segment holding it, while its text
+ * stays in the word as written.
  */
 
 import {
@@ -19,18 +20,20 @@ import {
   flushToken,
   type LexBudget,
   type LexState,
+  lastCharIsQuoted,
+  lastValueChar,
   MAX_SUBSTITUTION_CHARS,
-  type SubstitutionBudget,
 } from "./shell-lex-state.ts";
 import {
   lexDoubleQuoted,
   lexSingleQuoted,
   openQuote,
+  opensQuote,
 } from "./shell-quote-scan.ts";
-import { substitutionAt } from "./shell-substitution.ts";
-import { type ShellSegment, tokenCharIsQuoted } from "./shell-token.ts";
+import { lexSubstitution } from "./shell-substitution-lex.ts";
+import type { ShellSegment } from "./shell-token.ts";
 
-const SEPARATORS = new Set([";", "|", "&", "\n", "\r", "(", ")"]);
+const SEPARATORS = new Set([";", "|", "&", "\n", "(", ")"]);
 const WHITESPACE = new Set([" ", "\t"]);
 
 function appendUnquoted(lex: LexState, c: string): void {
@@ -41,27 +44,30 @@ function appendUnquoted(lex: LexState, c: string): void {
 }
 
 // Redirection operators may contain characters that are command separators
-// elsewhere. Keep `&>`, `2>&1`, and `>|file` inside the token so the
+// elsewhere. Keep `&>`, `2>&1`, `3<&0`, and `>|file` inside the token so the
 // redirection normalizer (shell-redirections.ts) can interpret them as one
 // shell construct instead of inventing extra commands.
 function gluesToRedirection(lex: LexState, c: string): boolean {
   if (c === "&" && lex.command[lex.index + 1] === ">") return true;
   if (c !== "&" && c !== "|") return false;
-  return (
-    lex.value.endsWith(">") &&
-    !tokenCharIsQuoted(
-      { raw: lex.raw, value: lex.value, spans: lex.spans },
-      lex.value.length - 1,
-    )
-  );
+  const last = lastValueChar(lex);
+  // `&` continues an output or input duplication operator (`>&`, `<&`);
+  // `|` continues only an output redirection (`>|`).
+  if (last === "" || (c === "|" && last !== ">")) return false;
+  return (last === ">" || last === "<") && !lastCharIsQuoted(lex);
 }
 
 function lexSeparator(lex: LexState, c: string): void {
-  // Capture the operator identity (including doubled `||`/`&&`) so
-  // evidence consumers can reason about how segments relate.
-  let endedBy = c === "\n" || c === "\r" ? ";" : c;
-  if ((c === "|" || c === "&") && lex.command[lex.index + 1] === c) {
+  // Capture the operator identity (including doubled `||`/`&&` and the
+  // two-character `|&` and `;&`) so evidence consumers can reason about
+  // how segments relate.
+  let endedBy = c === "\n" ? ";" : c;
+  const next = lex.command[lex.index + 1];
+  if ((c === "|" || c === "&") && next === c) {
     endedBy = `${c}${c}`;
+    lex.index += 1;
+  } else if ((c === "|" || c === ";") && next === "&") {
+    endedBy = `${c}&`;
     lex.index += 1;
   }
   flushSegment(lex, endedBy);
@@ -77,10 +83,14 @@ function skipComment(lex: LexState): void {
 
 function lexEscape(lex: LexState): void {
   const next = lex.command.charAt(lex.index + 1);
-  lex.raw += `\\${next}`;
   // Backslash-newline is a line continuation outside quotes: both
   // characters vanish, so `r\<newline>m` lexes as the token `rm`.
-  if (next !== "\n" && next !== "\r") {
+  if (next === "\n" || next === "\r") {
+    // A continuation with no token in progress belongs to no token,
+    // so it stays out of the next token's source text.
+    if (lex.hasToken) lex.raw += `\\${next}`;
+  } else {
+    lex.raw += `\\${next}`;
     appendValue(lex, next, true);
     lex.hasToken = true;
   }
@@ -88,7 +98,7 @@ function lexEscape(lex: LexState): void {
 }
 
 function lexUnquoted(lex: LexState, c: string): void {
-  if (c === "'" || c === '"') {
+  if (opensQuote(lex, c)) {
     openQuote(lex, c);
     return;
   }
@@ -114,32 +124,6 @@ function lexUnquoted(lex: LexState, c: string): void {
     return;
   }
   appendUnquoted(lex, c);
-}
-
-/** Lex the body of a substitution that opens at the current character
- *  into segments of its own, under the same budget. The character itself is
- *  still scanned as part of the enclosing word. */
-function lexSubstitution(lex: LexState, budget: SubstitutionBudget): void {
-  if (lex.index < lex.substitutionEnd) return;
-  const body = substitutionAt(
-    lex.command,
-    lex.index,
-    lex.inDouble,
-    lex.index < lex.arithmeticEnd,
-  );
-  if (body === undefined) return;
-  if (body.kind === "arithmetic") {
-    lex.arithmeticEnd = body.end;
-    return;
-  }
-  lex.substitutionEnd = body.end;
-  budget.substitutionCharsRemaining -= body.text.length;
-  if (budget.substitutionCharsRemaining < 0) budget.tokensRemaining = 0;
-  else {
-    for (const segment of lexSegments(body.text, budget))
-      lex.substitutions.push(segment);
-  }
-  if (budget.tokensRemaining <= 0) lex.outOfTokens = true;
 }
 
 /**
@@ -172,6 +156,9 @@ export function lexSegments(
     hasToken: false,
     spans: [],
     inSingle: false,
+    ansiC: false,
+    ansiCText: "",
+    dollarRun: 0,
     inDouble: false,
     lastSeparator: undefined,
     outOfTokens: false,

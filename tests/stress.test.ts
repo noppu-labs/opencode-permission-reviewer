@@ -3,11 +3,17 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/capability/command-parser.ts";
+import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
+import { analyzeBashCommand } from "../src/context/command-evidence.ts";
 import { parseDecision } from "../src/decision.ts";
 import { emergencyBrakeReason } from "../src/emergency-brake.ts";
 import { enrichGitEvidence } from "../src/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
 import type { ClientResponse } from "../src/opencode/types.ts";
+import { lexSegments } from "../src/shell-scanner.ts";
+import { parseSsh } from "../src/ssh-command-segments.ts";
 import { enrichSshEvidence } from "../src/ssh-evidence.ts";
 import {
   createUiStatus,
@@ -19,11 +25,142 @@ import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
 
+function repeated(unit: string[], count: number): string[] {
+  return Array.from({ length: Math.floor(count) }, () => unit).flat();
+}
+
+// Commands whose tokens are dense with quoted redirections, at the input cap.
+const quotedRedirectionShapes: [string, string][] = [
+  ["quoted redirections", "'a'>&".repeat(26_214)],
+  ["quoted word redirections", "a'b'>&".repeat(21_845)],
+  ["dollar-quoted redirections", "$'\\'>&".repeat(21_845)],
+];
+
+// Commands whose heredocs and here-strings feed scripts to shells and ssh,
+// at the input cap.
+const scriptFeedShapes: [string, string][] = [
+  [
+    "distinct script feeds at the input cap",
+    Array.from({ length: 5_600 }, (_, i) => `sh <<'E'\necho ${i}\nE\n`).join(
+      "",
+    ),
+  ],
+  [
+    "distinct script feeds through cat at the input cap",
+    Array.from(
+      { length: 3_800 },
+      (_, i) => `cat <<'E' | sh\necho ${i}\nE\n`,
+    ).join(""),
+  ],
+  [
+    "distinct here-string feeds at the input cap",
+    Array.from({ length: 9_000 }, (_, i) => `sh <<<'e${i}';`).join(""),
+  ],
+  [
+    "script feeds in command strings",
+    Array.from(
+      { length: 1_200 },
+      (_, i) => `bash -c "sh <<'E'\necho ${i}\nE"; `,
+    ).join(""),
+  ],
+  [
+    "script feeds in substitutions",
+    Array.from(
+      { length: 2_900 },
+      (_, i) => `echo "$(sh <<'E'\necho ${i}\nE\n)"\n`,
+    ).join(""),
+  ],
+  [
+    "one script that fills the input cap",
+    `sh <<'E'\n${`echo ${"x".repeat(1_000)}\n`.repeat(125)}E`,
+  ],
+  [
+    "a script of unclosed backticks at the input cap",
+    `sh <<'E'\n${"`".repeat(120_000)}\nE`,
+  ],
+  [
+    "a here-string script of unclosed backticks at the input cap",
+    `sh <<<'${"`".repeat(120_000)}'`,
+  ],
+  [
+    "scripts nested to the depth cap, repeated at the input cap",
+    nestedScripts(7).repeat(Math.floor(131_072 / nestedScripts(7).length)),
+  ],
+  [
+    "shells in a command string inheriting a heredoc and 2,000 redirections at the input cap",
+    inheritedRedirections("<<A", 400, 2_000),
+  ],
+  [
+    "shells in a command string inheriting a here-string and 2,000 redirections at the input cap",
+    inheritedRedirections("<<<x", 400, 2_000),
+  ],
+];
+
+// A command string of `commands` shells that all inherit the stdin and the
+// `redirections` written after it, padded with a comment to the input cap. The
+// padding leaves room for the placeholder that replaces a heredoc body.
+function inheritedRedirections(
+  stdin: "<<A" | "<<<x",
+  commands: number,
+  redirections: number,
+): string {
+  const body = stdin === "<<A" ? "A\n" : "";
+  const text = `sh -c '${"sh;".repeat(commands)}' ${stdin} ${"<A ".repeat(redirections)}\n${body}`;
+  return `${text}# ${"x".repeat(131_072 - 64 - text.length - 2)}`;
+}
+
+// A shell whose script feeds a shell, `levels` deep.
+function nestedScripts(levels: number): string {
+  let script = "echo RAN";
+  for (let level = 0; level < levels; level += 1)
+    script = `sh <<'E${level}'\n${script}\nE${level}`;
+  return script;
+}
+
+// Heredocs at `size` whose bodies nest arithmetic substitutions 320 deep.
+function nestedArithmeticBodies(size: number): string {
+  const unit = `cat <<E\n${"$((".repeat(320)}1${"))".repeat(320)}\nE\n`;
+  return unit.repeat(Math.floor(size / unit.length));
+}
+
+// Heredocs at `size` whose bodies nest arithmetic substitutions 320 deep,
+// each holding the next in single quotes.
+function quotedArithmeticBodies(size: number): string {
+  let nest = "1";
+  for (let level = 0; level < 320; level += 1) nest = `$(('${nest}'))`;
+  const unit = `cat <<E\n${nest}\nE\n`;
+  return unit.repeat(Math.floor(size / unit.length));
+}
+
 // /tmp/opencode is one of the plugin's approved enrichment roots. Ensure it
 // exists on a fresh CI runner or a clean clone before mkdtemp uses it.
 beforeAll(async () => {
   await mkdir("/tmp/opencode", { recursive: true });
 });
+
+function linearParseRows(
+  units: readonly string[],
+): (readonly [string, string, number])[] {
+  return units.flatMap((unit) => [
+    [`${JSON.stringify(unit)} at the input cap`, unit, 131_072] as const,
+    [
+      `${JSON.stringify(unit)} at eight times the input cap`,
+      unit,
+      8 * 131_072,
+    ] as const,
+  ]);
+}
+
+function parsesRepeatedInLinearTime(
+  _: string,
+  unit: string,
+  size: number,
+): void {
+  const command = unit.repeat(Math.floor(size / unit.length));
+  const started = Date.now();
+  parseCommand(command);
+  expect(Date.now() - started).toBeLessThan(1_000);
+}
 
 function mutateDecision(base: Record<string, unknown>, item: number): void {
   switch (item % 5) {
@@ -166,6 +303,318 @@ describe("stress and adversarial robustness", () => {
       ).toBeUndefined();
     }
   });
+
+  test.each([
+    ["an escaped double-quoted run", `$(( "${'\\"'.repeat(60_000)}`],
+    ["an arithmetic-opener run", "$((x ".repeat(26_000)],
+  ])(
+    "reads %s under the previous release's reading in linear time",
+    (_, command) => {
+      const started = Date.now();
+      legacySanitizedCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["nested arithmetic openers", "$((".repeat(43_000)],
+    ["arithmetic openers with words", "$((x ".repeat(26_000)],
+    ["arithmetic openers with a term", "$((1)".repeat(26_000)],
+    ["backtick-wrapped arithmetic openers", "`$((".repeat(32_000)],
+    ["unclosed backticks", "`".repeat(120_000)],
+    ["heredoc operators on one line", "<<A ".repeat(30_000)],
+    [
+      "groups before heredoc operators",
+      "(".repeat(60_000) + "<<a ".repeat(15_000),
+    ],
+    [
+      "substitutions before heredoc operators",
+      "$(".repeat(40_000) + "<<a ".repeat(10_000),
+    ],
+    [
+      "escaped double quotes after an arithmetic opener",
+      `$(( "${'\\"'.repeat(60_000)}`,
+    ],
+    [
+      "escaped single quotes after an arithmetic opener",
+      `$(( '${"\\'".repeat(60_000)}`,
+    ],
+    [
+      "double parentheses holding heredocs in substitutions",
+      'echo "$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo "; echo x ; echo " ) "\n'.repeat(
+        2_400,
+      ),
+    ],
+    [
+      "double parentheses before a late heredoc operator",
+      `${"echo $(true) (( (a) ) ) ; ".repeat(5_000)}<<E\n`,
+    ],
+    [
+      "distinct body commands at the input cap",
+      `cat <<EOF\n${Array.from({ length: 17_000 }, (_, i) => `\`a${i}\``).join("")}\nEOF`,
+    ],
+    [
+      "distinct body commands after a parenthesis in a quoted inner body",
+      `cat <<EOF\n$(cat <<'IN'\n)${Array.from({ length: 14_000 }, (_, i) => `$(a${i})`).join("")}\nIN\n)\nEOF`,
+    ],
+    [
+      "command strings with heredoc bodies",
+      Array.from(
+        { length: 800 },
+        (_, i) => `sh -c "cat <<E\n'\\$(c${i})'\nE"`,
+      ).join("; "),
+    ],
+    [
+      "command strings whose heredoc bodies run command strings",
+      `sh -c "cat <<EOF\n${Array.from(
+        { length: 700 },
+        (_, i) => `\\$(sh -c 'cat <<E\n\\$(b${i})\nE')\n`,
+      ).join("")}EOF"`,
+    ],
+    [
+      "heredocs whose bodies nest arithmetic at the input cap",
+      nestedArithmeticBodies(131_072),
+    ],
+    [
+      "heredocs whose bodies nest quoted arithmetic at the input cap",
+      quotedArithmeticBodies(131_072),
+    ],
+    ...scriptFeedShapes,
+    ["dollar-quoted escapes at the input cap", "$'\\'".repeat(32_768)],
+    [
+      "backtick-wrapped dollar-quoted escapes at the input cap",
+      "`$'\\'`".repeat(21_845),
+    ],
+    ...quotedRedirectionShapes,
+  ])(
+    "reads %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      emergencyBrakeReason(request({ metadata: { command } }));
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test("lexes a quoted-redirection run well past the input cap in linear time", () => {
+    // Eight times the input cap: the lexer alone has no cap, and the brake
+    // lexes its input several times, so the lexer's own growth must stay linear.
+    const command = "'a'>&".repeat(209_712);
+    const started = Date.now();
+    lexSegments(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  }, 60_000);
+
+  test("lexes double parentheses holding heredocs well past the input cap in linear time", () => {
+    const unit =
+      'echo "$(: ; (( $(: <<E\n)\nE\n) ) ) ; echo "; echo x ; echo " ) "\n';
+    const command = unit.repeat(Math.floor((8 * 131_072) / unit.length));
+    const started = Date.now();
+    lexSegments(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+  }, 60_000);
+
+  test.each([
+    ["at the input cap", 131_072],
+    ["at eight times the input cap", 8 * 131_072],
+  ])(
+    "parses heredocs whose bodies nest arithmetic %s in linear time",
+    (_, size) => {
+      const command = nestedArithmeticBodies(size);
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["at the input cap", 131_072],
+    ["at eight times the input cap", 8 * 131_072],
+  ])(
+    "parses heredocs whose bodies nest quoted arithmetic %s in linear time",
+    (_, size) => {
+      const command = quotedArithmeticBodies(size);
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    linearParseRows([
+      "sh <<<x;",
+      "cat <<A | sh\nx\nA\n",
+      "cat <<A|sh\nx\nA\n",
+      "ssh h <<<x;",
+      "sh <<'E'\necho RAN\nE\n",
+    ]),
+  )(
+    "parses script feeds of %s in linear time",
+    parsesRepeatedInLinearTime,
+    60_000,
+  );
+
+  test.each(
+    linearParseRows([
+      "ssh -S c h x;",
+      "ssh -o -- h -x x;",
+      "mosh --ssh y h -- x;",
+      "autossh -M 0 -f h x;",
+      "ssh -S c h ",
+      "mosh h -- ",
+      "autossh -M 0 h ",
+    ]),
+  )(
+    "parses ssh, mosh and autossh calls of %s in linear time",
+    parsesRepeatedInLinearTime,
+    60_000,
+  );
+
+  test.each(
+    (
+      [
+        [
+          "-l a options before the host",
+          (n: number): string[] => [
+            "ssh",
+            ...repeated(["-l", "a"], n / 5),
+            "h",
+          ],
+        ],
+        [
+          "-l a options after the host",
+          (n: number): string[] => [
+            "ssh",
+            "h",
+            ...repeated(["-l", "a"], n / 5),
+          ],
+        ],
+        [
+          "-o User=a options",
+          (n: number): string[] => [
+            "ssh",
+            ...repeated(["-o", "User=a"], n / 10),
+            "h",
+          ],
+        ],
+        [
+          "a URI user of escapes",
+          (n: number): string[] => ["ssh", `ssh://${"%41".repeat(n / 3)}@h`],
+        ],
+        [
+          "a URI user ending in a bad escape",
+          (n: number): string[] => ["ssh", `ssh://${"%41".repeat(n / 3)}%zz@h`],
+        ],
+        [
+          "a URI user of plus signs",
+          (n: number): string[] => ["ssh", `ssh://${"+".repeat(n)}@h`],
+        ],
+      ] satisfies [string, (size: number) => string[]][]
+    ).flatMap(([name, build]) => [
+      [`${name} at the input cap`, build(131_072)] as const,
+      [`${name} at eight times the input cap`, build(8 * 131_072)] as const,
+    ]),
+  )(
+    "reads the login user of ssh calls with %s in linear time",
+    (_, tokens) => {
+      const started = Date.now();
+      parseSsh(tokens, 0);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    (["<<A", "<<<x"] as const).flatMap((stdin) => [
+      [
+        `${stdin} and 16,000 redirections at the input cap`,
+        inheritedRedirections(stdin, 4_000, 16_000),
+      ],
+      [
+        `${stdin} and 16,000 redirections at eight times the input cap`,
+        inheritedRedirections(stdin, 4_000, 16_000).repeat(8),
+      ],
+    ]),
+  )(
+    "parses 4,000 shells in a command string inheriting %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      parseCommand(command);
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  // The analyzer already finishes the third shape under the bound, so only
+  // the first two are regression rows for it.
+  test.each(quotedRedirectionShapes.slice(0, 2))(
+    "analyzes %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      analyzeBashCommand(request({ metadata: { command } }), {
+        directory: "/tmp",
+        worktree: "/tmp",
+      });
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each(
+    (
+      [
+        ["nohup in an ssh remote command", "ssh h '", "nohup ", "rm'"],
+        ["sudo in a command string", "sh -c '", "sudo ", "id'"],
+        ["commands in an ssh remote command", "ssh h '", "echo a; ", "'"],
+      ] as const
+    ).flatMap(([name, head, unit, tail]) =>
+      [131_000, 8 * 131_072].map(
+        (size) =>
+          [
+            `${name} at ${size === 131_000 ? "the input cap" : "eight times the input cap"}`,
+            `${head}${unit.repeat(Math.floor(size / unit.length))}${tail}`,
+          ] as const,
+      ),
+    ),
+  )(
+    "classifies the wrappers of %s in linear time",
+    (_, command) => {
+      const started = Date.now();
+      analyzeCapability(parseCommand(command), "/tmp", "/tmp");
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+    60_000,
+  );
+
+  test.each([
+    ["env -a x", "env -a x ", 5_400],
+    ["env --arg x", "env --arg x ", 5_400],
+    ["env -S '#' id;", "env -S '#' id; ", 4_000],
+  ])("parses %s repeated in linear time", (_, unit, count) => {
+    const command = `${unit.repeat(count)}id`;
+    const started = Date.now();
+    emergencyBrakeReason(
+      request({ patterns: [command], metadata: { command } }),
+    );
+    const parsed = parseCommand(command);
+    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(parsed.analysisTruncated).toBe(false);
+  });
+
+  test.each([
+    ["sudo", `${"true;".repeat(4_100)} ${"sudo ".repeat(12_000)}x`],
+    ["timeout 5", `${"true;".repeat(4_100)} ${"timeout 5 ".repeat(6_000)}x`],
+  ])(
+    "classifies a chain of %s past the walk limits in linear time",
+    (_, command) => {
+      const started = Date.now();
+      analyzeCapability(parseCommand(command), "/tmp", "/tmp");
+      expect(Date.now() - started).toBeLessThan(1_000);
+    },
+  );
 
   test("survives 10,000 encoded TUI transitions without cross-request corruption", () => {
     const state = new ReviewUiState({
