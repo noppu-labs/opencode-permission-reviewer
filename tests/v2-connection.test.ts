@@ -135,17 +135,69 @@ test("V2 host connection rejects an instance identity mismatch", async () => {
   process.env[password] = "synthetic-host-password";
   const { make, restore } = stubMake(() => fakeClient("another-instance"));
   try {
-    await expect(
-      connectV2Host(
+    let error: unknown;
+    try {
+      await connectV2Host(
         "/workspace",
         "expected",
         "2.0.3",
         AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow("does not belong to this host generation");
+      );
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(Error);
+    const message = String((error as Error).message);
+    expect(message).toContain("does not belong to this host generation");
+    expect(message).toContain(
+      "http://127.0.0.1:4096/ from OPENCODE_PERMISSION_REVIEWER_HOST_URL",
+    );
+    expect(message).not.toContain("synthetic-host-password");
     expect(make).toHaveBeenCalledTimes(1);
   } finally {
     restore();
+  }
+});
+
+test("registered V2 host identity mismatch names the registered service", async () => {
+  delete process.env[hostUrl];
+  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
+  process.env[stateHome] = root;
+  await mkdir(join(root, "opencode"));
+  await writeFile(
+    join(root, "opencode", "service.json"),
+    JSON.stringify({
+      version: "2.0.3",
+      url: "http://127.0.0.1:4096/",
+      pid: process.pid,
+      password: "synthetic-service-password",
+    }),
+  );
+  const { make, restore } = stubMake(() => fakeClient("another-instance"));
+  try {
+    let error: unknown;
+    try {
+      await connectV2Host(
+        "/workspace",
+        "expected",
+        "2.0.3",
+        AbortSignal.timeout(1000),
+      );
+    } catch (caught) {
+      error = caught;
+    }
+    expect(error).toBeInstanceOf(Error);
+    const message = String((error as Error).message);
+    expect(message).toContain("does not belong to this host generation");
+    expect(message).toContain(
+      "the registered OpenCode service at http://127.0.0.1:4096/",
+    );
+    expect(message).toContain("OPENCODE_PERMISSION_REVIEWER_HOST_URL");
+    expect(message).not.toContain("synthetic-service-password");
+    expect(make).toHaveBeenCalledTimes(1);
+  } finally {
+    restore();
+    await rm(root, { recursive: true, force: true });
   }
 });
 

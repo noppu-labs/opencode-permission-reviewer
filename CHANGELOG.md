@@ -13,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   registered by the previous patch release instead of failing every review. A service from
   another minor release is still refused, and the error now names both versions and how to fix
   it.
+- When the reviewer reaches a different OpenCode server than the one it runs in, for example
+  the background service while you work in a separate `opencode serve`, the error now says
+  which server it reached and which settings point it at the right one.
 
 ## [3.1.0] - 2026-10-21
 
