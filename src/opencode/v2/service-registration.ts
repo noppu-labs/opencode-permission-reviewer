@@ -4,6 +4,7 @@
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { parse } from "semver";
 
 export interface ServiceEndpoint {
   url: string;
@@ -63,13 +64,30 @@ function parseRegistration(text: string): Registration {
   return value as Registration;
 }
 
+/** Whether a service registered by OpenCode `registered` can serve host
+ *  `host`: both valid semver versions with the same major and minor. */
+export function isCompatibleHostVersion(
+  registered: unknown,
+  host: string,
+): boolean {
+  if (typeof registered !== "string") return false;
+  const registeredSemver = parse(registered);
+  const hostSemver = parse(host);
+  return (
+    registeredSemver !== null &&
+    hostSemver !== null &&
+    registeredSemver.major === hostSemver.major &&
+    registeredSemver.minor === hostSemver.minor
+  );
+}
+
 function registeredService(
   info: Registration,
   version: string,
 ): ServiceEndpoint {
-  if (info.version !== version)
+  if (!isCompatibleHostVersion(info.version, version))
     throw new Error(
-      "Reviewer service registration does not match this host version",
+      `Reviewer service registration does not match this host version: the registered service is OpenCode ${String(info.version)}, this host is ${version}. Run "opencode service restart", or set OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD for the server running this plugin`,
     );
   if (typeof info.url !== "string")
     throw new Error("Reviewer service registration does not contain a URL");

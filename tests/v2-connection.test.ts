@@ -8,6 +8,7 @@ import {
   hostCompatibleFetch,
   validateHostEndpoint,
 } from "../src/opencode/v2/connection.ts";
+import { isCompatibleHostVersion } from "../src/opencode/v2/service-registration.ts";
 import { HTTP_URL_WITH_USERINFO } from "./fixtures/synthetic-secrets.ts";
 import { defined } from "./helpers.ts";
 
@@ -299,7 +300,7 @@ test("registered V2 services must be local and belong to a live process", async 
   }
 });
 
-test("registered V2 services must match the active host version", async () => {
+test("registered V2 services from another patch release of the host are accepted", async () => {
   delete process.env[hostUrl];
   const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
   process.env[stateHome] = root;
@@ -308,6 +309,68 @@ test("registered V2 services must match the active host version", async () => {
     join(root, "opencode", "service.json"),
     JSON.stringify({
       version: "2.0.4",
+      url: "http://127.0.0.1:4096/",
+      pid: process.pid,
+      password: "synthetic-service-password",
+    }),
+  );
+  const { make, restore } = stubMake(() => fakeClient("expected"));
+  try {
+    await connectV2Host(
+      "/workspace",
+      "expected",
+      "2.0.3",
+      AbortSignal.timeout(1000),
+    );
+    expect(make).toHaveBeenCalledTimes(1);
+  } finally {
+    restore();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("registered V2 services from another minor release are rejected with both versions", async () => {
+  delete process.env[hostUrl];
+  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
+  process.env[stateHome] = root;
+  await mkdir(join(root, "opencode"));
+  await writeFile(
+    join(root, "opencode", "service.json"),
+    JSON.stringify({
+      version: "2.1.0",
+      url: "http://127.0.0.1:4096/",
+      pid: process.pid,
+      password: "synthetic-service-password",
+    }),
+  );
+  const { make, restore } = stubMake(() => fakeClient("expected"));
+  try {
+    await expect(
+      connectV2Host(
+        "/workspace",
+        "expected",
+        "2.0.3",
+        AbortSignal.timeout(1000),
+      ),
+    ).rejects.toThrow(
+      /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.3/,
+    );
+    expect(make).not.toHaveBeenCalled();
+  } finally {
+    restore();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("registered V2 services with an unparseable version are rejected", async () => {
+  delete process.env[hostUrl];
+  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
+  process.env[stateHome] = root;
+  await mkdir(join(root, "opencode"));
+  await writeFile(
+    join(root, "opencode", "service.json"),
+    JSON.stringify({
+      version: "latest",
       url: "http://127.0.0.1:4096/",
       pid: process.pid,
       password: "synthetic-service-password",
@@ -328,6 +391,22 @@ test("registered V2 services must match the active host version", async () => {
     restore();
     await rm(root, { recursive: true, force: true });
   }
+});
+
+test("isCompatibleHostVersion accepts the same major.minor across patches", () => {
+  expect(isCompatibleHostVersion("2.1.1", "2.1.2")).toBe(true);
+  expect(isCompatibleHostVersion("2.1.2", "2.1.1")).toBe(true);
+});
+
+test("isCompatibleHostVersion rejects a different major or minor", () => {
+  expect(isCompatibleHostVersion("2.0.3", "2.1.0")).toBe(false);
+  expect(isCompatibleHostVersion("3.1.1", "2.1.1")).toBe(false);
+});
+
+test("isCompatibleHostVersion rejects non-string and unparseable versions", () => {
+  expect(isCompatibleHostVersion(undefined, "2.1.1")).toBe(false);
+  expect(isCompatibleHostVersion(211, "2.1.1")).toBe(false);
+  expect(isCompatibleHostVersion("x", "2.1.1")).toBe(false);
 });
 
 test("V2 host transport passes other routes through and retries a 405 wait with the original request", async () => {

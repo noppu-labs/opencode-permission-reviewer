@@ -74,7 +74,9 @@ including servers that other plugins add from code. Before each review it checks
 location has no MCP servers. Jev uses its direct typed API instead (see
 [Jev System One reviewer](REVIEWER-MODELS.md#jev-system-one-reviewer)).
 
-The plugin discovers the registered service without starting or stopping it. For an independent
+The plugin discovers the registered service without starting or stopping it. It accepts a service
+registered by the same OpenCode major and minor version as the host, so a patch upgrade does not
+need a service restart. For an independent
 `serve`, set `OPENCODE_PERMISSION_REVIEWER_HOST_URL` and the host's `OPENCODE_PASSWORD` in the
 trusted process environment. An identity check rejects connections to a different plugin
 instance. Provider credentials stay inside OpenCode. See [Migration and rollback](../MIGRATION.md)

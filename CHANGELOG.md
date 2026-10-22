@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- After a patch upgrade of OpenCode V2, the reviewer keeps using the background service
+  registered by the previous patch release instead of failing every review. A service from
+  another minor release is still refused, and the error now names both versions and how to fix
+  it.
+
 ## [3.1.0] - 2026-10-21
 
 ### Added
