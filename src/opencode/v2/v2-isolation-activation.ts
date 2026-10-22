@@ -1,9 +1,9 @@
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { OpenCodeClient } from "@opencode/client";
+import type { V2HostApi } from "./host-api.ts";
 
 type PluginEntry = Awaited<
-  ReturnType<OpenCodeClient["plugin"]["list"]>
+  ReturnType<V2HostApi["plugin"]["list"]>
 >["data"][number];
 
 /** Whether a local plugin entry is this attempt's bootstrap, by ID or by its path. */
@@ -50,7 +50,7 @@ function pollDelay(signal: AbortSignal): Promise<void> {
  *  attempt's bootstrap (`isBootstrap`) reports active; a reported failure
  *  throws. The attempt signal bounds the wait. */
 export async function waitForIsolationActive(
-  client: OpenCodeClient,
+  client: V2HostApi,
   directory: string,
   pluginID: string,
   signal: AbortSignal,

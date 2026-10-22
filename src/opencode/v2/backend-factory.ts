@@ -1,4 +1,3 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { isSystemOneReviewerModel } from "../../reviewer-model.ts";
@@ -11,6 +10,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 import { V2ReviewerBackend } from "./reviewer-backend.ts";
 
 type Context = Parameters<Plugin.Plugin["setup"]>[0];
@@ -20,7 +20,7 @@ export interface V2ReviewBackend {
   review(
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
-    client: OpenCodeClient,
+    client: V2HostApi,
     onHandoff?: OnHandoff,
   ): Promise<ReviewExecutionResult>;
   waitForIdle(): Promise<void>;
@@ -58,7 +58,7 @@ export function createV2ReviewerBackend(
     review: (
       envelope: ReviewEnvelope,
       attempt: ReviewAttempt,
-      client: OpenCodeClient,
+      client: V2HostApi,
       onHandoff?: OnHandoff,
     ) =>
       primary.review(

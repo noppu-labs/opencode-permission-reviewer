@@ -1,5 +1,4 @@
 import { randomBytes } from "node:crypto";
-import type { OpenCodeClient } from "@opencode/client";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import { formatFailureReason } from "../../failure-reason.ts";
@@ -9,6 +8,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 import { finishReviewSession } from "./v2-review-cleanup.ts";
 import type { ReviewerLocation } from "./v2-review-location.ts";
 import {
@@ -25,14 +25,14 @@ import {
 export interface V2ReviewRun {
   config: ReviewerConfig;
   sessions: Map<string, PendingGeneration>;
-  location(client: OpenCodeClient): Promise<ReviewerLocation>;
+  location(client: V2HostApi): Promise<ReviewerLocation>;
 }
 
 export async function runV2Review(
   run: V2ReviewRun,
   envelope: ReviewEnvelope,
   attempt: ReviewAttempt,
-  client: OpenCodeClient,
+  client: V2HostApi,
 ): Promise<ReviewExecutionResult> {
   const { config, sessions } = run;
   const { providerID, modelID } = splitModel(config.model);

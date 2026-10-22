@@ -1,6 +1,5 @@
 // The review engine's ports for one V2 review: evidence collection through
 // the host connection, the backend review and the attempt's liveness.
-import type { OpenCodeClient } from "@opencode/client";
 import {
   assembleEvidence,
   defaultEvidenceProviders,
@@ -11,6 +10,7 @@ import type { HandoffInfo } from "../../system-one/backend.ts";
 import type { PermissionRequest, ReviewEnvelope } from "../../types.ts";
 import { createServerUiStatus } from "../../ui-action-segments.ts";
 import { createV2ContextReader } from "./context-reader.ts";
+import type { V2HostApi } from "./host-api.ts";
 import { reviewerVariant } from "./server-review-outcome.ts";
 import type { ReviewRun } from "./server-state.ts";
 import { notify, publishStatus, type ServerRuntime } from "./server-status.ts";
@@ -19,7 +19,7 @@ async function collectEvidence(
   server: ServerRuntime,
   run: ReviewRun,
   permission: NormalizedReviewRequest,
-  client: OpenCodeClient,
+  client: V2HostApi,
 ): Promise<ReviewEnvelope> {
   const envelope = await assembleEvidence(
     permission.request,
@@ -63,7 +63,7 @@ export function reviewPorts(
   server: ServerRuntime,
   run: ReviewRun,
   permission: NormalizedReviewRequest,
-  client: OpenCodeClient,
+  client: V2HostApi,
 ): ReviewEnginePorts {
   return {
     active: () => !server.disposed && run.attempt.active(server.generation),

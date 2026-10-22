@@ -1,5 +1,5 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
+import type { V2HostApi } from "./host-api.ts";
 import { createIsolatedLocation } from "./isolated-location.ts";
 import { waitForIsolationActive } from "./v2-isolation-activation.ts";
 
@@ -20,7 +20,7 @@ interface LocationOwner {
 
 /** Create an isolated location and wait until the host activated its hooks. */
 export async function openReviewerLocation(
-  client: OpenCodeClient,
+  client: V2HostApi,
   owner: LocationOwner,
 ): Promise<ReviewerLocation> {
   const registrations = new Set<() => Promise<void>>();

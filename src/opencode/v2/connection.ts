@@ -1,6 +1,7 @@
 import { Buffer } from "node:buffer";
 import { OpenCode, type OpenCodeClient } from "@opencode/client";
 import { ReviewerRpc } from "../../ui/rpc.ts";
+import type { V2HostApi } from "./host-api.ts";
 import {
   readRegisteredService,
   type ServiceEndpoint,
@@ -94,7 +95,7 @@ export async function connectV2Host(
   identity: string,
   version: string,
   signal: AbortSignal,
-): Promise<OpenCodeClient> {
+): Promise<V2HostApi> {
   const url = process.env.OPENCODE_PERMISSION_REVIEWER_HOST_URL;
   let client: OpenCodeClient;
   let source: string;

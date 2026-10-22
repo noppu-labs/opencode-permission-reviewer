@@ -1,13 +1,11 @@
-import type { OpenCodeClient, SessionInfo } from "@opencode/client";
+import type { SessionInfo } from "@opencode/client";
 import { selectIntentMessages } from "../../context.ts";
 import type { ContextReader } from "../../core/ports.ts";
 import type { MessageWithParts } from "../../types.ts";
 import { contextMessages, userMessage } from "./context-messages.ts";
+import type { V2HostApi } from "./host-api.ts";
 
-type Context = {
-  session: Pick<OpenCodeClient["session"], "get" | "context">;
-  message?: Pick<OpenCodeClient["message"], "list">;
-};
+type Context = V2HostApi;
 
 function locatedSession(session: SessionInfo, directory: string): SessionInfo {
   if (session.location.directory !== directory)

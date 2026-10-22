@@ -1,14 +1,14 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import type { ReviewerConfig } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 
 type CatalogModel = Awaited<
-  ReturnType<OpenCodeClient["model"]["list"]>
+  ReturnType<V2HostApi["model"]["list"]>
 >["data"][number];
 
 /** Fail unless the host reports this location MCP-free. */
 async function assertNoMcpServers(
-  client: OpenCodeClient,
+  client: V2HostApi,
   directory: string,
   attempt: ReviewAttempt,
 ): Promise<void> {
@@ -39,7 +39,7 @@ function assertReviewerModel(
 
 /** Fail before any session exists unless the location and its model can review. */
 export async function assertReviewerLocation(
-  client: OpenCodeClient,
+  client: V2HostApi,
   directory: string,
   attempt: ReviewAttempt,
   { providerID, modelID }: { providerID: string; modelID: string },

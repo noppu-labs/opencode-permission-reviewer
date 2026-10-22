@@ -1,5 +1,5 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { ReviewerConfig } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 import type { PendingGeneration } from "./v2-review-pending.ts";
 
 const isSessionNotFound = (error: unknown): boolean =>
@@ -7,7 +7,7 @@ const isSessionNotFound = (error: unknown): boolean =>
 
 /** Interrupt the session, then (unless retained) remove it and check it is gone. */
 async function cleanupPass(
-  client: OpenCodeClient,
+  client: V2HostApi,
   sessionID: string,
   config: ReviewerConfig,
 ): Promise<boolean> {
@@ -47,7 +47,7 @@ async function cleanupPass(
  * `finally` overrides the provisional decision and fails closed.
  */
 export async function finishReviewSession(
-  client: OpenCodeClient,
+  client: V2HostApi,
   sessions: Map<string, PendingGeneration>,
   sessionID: string,
   { createIssued, config }: { createIssued: boolean; config: ReviewerConfig },
