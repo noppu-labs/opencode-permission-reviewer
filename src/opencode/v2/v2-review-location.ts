@@ -1,5 +1,9 @@
 import type { Plugin } from "@opencode/plugin";
 import type { V2HostApi } from "./host-api.ts";
+import {
+  forgetIsolatedContext,
+  rememberIsolatedContext,
+} from "./isolated-contexts.ts";
 import { createIsolatedLocation } from "./isolated-location.ts";
 import { waitForIsolationActive } from "./v2-isolation-activation.ts";
 
@@ -33,6 +37,7 @@ export async function openReviewerLocation(
   };
   const isolated = await createIsolatedLocation(async (context) => {
     if (owner.closing()) return async (): Promise<void> => {};
+    rememberIsolatedContext(context.location.directory, context);
     const cleanup = await owner.register(context);
     const registration = async (): Promise<void> => {
       if (!registrations.delete(registration)) return;
@@ -55,10 +60,14 @@ export async function openReviewerLocation(
     return {
       directory: isolated.directory,
       dispose,
-      release: isolated.release,
+      release: () => {
+        forgetIsolatedContext(isolated.directory);
+        isolated.release();
+      },
     };
   } catch (error) {
     await dispose().catch(() => {});
+    forgetIsolatedContext(isolated.directory);
     isolated.release();
     // The host may have cached this location, so its MCP exclusion stays on disk.
     throw error;
