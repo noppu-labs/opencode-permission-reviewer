@@ -20,15 +20,15 @@ V2_CASES = [
     (version, "json_schema", outcome) for version in V2_VERSIONS for outcome in ("allow", "deny", "service")
 ] + (
     [
-        ("2.0.3", "text", "allow"),
-        ("2.0.3", "json_schema", "ambiguous"),
-        ("2.0.3", "json_schema", "low-confidence-deny"),
-        ("2.0.3", "json_schema", "prior-deny"),
-        ("2.0.3", "json_schema", "later-deny"),
-        ("2.0.3", "json_schema", "interrupted"),
-        ("2.0.3", "json_schema", "retained"),
-        ("2.0.3", "json_schema", "brake"),
-        ("2.0.3", "json_schema", "schema-retry"),
+        ("2.0.22", "text", "allow"),
+        ("2.0.22", "json_schema", "ambiguous"),
+        ("2.0.22", "json_schema", "low-confidence-deny"),
+        ("2.0.22", "json_schema", "prior-deny"),
+        ("2.0.22", "json_schema", "later-deny"),
+        ("2.0.22", "json_schema", "interrupted"),
+        ("2.0.22", "json_schema", "retained"),
+        ("2.0.22", "json_schema", "brake"),
+        ("2.0.22", "json_schema", "schema-retry"),
         ("2.0.15", "json_schema", "interrupted"),
         ("2.0.15", "json_schema", "brake"),
     ]
