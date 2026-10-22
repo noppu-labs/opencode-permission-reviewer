@@ -80,6 +80,7 @@ export async function runReview(
     const client = await attempt
       .wait(
         server.services.connect(
+          server.ctx,
           server.directory,
           server.identity,
           server.ctx.app.version,

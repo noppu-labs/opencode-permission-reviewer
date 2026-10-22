@@ -232,6 +232,9 @@ function isolationClient(
 ): { client: V2HostApi; directories: string[] } {
   const directories: string[] = [];
   const client = {
+    mcp: {
+      list: async () => ({ data: [] }),
+    },
     plugin: {
       list: async (input?: { location?: { directory?: string } }) => {
         const directory = input?.location?.directory ?? "";

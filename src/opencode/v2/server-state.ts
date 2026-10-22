@@ -13,7 +13,7 @@ import type { ReviewEnvelope } from "../../types.ts";
 import type { ReviewUiStatus } from "../../ui-protocol.ts";
 import { ScriptAnalysisRegistry } from "../../verified-ssh-script.ts";
 import type { V2ReviewBackend } from "./backend-factory.ts";
-import type { connectV2Host } from "./connection.ts";
+import type { resolveV2Host } from "./connection.ts";
 import { V2AskDecisions } from "./event-codec.ts";
 
 export type Context = Parameters<Plugin.Plugin["setup"]>[0];
@@ -21,7 +21,7 @@ type Config = ReturnType<typeof loadResolvedConfig>;
 
 export interface ServerServices {
   loadConfig: typeof loadResolvedConfig;
-  connect: typeof connectV2Host;
+  connect: typeof resolveV2Host;
   createBackend(context: Context, config: Config): V2ReviewBackend;
 }
 

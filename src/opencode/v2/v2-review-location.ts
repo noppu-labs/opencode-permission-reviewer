@@ -49,6 +49,12 @@ export async function openReviewerLocation(
   });
   try {
     const signal = AbortSignal.any([owner.signal, AbortSignal.timeout(15_000)]);
+    // The server API loads a location on the first query; the in-process host
+    // only sees locations the host has already mounted, so touch this one
+    // before polling its plugin inventory.
+    await client.mcp
+      .list({ location: { directory: isolated.directory } }, { signal })
+      .catch(() => {});
     await waitForIsolationActive(
       client,
       isolated.directory,
@@ -60,7 +66,7 @@ export async function openReviewerLocation(
     return {
       directory: isolated.directory,
       dispose,
-      release: () => {
+      release: (): void => {
         forgetIsolatedContext(isolated.directory);
         isolated.release();
       },

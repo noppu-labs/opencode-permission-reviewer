@@ -1,11 +1,11 @@
 import { Buffer } from "node:buffer";
 import { OpenCode, type OpenCodeClient } from "@opencode/client";
+import type { Plugin } from "@opencode/plugin";
 import { ReviewerRpc } from "../../ui/rpc.ts";
 import type { V2HostApi } from "./host-api.ts";
-import {
-  readRegisteredService,
-  type ServiceEndpoint,
-} from "./service-registration.ts";
+import { createInProcessHost } from "./in-process-host.ts";
+
+type Context = Parameters<Plugin.Plugin["setup"]>[0];
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
@@ -63,23 +63,10 @@ export function hostCompatibleFetch(
   }) as typeof globalThis.fetch;
 }
 
-/** The registered service, accepted only on a loopback origin. */
-async function registeredLoopbackService(
-  version: string,
-): Promise<ServiceEndpoint | undefined> {
-  const service = await readRegisteredService(version);
-  if (!service) return undefined;
-  const endpoint = validateHostEndpoint(service.url);
-  if (!LOOPBACK_HOSTS.has(endpoint.hostname))
-    throw new Error("Reviewer registered service must use a loopback address");
-  if (endpoint.pathname !== "/" || endpoint.search || endpoint.hash)
-    throw new Error(
-      "Reviewer registered service URL must be a loopback origin",
-    );
-  return { url: endpoint.href, password: service.password };
-}
-
-function makeClient(endpoint: ServiceEndpoint): OpenCodeClient {
+function makeClient(endpoint: {
+  url: string;
+  password: string;
+}): OpenCodeClient {
   return OpenCode.make({
     baseUrl: endpoint.url,
     headers: {
@@ -89,35 +76,28 @@ function makeClient(endpoint: ServiceEndpoint): OpenCodeClient {
   });
 }
 
-/** Discover without starting a host; prove identity before accessing sessions. */
+/** The explicit server named by OPENCODE_PERMISSION_REVIEWER_HOST_URL; guards
+ *  misuse when reached without the URL. */
 export async function connectV2Host(
   directory: string,
   identity: string,
-  version: string,
+  _version: string,
   signal: AbortSignal,
 ): Promise<V2HostApi> {
   const url = process.env.OPENCODE_PERMISSION_REVIEWER_HOST_URL;
-  let client: OpenCodeClient;
-  let source: string;
-  if (url !== undefined) {
-    const endpoint = validateHostEndpoint(url);
-    source = `${endpoint.href} from OPENCODE_PERMISSION_REVIEWER_HOST_URL`;
-    const password =
-      process.env.OPENCODE_PASSWORD ?? process.env.OPENCODE_SERVER_PASSWORD;
-    if (!password)
-      throw new Error(
-        "Reviewer explicit host connection requires OPENCODE_PASSWORD",
-      );
-    client = makeClient({ url: endpoint.href, password });
-  } else {
-    const endpoint = await registeredLoopbackService(version);
-    if (!endpoint)
-      throw new Error(
-        "Reviewer host connection unavailable: use the registered service or configure OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD",
-      );
-    source = `the registered OpenCode service at ${endpoint.url}`;
-    client = makeClient(endpoint);
-  }
+  if (url === undefined)
+    throw new Error(
+      "Reviewer explicit host connection requires OPENCODE_PERMISSION_REVIEWER_HOST_URL",
+    );
+  const endpoint = validateHostEndpoint(url);
+  const source = `${endpoint.href} from OPENCODE_PERMISSION_REVIEWER_HOST_URL`;
+  const password =
+    process.env.OPENCODE_PASSWORD ?? process.env.OPENCODE_SERVER_PASSWORD;
+  if (!password)
+    throw new Error(
+      "Reviewer explicit host connection requires OPENCODE_PASSWORD",
+    );
+  const client = makeClient({ url: endpoint.href, password });
   const actual = await client
     .rpc(ReviewerRpc)
     .identity({}, { location: { directory }, signal });
@@ -126,4 +106,18 @@ export async function connectV2Host(
       `Reviewer connection does not belong to this host generation: ${source} is a different OpenCode server than the one running this plugin. If you started this server with "opencode serve" or connect with --server, set OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD for it`,
     );
   return client;
+}
+
+/** The host a review runs against: the explicit server named by
+ *  OPENCODE_PERMISSION_REVIEWER_HOST_URL, else this plugin's own context. */
+export async function resolveV2Host(
+  ctx: Context,
+  directory: string,
+  identity: string,
+  version: string,
+  signal: AbortSignal,
+): Promise<V2HostApi> {
+  if (process.env.OPENCODE_PERMISSION_REVIEWER_HOST_URL !== undefined)
+    return connectV2Host(directory, identity, version, signal);
+  return createInProcessHost(ctx);
 }

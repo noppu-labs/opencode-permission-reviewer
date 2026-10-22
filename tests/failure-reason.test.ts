@@ -153,6 +153,7 @@ test("v2 reviewer session call failure keeps deny and failure-safe with cause", 
     sshAudit: [],
   };
   const client = {
+    mcp: { list: async () => ({ data: [] }) },
     plugin: {
       list: async () => {
         throw clientError();

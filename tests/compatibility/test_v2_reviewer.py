@@ -345,6 +345,28 @@ def test_v2_reviewer_applies_and_cleans_up(
 
 
 @pytest.mark.parametrize("host_version", V2_VERSIONS)
+def test_v2_reviewer_uses_explicit_host_override(launch_host, activate_host, model_server, host_version, tmp_path):
+    package = os.environ.get("PLUGIN_PACKAGE_PATH", str(Path(__file__).resolve().parents[2]))
+    binary = os.environ[f"OPENCODE_V2_{host_version.replace('.', '_')}"]
+    host = launch_host(
+        "v2",
+        binary,
+        {"plugins": [package]},
+        reviewer={"model": "fixture/reviewer", "timeoutMs": 5000, "reviewBudgetMs": 15000},
+        global_config=driver_provider(model_server),
+        host_url=True,
+    )
+    activate_host(host, "v2")
+    outcome = request_permission(host, open_session(host, "allow"), "allow")
+    records = settled_audit_records(host)
+    assert outcome["data"]["effect"] == "allow", records
+    assert records[-1]["application"] == "evaluation-returned"
+    with pytest.raises(urllib.error.HTTPError) as failure:
+        request(host, "/api/session/" + records[-1]["reviewerSessionID"])
+    assert failure.value.code == 404
+
+
+@pytest.mark.parametrize("host_version", V2_VERSIONS)
 def test_v2_reuses_mcp_free_reviewer_location(launch_host, activate_host, model_server, host_version, tmp_path):
     binary = os.environ[f"OPENCODE_V2_{host_version.replace('.', '_')}"]
     package = os.environ.get("PLUGIN_PACKAGE_PATH", str(Path(__file__).resolve().parents[2]))

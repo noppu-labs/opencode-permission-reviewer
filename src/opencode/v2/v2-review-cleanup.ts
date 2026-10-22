@@ -2,8 +2,12 @@ import type { ReviewerConfig } from "../../types.ts";
 import type { V2HostApi } from "./host-api.ts";
 import type { PendingGeneration } from "./v2-review-pending.ts";
 
-const isSessionNotFound = (error: unknown): boolean =>
-  (error as { _tag?: string })?._tag === "SessionNotFoundError";
+/** The HTTP client and the in-process plugin adapter tag a missing session
+ *  differently: `SessionNotFoundError` vs `Session.NotFoundError`. */
+const isSessionNotFound = (error: unknown): boolean => {
+  const tag = (error as { _tag?: string })?._tag;
+  return tag === "SessionNotFoundError" || tag === "Session.NotFoundError";
+};
 
 /** Interrupt the session, then (unless retained) remove it and check it is gone. */
 async function cleanupPass(

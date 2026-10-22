@@ -50,5 +50,5 @@ test("a shutdown before the activation poll's delay fails the review", async () 
     return { data: [] };
   };
   expect((await run.review()).reason).toBe(SHUTDOWN);
-  expect(run.calls.map(([name]) => name)).toEqual(["plugin.list"]);
+  expect(run.calls.map(([name]) => name)).toEqual(["mcp.list", "plugin.list"]);
 });
