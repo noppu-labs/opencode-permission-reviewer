@@ -321,3 +321,48 @@ test("openReviewerLocation forgets the isolated ctx when activation fails", asyn
     throw new Error("client never received an isolated directory");
   expect(isolatedContext(directory)).toBeUndefined();
 });
+
+test("openReviewerLocation keeps a failed mount as the activation failure's cause", async () => {
+  const { client } = isolationClient(
+    async () => {},
+    (directory) => [
+      {
+        source: { type: "local", path: join(directory, "index.js") },
+        state: { status: "failed", error: "Fixture activation failure" },
+      },
+    ],
+  );
+  client.mcp = {
+    list: async () => {
+      throw new Error("mount failed");
+    },
+  };
+  const owner = {
+    closing: () => false,
+    register: async (_ctx: Context) => async (): Promise<void> => {},
+    signal: new AbortController().signal,
+  };
+  const failure = await openReviewerLocation(client, owner).then(
+    () => null,
+    (error: unknown) => error,
+  );
+  expect(failure).toBeInstanceOf(Error);
+  expect(String((failure as Error).message)).toContain("failed to activate");
+  expect((failure as { cause?: Error }).cause?.message).toBe("mount failed");
+});
+
+test("openReviewerLocation bounds a mount touch that never resolves by the owner signal", async () => {
+  const client = {
+    mcp: { list: () => new Promise<never>(() => {}) },
+    plugin: { list: async () => ({ data: [] }) },
+  } as unknown as V2HostApi;
+  const controller = new AbortController();
+  const owner = {
+    closing: () => false,
+    register: async (_ctx: Context) => async (): Promise<void> => {},
+    signal: controller.signal,
+  };
+  const pending = openReviewerLocation(client, owner);
+  controller.abort(new Error("backend shutting down"));
+  await expect(pending).rejects.toThrow("backend shutting down");
+});

@@ -1,4 +1,5 @@
 import { afterEach, expect, type Mock, mock, test } from "bun:test";
+import { Buffer } from "node:buffer";
 import { OpenCode, type OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import {
@@ -245,6 +246,35 @@ test("resolveV2Host uses the explicit host when the URL is set", async () => {
     )[0]?.[0];
     expect(options).toMatchObject({
       baseUrl: "http://127.0.0.1:4096/",
+      headers: {
+        authorization: `Basic ${Buffer.from("opencode:synthetic-host-password").toString("base64")}`,
+      },
+    });
+  } finally {
+    restore();
+  }
+});
+
+test("resolveV2Host honors the legacy server password fallback", async () => {
+  process.env[hostUrl] = "http://127.0.0.1:4096/";
+  delete process.env[password];
+  process.env[legacyPassword] = "legacy-server-password";
+  const { make, restore } = stubMake(() => fakeClient("expected"));
+  try {
+    await resolveV2Host(
+      fakeContext() as unknown as Parameters<Plugin.Plugin["setup"]>[0],
+      "/workspace",
+      "expected",
+      "2.0.22",
+      AbortSignal.timeout(1000),
+    );
+    const options = (
+      make.mock.calls as unknown as Array<[Parameters<typeof OpenCode.make>[0]]>
+    )[0]?.[0];
+    expect(options).toMatchObject({
+      headers: {
+        authorization: `Basic ${Buffer.from("opencode:legacy-server-password").toString("base64")}`,
+      },
     });
   } finally {
     restore();

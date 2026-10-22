@@ -22,6 +22,29 @@ interface LocationOwner {
   signal: AbortSignal;
 }
 
+/** Race a promise against a signal, so a call the host never settles cannot
+ *  wedge the location activation. */
+function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    if (signal.aborted) {
+      reject(signal.reason);
+      return;
+    }
+    const onAbort = (): void => reject(signal.reason);
+    signal.addEventListener("abort", onAbort, { once: true });
+    promise.then(
+      (value) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(value);
+      },
+      (error) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
+
 /** Create an isolated location and wait until the host activated its hooks. */
 export async function openReviewerLocation(
   client: V2HostApi,
@@ -51,18 +74,39 @@ export async function openReviewerLocation(
     const signal = AbortSignal.any([owner.signal, AbortSignal.timeout(15_000)]);
     // The server API loads a location on the first query; the in-process host
     // only sees locations the host has already mounted, so touch this one
-    // before polling its plugin inventory.
-    await client.mcp
-      .list({ location: { directory: isolated.directory } }, { signal })
-      .catch(() => {});
-    await waitForIsolationActive(
-      client,
-      isolated.directory,
-      isolated.pluginID,
+    // before polling its plugin inventory. The touch races the same signal as
+    // the poll, so a hung mount cannot wedge the activation.
+    const touch = await withAbort(
+      client.mcp.list(
+        { location: { directory: isolated.directory } },
+        { signal },
+      ),
       signal,
+    ).then(
+      () => undefined,
+      (error: unknown) => error,
     );
-    if (registrations.size === 0)
-      throw new Error("Reviewer isolation hooks did not activate");
+    try {
+      await waitForIsolationActive(
+        client,
+        isolated.directory,
+        isolated.pluginID,
+        signal,
+      );
+      if (registrations.size === 0)
+        throw new Error("Reviewer isolation hooks did not activate");
+    } catch (error) {
+      // Report the mount failure as the cause of the activation failure; keep
+      // the activation failure's own message otherwise.
+      if (
+        touch !== undefined &&
+        error instanceof Error &&
+        error.cause === undefined &&
+        error !== touch
+      )
+        throw new Error(error.message, { cause: touch });
+      throw error;
+    }
     return {
       directory: isolated.directory,
       dispose,

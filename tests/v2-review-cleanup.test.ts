@@ -54,6 +54,13 @@ test.each([
     stubs: { "session.get": sequence(returns({}), notFound) },
     calls: [interrupt, remove, get, interrupt, remove, get],
   },
+  {
+    name: "a session reported gone by the in-process adapter",
+    stubs: {
+      "session.get": () => Promise.reject({ _tag: "Session.NotFoundError" }),
+    },
+    calls: [interrupt, remove, get],
+  },
 ])("$name still confirms cleanup", async ({ stubs, calls }) => {
   const run = v2ReviewFixture();
   Object.assign(run.stubs, stubs);
@@ -78,6 +85,14 @@ test.each([
   {
     name: "a failed session lookup",
     stubs: { "session.get": lost },
+    config: {},
+    calls: [interrupt, remove, get, interrupt, remove, get],
+  },
+  {
+    name: "a busy session never reported gone",
+    stubs: {
+      "session.get": () => Promise.reject({ _tag: "Session.BusyError" }),
+    },
     config: {},
     calls: [interrupt, remove, get, interrupt, remove, get],
   },
