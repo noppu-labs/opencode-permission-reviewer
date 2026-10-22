@@ -103,7 +103,7 @@ export async function connectV2Host(
     .identity({}, { location: { directory }, signal });
   if (actual !== identity)
     throw new Error(
-      `Reviewer connection does not belong to this host generation: ${source} is a different OpenCode server than the one running this plugin. If you started this server with "opencode serve" or connect with --server, set OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD for it`,
+      `Reviewer connection does not belong to this host generation: ${source} is a different OpenCode server than the one running this plugin. Check that OPENCODE_PERMISSION_REVIEWER_HOST_URL names this server, or unset it to review through the server running this plugin`,
     );
   return client;
 }

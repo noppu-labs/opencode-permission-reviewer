@@ -140,6 +140,10 @@ test("V2 host connection rejects an instance identity mismatch", async () => {
     expect(message).toContain(
       "http://127.0.0.1:4096/ from OPENCODE_PERMISSION_REVIEWER_HOST_URL",
     );
+    expect(message).toContain(
+      "Check that OPENCODE_PERMISSION_REVIEWER_HOST_URL names this server, or unset it to review through the server running this plugin",
+    );
+    expect(message).not.toContain("If you started this server");
     expect(message).not.toContain("synthetic-host-password");
     expect(make).toHaveBeenCalledTimes(1);
   } finally {

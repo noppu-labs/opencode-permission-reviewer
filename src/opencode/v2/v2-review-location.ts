@@ -6,6 +6,7 @@ import {
 } from "./isolated-contexts.ts";
 import { createIsolatedLocation } from "./isolated-location.ts";
 import { waitForIsolationActive } from "./v2-isolation-activation.ts";
+import { withAbort } from "./with-abort.ts";
 
 type Context = Parameters<Plugin.Plugin["setup"]>[0];
 
@@ -20,29 +21,6 @@ interface LocationOwner {
   closing(): boolean;
   register(ctx: Context): Promise<() => Promise<void>>;
   signal: AbortSignal;
-}
-
-/** Race a promise against a signal, so a call the host never settles cannot
- *  wedge the location activation. */
-function withAbort<T>(promise: Promise<T>, signal: AbortSignal): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    if (signal.aborted) {
-      reject(signal.reason);
-      return;
-    }
-    const onAbort = (): void => reject(signal.reason);
-    signal.addEventListener("abort", onAbort, { once: true });
-    promise.then(
-      (value) => {
-        signal.removeEventListener("abort", onAbort);
-        resolve(value);
-      },
-      (error) => {
-        signal.removeEventListener("abort", onAbort);
-        reject(error);
-      },
-    );
-  });
 }
 
 /** Create an isolated location and wait until the host activated its hooks. */
