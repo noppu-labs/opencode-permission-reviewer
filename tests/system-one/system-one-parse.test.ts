@@ -205,4 +205,60 @@ describe("System One reviewer", () => {
     };
     expect(parseSystemOneReview(raw, config)).toBeUndefined();
   });
+
+  test("accepts a supporting choice one hundredth below the most probable option", () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" });
+    const raw = response();
+    raw.answers.evidence_completeness = {
+      type: "choice",
+      choice: "partial",
+      confidence: 0.3,
+      probabilities: {
+        sufficient: 0.1,
+        partial: 0.44,
+        insufficient: 0.45,
+        unknown: 0.01,
+      },
+    };
+    const parsed = parseSystemOneReview(raw, config);
+    expect(parsed?.scores.supporting.evidenceCompleteness.choice).toBe(
+      "partial",
+    );
+  });
+
+  test("accepts a supporting choice exactly at the tie tolerance", () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" });
+    const raw = response();
+    raw.answers.user_authorization = {
+      type: "choice",
+      choice: "medium",
+      confidence: 0.4,
+      probabilities: { high: 0.02, medium: 0.42, low: 0.44, unknown: 0.12 },
+    };
+    expect(parseSystemOneReview(raw, config)).toBeDefined();
+  });
+
+  test("rejects a supporting choice beyond the tie tolerance", () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" });
+    const raw = response();
+    raw.answers.user_authorization = {
+      type: "choice",
+      choice: "medium",
+      confidence: 0.4,
+      probabilities: { high: 0.02, medium: 0.4, low: 0.47, unknown: 0.11 },
+    };
+    expect(parseSystemOneReview(raw, config)).toBeUndefined();
+  });
+
+  test("keeps the outcome strict on a near tie", () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" });
+    const raw = response();
+    raw.answers.outcome = {
+      type: "choice",
+      choice: "allow",
+      confidence: 0.4,
+      probabilities: { allow: 0.44, deny: 0.45, escalate: 0.11 },
+    };
+    expect(parseSystemOneReview(raw, config)).toBeUndefined();
+  });
 });

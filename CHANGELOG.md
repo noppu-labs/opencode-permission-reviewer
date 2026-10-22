@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When the reviewer reaches a different OpenCode server than the one it runs in, for example
   the background service while you work in a separate `opencode serve`, the error now says
   which server it reached and which settings point it at the right one.
+- Jev answers where a supporting judgement (risk, authorization, scope, evidence, or basis) is
+  within 0.02 of the most probable option are no longer treated as invalid. The allow, deny,
+  or escalate outcome itself must still be the most probable option.
 
 ## [3.1.0] - 2026-10-21
 
