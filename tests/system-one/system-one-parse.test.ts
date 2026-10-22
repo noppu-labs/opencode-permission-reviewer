@@ -238,6 +238,30 @@ describe("System One reviewer", () => {
     expect(parseSystemOneReview(raw, config)).toBeDefined();
   });
 
+  test("accepts a supporting choice at the tie tolerance where float rounding needs the epsilon", () => {
+    const config = resolveConfig({ model: "opencode/jev-1.13-free" });
+    const raw = response();
+    raw.answers.primary_basis = {
+      type: "choice",
+      choice: "authorized_routine",
+      confidence: 0.3,
+      probabilities: {
+        authorized_routine: 0.12,
+        authorized_reversible_change: 0.14,
+        insufficient_authorization: 0.1,
+        scope_mismatch: 0.1,
+        insufficient_evidence: 0.1,
+        destructive_effect: 0.1,
+        credential_or_private_data: 0.1,
+        security_or_privilege_change: 0.1,
+        external_or_remote_effect: 0.1,
+        trusted_policy_restriction: 0.02,
+        conflicting_evidence: 0.02,
+      },
+    };
+    expect(parseSystemOneReview(raw, config)).toBeDefined();
+  });
+
   test("rejects a supporting choice beyond the tie tolerance", () => {
     const config = resolveConfig({ model: "opencode/jev-1.13-free" });
     const raw = response();
