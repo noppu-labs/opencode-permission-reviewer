@@ -87,7 +87,7 @@ export async function fixture(
     },
   });
   const ctx = {
-    app: { version: options.hostVersion ?? "2.0.3" },
+    app: { version: options.hostVersion ?? "2.0.22" },
     options: {},
     location: { directory, project: { directory } },
     rpc: {

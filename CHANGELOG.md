@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- OpenCode V2 hosts before 2.0.22 are no longer supported; V2 now requires
+  `>=2.0.22 <3`. The reviewer relies on plugin-context APIs introduced in
+  2.0.22.
+
 ### Fixed
 
 - After a patch upgrade of OpenCode V2, the reviewer keeps using the background service

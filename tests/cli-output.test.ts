@@ -428,13 +428,13 @@ audit
   test("the host section probes a binary and a connected run needs a password", async () => {
     fresh();
     const binary = join(tmp, "fake-opencode");
-    writeFileSync(binary, "#!/bin/sh\nprintf 'opencode 2.0.3\\n'\n", {
+    writeFileSync(binary, "#!/bin/sh\nprintf 'opencode 2.0.22\\n'\n", {
       mode: 0o700,
     });
     const report = JSON.parse(
       (await cli(["doctor", "--json", "--binary", binary])).stdout,
     );
-    expect(report.host).toEqual({ binaryVersion: "2.0.3", runtime: null });
+    expect(report.host).toEqual({ binaryVersion: "2.0.22", runtime: null });
     expect(report.version).toEqual({
       package: PKG.version,
       opencodeRange: PKG.engines.opencode,

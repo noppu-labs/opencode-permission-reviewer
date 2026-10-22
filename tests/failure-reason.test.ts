@@ -196,7 +196,7 @@ test("v2 permission review hook failure denies with phase and cause", async () =
     dispose: async () => {},
   });
   const ctx = {
-    app: { version: "2.0.3" },
+    app: { version: "2.0.22" },
     options: {},
     location: { directory, project: { directory } },
     rpc: {

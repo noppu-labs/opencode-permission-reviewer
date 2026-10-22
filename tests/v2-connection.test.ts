@@ -90,7 +90,7 @@ test("explicit V2 host connection rejects missing authentication", async () => {
       connectV2Host(
         "/workspace",
         "expected",
-        "2.0.3",
+        "2.0.22",
         AbortSignal.timeout(1000),
       ),
     ).rejects.toThrow("requires OPENCODE_PASSWORD");
@@ -108,7 +108,7 @@ function registration(
   overrides: Record<string, unknown> = {},
 ): Record<string, unknown> {
   return {
-    version: "2.0.3",
+    version: "2.0.22",
     url: SERVICE_URL,
     pid: process.pid,
     password: SERVICE_PASSWORD,
@@ -139,7 +139,7 @@ async function withRegisteredService(
       connectV2Host(
         "/workspace",
         "expected",
-        "2.0.3",
+        "2.0.22",
         AbortSignal.timeout(1000),
       ),
     );
@@ -184,12 +184,12 @@ test.each([
   [
     "a version from another minor release",
     { version: "2.1.0" },
-    /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.3\. Run "opencode service restart"/,
+    /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.22\. Run "opencode service restart"/,
   ],
   [
     "a non-string version",
     { version: { major: 2 } },
-    /the registered service is OpenCode an unrecognised version, this host is 2\.0\.3/,
+    /the registered service is OpenCode an unrecognised version, this host is 2\.0\.22/,
   ],
 ] as const)(
   "registered V2 services with %s are rejected",
@@ -206,8 +206,8 @@ test.each([
 );
 
 test.each([
-  ["the host's own release", "2.0.3"],
-  ["another patch release of the host", "2.0.4"],
+  ["the host's own release", "2.0.22"],
+  ["another patch release of the host", "2.0.23"],
 ])(
   "registered V2 services from %s are accepted with their credentials",
   async (_label, version) => {
@@ -269,7 +269,7 @@ test("V2 host connection rejects an instance identity mismatch", async () => {
       await connectV2Host(
         "/workspace",
         "expected",
-        "2.0.3",
+        "2.0.22",
         AbortSignal.timeout(1000),
       );
     } catch (caught) {
@@ -321,7 +321,7 @@ test("isCompatibleHostVersion accepts the same major.minor across patches", () =
 });
 
 test("isCompatibleHostVersion rejects a different major or minor", () => {
-  expect(isCompatibleHostVersion("2.0.3", "2.1.0")).toBe(false);
+  expect(isCompatibleHostVersion("2.0.22", "2.1.0")).toBe(false);
   expect(isCompatibleHostVersion("3.1.1", "2.1.1")).toBe(false);
 });
 
@@ -387,7 +387,7 @@ async function registeredServiceError(
     const error = await connectV2Host(
       "/workspace",
       "expected",
-      "2.0.3",
+      "2.0.22",
       AbortSignal.timeout(1000),
     ).then(
       () => undefined,
@@ -403,7 +403,7 @@ async function registeredServiceError(
 
 test("registered V2 service registrations fail closed on a missing, unreadable or malformed file", async () => {
   const valid = {
-    version: "2.0.3",
+    version: "2.0.22",
     url: "http://127.0.0.1:4096/",
     pid: process.pid,
     password: "synthetic-service-password",
@@ -441,7 +441,7 @@ test("registered V2 service read errors other than a missing file propagate", as
       connectV2Host(
         "/workspace",
         "expected",
-        "2.0.3",
+        "2.0.22",
         AbortSignal.timeout(1000),
       ),
     ).rejects.toMatchObject({ code: "EISDIR" });
