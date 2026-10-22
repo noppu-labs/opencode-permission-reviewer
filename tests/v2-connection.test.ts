@@ -353,7 +353,7 @@ test("registered V2 services from another minor release are rejected with both v
         AbortSignal.timeout(1000),
       ),
     ).rejects.toThrow(
-      /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.3/,
+      /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.3\. Run "opencode service restart"/,
     );
     expect(make).not.toHaveBeenCalled();
   } finally {
@@ -386,6 +386,39 @@ test("registered V2 services with an unparseable version are rejected", async ()
         AbortSignal.timeout(1000),
       ),
     ).rejects.toThrow("does not match this host version");
+    expect(make).not.toHaveBeenCalled();
+  } finally {
+    restore();
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
+test("registered V2 services with a non-string version are rejected as unrecognised", async () => {
+  delete process.env[hostUrl];
+  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
+  process.env[stateHome] = root;
+  await mkdir(join(root, "opencode"));
+  await writeFile(
+    join(root, "opencode", "service.json"),
+    JSON.stringify({
+      version: { major: 2 },
+      url: "http://127.0.0.1:4096/",
+      pid: process.pid,
+      password: "synthetic-service-password",
+    }),
+  );
+  const { make, restore } = stubMake(() => fakeClient("expected"));
+  try {
+    await expect(
+      connectV2Host(
+        "/workspace",
+        "expected",
+        "2.0.3",
+        AbortSignal.timeout(1000),
+      ),
+    ).rejects.toThrow(
+      /the registered service is OpenCode an unrecognised version, this host is 2\.0\.3/,
+    );
     expect(make).not.toHaveBeenCalled();
   } finally {
     restore();

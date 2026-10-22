@@ -1,6 +1,7 @@
 // The host's registered service (`opencode/service.json` under the XDG state
-// directory), read without starting a host and trusted only for this host
-// version and a live process. The caller validates the URL it names.
+// directory), read without starting a host and trusted only when registered by
+// the same OpenCode major and minor version and a live process. The caller
+// validates the URL it names.
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -85,9 +86,11 @@ function registeredService(
   info: Registration,
   version: string,
 ): ServiceEndpoint {
+  const registeredVersion =
+    typeof info.version === "string" ? info.version : "an unrecognised version";
   if (!isCompatibleHostVersion(info.version, version))
     throw new Error(
-      `Reviewer service registration does not match this host version: the registered service is OpenCode ${String(info.version)}, this host is ${version}. Run "opencode service restart", or set OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD for the server running this plugin`,
+      `Reviewer service registration does not match this host version: the registered service is OpenCode ${registeredVersion}, this host is ${version}. Run "opencode service restart", or set OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD for the server running this plugin`,
     );
   if (typeof info.url !== "string")
     throw new Error("Reviewer service registration does not contain a URL");
@@ -99,8 +102,8 @@ function registeredService(
   return { url: info.url, password: info.password };
 }
 
-/** The registered service for this host version with its URL as written, or
- *  undefined when no service is registered. */
+/** The registered service for the same OpenCode major and minor version, with
+ *  its URL as written, or undefined when no service is registered. */
 export async function readRegisteredService(
   version: string,
 ): Promise<ServiceEndpoint | undefined> {
