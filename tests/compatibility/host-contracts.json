@@ -28,7 +28,6 @@
       "2.1.2": "sha512-9mBVQTO3WkKzP300NtHuhmXkHTfR2JwFB0AKRGRw4Lt3SNEwo5V4pzXXrwlpRAHoQmINLPuFPGOmn1kxYZdmMQ=="
     },
     "optionalIntegrities": {},
-
     "sdk": {
       "package": "@opencode/plugin",
       "version": "2.0.22",

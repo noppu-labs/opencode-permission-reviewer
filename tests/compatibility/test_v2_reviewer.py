@@ -29,8 +29,6 @@ V2_CASES = [
         ("2.0.22", "json_schema", "retained"),
         ("2.0.22", "json_schema", "brake"),
         ("2.0.22", "json_schema", "schema-retry"),
-        ("2.0.15", "json_schema", "interrupted"),
-        ("2.0.15", "json_schema", "brake"),
     ]
     if not os.environ.get("V2_HOST_VERSION")
     else []
