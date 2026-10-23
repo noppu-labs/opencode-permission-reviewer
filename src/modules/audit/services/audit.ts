@@ -2,6 +2,7 @@ import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import type { ReviewAuditRecord } from "../models/audit-record.ts";
 import { appendAuditLine, readTail } from "../repositories/audit-files.ts";
 import { sanitizeAuditRecord } from "./audit-sanitize.ts";
@@ -9,8 +10,6 @@ import { type AuditSummary, summarizeAuditTail } from "./audit-summary.ts";
 
 export const DEFAULT_AUDIT_PATH =
   "~/.local/share/opencode/permission-reviewer-audit.jsonl";
-
-type AuditLogger = (message: string, details?: unknown) => void;
 
 export function expandHome(path: string): string {
   if (path === "~") return homedir();
@@ -32,7 +31,7 @@ export function readAuditSummary(path: string): AuditSummary {
 }
 
 function logAppendFailure(
-  logger: AuditLogger | undefined,
+  logger: Logger | undefined,
   path: string,
   error: unknown,
 ): void {
@@ -44,7 +43,7 @@ function logAppendFailure(
 
 export function createAuditWriter(
   config: ReviewerConfig,
-  logger?: AuditLogger,
+  logger?: Logger,
 ): ((record: ReviewAuditRecord) => Promise<void>) | undefined {
   if (!config.audit) return;
   const path = expandHome(config.auditPath ?? DEFAULT_AUDIT_PATH);

@@ -1,6 +1,7 @@
 import type { OnHandoff } from "../../kernel/review-handoff.ts";
 import type { ReviewExecutionResult } from "../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../kernel/reviewer-config.ts";
+import type { Logger } from "../../utils/logger.ts";
 import type { ReviewAuditRecord } from "../audit/models/audit-record.ts";
 import type { ReviewEnvelope } from "../context/models/review-envelope.ts";
 import type { ContextReader } from "../context/ports.ts";
@@ -38,7 +39,7 @@ export interface ReviewHost {
   readonly context: ReviewHostContext;
   createReviewerBackend(
     config: ReviewerConfig,
-    log: (message: string, details?: unknown) => void,
+    log: Logger,
     recordReviewerMs: (envelope: ReviewEnvelope, ms: number) => void,
   ): ReviewerBackend;
   createContextReader(signal?: AbortSignal): ContextReader;

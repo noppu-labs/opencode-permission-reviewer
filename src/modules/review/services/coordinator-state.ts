@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import { defaultEvidenceProviders } from "../../context/services/evidence-assembler.ts";
@@ -16,8 +17,6 @@ import type {
 } from "../ports.ts";
 import { recordReviewerMs } from "./attempt-evidence.ts";
 import { ReviewAttempt } from "./review-attempt.ts";
-
-export type Logger = (message: string, details?: unknown) => void;
 
 export interface CoordinatorState {
   readonly host: ReviewHost;
