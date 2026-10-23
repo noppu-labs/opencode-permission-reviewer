@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.1] - 2026-10-23
+
+### Changed
+
+- Internal restructure of `src/` into layered modules, adapters and helpers, with a test that
+  enforces the dependency direction. No behaviour change: the package exports, command-line
+  interface, configuration and shipped files are the same as in 3.2.0.
+
 ## [3.2.0] - 2026-10-23
 
 ### Changed
