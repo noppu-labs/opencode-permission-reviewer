@@ -37,7 +37,8 @@ location can resolve it without loading project providers or instructions.
 
 V2 service discovery reads OpenCode's local authenticated service registration
 instead of probing version-specific health endpoints. The registration must
-match the running host version, identify a live process, and use a loopback URL;
+come from the same OpenCode major and minor version as the running host,
+identify a live process, and use a loopback URL;
 the reviewer then proves the plugin instance through its own RPC identity. It
 never starts a service. An independent server requires these trusted environment
 settings:

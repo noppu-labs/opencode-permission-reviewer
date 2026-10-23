@@ -97,8 +97,10 @@ export async function connectV2Host(
 ): Promise<OpenCodeClient> {
   const url = process.env.OPENCODE_PERMISSION_REVIEWER_HOST_URL;
   let client: OpenCodeClient;
+  let source: string;
   if (url !== undefined) {
     const endpoint = validateHostEndpoint(url);
+    source = `${endpoint.href} from OPENCODE_PERMISSION_REVIEWER_HOST_URL`;
     const password =
       process.env.OPENCODE_PASSWORD ?? process.env.OPENCODE_SERVER_PASSWORD;
     if (!password)
@@ -112,6 +114,7 @@ export async function connectV2Host(
       throw new Error(
         "Reviewer host connection unavailable: use the registered service or configure OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD",
       );
+    source = `the registered OpenCode service at ${endpoint.url}`;
     client = makeClient(endpoint);
   }
   const actual = await client
@@ -119,7 +122,7 @@ export async function connectV2Host(
     .identity({}, { location: { directory }, signal });
   if (actual !== identity)
     throw new Error(
-      "Reviewer connection does not belong to this host generation",
+      `Reviewer connection does not belong to this host generation: ${source} is a different OpenCode server than the one running this plugin. If you started this server with "opencode serve" or connect with --server, set OPENCODE_PERMISSION_REVIEWER_HOST_URL and OPENCODE_PASSWORD for it`,
     );
   return client;
 }

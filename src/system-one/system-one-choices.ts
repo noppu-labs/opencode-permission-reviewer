@@ -1,5 +1,6 @@
 // Validation of one Jev choice answer: a known option, a confidence, and
-// probabilities over exactly the options that sum to 1 and favour the choice.
+// probabilities over exactly the options that sum to 1 and favour the choice
+// (within a tolerance for supporting choices, which Jev rounds to hundredths).
 
 import { isRecord } from "../is-record.ts";
 import type { SystemOneChoiceScore } from "./system-one-types.ts";
@@ -31,12 +32,18 @@ export function finiteProbability(value: unknown): value is number {
   );
 }
 
+/** How far below the most probable option a supporting choice may sit:
+ *  Jev's probabilities are rounded to hundredths after it chooses. */
+export const SUPPORTING_TIE_TOLERANCE = 0.02;
+
 /** The probabilities of a choice answer: exactly the options, each a
- *  probability, summing to 1 within 0.02, with `choice` the most probable. */
+ *  probability, summing to 1 within 0.02, with `choice` at most
+ *  `tieTolerance` below the most probable option. */
 function choiceProbabilities(
   value: unknown,
   options: readonly string[],
   choice: string,
+  tieTolerance = 0,
 ): Record<string, number> | undefined {
   if (typeof value !== "object" || value === null) return;
   const probabilities = value as Record<string, unknown>;
@@ -49,13 +56,15 @@ function choiceProbabilities(
   );
   if (total < 0.98 || total > 1.02) return;
   const selected = probabilities[choice] as number;
-  if (selected < Math.max(...(values as number[]))) return;
+  if (selected + tieTolerance + 1e-9 < Math.max(...(values as number[])))
+    return;
   return probabilities as Record<string, number>;
 }
 
 export function parseChoice<T extends readonly string[]>(
   value: unknown,
   options: T,
+  tieTolerance = 0,
 ): ParsedChoice<T[number]> | undefined {
   if (!isRecord(value)) return;
   const answer = value;
@@ -66,6 +75,7 @@ export function parseChoice<T extends readonly string[]>(
     answer.probabilities,
     options,
     answer.choice as T[number],
+    tieTolerance,
   );
   if (probabilities === undefined) return;
   return {

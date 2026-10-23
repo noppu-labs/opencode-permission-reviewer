@@ -125,9 +125,9 @@ export const PINNED_BLOBS = {
   "src/system-one/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
   "src/system-one/system-one-answers.ts":
-    "928ff1d66890c8dc51e111e8b030fcfc4fb16e9c",
+    "9ba0a88c305f216249e2b6617309ae2be02ed79a",
   "src/system-one/system-one-choices.ts":
-    "c8d2471455a27cb91bfa965199b7812287b92fe6",
+    "5c58eb2dcc4fee17f8b86c171e239f328cd0897c",
   "src/system-one/system-one-consistency.ts":
     "9658f16a6a3ab91e63506906ab41113d5fa77615",
   "src/system-one/system-one-verdict.ts":
