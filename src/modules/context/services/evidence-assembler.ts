@@ -24,7 +24,7 @@ import {
 } from "./evidence-sources.ts";
 
 export interface EvidenceAssemblyContext {
-  client: ContextReader;
+  reader: ContextReader;
   directory: string;
   worktree: string;
   config: ReviewerConfig;
@@ -45,7 +45,7 @@ export async function assembleEvidence(
   ctx: EvidenceAssemblyContext,
 ): Promise<ReviewEnvelope> {
   const contextStart = performance.now();
-  const reader = ctx.client;
+  const { reader } = ctx;
   // A transcript fetch that never settles would leave the review pending
   // forever; bound it well above any realistic fetch time.
   const responses = await withTimeout(

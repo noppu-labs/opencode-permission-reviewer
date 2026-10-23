@@ -276,7 +276,7 @@ describe("verified SSH script protocol", () => {
     const client = new MockClient();
     const pending = request({ metadata: { command }, patterns: [command] });
     const ctx = {
-      client: createV1ContextReader(client),
+      reader: createV1ContextReader(client),
       directory,
       worktree: directory,
       config: DEFAULT_CONFIG,

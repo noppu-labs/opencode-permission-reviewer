@@ -23,13 +23,13 @@ export const METADATA_TIMEOUT_MS = 10_000;
 // --- session.get wrapper (resilient) ----------------------------------------
 
 async function fetchSession(
-  client: ContextReader,
+  reader: ContextReader,
   sessionID: string,
   directory: string,
 ): Promise<SessionMetadata | undefined> {
   try {
     const raw = await withTimeout(
-      client.session(sessionID, directory),
+      reader.session(sessionID, directory),
       METADATA_TIMEOUT_MS,
     );
     if (typeof raw !== "object" || raw === null) return undefined;
@@ -53,7 +53,7 @@ async function fetchSession(
  * parents are recorded explicitly rather than aborting the walk.
  */
 export async function walkLineage(
-  client: ContextReader,
+  reader: ContextReader,
   sessionID: string,
   directory: string,
   config: ReviewerConfig,
@@ -63,7 +63,7 @@ export async function walkLineage(
   const visited = new Set<string>();
   let cycleDetected = false;
 
-  const current = await fetchSession(client, sessionID, directory);
+  const current = await fetchSession(reader, sessionID, directory);
   const fallback = bareSession(sessionID);
   const origin = lineageOrigin(current);
   nodes.push(toNode(current ?? fallback));
@@ -93,7 +93,7 @@ export async function walkLineage(
     }
     visited.add(cursor.parentID);
     // biome-ignore lint/performance/noAwaitInLoops: walks the session ancestry one parent at a time; the next parentID is only known from the session fetched in this step
-    const parent = await fetchSession(client, cursor.parentID, directory);
+    const parent = await fetchSession(reader, cursor.parentID, directory);
     if (!parent) {
       missingParents.push(cursor.parentID);
       break;

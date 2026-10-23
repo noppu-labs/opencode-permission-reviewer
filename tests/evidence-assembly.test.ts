@@ -228,7 +228,7 @@ describe("assembleEvidence", () => {
   test("a v1 client is wrapped in a context reader", async () => {
     const client = new MockClient();
     const { envelope } = await assemble(request(), {
-      context: { client: createV1ContextReader(client) },
+      context: { reader: createV1ContextReader(client) },
     });
     expect(client.messageQueries.length).toBeGreaterThan(0);
     expect(envelope.request.id).toBe("per_1");

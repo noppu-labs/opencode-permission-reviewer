@@ -54,7 +54,7 @@ async function collectEnvelope(
   request: PermissionRequest,
 ): Promise<ReviewEnvelope> {
   const envelope = await assembleEvidence(request, state.providers, {
-    client: state.host.createContextReader(
+    reader: state.host.createContextReader(
       state.attempts.get(request.id)?.signal,
     ),
     directory: state.ctx.directory,

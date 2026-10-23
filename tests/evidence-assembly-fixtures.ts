@@ -33,7 +33,7 @@ export async function assemble(
     },
   };
   const envelope = await assembleEvidence(pending, providers(scenario, calls), {
-    client: reader(scenario, calls),
+    reader: reader(scenario, calls),
     directory: "/repo",
     worktree: "/repo",
     config,
