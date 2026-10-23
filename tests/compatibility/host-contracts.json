@@ -20,30 +20,18 @@
   },
   "v2": {
     "package": "@opencode/cli",
-    "minimum": "2.0.3",
+    "minimum": "2.0.22",
     "reference": "2.0.26",
     "integrities": {
-      "2.0.3": "sha512-FC4+2a5kwdKS2o/pIcGCscpSQB7PuhBObwGMfqnx/2XtoaZBMtSq/99nuEdeDNAFvy1qyK6mp2hwvoiMWsiI4w==",
-      "2.0.11": "sha512-7hnjVw7+zlcjt34hXFQ+aWuLiG20iq/nKq3O9SRwq2Dahch5RNI+Q3mbj5X3db5l1Cn1U6WcvEF2u7kQFo7JLw==",
-      "2.0.15": "sha512-Ynxz9HRJiHQBotBrQeEt3T/3TyEpkwdZkMTE7HPxT2nB1IU3WAqFXBYiIpWTYLKifXga4L5UG0sXEDISe/rJxg==",
-      "2.0.18": "sha512-EkIxIa2goJ2v8U3Os2gpRckOIjN9gpUBXy6fyVOFbPZl71rkGpoF3NFsm4nlDiF2BgnIqcgJU5NgdV1k6/OZuw==",
-      "2.0.26": "sha512-d1UjPf053y2KR1sQx9+7M8tMRkYD3qjAt9VTfBjZwHLWBzbvwI1+cP8+HTSWSi4Z1WQFnS3vaktKgnDPFkj5IQ=="
+      "2.0.22": "sha512-BJzGgplZ3owjPh4Cq5vbe7zMSgYXugOMJmrdlRriUl/9/rKitvK/F+ruk5JJOlIe4fw0bQ+UBAvN8+XGbUqTPw==",
+      "2.0.26": "sha512-d1UjPf053y2KR1sQx9+7M8tMRkYD3qjAt9VTfBjZwHLWBzbvwI1+cP8+HTSWSi4Z1WQFnS3vaktKgnDPFkj5IQ==",
+      "2.1.2": "sha512-9mBVQTO3WkKzP300NtHuhmXkHTfR2JwFB0AKRGRw4Lt3SNEwo5V4pzXXrwlpRAHoQmINLPuFPGOmn1kxYZdmMQ=="
     },
-    "optionalIntegrities": {
-      "2.0.4": "sha512-2b1WYZoKewgKxMmMG+Lv3V7f/aZVQCULYq35x0Q8JHp1fBLK3EZVvRvp30YxurM2PVIGYnqletf2Gezykq5izQ==",
-      "2.0.5": "sha512-jHo7z1eqesr9X//dLHF86Qnntl1VDAbevVqftnHSCgDolseNeI5z6HmVggtU/z1JLAstCEmpo9DCgTBi7NsJWA==",
-      "2.0.6": "sha512-uA7mf76LwSge0iLp05TCO9dVNdqrOMQWV6ljvkLVgd9r67ioNoNVkn0P3h670JoBHBJQ/jxXnnJ5BTnjVZ+oNA==",
-      "2.0.7": "sha512-IhNhMKEq+sVCVgsjKZD7p7k/2lNIWT2nfrw21lJg1iiJ/2TGL76QOcUy8rlhw79gaiovw19VNioKAP40302avw==",
-      "2.0.8": "sha512-8Zm2aVylv44fXnUD9kqxzMmhowWAikTEOiIEwJiW0I87BeCbaj2f9zqy2WYQ5PatnbgGKLkluBFdFH2qoMWyNg==",
-      "2.0.9": "sha512-1HcKFKpvKbz33PLR7BrLa7TxjXOYd+Pl6QidVaO9PFzLQrlTMnmCSQm9337lFgPwXPcmshK5U3QbKbhvs+EHaw==",
-      "2.0.10": "sha512-WYHnl1o1hfXKvrr54TsXTKQUrONYbEr8c7m7E0jMFe1Z+LBnwaNu5JaTpgAEIaO03DEws2ifCUhjS7A+ge2q1Q==",
-      "2.0.14": "sha512-bA/dHw2+ZKD+ghhh2qrYvMF15v2uHSLCwSpsIs5rbI8J2tx69bJxuLd2J/DEWu5yUkgbElOtsVik2Uco1G7Z/A==",
-      "2.0.20": "sha512-y2dtcv2UCIw+1/9xDmPZ3UNcdLX5TLQYNnqhdO1Vc+Tw7o7oajvIyEBX7Okrh1GqDhZk7PPhrQe7QIEPCCefXw=="
-    },
+    "optionalIntegrities": {},
     "sdk": {
       "package": "@opencode/plugin",
-      "version": "2.0.3",
-      "integrity": "sha512-4xLLwi9PnUXHtfvsxVe7oVhRl/q8VRIFQS4Lfh3yjClfymIfyfX5/jCSwSbgTf5NgdrNGr20OPcjONZvCTPznA=="
+      "version": "2.0.22",
+      "integrity": "sha512-EJyr+qA+I41rfJqE2zfyKL2qNez+wE8QkNwXf5TddEKIPmL8FUvYMVT5lLhbnXyOGTDxsEc0/8bX7ErQfX5/Rg=="
     },
     "entrypoint": "setup",
     "permission": "permission.hook.evaluate"

@@ -4,6 +4,7 @@ import {
   finiteProbability,
   type ParsedChoice,
   parseChoice,
+  SUPPORTING_TIE_TOLERANCE,
 } from "./system-one-choices.ts";
 import type { SystemOneSignals } from "./system-one-types.ts";
 import { SYSTEM_ONE_BASES as BASES } from "./system-one-types.ts";
@@ -64,11 +65,27 @@ export function parseAnswers(
   answers: Record<string, unknown>,
 ): ParsedAnswers | undefined {
   const outcome = parseChoice(answers.outcome, OUTCOMES);
-  const risk = parseChoice(answers.risk_level, RISKS);
-  const authorization = parseChoice(answers.user_authorization, AUTHORIZATIONS);
-  const alignment = parseChoice(answers.scope_alignment, ALIGNMENTS);
-  const completeness = parseChoice(answers.evidence_completeness, COMPLETENESS);
-  const basis = parseChoice(answers.primary_basis, BASES);
+  const risk = parseChoice(answers.risk_level, RISKS, SUPPORTING_TIE_TOLERANCE);
+  const authorization = parseChoice(
+    answers.user_authorization,
+    AUTHORIZATIONS,
+    SUPPORTING_TIE_TOLERANCE,
+  );
+  const alignment = parseChoice(
+    answers.scope_alignment,
+    ALIGNMENTS,
+    SUPPORTING_TIE_TOLERANCE,
+  );
+  const completeness = parseChoice(
+    answers.evidence_completeness,
+    COMPLETENESS,
+    SUPPORTING_TIE_TOLERANCE,
+  );
+  const basis = parseChoice(
+    answers.primary_basis,
+    BASES,
+    SUPPORTING_TIE_TOLERANCE,
+  );
   if (
     !outcome ||
     !risk ||

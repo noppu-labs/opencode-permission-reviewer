@@ -1,4 +1,3 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import type {
@@ -6,6 +5,7 @@ import type {
   ReviewExecutionResult,
   ReviewerConfig,
 } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 import { registerReviewerHooks } from "./v2-review-hooks.ts";
 import {
   openReviewerLocation,
@@ -32,7 +32,7 @@ export class V2ReviewerBackend {
     this.run = {
       config,
       sessions: this.sessions,
-      location: (client: OpenCodeClient): Promise<ReviewerLocation> =>
+      location: (client: V2HostApi): Promise<ReviewerLocation> =>
         this.ensureLocation(client),
     };
   }
@@ -48,7 +48,7 @@ export class V2ReviewerBackend {
   review(
     envelope: ReviewEnvelope,
     attempt: ReviewAttempt,
-    client: OpenCodeClient,
+    client: V2HostApi,
   ): Promise<ReviewExecutionResult> {
     if (this.closing) throw new Error("Reviewer backend is shutting down");
     if (this.sessions.size >= 64)
@@ -82,7 +82,7 @@ export class V2ReviewerBackend {
     return this.disposal;
   }
 
-  private ensureLocation(client: OpenCodeClient): Promise<ReviewerLocation> {
+  private ensureLocation(client: V2HostApi): Promise<ReviewerLocation> {
     if (this.locationPromise) return this.locationPromise;
     const location = openReviewerLocation(client, {
       closing: (): boolean => this.closing,

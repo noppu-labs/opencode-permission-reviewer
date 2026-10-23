@@ -1,10 +1,10 @@
-import type { OpenCodeClient } from "@opencode/client";
 import { parseDecisionFromText } from "../../decision.ts";
 import type { ReviewDecision } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 import { type PendingGeneration, TOOL } from "./v2-review-pending.ts";
 
 type ContextMessage = Awaited<
-  ReturnType<OpenCodeClient["session"]["context"]>
+  ReturnType<V2HostApi["session"]["context"]>
 >[number];
 type AssistantMessage = Extract<ContextMessage, { type: "assistant" }>;
 

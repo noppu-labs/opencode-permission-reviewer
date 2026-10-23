@@ -15,7 +15,7 @@ const scope: Parameters<typeof normalizeV2Permission>[1] = {
   reviewID: "review_codec",
   generation: "generation",
   directory: WORKSPACE,
-  hostVersion: "2.0.3",
+  hostVersion: "2.0.22",
 };
 
 const restores: Array<() => void> = [];

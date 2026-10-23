@@ -1,8 +1,8 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { ReviewAttempt } from "../../core/review-attempt.ts";
 import { enforceDecision } from "../../decision-gates.ts";
 import { applyEscalationDisposition } from "../../escalation.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 import { type PendingGeneration, TOOL } from "./v2-review-pending.ts";
 import { readReviewerResponse } from "./v2-review-response.ts";
 
@@ -17,7 +17,7 @@ interface ReviewSessionRequest {
 
 /** Create the review session denying every tool but the decision tool. */
 export async function createReviewSession(
-  client: OpenCodeClient,
+  client: V2HostApi,
   { id, directory, providerID, modelID, structured }: ReviewSessionRequest,
   config: ReviewerConfig,
   attempt: ReviewAttempt,
@@ -55,7 +55,7 @@ export async function createReviewSession(
  * invalid and with a correction appended. An ambiguous answer is never retried.
  */
 export async function promptUntilDecided(
-  client: OpenCodeClient,
+  client: V2HostApi,
   sessionID: string,
   pending: PendingGeneration,
   config: ReviewerConfig,

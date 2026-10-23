@@ -3,7 +3,7 @@ import { loadResolvedConfig } from "../../config/loader.ts";
 import { SUPPORTED_V2_RANGE } from "../host-guard.ts";
 import { withTimeout } from "../transport.ts";
 import { createV2ReviewerBackend } from "./backend-factory.ts";
-import { connectV2Host } from "./connection.ts";
+import { resolveV2Host } from "./connection.ts";
 import { registerToolHooks, watchHostEvents } from "./server-events.ts";
 import { registerPermissionHook } from "./server-permission.ts";
 import {
@@ -17,7 +17,7 @@ import { registerStatusRpc } from "./server-status.ts";
 export async function setup(ctx: Context): Promise<() => Promise<void>> {
   return setupWithServices(ctx, {
     loadConfig: loadResolvedConfig,
-    connect: connectV2Host,
+    connect: resolveV2Host,
     createBackend: createV2ReviewerBackend,
   });
 }

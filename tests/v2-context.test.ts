@@ -21,7 +21,7 @@ test("native resources are never promoted into commands and shared source IDs do
     reviewID: "review_first",
     generation: "generation",
     directory: "/workspace",
-    hostVersion: "2.0.3",
+    hostVersion: "2.0.22",
   };
   const incomplete = normalizeV2Permission(input, scope);
   expect(incomplete.request.permission).toBe("bash");

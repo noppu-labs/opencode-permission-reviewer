@@ -1,8 +1,9 @@
-import type { OpenCodeClient, SessionInfo } from "@opencode/client";
+import type { SessionInfo } from "@opencode/client";
 import type { MessageWithParts } from "../../types.ts";
+import type { V2HostApi } from "./host-api.ts";
 
 type ContextMessage = Awaited<
-  ReturnType<OpenCodeClient["session"]["context"]>
+  ReturnType<V2HostApi["session"]["context"]>
 >[number];
 type UserMessage = Extract<ContextMessage, { type: "user" }>;
 type AssistantMessage = Extract<ContextMessage, { type: "assistant" }>;

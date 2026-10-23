@@ -68,17 +68,20 @@ of unknown provenance and can only tighten security restrictions.
 
 ### Reviewer sessions and host connection
 
-For normal models, V2 uses the official authenticated client to manage isolated reviewer
-sessions. It reuses one reviewer location per backend and removes every MCP server there,
-including servers that other plugins add from code. Before each review it checks that the
-location has no MCP servers. Jev uses its direct typed API instead (see
+For normal models, V2 manages isolated reviewer sessions through the plugin
+context. It reuses one reviewer location per backend and removes every MCP
+server there, including servers that other plugins add from code. Before each
+review it checks that the location has no MCP servers. Jev uses its direct
+typed API instead (see
 [Jev System One reviewer](REVIEWER-MODELS.md#jev-system-one-reviewer)).
 
-The plugin discovers the registered service without starting or stopping it. For an independent
-`serve`, set `OPENCODE_PERMISSION_REVIEWER_HOST_URL` and the host's `OPENCODE_PASSWORD` in the
-trusted process environment. An identity check rejects connections to a different plugin
-instance. Provider credentials stay inside OpenCode. See [Migration and rollback](../MIGRATION.md)
-for the full connection requirements.
+The V2 reviewer runs inside the OpenCode server through the plugin context, so
+it works with the background service, `opencode --standalone` and
+`opencode serve` without setup. To point it at a specific server instead, set
+`OPENCODE_PERMISSION_REVIEWER_HOST_URL` and that server's `OPENCODE_PASSWORD`
+in the trusted process environment. An identity check rejects a server that is
+not running this plugin. Provider credentials stay inside OpenCode. See
+[Migration and rollback](../MIGRATION.md) for the full connection requirements.
 
 ### Structured output, retention, and budget
 

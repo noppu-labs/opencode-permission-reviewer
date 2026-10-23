@@ -1,9 +1,10 @@
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { OpenCodeClient } from "@opencode/client";
+import type { V2HostApi } from "./host-api.ts";
+import { withAbort } from "./with-abort.ts";
 
 type PluginEntry = Awaited<
-  ReturnType<OpenCodeClient["plugin"]["list"]>
+  ReturnType<V2HostApi["plugin"]["list"]>
 >["data"][number];
 
 /** Whether a local plugin entry is this attempt's bootstrap, by ID or by its path. */
@@ -50,17 +51,17 @@ function pollDelay(signal: AbortSignal): Promise<void> {
  *  attempt's bootstrap (`isBootstrap`) reports active; a reported failure
  *  throws. The attempt signal bounds the wait. */
 export async function waitForIsolationActive(
-  client: OpenCodeClient,
+  client: V2HostApi,
   directory: string,
   pluginID: string,
   signal: AbortSignal,
 ): Promise<void> {
   const root = resolve(directory);
   for (;;) {
-    // biome-ignore lint/performance/noAwaitInLoops: polls the host plugin inventory every 100 ms until the isolation bootstrap reports active or failed; each poll runs only after the previous one saw it pending
-    const plugins = await client.plugin.list(
-      { location: { directory } },
-      { signal },
+    // biome-ignore lint/performance/noAwaitInLoops: polls the host plugin inventory every 100 ms until the isolation bootstrap reports active or failed; each poll runs only after the previous one saw it pending; the poll races the signal so a host call that never settles cannot wedge activation
+    const plugins = await withAbort(
+      client.plugin.list({ location: { directory } }, { signal }),
+      signal,
     );
     const entry = plugins.data.find((plugin) =>
       isBootstrap(plugin, root, pluginID),

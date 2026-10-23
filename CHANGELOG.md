@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-10-23
+
+### Changed
+
+- OpenCode V2 hosts before 2.0.22 are no longer supported; V2 now requires
+  `>=2.0.22 <3`. The reviewer relies on plugin-context APIs introduced in
+  2.0.22.
+- On OpenCode V2 the reviewer now runs through the plugin's own context by
+  default, so it works in every server mode (background service, standalone, or
+  `serve`) with no setup. `OPENCODE_PERMISSION_REVIEWER_HOST_URL` and
+  `OPENCODE_PASSWORD` remain an explicit override for an independent server.
+
+### Removed
+
+- OpenCode V2 registered-service discovery (`service.json`) is gone; the host
+  connection no longer uses it, and it is no longer needed in any server mode.
+
+### Fixed
+
+- When the reviewer reaches a different OpenCode server than the one it runs in, the error now
+  says which server it reached and which settings point it at the right one.
+- Jev answers where a supporting judgement (risk, authorization, scope, evidence, or basis) is
+  within 0.02 of the most probable option are no longer treated as invalid. The allow, deny,
+  or escalate outcome itself must still be the most probable option.
+
 ## [3.1.0] - 2026-10-21
 
 ### Added

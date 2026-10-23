@@ -85,6 +85,7 @@ def _launch(
     global_config: object = None,
     profile: str | None = None,
     service: bool = False,
+    host_url: bool = False,
 ) -> dict[str, Any]:
     """Registers the process for teardown before waiting, so a host that exits or never becomes ready
     is still stopped and its log closed.
@@ -95,7 +96,7 @@ def _launch(
     _write_configs(root, project, home, config=config, global_config=global_config, reviewer=reviewer)
     port = _free_port()
     if generation == "v2":
-        _add_v2_env(env, port, service)
+        _add_v2_env(env, port, service, host_url)
     log = (root / "server.log").open("w+", encoding="utf-8")
     process = _start_server(executable, port, service, cwd=project, env=env, log=log)
     processes.append((process, log))
@@ -177,8 +178,11 @@ def _free_port() -> int:
         return listener.getsockname()[1]
 
 
-def _add_v2_env(env: dict[str, str], port: int, service: bool) -> None:
-    if not service:
+def _add_v2_env(env: dict[str, str], port: int, service: bool, host_url: bool) -> None:
+    """V2 hosts run the reviewer in-process by default; `host_url` opts into the
+    explicit HTTP connection override.
+    """
+    if host_url:
         env["OPENCODE_PERMISSION_REVIEWER_HOST_URL"] = f"http://127.0.0.1:{port}"
     env["OPENCODE_PASSWORD"] = SYNTHETIC_PASSWORD
 

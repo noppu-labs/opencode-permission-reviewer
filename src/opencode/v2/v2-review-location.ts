@@ -1,7 +1,12 @@
-import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
+import type { V2HostApi } from "./host-api.ts";
+import {
+  forgetIsolatedContext,
+  rememberIsolatedContext,
+} from "./isolated-contexts.ts";
 import { createIsolatedLocation } from "./isolated-location.ts";
 import { waitForIsolationActive } from "./v2-isolation-activation.ts";
+import { withAbort } from "./with-abort.ts";
 
 type Context = Parameters<Plugin.Plugin["setup"]>[0];
 
@@ -20,7 +25,7 @@ interface LocationOwner {
 
 /** Create an isolated location and wait until the host activated its hooks. */
 export async function openReviewerLocation(
-  client: OpenCodeClient,
+  client: V2HostApi,
   owner: LocationOwner,
 ): Promise<ReviewerLocation> {
   const registrations = new Set<() => Promise<void>>();
@@ -33,6 +38,7 @@ export async function openReviewerLocation(
   };
   const isolated = await createIsolatedLocation(async (context) => {
     if (owner.closing()) return async (): Promise<void> => {};
+    rememberIsolatedContext(context.location.directory, context);
     const cleanup = await owner.register(context);
     const registration = async (): Promise<void> => {
       if (!registrations.delete(registration)) return;
@@ -44,21 +50,52 @@ export async function openReviewerLocation(
   });
   try {
     const signal = AbortSignal.any([owner.signal, AbortSignal.timeout(15_000)]);
-    await waitForIsolationActive(
-      client,
-      isolated.directory,
-      isolated.pluginID,
+    // The server API loads a location on the first query; the in-process host
+    // only sees locations the host has already mounted, so touch this one
+    // before polling its plugin inventory. The touch races the same signal as
+    // the poll, so a hung mount cannot wedge the activation.
+    const touch = await withAbort(
+      client.mcp.list(
+        { location: { directory: isolated.directory } },
+        { signal },
+      ),
       signal,
+    ).then(
+      () => undefined,
+      (error: unknown) => error,
     );
-    if (registrations.size === 0)
-      throw new Error("Reviewer isolation hooks did not activate");
+    try {
+      await waitForIsolationActive(
+        client,
+        isolated.directory,
+        isolated.pluginID,
+        signal,
+      );
+      if (registrations.size === 0)
+        throw new Error("Reviewer isolation hooks did not activate");
+    } catch (error) {
+      // Report the mount failure as the cause of the activation failure; keep
+      // the activation failure's own message otherwise.
+      if (
+        touch !== undefined &&
+        error instanceof Error &&
+        error.cause === undefined &&
+        error !== touch
+      )
+        throw new Error(error.message, { cause: touch });
+      throw error;
+    }
     return {
       directory: isolated.directory,
       dispose,
-      release: isolated.release,
+      release: (): void => {
+        forgetIsolatedContext(isolated.directory);
+        isolated.release();
+      },
     };
   } catch (error) {
     await dispose().catch(() => {});
+    forgetIsolatedContext(isolated.directory);
     isolated.release();
     // The host may have cached this location, so its MCP exclusion stays on disk.
     throw error;
