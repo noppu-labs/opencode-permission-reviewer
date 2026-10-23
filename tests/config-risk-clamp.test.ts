@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { RiskPolicy } from "../src/types.ts";
+import type { RiskPolicy } from "../src/kernel/reviewer-config.ts";
 import { loadConfig } from "./config-layer-fixtures.ts";
 
 const GLOBAL_POLICY = {

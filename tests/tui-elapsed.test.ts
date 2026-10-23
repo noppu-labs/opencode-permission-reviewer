@@ -3,8 +3,11 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TuiPluginApi, TuiPluginMeta } from "@opencode-ai/plugin/tui";
-import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
-import { createUiStatus, encodeUiStatus } from "../src/ui-protocol.ts";
+import { setGlobalConfigPathForTests } from "../src/modules/config/services/loader.ts";
+import {
+  createUiStatus,
+  encodeUiStatus,
+} from "../src/modules/status/models/ui-protocol.ts";
 import { defined, request } from "./helpers.ts";
 import { testRender, tui } from "./tui-loader.ts";
 

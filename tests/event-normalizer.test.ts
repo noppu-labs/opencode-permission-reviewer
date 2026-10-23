@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { extractPermissionRequest } from "../src/opencode/event-normalizer.ts";
+import { extractPermissionRequest } from "../src/adapters/opencode/event-normalizer.ts";
 
 const asked = (properties: unknown): unknown => ({
   type: "permission.asked",

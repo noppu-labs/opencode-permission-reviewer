@@ -1,8 +1,8 @@
 import { join } from "node:path";
 import type { JSX } from "@opentui/solid";
-import type { PermissionRequest } from "../../src/types.ts";
+import type { PermissionRequest } from "../../src/kernel/permission-request.ts";
+import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import type { ReviewTheme } from "../../src/ui/components.tsx";
-import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
 
 // v3.0.0's signatures, written out: today's may have gained fields since.
 export type Strip = (props: {

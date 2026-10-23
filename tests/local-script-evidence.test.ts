@@ -2,7 +2,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
+import { enrichLocalScriptEvidence } from "../src/modules/evidence/local-script/local-script-evidence.ts";
 import { request } from "./helpers.ts";
 
 const temporaryDirectories: string[] = [];

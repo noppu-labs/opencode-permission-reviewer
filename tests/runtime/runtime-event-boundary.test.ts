@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { extractPermissionRequest } from "../../src/opencode/event-normalizer.ts";
-import type { ClientResponse } from "../../src/opencode/types.ts";
+import { extractPermissionRequest } from "../../src/adapters/opencode/event-normalizer.ts";
+import type { ClientResponse } from "../../src/adapters/opencode/types.ts";
 import { decision, defined, MockClient, request, runtime } from "../helpers.ts";
 import { phases, replyBody } from "./runtime-fixtures.ts";
 

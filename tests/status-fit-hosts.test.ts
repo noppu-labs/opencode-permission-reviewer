@@ -1,11 +1,11 @@
 import { expect, test } from "bun:test";
-import { isRecord } from "../src/is-record.ts";
 import {
   decodeUiStatus,
   encodeUiStatus,
   type ReviewUiStatus,
-} from "../src/ui-protocol.ts";
-import { parseUiStatus } from "../src/ui-status-parse.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
+import { parseUiStatus } from "../src/modules/status/services/ui-status-parse.ts";
+import { isRecord } from "../src/utils/is-record.ts";
 import { decision, MockClient, request, runtime } from "./helpers.ts";
 import { until } from "./poll-until.ts";
 import { fixture } from "./v2-server-fixture.ts";

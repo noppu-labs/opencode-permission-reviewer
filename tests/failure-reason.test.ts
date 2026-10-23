@@ -4,12 +4,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
-import { formatFailureReason } from "../src/failure-reason.ts";
-import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
-import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
-import { setupWithServices } from "../src/opencode/v2/server.ts";
-import type { ReviewEnvelope } from "../src/types.ts";
+import type { normalizeV2Permission } from "../src/adapters/opencode/v2/permission-codec.ts";
+import { V2ReviewerBackend } from "../src/adapters/opencode/v2/reviewer-backend.ts";
+import { setupWithServices } from "../src/adapters/opencode/v2/server.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
+import { formatFailureReason } from "../src/modules/decision/failure-reason.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { config, defined, MockClient, request, runtime } from "./helpers.ts";
 import { hostEventStream } from "./v2-host-event-stream.ts";
 

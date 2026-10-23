@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
-import type { ReviewerConfig } from "../../src/types.ts";
+import type { ReviewerConfig } from "../../src/kernel/reviewer-config.ts";
+import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import { resultDetail } from "../../src/ui/attribution.ts";
-import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
 import { defined, MockClient, request, runtime } from "../helpers.ts";
 
 const LUNA = "openai/gpt-6-luna";

@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { analyzeCapability } from "../../src/capability/bash-analyzer.ts";
-import type { CapabilityAssessment } from "../../src/capability/capability-types.ts";
-import { parseCommand } from "../../src/capability/command-parser.ts";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { resolveConfig } from "../../src/config.ts";
-import { evaluatePolicy } from "../../src/policy/policy-engine.ts";
+import { analyzeCapability } from "../../src/modules/analysis/capability/bash-analyzer.ts";
+import { parseCommand } from "../../src/modules/analysis/capability/command-parser.ts";
+import type { CapabilityAssessment } from "../../src/modules/analysis/capability/models/capability-types.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import { evaluatePolicy } from "../../src/modules/policy/policy-engine.ts";
 import { DIR, WT } from "./trust-fixtures.ts";
 
 function assess(command: string): CapabilityAssessment {

@@ -5,9 +5,9 @@ import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
   type ShellQuoting,
-} from "../src/shell-lex-state.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
-import type { ShellSegment } from "../src/shell-token.ts";
+} from "../src/modules/analysis/shell/shell-lex-state.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
+import type { ShellSegment } from "../src/modules/analysis/shell/shell-token.ts";
 
 function words(segments: ShellSegment[]): [string, string][][] {
   return segments.map((segment) =>

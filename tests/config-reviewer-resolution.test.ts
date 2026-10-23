@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
+import {
+  DEFAULT_CONFIG,
+  resolveConfig,
+} from "../src/modules/config/services/config.ts";
 import {
   isSystemOneReviewerModel,
   isValidEscalationReviewer,
-} from "../src/reviewer-model.ts";
+} from "../src/modules/config/services/reviewer-model.ts";
 
 describe("resolveConfig structured fields", () => {
   test("output keys keep their order, since the server hashes the serialized config", () => {

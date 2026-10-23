@@ -2,20 +2,23 @@ import { describe, expect, test } from "bun:test";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { brakeReadingsReason } from "../src/brake-readings.ts";
-import type { BodyCommands } from "../src/capability/heredoc-body-commands.ts";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
-import { sanitizedText } from "../src/capability/heredoc-sanitized.ts";
+import { brakeReadingsReason } from "../src/modules/analysis/brake/brake-readings.ts";
+import type { BodyCommands } from "../src/modules/analysis/capability/heredoc/heredoc-body-commands.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
+import { sanitizedText } from "../src/modules/analysis/capability/heredoc/heredoc-sanitized.ts";
 import {
   heredocPlaceholder,
   heredocScriptText,
   keepBodyScripts,
-} from "../src/capability/heredoc-scripts.ts";
-import { analyzeEffectiveCommands } from "../src/shell-effective-commands.ts";
-import type { ShellQuoting } from "../src/shell-lex-state.ts";
-import { lexSegmentsBounded, newAnalysisBudget } from "../src/shell-lexer.ts";
-import { normalizeShellRedirections } from "../src/shell-redirections.ts";
-import type { ShellSegment } from "../src/shell-token.ts";
+} from "../src/modules/analysis/capability/heredoc/heredoc-scripts.ts";
+import { analyzeEffectiveCommands } from "../src/modules/analysis/shell/shell-effective-commands.ts";
+import type { ShellQuoting } from "../src/modules/analysis/shell/shell-lex-state.ts";
+import {
+  lexSegmentsBounded,
+  newAnalysisBudget,
+} from "../src/modules/analysis/shell/shell-lexer.ts";
+import { normalizeShellRedirections } from "../src/modules/analysis/shell/shell-redirections.ts";
+import type { ShellSegment } from "../src/modules/analysis/shell/shell-token.ts";
 
 interface TextRow {
   id: string;

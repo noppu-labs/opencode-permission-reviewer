@@ -1,11 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { DEFAULT_CONFIG } from "../../src/config.ts";
-import { resolveActorContext } from "../../src/context/actor-resolver.ts";
-import type { ClientResponse } from "../../src/opencode/types.ts";
-import type { MessageWithParts } from "../../src/types.ts";
+import type { ClientResponse } from "../../src/adapters/opencode/types.ts";
+import { createV1ContextReader } from "../../src/adapters/opencode/v1/context-reader.ts";
+import { DEFAULT_CONFIG } from "../../src/modules/config/services/config.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import type { MessageWithParts } from "../../src/modules/context/models/message.ts";
+import { resolveActorContext } from "../../src/modules/context/services/actor-resolver.ts";
 import { decision, defined, MockClient, request, runtime } from "../helpers.ts";
 import {
   expectModelAllowBlocked,
@@ -136,7 +137,7 @@ describe("review regression boundaries", () => {
       const res = await resolveActorContext(
         request(),
         client.messageData as MessageWithParts[],
-        client,
+        createV1ContextReader(client),
         "/repo",
         { ...DEFAULT_CONFIG, maxParentSessions: 0 },
       );

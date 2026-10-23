@@ -3,24 +3,24 @@ import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { legacySanitizedCommand } from "../src/capability/heredoc-legacy.ts";
-import { analyzeBashCommand } from "../src/context/command-evidence.ts";
-import { parseDecision } from "../src/decision.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
-import { enrichGitEvidence } from "../src/git-evidence.ts";
-import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
-import type { ClientResponse } from "../src/opencode/types.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
-import { parseSsh } from "../src/ssh-command-segments.ts";
-import { enrichSshEvidence } from "../src/ssh-evidence.ts";
+import type { ClientResponse } from "../src/adapters/opencode/types.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { legacySanitizedCommand } from "../src/modules/analysis/capability/heredoc/heredoc-legacy.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
+import { analyzeBashCommand } from "../src/modules/context/services/command-evidence.ts";
+import { parseDecision } from "../src/modules/decision/decision.ts";
+import { enrichGitEvidence } from "../src/modules/evidence/git/git-evidence.ts";
+import { enrichLocalScriptEvidence } from "../src/modules/evidence/local-script/local-script-evidence.ts";
+import { parseSsh } from "../src/modules/evidence/ssh/ssh-command-segments.ts";
+import { enrichSshEvidence } from "../src/modules/evidence/ssh/ssh-evidence.ts";
 import {
   createUiStatus,
   decodeUiStatus,
   encodeUiStatus,
-} from "../src/ui-protocol.ts";
-import { ReviewUiState } from "../src/ui-state.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
+import { ReviewUiState } from "../src/modules/status/services/ui-state.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);

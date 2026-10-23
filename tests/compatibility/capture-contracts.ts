@@ -1,9 +1,9 @@
 import { OpenCode, type OpenCodeEvent } from "@opencode/client";
-import { withTimeout } from "../../src/opencode/transport.ts";
-import { hostCompatibleFetch } from "../../src/opencode/v2/connection.ts";
-import { createV2ContextReader } from "../../src/opencode/v2/context-reader.ts";
-import { V2AskDecisions } from "../../src/opencode/v2/event-codec.ts";
-import type { MessageWithParts } from "../../src/types.ts";
+import { hostCompatibleFetch } from "../../src/adapters/opencode/v2/connection.ts";
+import { createV2ContextReader } from "../../src/adapters/opencode/v2/context-reader.ts";
+import { V2AskDecisions } from "../../src/adapters/opencode/v2/event-codec.ts";
+import type { MessageWithParts } from "../../src/modules/context/models/message.ts";
+import { withTimeout } from "../../src/utils/with-timeout.ts";
 import contracts from "./host-contracts.json";
 
 const [url, directory, hostVersion] = process.argv.slice(2);

@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import type { ActorContext } from "../src/actor-context-types.ts";
-import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { evaluatePolicy } from "../src/policy/policy-engine.ts";
-import { PROFILE_TEMPLATES } from "../src/policy/profile-templates.ts";
-import type { PolicyRule } from "../src/types.ts";
+import type { ActorContext } from "../src/kernel/actor-context-types.ts";
+import type { PolicyRule } from "../src/kernel/reviewer-config.ts";
+import type { CapabilityAssessment } from "../src/modules/analysis/capability/models/capability-types.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { evaluatePolicy } from "../src/modules/policy/policy-engine.ts";
+import { PROFILE_TEMPLATES } from "../src/modules/policy/profile-templates.ts";
 
 function cap(
   overrides: Partial<CapabilityAssessment> = {},

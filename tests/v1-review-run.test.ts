@@ -3,17 +3,18 @@ import { mkdtempSync } from "node:fs";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
-import { DECISION_SCHEMA } from "../src/decision-schema.ts";
-import { probeCapabilities } from "../src/opencode/capability-detection.ts";
-import type { ClientResponse, RuntimeContext } from "../src/opencode/types.ts";
-import { V1ReviewerBackend } from "../src/opencode/v1/reviewer-backend.ts";
-import { REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
+import { probeCapabilities } from "../src/adapters/opencode/capability-detection.ts";
 import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../src/types.ts";
+  ClientResponse,
+  RuntimeContext,
+} from "../src/adapters/opencode/types.ts";
+import { V1ReviewerBackend } from "../src/adapters/opencode/v1/reviewer-backend.ts";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
+import { REVIEWER_SYSTEM_PROMPT } from "../src/modules/context/services/prompt/policy.ts";
+import { DECISION_SCHEMA } from "../src/modules/decision/decision-schema.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { config, decision, defined, MockClient, request } from "./helpers.ts";
 
 const bases: string[] = [];

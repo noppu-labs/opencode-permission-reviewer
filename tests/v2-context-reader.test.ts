@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createV2ContextReader } from "../src/opencode/v2/context-reader.ts";
+import { createV2ContextReader } from "../src/adapters/opencode/v2/context-reader.ts";
 import { defined } from "./helpers.ts";
 import { intentIDs } from "./intent-ids.ts";
 

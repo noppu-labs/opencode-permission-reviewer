@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import type { V2HostApi } from "../src/opencode/v2/host-api.ts";
-import { waitForIsolationActive } from "../src/opencode/v2/v2-isolation-activation.ts";
+import type { V2HostApi } from "../src/adapters/opencode/v2/host-api.ts";
+import { waitForIsolationActive } from "../src/adapters/opencode/v2/v2-isolation-activation.ts";
 
 test("waitForIsolationActive bounds a plugin list that never settles by the signal", async () => {
   const client = {

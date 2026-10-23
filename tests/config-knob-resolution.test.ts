@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import {
   DEFAULT_CONFIG,
   resolveConfig,
   reviewBudgetMs,
-} from "../src/config.ts";
-import type { ReviewerConfig } from "../src/types.ts";
+} from "../src/modules/config/services/config.ts";
 
 type Knob = [key: keyof ReviewerConfig, min: number, max: number];
 

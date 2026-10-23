@@ -4,12 +4,13 @@ import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
+import type { PermissionRequest } from "../../src/kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../src/kernel/reviewer-config.ts";
 import {
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
-} from "../../src/config/loader.ts";
-import type { PermissionRequest, ReviewerConfig } from "../../src/types.ts";
+} from "../../src/modules/config/services/loader.ts";
 import { MockClient, request, runtime } from "../helpers.ts";
 
 export const execFileAsync = promisify(execFile);

@@ -1,12 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { createServerUiStatus } from "../src/ui-action-segments.ts";
 import {
   createUiStatus,
   decodeUiStatus,
   encodeUiStatus,
   type ReviewUiStatus,
-} from "../src/ui-protocol.ts";
-import { fitStatus, MAX_STATUS_BYTES } from "../src/ui-status-extras.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
+import { createServerUiStatus } from "../src/modules/status/services/ui-action-segments.ts";
+import {
+  fitStatus,
+  MAX_STATUS_BYTES,
+} from "../src/modules/status/services/ui-status-extras.ts";
 import { FIND_COMMAND } from "./action-fixtures.ts";
 import { decision, request } from "./helpers.ts";
 

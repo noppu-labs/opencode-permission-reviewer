@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { failureKind } from "../src/failure-kind.ts";
-import { formatFailureReason } from "../src/failure-reason.ts";
+import { formatFailureReason } from "../src/modules/decision/failure-reason.ts";
+import { failureKind } from "../src/modules/status/models/failure-kind.ts";
 
 function named(name: string, message: string): Error {
   const error = new Error(message);

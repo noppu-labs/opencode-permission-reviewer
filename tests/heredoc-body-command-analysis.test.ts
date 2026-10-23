@@ -1,22 +1,22 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
-import { walkBodyCommands } from "../src/capability/body-command-walk.ts";
+import type { CapabilityActionClass } from "../src/kernel/reviewer-config.ts";
+import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
+import { walkBodyCommands } from "../src/modules/analysis/capability/body-command-walk.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { newWalked } from "../src/modules/analysis/capability/command-walk.ts";
+import { MAX_BODY_DEPTH } from "../src/modules/analysis/capability/heredoc/heredoc-body-commands.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
 import type {
   CapabilityAssessment,
   ParsedCommand,
   ParserCompleteness,
-} from "../src/capability/capability-types.ts";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { newWalked } from "../src/capability/command-walk.ts";
-import { MAX_BODY_DEPTH } from "../src/capability/heredoc-body-commands.ts";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
-import type { ShellQuoting } from "../src/shell-lex-state.ts";
-import * as lexer from "../src/shell-lexer.ts";
-import { newAnalysisBudget } from "../src/shell-lexer.ts";
-import type { ShellSegment } from "../src/shell-token.ts";
-import type { CapabilityActionClass } from "../src/types.ts";
+} from "../src/modules/analysis/capability/models/capability-types.ts";
+import type { ShellQuoting } from "../src/modules/analysis/shell/shell-lex-state.ts";
+import * as lexer from "../src/modules/analysis/shell/shell-lexer.ts";
+import { newAnalysisBudget } from "../src/modules/analysis/shell/shell-lexer.ts";
+import type { ShellSegment } from "../src/modules/analysis/shell/shell-token.ts";
 
 interface AnalysisRow {
   id: string;

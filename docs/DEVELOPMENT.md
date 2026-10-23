@@ -28,6 +28,65 @@ commit build output. `tests/package-smoke.test.ts` builds, packs, and verifies t
 ships exactly the expected set, including the raw TUI files and the absence of a prebundled TUI.
 See [Supply chain](./SUPPLY-CHAIN.md) for what that test enforces on dependencies.
 
+## Source layout
+
+`src/` is split into layers. Put new code where this section says, and don't
+add files to the `src/` root. `tests/architecture.test.ts` enforces the rules.
+
+```text
+src/
+├── index.ts  tui.tsx            # plugin entries (server, TUI)
+├── kernel/                      # domain types nearly every module shares (PermissionRequest, ReviewerConfig, ...)
+├── utils/                       # domain-free helpers
+├── modules/
+│   ├── analysis/                # pure command analysis, no I/O: shell/, walk/, capability/, brake/, git/, ssh/
+│   ├── decision/                # parsing and gating the reviewer's decision, escalation
+│   ├── policy/                  # rule engine
+│   ├── evidence/                # providers/, files/, git/, ssh/, package-script/, local-script/
+│   ├── config/                  # controllers/ (config command), models/, services/
+│   ├── context/                 # what the reviewer sees: ports.ts, models/, services/
+│   ├── reviewer/                # System One: services/
+│   ├── audit/                   # the audit file: controllers/ (audit command), models/, repositories/, services/
+│   ├── status/                  # review status and the RPC protocol the TUI uses: models/, services/
+│   └── review/                  # the review use case: ports.ts, controllers/, models/, services/
+├── adapters/opencode/{v1,v2}/   # host integration; implements the ports
+├── ui/                          # TUI components, feed and store
+└── cli/                         # explain.ts dispatcher, doctor/, init/
+```
+
+| Layer | Units                                                                 | May import        |
+| ----- | --------------------------------------------------------------------- | ----------------- |
+| 0     | `utils/`                                                              | nothing in `src/` |
+| 1     | `kernel/`                                                             | `utils/`          |
+| 2     | `analysis/`                                                           | layers 0–1        |
+| 3     | `decision/`, `policy/`, `evidence/`, `config/`, `context/`            | layers 0–3        |
+| 4     | `reviewer/`, `audit/`, `status/`                                      | layers 0–4        |
+| 5     | `review/`                                                             | layers 0–5        |
+| 6     | `adapters/`, `ui/`, `cli/`, entry points, any module's `controllers/` | anything          |
+
+Modules in the same layer may import each other, but the module graph must
+have no cycles. Below layer 6, nothing imports another module's
+`controllers/` or `repositories/`. Modules have no `index.ts`: import the file
+you need. Barrel files are banned because the TUI ships raw and a barrel
+would pull server code into it.
+
+Where new code goes:
+
+- A type nearly every module needs → `kernel/`. A type with one owner → that
+  module's `models/` (or next to its code in a flat module).
+- A parser, lexer rule or command classifier → `modules/analysis/<area>/`.
+- A new evidence source → `modules/evidence/<source>/`, plus its
+  `EvidenceProvider` in `modules/evidence/providers/`.
+- A CLI subcommand for one module's domain → that module's `controllers/`.
+  One that inspects the host or the installation → `cli/<command>/`.
+  Register both in `src/cli/explain.ts`.
+- Something a module needs from the host → a port in that module's `ports.ts`,
+  implemented in `adapters/opencode/` and wired in by the entry points.
+- A helper with no domain knowledge → `utils/`.
+
+Layer folders (`controllers/`, `services/`, `models/`, `repositories/`) are
+used once a module has about 10 files. Smaller modules stay flat.
+
 ## Quality gates
 
 `pre-commit` is the single runner. `bun run check` is the local equivalent of CI: it builds and
@@ -124,7 +183,7 @@ Every accepted finding carries its reason where it applies:
 
 - Biome: a line-level `// biome-ignore lint/<group>/<rule>: <reason>`. No `biome-ignore-all` and no
   `biome-ignore-start`/`-end` ranges.
-  Instead of a non-null assertion (`!`), use `invariant()` (`src/invariant.ts`) in `src` and
+  Instead of a non-null assertion (`!`), use `invariant()` (`src/utils/invariant.ts`) in `src` and
   `defined()` (`tests/helpers.ts`) in tests.
 - Python: `# noqa: <code>` with a reason, `# nosec <id> # <reason>`, or
   `# complexipy: ignore (<reason>)` on the def line. Two `pyproject.toml` per-file ruff ignores

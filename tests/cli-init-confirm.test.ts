@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runInit } from "../src/cli/init.ts";
+import { runInit } from "../src/cli/init/init.ts";
 
 // The confirmation prompt only runs on a TTY, which a spawned CLI never has,
 // so these cases drive runInit in-process with a TTY stdin and a fake answer.

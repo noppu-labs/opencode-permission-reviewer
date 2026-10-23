@@ -1,6 +1,9 @@
 import type { TuiPluginApi } from "@opencode-ai/plugin/tui";
-import { decodeUiStatus, type ReviewUiStatus } from "../ui-protocol.ts";
-import type { ReviewUiState } from "../ui-state.ts";
+import {
+  decodeUiStatus,
+  type ReviewUiStatus,
+} from "../modules/status/models/ui-protocol.ts";
+import type { ReviewUiState } from "../modules/status/services/ui-state.ts";
 import { ConfigNotices, type SidebarLine } from "./config-notices.ts";
 import { manualToast } from "./manual-toast.ts";
 

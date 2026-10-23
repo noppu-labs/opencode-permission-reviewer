@@ -1,19 +1,17 @@
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/core/review-coordinator.ts";
-import { probeCapabilities } from "../src/opencode/capability-detection.ts";
+import { probeCapabilities } from "../src/adapters/opencode/capability-detection.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
   RuntimeContext,
-} from "../src/opencode/types.ts";
-import type { SystemOneScores } from "../src/system-one/system-one-types.ts";
-import type {
-  PermissionRequest,
-  ReviewDecision,
-  ReviewerConfig,
-} from "../src/types.ts";
-import type { ReviewUiStatus } from "../src/ui-protocol.ts";
+} from "../src/adapters/opencode/types.ts";
+import { V1ReviewCoordinator as ApprovalReviewerRuntime } from "../src/adapters/opencode/v1/review-host.ts";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
+import type { ReviewDecision } from "../src/kernel/review-decision.ts";
+import type { SystemOneScores } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { ReviewUiStatus } from "../src/modules/status/models/ui-protocol.ts";
 
 /** Narrows a value a test expects to be present; a throw fails the test with a clear message. */
 export function defined<T>(value: T | null | undefined, label = "value"): T {

@@ -1,8 +1,13 @@
 import { describe, expect, test } from "bun:test";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { buildIntentHistory, buildTranscript } from "../src/context.ts";
-import type { MessageWithParts, ReviewEnvelope } from "../src/types.ts";
+import { createV1ContextReader } from "../src/adapters/opencode/v1/context-reader.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
+import {
+  buildIntentHistory,
+  buildTranscript,
+} from "../src/modules/context/services/prompt/context.ts";
 import { CURRENT, PARENT } from "./evidence-assembly-fakes.ts";
 import { assemble, delegatedSessions } from "./evidence-assembly-fixtures.ts";
 import { MockClient, request } from "./helpers.ts";
@@ -223,7 +228,7 @@ describe("assembleEvidence", () => {
   test("a v1 client is wrapped in a context reader", async () => {
     const client = new MockClient();
     const { envelope } = await assemble(request(), {
-      context: { client },
+      context: { client: createV1ContextReader(client) },
     });
     expect(client.messageQueries.length).toBeGreaterThan(0);
     expect(envelope.request.id).toBe("per_1");

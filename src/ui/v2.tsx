@@ -1,7 +1,7 @@
 /** @jsxImportSource @opentui/solid */
 import type { Plugin } from "@opencode/plugin/tui";
 import { createSignal, Show } from "solid-js";
-import type { ReviewUiStatus } from "../ui-protocol.ts";
+import type { ReviewUiStatus } from "../modules/status/models/ui-protocol.ts";
 import {
   ConfigNoticeSlot,
   ReviewProgress,

@@ -1,8 +1,8 @@
 import type { JSX } from "@opentui/solid";
+import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import { ReviewProgress, type ReviewTheme } from "../../src/ui/components.tsx";
 import { ReviewOverlay } from "../../src/ui/review-overlay.tsx";
 import { ReviewResult } from "../../src/ui/review-result.tsx";
-import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
 import { renderBefore } from "./before.ts";
 import { THEME, WIDE_COLUMNS } from "./fixtures.ts";
 import { configWarningBlocks, manualToastBlocks } from "./host-content.ts";

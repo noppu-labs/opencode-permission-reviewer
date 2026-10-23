@@ -1,10 +1,10 @@
 // Fixtures for the policy-engine characterisation suites: a capability whose
 // condition-backing facts are set per flag, an actor, and a route helper.
 
-import type { ActorContext, Provenanced } from "../src/actor-context-types.ts";
-import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { evaluatePolicy } from "../src/policy/policy-engine.ts";
+import type {
+  ActorContext,
+  Provenanced,
+} from "../src/kernel/actor-context-types.ts";
 import type {
   ActorProfile,
   CapabilityActionClass,
@@ -12,7 +12,10 @@ import type {
   PolicyRule,
   RepositoryTrust,
   ReviewerConfig,
-} from "../src/types.ts";
+} from "../src/kernel/reviewer-config.ts";
+import type { CapabilityAssessment } from "../src/modules/analysis/capability/models/capability-types.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { evaluatePolicy } from "../src/modules/policy/policy-engine.ts";
 
 export type Flag = Exclude<
   keyof PolicyCondition,

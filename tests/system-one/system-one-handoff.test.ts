@@ -1,19 +1,19 @@
 import { describe, expect, test } from "bun:test";
-import { resolveConfig } from "../../src/config.ts";
+import type { HandoffTrigger } from "../../src/kernel/review-result.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import {
+  HANDOFF_BUDGET_FLOOR_MS,
+  type SystemOneRouting,
+} from "../../src/modules/config/services/system-one-routing.ts";
 import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
-} from "../../src/system-one/review.ts";
+} from "../../src/modules/reviewer/services/review.ts";
 import {
   handoffBlock,
   handoffTrigger,
   type JevOutcome,
-} from "../../src/system-one/system-one-handoff.ts";
-import {
-  HANDOFF_BUDGET_FLOOR_MS,
-  type SystemOneRouting,
-} from "../../src/system-one-routing.ts";
-import type { HandoffTrigger } from "../../src/types.ts";
+} from "../../src/modules/reviewer/services/system-one-handoff.ts";
 import { defined } from "../helpers.ts";
 import {
   attemptWithRemaining,

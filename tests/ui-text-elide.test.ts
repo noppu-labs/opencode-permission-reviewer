@@ -4,7 +4,7 @@ import {
   elideMiddle,
   keepHead,
   keepTail,
-} from "../src/ui-text-elide.ts";
+} from "../src/modules/status/services/ui-text-elide.ts";
 
 describe("middle elision", () => {
   test("keeps a word-aligned prefix and suffix", () => {

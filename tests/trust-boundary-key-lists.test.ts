@@ -3,7 +3,7 @@ import {
   CONFIDENCE_FLOOR_KEYS,
   TRUST_BOUNDARY_KEYS,
   TRUSTED_ONLY_KEYS,
-} from "../src/config/trust-boundary-keys.ts";
+} from "../src/modules/config/services/trust-boundary-keys.ts";
 
 /** The keys mergeWithTrustBoundary clamps one by one. */
 const CLAMPED = [

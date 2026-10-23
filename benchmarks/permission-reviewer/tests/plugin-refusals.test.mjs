@@ -39,7 +39,7 @@ test("a stale pinned blob refuses the plugin and the source snapshot records the
   await scratch(async (dir) => {
     await cp(join(repo, "src"), join(dir, "src"), { recursive: true });
     await cp(join(repo, "package.json"), join(dir, "package.json"));
-    const pinned = join(dir, "src/redact.ts");
+    const pinned = join(dir, "src/utils/redact.ts");
     const expected = git("hash-object", pinned);
     await appendFile(pinned, "\n// drift\n");
     const actual = git("hash-object", pinned);
@@ -51,7 +51,7 @@ test("a stale pinned blob refuses the plugin and the source snapshot records the
     assert.equal(snapshot.match, false);
     assert.equal(snapshot.pinnedCommit, null);
     assert.deepEqual(snapshot.inspectedBlobDifferences, [
-      { path: "src/redact.ts", expected, actual },
+      { path: "src/utils/redact.ts", expected, actual },
     ]);
   });
 });

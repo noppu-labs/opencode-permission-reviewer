@@ -1,6 +1,6 @@
 // Measuring, slicing and merging fitted action parts.
 
-import { LINE_BREAK } from "../ui-text-elide.ts";
+import { LINE_BREAK } from "../modules/status/services/ui-text-elide.ts";
 import type { ActionFitPart } from "./action-fit.ts";
 
 /** A part as the fit builds it; `whole` marks one a cut may not split. */

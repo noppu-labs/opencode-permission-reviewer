@@ -1,0 +1,84 @@
+// Prompt text bounding: redaction-aware truncation, middle elision, stable JSON and recency-first block budgets.
+
+import { redactSecrets } from "../../../utils/redact.ts";
+
+export function truncate(value: string, max: number): string {
+  // Redact secrets before measuring/truncating so a credential can never slip
+  // through because its surrounding text was chopped at a budget boundary.
+  const redacted = redactSecrets(value);
+  if (redacted.length <= max) return redacted;
+  const omitted = redacted.length - max;
+  const marker = `\n<truncated characters="${omitted}" />`;
+  return `${redacted.slice(0, Math.max(0, max - marker.length))}${marker.slice(0, max)}`;
+}
+
+/** Elide the middle of an over-long command, keeping head and tail: the head
+ *  names the executable and flags, the tail carries trailing redirections and
+ *  compound tails (`… ; rm -rf`), so both ends must reach the reviewer. */
+export function elideMiddle(value: string, max: number): string {
+  if (value.length <= max) return value;
+  const omitted = value.length - Math.floor(max * 0.8);
+  const head = Math.floor(max * 0.5);
+  const tail = Math.floor(max * 0.3);
+  return `${value.slice(0, head)}<elided characters="${omitted}" />${value.slice(-tail)}`;
+}
+
+/** Tail-preserving truncation for recency-sensitive content: when a budget cut
+ *  is unavoidable, the END (most recent content) survives, unlike `truncate`
+ *  which keeps the head. */
+export function truncateKeepEnd(value: string, max: number): string {
+  const redacted = redactSecrets(value);
+  if (redacted.length <= max) return redacted;
+  const omitted = redacted.length - max;
+  const marker = `<truncated characters="${omitted}" />\n`;
+  const available = Math.max(0, max - marker.length);
+  return `${marker.slice(0, max)}${available === 0 ? "" : redacted.slice(-available)}`;
+}
+
+export function stableJson(value: unknown, max: number): string {
+  try {
+    const seen = new WeakSet<object>();
+    const text = JSON.stringify(
+      value,
+      (_key, item) => {
+        if (typeof item === "bigint") return item.toString();
+        if (typeof item === "object" && item !== null) {
+          if (seen.has(item)) return "[Circular]";
+          seen.add(item);
+        }
+        return item;
+      },
+      2,
+    );
+    return truncate(text ?? String(value), max);
+  } catch {
+    return truncate(String(value), max);
+  }
+}
+
+export function keepMostRecentBlocks(
+  blocks: string[],
+  maxChars: number,
+): string {
+  const selected: string[] = [];
+  let remaining = maxChars;
+  for (const block of [...blocks].reverse()) {
+    if (remaining <= 0) break;
+    const separator = selected.length === 0 ? 0 : 2;
+    if (remaining <= separator) break;
+    const bounded = boundedBlock(block, remaining - separator);
+    if (bounded === undefined) break;
+    selected.push(bounded);
+    remaining -= bounded.length + separator;
+  }
+  return selected.reverse().join("\n\n");
+}
+
+/** The block redacted and, when over budget, middle-elided; `undefined` when
+ *  even the elided block does not fit. */
+function boundedBlock(block: string, budget: number): string | undefined {
+  const redacted = redactSecrets(block);
+  const bounded =
+    redacted.length <= budget ? redacted : elideMiddle(redacted, budget);
+  return bounded.length > budget ? undefined : bounded;
+}

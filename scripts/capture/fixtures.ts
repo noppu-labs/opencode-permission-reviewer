@@ -1,14 +1,15 @@
-import { invariant } from "../../src/invariant.ts";
-import type { HandoffTrigger, PermissionRequest } from "../../src/types.ts";
-import type { ReviewTheme } from "../../src/ui/components.tsx";
-import { resolveReviewTheme } from "../../src/ui/review-theme.ts";
-import { createServerUiStatus } from "../../src/ui-action-segments.ts";
+import type { PermissionRequest } from "../../src/kernel/permission-request.ts";
+import type { HandoffTrigger } from "../../src/kernel/review-result.ts";
 import {
   decodeUiStatus,
   encodeUiStatus,
   type ReviewUiPhase,
   type ReviewUiStatus,
-} from "../../src/ui-protocol.ts";
+} from "../../src/modules/status/models/ui-protocol.ts";
+import { createServerUiStatus } from "../../src/modules/status/services/ui-action-segments.ts";
+import type { ReviewTheme } from "../../src/ui/components.tsx";
+import { resolveReviewTheme } from "../../src/ui/review-theme.ts";
+import { invariant } from "../../src/utils/invariant.ts";
 
 /** The clock every screen renders at; capture-tui.ts pins Date.now to it. */
 export const CAPTURE_NOW = 1_767_225_600_000;

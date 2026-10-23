@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { resolveConfig } from "../../src/config.ts";
-import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import { evaluateReview } from "../../src/core/review-engine.ts";
-import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
 import type {
   HandoffTrigger,
   ManualResolution,
-  ReviewEnvelope,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../src/types.ts";
+} from "../../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../../src/kernel/reviewer-config.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import type { ReviewEnvelope } from "../../src/modules/context/models/review-envelope.ts";
+import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
+import { evaluateReview } from "../../src/modules/review/services/review-engine.ts";
+import { SystemOneReviewerBackend } from "../../src/modules/reviewer/services/backend.ts";
 import { defined } from "../helpers.ts";
 import {
   choice,

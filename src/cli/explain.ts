@@ -4,12 +4,12 @@
  * Invoked with no subcommand, or with a flag first, it runs `explain` against
  * stdin or `--event`.
  */
-import { runAudit } from "./audit-command.ts";
-import { runConfig } from "./config-command.ts";
-import { runDoctor } from "./doctor-command.ts";
-import { runExplain } from "./explain-command.ts";
-import { runInit } from "./init.ts";
-import { runScript } from "./script-command.ts";
+import { runAudit } from "../modules/audit/controllers/audit-command.ts";
+import { runConfig } from "../modules/config/controllers/config-command.ts";
+import { runExplain } from "../modules/review/controllers/explain-command.ts";
+import { runScript } from "../modules/review/controllers/script-command.ts";
+import { runDoctor } from "./doctor/doctor-command.ts";
+import { runInit } from "./init/init.ts";
 
 // Guarded so importing the module (e.g. via the "./cli" export or in tests)
 // never triggers the CLI or kills the importing process; only a direct

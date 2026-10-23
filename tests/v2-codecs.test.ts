@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, spyOn, test } from "bun:test";
 import type { OpenCodeEvent } from "@opencode/client";
-import { V2AskDecisions } from "../src/opencode/v2/event-codec.ts";
-import { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
+import { V2AskDecisions } from "../src/adapters/opencode/v2/event-codec.ts";
+import { normalizeV2Permission } from "../src/adapters/opencode/v2/permission-codec.ts";
 
 type Field = {
   key: string;

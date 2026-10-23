@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ReviewDecision } from "../src/types.ts";
+import type { ReviewDecision } from "../src/kernel/review-decision.ts";
 import {
   createUiStatus,
   decodeUiStatus,
@@ -9,9 +9,12 @@ import {
   UI_COMMAND_PREFIX,
   UI_START_GRACE_MS,
   UI_WATCHDOG_GRACE_MS,
-} from "../src/ui-protocol.ts";
-import { ReviewUiState } from "../src/ui-state.ts";
-import { LINE_BREAK, renderActionText } from "../src/ui-text-elide.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
+import { ReviewUiState } from "../src/modules/status/services/ui-state.ts";
+import {
+  LINE_BREAK,
+  renderActionText,
+} from "../src/modules/status/services/ui-text-elide.ts";
 import { decision, request } from "./helpers.ts";
 
 const options = {
@@ -263,7 +266,7 @@ describe("TUI status protocol", () => {
         resolution: "reasoning-escalated",
         configWarnings: Array.from({ length: 9 }, () => long("w", 400)),
         configDegraded: Array.from({ length: 9 }, () => long("d", 400)),
-        // Just under the 2,000-byte segment budget `src/ui-action-segments.ts`
+        // Just under the 2,000-byte segment budget `src/modules/status/services/ui-action-segments.ts`
         // enforces.
         actionSegments: Array.from({ length: 9 }, () => ({
           text: long("s", 190),

@@ -17,15 +17,19 @@ const adapter = await openPlugin(repo, {
   allowDrift: process.argv.includes("--allow-drift"),
 });
 const coreDecision = await import(
-  pathToFileURL(resolve(repo, "src/decision.ts")).href
+  pathToFileURL(resolve(repo, "src/modules/decision/decision.ts")).href
 );
 const coreGates = await import(
-  pathToFileURL(resolve(repo, "src/decision-gates.ts")).href
+  pathToFileURL(resolve(repo, "src/modules/decision/decision-gates.ts")).href
 );
 const context = await import(
-  pathToFileURL(resolve(repo, "src/context.ts")).href
+  pathToFileURL(resolve(repo, "src/modules/context/services/prompt/context.ts"))
+    .href
 );
-const policy = await import(pathToFileURL(resolve(repo, "src/policy.ts")).href);
+const policy = await import(
+  pathToFileURL(resolve(repo, "src/modules/context/services/prompt/policy.ts"))
+    .href
+);
 const data = await loadDataset(
   resolve(dirname(fileURLToPath(import.meta.url)), "../data/cases.jsonl"),
 );

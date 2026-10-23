@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { stableJson } from "../src/context/prompt-budget.ts";
-import { buildTranscript } from "../src/context.ts";
-import type { MessageWithParts, ReviewerConfig } from "../src/types.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import { buildTranscript } from "../src/modules/context/services/prompt/context.ts";
+import { stableJson } from "../src/modules/context/services/prompt-budget.ts";
 
 const cfg = (maxPartChars: number): ReviewerConfig => ({
   ...DEFAULT_CONFIG,

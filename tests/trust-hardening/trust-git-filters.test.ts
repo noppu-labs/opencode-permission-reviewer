@@ -2,12 +2,12 @@ import { afterEach, describe, expect, test } from "bun:test";
 import type { PromiseWithChild } from "node:child_process";
 import { appendFileSync, existsSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { enrichGitEvidence } from "../../src/git-evidence.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import { enrichGitEvidence } from "../../src/modules/evidence/git/git-evidence.ts";
 import {
   collectConversionKeys,
   conversionNeutralizationArgs,
-} from "../../src/git-filter-neutralization.ts";
+} from "../../src/modules/evidence/git/git-filter-neutralization.ts";
 import { bashRequest, execFileAsync, tempDir } from "./trust-fixtures.ts";
 
 type GitRun = PromiseWithChild<{ stdout: string; stderr: string }>;

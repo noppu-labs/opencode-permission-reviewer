@@ -5,8 +5,8 @@ import {
   catSource,
   findSshIndex,
   parseSsh,
-} from "../src/ssh-command-segments.ts";
-import { sshLoginUser } from "../src/ssh-login-user.ts";
+} from "../src/modules/evidence/ssh/ssh-command-segments.ts";
+import { sshLoginUser } from "../src/modules/evidence/ssh/ssh-login-user.ts";
 
 // Characterisation rows for parseSsh at the index findSshIndex returns. Some
 // look odd and are pinned as they are: a bare `-` is taken as the

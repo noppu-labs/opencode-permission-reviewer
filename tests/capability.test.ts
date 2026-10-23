@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
-import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
-import type { CapabilityActionClass } from "../src/types.ts";
+import type { CapabilityActionClass } from "../src/kernel/reviewer-config.ts";
+import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
+import type { CapabilityAssessment } from "../src/modules/analysis/capability/models/capability-types.ts";
 import { defined } from "./helpers.ts";
 
 const DIR = "/home/user/project";

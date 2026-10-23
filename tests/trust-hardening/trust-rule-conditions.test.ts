@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
 import {
   loadResolvedConfig,
   setGlobalConfigPathForTests,
-} from "../../src/config/loader.ts";
-import { resolveConfig } from "../../src/config.ts";
-import { enforceDecision } from "../../src/decision-gates.ts";
-import { evaluatePolicy } from "../../src/policy/policy-engine.ts";
+} from "../../src/modules/config/services/loader.ts";
+import { enforceDecision } from "../../src/modules/decision/decision-gates.ts";
+import { evaluatePolicy } from "../../src/modules/policy/policy-engine.ts";
 import { defined, MockClient, request, runtime } from "../helpers.ts";
 import {
   captureWarnings,

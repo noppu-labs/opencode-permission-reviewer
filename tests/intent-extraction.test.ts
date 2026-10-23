@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { SessionLineage } from "../src/actor-context-types.ts";
-import { normalizeMessages } from "../src/context.ts";
+import type { SessionLineage } from "../src/kernel/actor-context-types.ts";
+import { normalizeMessages } from "../src/modules/context/services/prompt/context.ts";
 import { block, text, user } from "./intent-builders.ts";
 import { CURRENT, fakeReader, lineage, resolve } from "./intent-fixtures.ts";
 

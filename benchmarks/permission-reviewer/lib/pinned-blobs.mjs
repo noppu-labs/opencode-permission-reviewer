@@ -21,203 +21,293 @@
 // changes a pinned file fails it until the entry is re-pinned, which is the
 // intended reminder rather than a flake.
 export const PINNED_BLOBS = {
-  "src/policy.ts": "69522b8244cc041dfedbfaf4690706624b2aab80",
-  "src/context.ts": "e328d5e958f93377a98036188391422c0551dac3",
-  "src/context/evidence-sections.ts":
-    "9fc5c436c2193c15bc67792cabc73983505f52b3",
-  "src/context/prompt-budget.ts": "36dd6eedf5817478a64eeb5829b8db117082a67c",
-  "src/context/actor-sections.ts": "df48b253d9deb19a73cb661ba7131f8a4772558a",
-  "src/context/capability-section.ts":
-    "f2b1e6b9a5937ff8ad421cef0dd869b028a83e68",
-  "src/context/evidence-layout.ts": "35e438dbcdd4b59be5e8829da6293c1ae203799b",
-  "src/context/intent-history.ts": "c4cc97c882001967b0eb8e6c2c14bbbdf9fb6f3b",
-  "src/context/message-summary.ts": "273812d5e4dd57f75d39cb155088283de941ea67",
-  "src/context/pending-permission.ts":
-    "97ba73673a05a5a9d118098b266b1f6177ea2ad0",
-  "src/context/synthetic-parts.ts": "d57f10540a5b243a4da49f3dc72deb71d307d322",
-  "src/config.ts": "5202f85ae9fc790d3b24f9c843489525a7428d16",
-  "src/config-fields.ts": "5a95a9cf02bea0f33e3eaa086b91269b5769ba9c",
-  "src/config-knobs.ts": "e576c89b91d0eee6eec91998a4680728025792c4",
-  "src/config-policy-rules.ts": "c114277b0c48c7edba60e15be44f80f84cd6f9d4",
-  "src/config-risk-policy.ts": "b0153a9fbe82baebecbbb3dd1afe0196978bab91",
-  "src/config-rule-condition.ts": "c5d475f4a06542cf79f67058f5ab3d55100c7821",
-  "src/system-one-routing.ts": "53d6af514304ac772ed00ffee508b3d32e595aed",
-  "src/reviewer-model.ts": "e8b33fa484ff8de522060c5a4a1d6426d55f9845",
-  "src/decision.ts": "4d806acf86e01fec23c9b93d2d98e0b57aa7bb3a",
-  "src/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",
-  "src/decision-gates.ts": "f54307ffb219fb625546db1a88652ee031c45621",
-  "src/decision-schema.ts": "e60339d6fb71ac232b79c1261a02aae265f05852",
-  "src/policy/policy-engine.ts": "a9975ee01dd909ec4c163128561178ca88aa5933",
-  "src/policy/policy-conditions.ts": "1a4ce441512dd037f31200f8d8df1f786e1d0c37",
-  "src/policy/profile-templates.ts": "a88bfdeb093dba5e7b18c68ed26560efd853045b",
-  "src/escalation.ts": "7ad6baccad7b426f439e9689235485a24fccef5d",
-  "src/core/review-engine.ts": "4bf4a5cc2dd3855688d08b51bacb3b874a3cbc51",
-  "src/core/review-result-gates.ts": "406386573d1a7ab3381bde6ce5d81fbd4eac11f2",
-  "src/emergency-brake.ts": "636dacf84c5ef3019458c5256546a0fa848cc710",
-  "src/brake-body-commands.ts": "a740e82a51db98c8046aa90f5a2766938907957a",
-  "src/brake-heredoc-texts.ts": "2b9b769c197731583803857cd5a5aa98a835e69d",
-  "src/brake-readings.ts": "d157a67f28173e5e38755aa53a06b42640313253",
-  "src/brake-logical-lines.ts": "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
-  "src/reviewed-command.ts": "d7f4893e9f590680cfc10d2e4b9ffc1743fb17b7",
-  "src/brake-arguments.ts": "9e67d27ca7194e5dca9023a4e2265931263ed328",
-  "src/brake-rm-flags.ts": "034adfcdccaf0c0f567c1c0f16ba7d1eff336a09",
-  "src/brake-root-target.ts": "82548f17b0fc651c65cf30decb1e0d848d097a10",
-  "src/brake-root-rm.ts": "8389ffd387fec486d49fa6583b713fbb4df28b21",
-  "src/brake-find-root.ts": "2ebefecea8bfc28a165ea41739319a4dd3c7738e",
-  "src/brake-find-exec.ts": "e5cba7d73c58e3989789ab1a0163f446c40d1921",
-  "src/brake-block-device.ts": "5bb4118f73203cbf4dae217c55351b7b8a8fd936",
-  "src/brake-device-copy.ts": "d11bbd124821d2c7f5258b5d2682d8e9ec13fe1c",
-  "src/brake-partition-tools.ts": "2d7e552d88f20157cdcede7ad7e87c613660254c",
-  "src/brake-formatter-options.ts": "28cdc2bc3963739cf6871c2e0220d1c4eab77491",
-  "src/brake-format-tools.ts": "daf7a46a83231837f38a0c6f0b61e2bc62656991",
-  "src/brake-device-tools.ts": "c595f135a7abe9cee8bb096ee084ae1fc6cb4a72",
-  "src/brake-network-export.ts": "f44ec03d976cce0833d3e232b56a2924408c0888",
-  "src/gnu-long-options.ts": "30c8898cdc53a467422f0e0341a466ffff6246a5",
-  "src/gnu-long-option-tables.ts": "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
-  "src/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
-  "src/capability/command-parser.ts":
-    "07263cbc851fcad9d4b4e7aaba1601dc05b82182",
-  "src/capability/bash-analyzer.ts": "cc35c600c92807dcaf85da8de94856b215c0e450",
-  "src/capability/bash-command-tables.ts":
+  "src/modules/context/services/prompt/policy.ts":
+    "679d436176b2a3b781a058d31c51f7d0fd77f287",
+  "src/modules/context/services/prompt/context.ts":
+    "d0e3077d17634fc712b7f1e5539bb641e3ccf0d0",
+  "src/modules/context/services/evidence-sections.ts":
+    "233251f24eaf2d63c493d1485fdcd0ea7d72ee26",
+  "src/modules/context/services/prompt-budget.ts":
+    "5c2b3aff99e9e4d8ca0822387b76f4aff6d91c51",
+  "src/modules/context/services/actor-sections.ts":
+    "eceb157103b5861dab0381b18914caa5c73f9e43",
+  "src/modules/context/services/capability-section.ts":
+    "c8e4bee049460fa0130424e76ff1cf8653824bf0",
+  "src/modules/context/services/evidence-layout.ts":
+    "81d44aeb010f81c98c9817444996483d92d6b82d",
+  "src/modules/context/services/intent-history.ts":
+    "38cdd5e0c4a9c59e17f492731fba53161604f012",
+  "src/modules/context/services/message-summary.ts":
+    "28531fd9a79158418fd0ca90f5c9a9daf705c6af",
+  "src/modules/context/services/pending-permission.ts":
+    "87e366d7e3f9585d324f9b60b4a403f32d5fc8b9",
+  "src/modules/context/services/synthetic-parts.ts":
+    "d57f10540a5b243a4da49f3dc72deb71d307d322",
+  "src/modules/config/services/config.ts":
+    "65657daae76fd4404429e247fee09c44169bfab2",
+  "src/modules/config/models/config-fields.ts":
+    "fc5d43ec9c4c4607d5553af79b11006c956592da",
+  "src/modules/config/models/config-knobs.ts":
+    "97bc958a7cdb5c949ff685c509582595e667bff5",
+  "src/modules/config/models/config-policy-rules.ts":
+    "226b2c0af8361e7dd49d3dc170a0dd8b95c9ede7",
+  "src/modules/config/models/config-risk-policy.ts":
+    "4d6aac8fe9ab15504cfa7e510c80cceccb237892",
+  "src/modules/policy/config-rule-condition.ts":
+    "715b0c26ea736ec7c3a2c49196ec36e9d22ec51f",
+  "src/modules/config/services/system-one-routing.ts":
+    "4ceecf4292d4f6ead9ede8864d76704763cec4ff",
+  "src/modules/config/services/reviewer-model.ts":
+    "b662c31acc12c8b13db9015124f17cbc2b9faabe",
+  "src/modules/decision/decision.ts":
+    "5be4072b5621cefb276291d866089364df31cdc7",
+  "src/utils/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",
+  "src/modules/decision/decision-gates.ts":
+    "7cb92a403c9ca5a7c8b9b5ffc3b962887c3088f6",
+  "src/modules/decision/decision-schema.ts":
+    "e60339d6fb71ac232b79c1261a02aae265f05852",
+  "src/modules/policy/policy-engine.ts":
+    "afdaa540196e3a5ab24e156363b85be73ee689d1",
+  "src/modules/policy/policy-conditions.ts":
+    "7f1a3bc3cca9159ed37313eea6134e3f6b8db9fd",
+  "src/modules/policy/profile-templates.ts":
+    "024aa1f792ad81fd6df54d783733646fc229f484",
+  "src/modules/decision/escalation.ts":
+    "c21a24121188eabd76a6980ef4475123fa32c2a6",
+  "src/modules/review/services/review-engine.ts":
+    "adb1325c3522ce3434a41e02d6212431906cbee4",
+  "src/modules/review/services/review-result-gates.ts":
+    "183cce730bdc30be3ab0e7478dbea44acbbb01f3",
+  "src/modules/analysis/brake/emergency-brake.ts":
+    "15101a06561a737fe862465884eacce3cc9dec88",
+  "src/modules/analysis/brake/brake-body-commands.ts":
+    "13e05c5003872bb6d0d4bfa977592b7e88427983",
+  "src/modules/analysis/brake/brake-heredoc-texts.ts":
+    "9c43192669543149b893017e1b19d8f9f1169b26",
+  "src/modules/analysis/brake/brake-readings.ts":
+    "b0baa312189482f21d2b055afd8079ecee23c136",
+  "src/modules/analysis/brake/brake-logical-lines.ts":
+    "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
+  "src/modules/analysis/reviewed-command.ts":
+    "720a9a831c0f783c23ba4246dffc56f39fb661c7",
+  "src/modules/analysis/brake/brake-arguments.ts":
+    "28cc08429cc6dfdfdd78bb66d1cb334dea30c3ce",
+  "src/modules/analysis/brake/brake-rm-flags.ts":
+    "b57c33d21191629ac9203a5256263644644a544b",
+  "src/modules/analysis/brake/brake-root-target.ts":
+    "3b2933334de666b84f9ed84a37fdc09abb38d65f",
+  "src/modules/analysis/brake/brake-root-rm.ts":
+    "94b5acccb5f35f72c9ab88a2718810c4694d97f4",
+  "src/modules/analysis/brake/brake-find-root.ts":
+    "498bd12e916f37573a41db78ec2cd5c125235cef",
+  "src/modules/analysis/brake/brake-find-exec.ts":
+    "6b52bc78c4acc6dab5b6db7a6df0b3c75f9017c7",
+  "src/modules/analysis/brake/brake-block-device.ts":
+    "300e92f32ec8fb54c6d52e1ab4b101a191e217b4",
+  "src/modules/analysis/brake/brake-device-copy.ts":
+    "da74d513dd902c339c7086c7eb7a245afe78c4d0",
+  "src/modules/analysis/brake/brake-partition-tools.ts":
+    "94056fc71b28d6f94e44edce769b7e7b942d4da2",
+  "src/modules/analysis/brake/brake-formatter-options.ts":
+    "22569bf1085033c0d7ae03d467bfeddc6c566564",
+  "src/modules/analysis/brake/brake-format-tools.ts":
+    "b99cae08bd283705c8990c6e758001854ac539c5",
+  "src/modules/analysis/brake/brake-device-tools.ts":
+    "d12742dc6f499fbf6097ac72f8e679ec7057e32f",
+  "src/modules/analysis/brake/brake-network-export.ts":
+    "ac101fba7a59a3baaccf331d4f5d09c1f86338fd",
+  "src/modules/analysis/walk/gnu-long-options.ts":
+    "30c8898cdc53a467422f0e0341a466ffff6246a5",
+  "src/modules/analysis/walk/gnu-long-option-tables.ts":
+    "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
+  "src/utils/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
+  "src/modules/analysis/capability/command-parser.ts":
+    "e393f9d546c14794285d8aa83d5776c2c1731903",
+  "src/modules/analysis/capability/bash-analyzer.ts":
+    "1d8813dcf86953f84ea30a65e894ae1d0eae74b7",
+  "src/modules/analysis/capability/bash-command-tables.ts":
     "cd2340a5e08bc3b2828e023f8ce4d5fc385bc496",
-  "src/capability/bash-facts.ts": "5dccd1c7c6909dbe02e7643ff2a8a6747fa98aec",
-  "src/capability/bash-mutation.ts": "2d3270f7b3585f690d5bc7c1c0724a2cda838ccb",
-  "src/shell-effective-commands.ts": "c20b3abacb45665ed48a2177953630361ac51483",
-  "src/effective-command-walk.ts": "d546580e1ea054f10daaa012dbfaee79bdb009df",
-  "src/shell-wrapper-options.ts": "1a66e621d8664bb0dbb1fe35657564f2b3066a3d",
-  "src/shell-command-strings.ts": "a533f7743f4edf42449c18e77f95c939738343d9",
-  "src/env-split-string.ts": "a62dd852fb6cc9788a76217f99e9cc34a1474333",
-  "src/ssh-remote-command.ts": "99326adbd82894883df7923e5dfefd273d1eccbf",
-  "src/shell-lexer.ts": "172ac061a1739823cef2aa6cf4eda7ef90d20b50",
-  "src/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
-  "src/shell-lexer-tables.ts": "8bd5f261d6d1ad58765a02987afb79ab368225a3",
-  "src/shell-token.ts": "f3bf94abd5cad440aa52cac8063fe768f215c873",
-  "src/shell-redirections.ts": "16d83568088a609bfa9d0353fa5b1e9dc3565d31",
-  "src/shell-redirection-operators.ts":
+  "src/modules/analysis/capability/bash-facts.ts":
+    "782f183721f7079ed2e28d76149d27ce4b50b977",
+  "src/modules/analysis/capability/bash-mutation.ts":
+    "16a94d493590de426830a76a41b60dbfe60555d5",
+  "src/modules/analysis/shell/shell-effective-commands.ts":
+    "2bb231f309bbeedbc693a7322daa582fc7dd5f32",
+  "src/modules/analysis/walk/effective-command-walk.ts":
+    "38659a0e41699c10708e8fb279f4da2993c80b23",
+  "src/modules/analysis/shell/shell-wrapper-options.ts":
+    "9ea1dd744c9fd01b3b89b4c7b3b46dace167e2be",
+  "src/modules/analysis/shell/shell-command-strings.ts":
+    "7628a529bd65b238d7a68c1f39ca051295be6c18",
+  "src/modules/analysis/walk/env-split-string.ts":
+    "f6aa3fdd17c06a50bd56c2b3b554e7c7e534409c",
+  "src/modules/analysis/ssh/ssh-remote-command.ts":
+    "ea7dbf3f8ef00362424ec04a06836bd32385c58a",
+  "src/modules/analysis/shell/shell-lexer.ts":
+    "ebc1a6be46c2cfb5826323361f34d371bd7473ff",
+  "src/utils/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
+  "src/modules/analysis/shell/shell-lexer-tables.ts":
+    "8bd5f261d6d1ad58765a02987afb79ab368225a3",
+  "src/modules/analysis/shell/shell-token.ts":
+    "f3bf94abd5cad440aa52cac8063fe768f215c873",
+  "src/modules/analysis/shell/shell-redirections.ts":
+    "709ab988ade7f92c1b302ea6baa11abfced9123a",
+  "src/modules/analysis/shell/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
-  "src/shell-lex-state.ts": "affce06885979fd37307d4aea063f55acfaec3c3",
-  "src/shell-quote-scan.ts": "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
-  "src/shell-scanner.ts": "76f037e46c2a8cefbb09f9e80576c863d3594373",
-  "src/shell-substitution.ts": "fd0167b84c849bd09fd752736c227a3b2d44223c",
-  "src/shell-substitution-end.ts": "4a81c02737fe461c24e10516b0da96f19035bbfa",
-  "src/shell-substitution-brace.ts": "be3a6959c86277ccc879ddba875bc87dfb2e8d5f",
-  "src/shell-substitution-prefix.ts":
+  "src/modules/analysis/shell/shell-lex-state.ts":
+    "4fc578f21c686a53f97793c37e5cc50cffb3ed1f",
+  "src/modules/analysis/shell/shell-quote-scan.ts":
+    "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
+  "src/modules/analysis/shell/shell-scanner.ts":
+    "76f037e46c2a8cefbb09f9e80576c863d3594373",
+  "src/modules/analysis/shell/shell-substitution.ts":
+    "bf971f9fc6bcb59f5df9e5b63cc7e8ac353906f3",
+  "src/modules/analysis/shell/shell-substitution-end.ts":
+    "4a81c02737fe461c24e10516b0da96f19035bbfa",
+  "src/modules/analysis/shell/shell-substitution-brace.ts":
+    "be3a6959c86277ccc879ddba875bc87dfb2e8d5f",
+  "src/modules/analysis/shell/shell-substitution-prefix.ts":
     "b3c9ead3d967e4262e6e27d2911cf6621c96b979",
-  "src/shell-substitution-words.ts": "ee012917a63da958246081ef821af8d5ac52c264",
-  "src/shell-substitution-groups.ts":
+  "src/modules/analysis/shell/shell-substitution-words.ts":
+    "ee012917a63da958246081ef821af8d5ac52c264",
+  "src/modules/analysis/shell/shell-substitution-groups.ts":
     "a81777fbf25ba1b7177410826ee278eff0779ad7",
-  "src/shell-substitution-text.ts": "97160652d1fe23dc1b88f721563f5bc122bfaa1f",
-  "src/shell-substitution-frames.ts":
+  "src/modules/analysis/shell/shell-substitution-text.ts":
+    "97160652d1fe23dc1b88f721563f5bc122bfaa1f",
+  "src/modules/analysis/shell/shell-substitution-frames.ts":
     "821a5ebd99243275446315a17ea58b1e38125537",
-  "src/shell-substitution-lex.ts": "1edfec322835af950a8d784a9c2a48ebd32e53c6",
-  "src/shell-substitution-heredoc.ts":
-    "f8c477a063ef0377579590164f3b5d2036ab0af7",
-  "src/shell-substitution-pairs.ts": "0680bc2448e940ae0660dce3640bfde59461322b",
-  "src/shell-substitution-trust.ts": "004bf2986c2606da3d240e72caadce506e665c2b",
-  "src/shell-pair-text.ts": "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
-  "src/ssh-value-options.ts": "019a1adcb3840b41cbc8415b833afffbe53279df",
-  "src/watch-command.ts": "c30f312ce01c01132107c0ddad83cd7b8992718e",
-  "src/capability/heredoc-extractor.ts":
-    "42107770a910ff3272f10c7ee807be95f0c9aad2",
-  "src/capability/heredoc-frame-starts.ts":
-    "7a57919df825d73743e31901a07c52834db7fae8",
-  "src/system-one/review.ts": "59165a01f319fa69796127051dade97a79f2205a",
-  "src/system-one/system-one-questions.ts":
+  "src/modules/analysis/shell/shell-substitution-lex.ts":
+    "ccd83847366e1a08045fabd982c0b8a0c3e86a76",
+  "src/modules/analysis/shell/shell-substitution-heredoc.ts":
+    "937578f6d5839cda6d8e08f35337a0e7591131be",
+  "src/modules/analysis/shell/shell-substitution-pairs.ts":
+    "0680bc2448e940ae0660dce3640bfde59461322b",
+  "src/modules/analysis/shell/shell-substitution-trust.ts":
+    "004bf2986c2606da3d240e72caadce506e665c2b",
+  "src/modules/analysis/shell/shell-pair-text.ts":
+    "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
+  "src/modules/analysis/ssh/ssh-value-options.ts":
+    "019a1adcb3840b41cbc8415b833afffbe53279df",
+  "src/modules/analysis/walk/watch-command.ts":
+    "5091cdd9eefd7b2a5a5256f74dcc1220ca7c0959",
+  "src/modules/analysis/capability/heredoc/heredoc-extractor.ts":
+    "81f8a38b8ec5f1763c0800808ab0ca3834dbfe06",
+  "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
+    "7f28c2b734ca0a6565701f844311df6a716246b2",
+  "src/modules/reviewer/services/review.ts":
+    "2c8a43ab5443837a0a91945de32a1552559f9374",
+  "src/modules/reviewer/services/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
-  "src/system-one/system-one-answers.ts":
-    "9ba0a88c305f216249e2b6617309ae2be02ed79a",
-  "src/system-one/system-one-choices.ts":
-    "5c58eb2dcc4fee17f8b86c171e239f328cd0897c",
-  "src/system-one/system-one-consistency.ts":
-    "9658f16a6a3ab91e63506906ab41113d5fa77615",
-  "src/system-one/system-one-verdict.ts":
-    "cda97035dfdbe291a11540290d1e235e116480c5",
-  "src/capability/capability-facts.ts":
-    "9d86550d9c6f8775a3923dac9d1aed51a817f0da",
-  "src/capability/capability-report.ts":
-    "91e3d8b4ef18becfd7d0bb66dd2b76b80368d343",
-  "src/capability/segment-heads.ts": "dd29bd314876b803f710ae164bf4d37d5a0d6f3c",
-  "src/capability/action-class.ts": "ea4cf57e8579197fe3b56111c5fe60dd0c3fc9ce",
-  "src/capability/sensitive-path-reads.ts":
-    "15078b6220ddb9fd61cd2504c9bf0c1a737d68f0",
-  "src/capability/effective-command-classifiers.ts":
-    "ab58f309f3c719e607a77687ee2a4aec4ebc51a7",
-  "src/capability/executable-recognition.ts":
-    "b1eafef1054206665fed857e749c3337b488f7cb",
-  "src/capability/execution-classifiers.ts":
-    "c111e9a3dfe91c33b6d69ce74eb791b636f8f1de",
-  "src/capability/file-effect-classifiers.ts":
-    "b03fa54cda5b0c69752aad779d8e6123bbd3f320",
-  "src/capability/network-classifiers.ts":
-    "a8d26ce60a64cd6012cd4e4864681302a96e1c10",
-  "src/capability/process-classifiers.ts":
+  "src/modules/reviewer/services/system-one-answers.ts":
+    "61585ac1ea01aea0fdf009bf4eb3166e9b5e1073",
+  "src/modules/reviewer/services/system-one-choices.ts":
+    "53f71dc0779d5885568fe4b94d1df22934a8c96e",
+  "src/modules/reviewer/services/system-one-consistency.ts":
+    "c2578fdee786a974c5cc9dc92199c73473138e4b",
+  "src/modules/reviewer/services/system-one-verdict.ts":
+    "281ed11080a78c65febe3b71c6abcba969bc8051",
+  "src/modules/analysis/capability/capability-facts.ts":
+    "1df5af1b01e96b26de9763f313496baea819f78a",
+  "src/modules/analysis/capability/capability-report.ts":
+    "bfd7fd9a58edb6705beba05a7a1e3d61f3be4a52",
+  "src/modules/analysis/capability/segment-heads.ts":
+    "9b513db95b058fd30e88e55c65eea0428eb4615a",
+  "src/modules/analysis/capability/action-class.ts":
+    "419e9a1224fbdda3bdfecffdb396fe4b135540fe",
+  "src/modules/analysis/capability/sensitive-path-reads.ts":
+    "ce931101b619252f9373ef1af89e0a00f1e51cdc",
+  "src/modules/analysis/capability/effective-command-classifiers.ts":
+    "0ec592a093fbbbca948a00ec1d4f419365a0a2a0",
+  "src/modules/analysis/capability/executable-recognition.ts":
+    "c289866b2cb2437bb3a0d876163e815cf203ee9d",
+  "src/modules/analysis/capability/execution-classifiers.ts":
+    "2dfd203a0acb3b5fb4dd8aba465a67b586f40221",
+  "src/modules/analysis/capability/file-effect-classifiers.ts":
+    "d96c40634b0246947755f26b1bad5c1b70831094",
+  "src/modules/analysis/capability/network-classifiers.ts":
+    "5a3cf13de16432a487e7282eb8330234f07661f2",
+  "src/modules/analysis/capability/process-classifiers.ts":
     "b578ec0a5ff7535fab34e1fc2a1ca74af454b699",
-  "src/capability/mutation-operands.ts":
-    "5d6f8ae63819d2f6919a71d97b2d2008f0d5a36f",
-  "src/capability/read-only-tool-mutations.ts":
-    "684c044741a3788a2c504a42a9250bbbafb9ed7a",
-  "src/capability/git-subcommand-forms.ts":
-    "7575566966af5a9bccac2a72dd336e9dadaa99e2",
-  "src/git-global-options.ts": "35752e52090120b61ed4679fcc3b1f1566cd8f01",
-  "src/capability/heredoc-delimiter.ts":
+  "src/modules/analysis/capability/mutation-operands.ts":
+    "9b2d1e58e90bd962c261ae21d3c449f0df5e37cf",
+  "src/modules/analysis/capability/read-only-tool-mutations.ts":
+    "d294f341527939ea34a9b072cdb4597faeb751e8",
+  "src/modules/analysis/capability/git-subcommand-forms.ts":
+    "1f9d6c9486ffe0b939b8b82aaf33cfee3639f941",
+  "src/modules/analysis/git/git-global-options.ts":
+    "e03c7a37d23795e84f55407aab35eda5ecada332",
+  "src/modules/analysis/capability/heredoc/heredoc-delimiter.ts":
     "9d562f06e93e87b42ad6af008e5c77b057d477bd",
-  "src/capability/heredoc-word-quotes.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-word-quotes.ts":
     "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
-  "src/capability/ansi-c-quoting.ts":
-    "1bb1a79da2a396e7683368e244bffb12233e15f6",
-  "src/capability/heredoc-scan-context.ts":
+  "src/modules/analysis/capability/heredoc/ansi-c-quoting.ts":
+    "9f405200753239393876658e6b2e668a8a417ea8",
+  "src/modules/analysis/capability/heredoc/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
-  "src/capability/heredoc-bodies.ts":
-    "0710879e125adf446ff7f9874a91f8b520accaeb",
-  "src/capability/heredoc-body-records.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-bodies.ts":
+    "4b32c562a91080a533551d05ae2bb8e0eccf7d8e",
+  "src/modules/analysis/capability/heredoc/heredoc-body-records.ts":
     "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
-  "src/capability/heredoc-frame-bounds.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-frame-bounds.ts":
     "d0437e9529f655f03b6c5b2b91ad056cf22c6b81",
-  "src/capability/heredoc-legacy.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-legacy.ts":
     "58c8cdea02051628ec911524f2a8a7f26e2e0d2b",
-  "src/capability/heredoc-frame-links.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-frame-links.ts":
     "ff27ca905447be7b9f36c446badd4dee6f4ac5d8",
-  "src/capability/heredoc-body-text.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
-  "src/capability/heredoc-operator-scan.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-operator-scan.ts":
     "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
-  "src/capability/command-walk.ts": "6be43167cdcdb93b44ac22794a953a2299f276a6",
-  "src/capability/heredoc-body-commands.ts":
-    "526a59419b776f0d176a54ad0b423ae5aa90dbab",
-  "src/capability/heredoc-sanitized.ts":
+  "src/modules/analysis/capability/command-walk.ts":
+    "96cc65baf66fc3b794f8ea3f7d7a82b6be1f7e07",
+  "src/modules/analysis/capability/heredoc/heredoc-body-commands.ts":
+    "1c892c8555a65bd89aa1a1bfe72c6cf86458c6bc",
+  "src/modules/analysis/capability/heredoc/heredoc-sanitized.ts":
     "ffc33dd404eadd7200a0582ef36f7cb5c8b9e7eb",
-  "src/capability/heredoc-body-reading.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-body-reading.ts":
     "8751228781d6b60002a01900b4b3a07488b6bad0",
-  "src/capability/delimited-substitution-end.ts":
+  "src/modules/analysis/capability/heredoc/delimited-substitution-end.ts":
     "bb55b69fb233011143c29d249888c96abdcaf731",
-  "src/capability/heredoc-body-early-ends.ts":
-    "1bb174d2069de3e2614d6a186b61d007583ffed5",
-  "src/capability/delimited-arithmetic.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-body-early-ends.ts":
+    "334a8d61f9319b625fd517e676b7c6e4cae9084d",
+  "src/modules/analysis/capability/heredoc/delimited-arithmetic.ts":
     "87f3403fd0373c9ef745a898240b94db5913ba74",
-  "src/capability/heredoc-scan-budget.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-scan-budget.ts":
     "4ab2e937255ad8398eb6dbfa71ebe5d690c49b4c",
-  "src/brake-find-walk.ts": "0422241bc9bae5a5540a5e9b277293fe1e8425ef",
-  "src/capability/heredoc-string-bodies.ts":
+  "src/modules/analysis/brake/brake-find-walk.ts":
+    "089ca5939ad3244de5f027ae94573402bba4e853",
+  "src/modules/analysis/capability/heredoc/heredoc-string-bodies.ts":
     "e436d6566237ded3188250020a7dc8c22512e6a4",
-  "src/command-segments.ts": "aab403c9c02eca17ccade79727035a9c5d3cddec",
-  "src/shell-substitution-arithmetic.ts":
+  "src/modules/analysis/walk/command-segments.ts":
+    "5b172206b06d7b35dca9665d661fefaaecc72fc1",
+  "src/modules/analysis/shell/shell-substitution-arithmetic.ts":
     "c999a306376d875de0baac214c79edcd844602de",
-  "src/shell-substitution-expansion.ts":
+  "src/modules/analysis/shell/shell-substitution-expansion.ts":
     "64fdafee4a5034fd8d24e1b5e661e27cfd786974",
-  "src/capability/heredoc-scripts.ts":
+  "src/modules/analysis/capability/heredoc/heredoc-scripts.ts":
     "996dfb53b998a929b242a80d33b12fb5585dbe57",
-  "src/shell-script-feeds.ts": "c159e9360c355c42a3e6ea4226036a21029bab93",
-  "src/shell-script-feed-input.ts": "828330ad112a108658a7eee58112015dfbea37a8",
-  "src/shell-script-readers.ts": "6be003b106f5104fe88d8f0c8feb9856c7edb4c8",
-  "src/shell-stdin-source.ts": "d9c14f3f836cd9328afb4a8551477b2f4ff137f2",
-  "src/operand-tail-index.ts": "0263f72be5fd4655f50dd41bc8adfa4ef73c1692",
-  "src/walk-limits.ts": "e7927b22a7b2a1d0ae2f0a6ec13af585d096775c",
-  "src/brake-analyzed-segments.ts": "5b5a05eae877d518c932f2625b2c8692d4cc8485",
-  "src/brake-script-feeds.ts": "bdc57a64b5950296b3c0b784e08e206c0ad5c39c",
-  "src/capability/script-feed-analysis.ts":
-    "249ff71102e70c4be4125be7f299d8599aa974f3",
-  "src/capability/walk-feeds.ts": "4a73c17460b6033ab492597fb290eb87d1625226",
-  "src/interpreter-stdin.ts": "b25a6c727a5841b1555949599375b01894b51f7b",
-  "src/capability/heredoc-body-collector.ts":
+  "src/modules/analysis/shell/shell-script-feeds.ts":
+    "c159e9360c355c42a3e6ea4226036a21029bab93",
+  "src/modules/analysis/shell/shell-script-feed-input.ts":
+    "7aa9e4aae4b54f55da34a00985713fdd4e05982a",
+  "src/modules/analysis/shell/shell-script-readers.ts":
+    "6be003b106f5104fe88d8f0c8feb9856c7edb4c8",
+  "src/modules/analysis/shell/shell-stdin-source.ts":
+    "8851d6f0d31fec5cb93313f471adf2a22a412634",
+  "src/modules/analysis/walk/operand-tail-index.ts":
+    "43be10cfbd4d5de8cd73eab4f30d161f5732b8fb",
+  "src/modules/analysis/walk/walk-limits.ts":
+    "36f5f4cd469505dbbbac5d4f6c92ba4c903cc87b",
+  "src/modules/analysis/brake/brake-analyzed-segments.ts":
+    "3fe53b7290c2220d45e5f5d969657cf1598900b1",
+  "src/modules/analysis/brake/brake-script-feeds.ts":
+    "788299e1f635809e3c019b434d1c7d3cccb9f2d7",
+  "src/modules/analysis/capability/script-feed-analysis.ts":
+    "798e0134cc2e4380519e1966fe98efe82df1a91d",
+  "src/modules/analysis/capability/walk-feeds.ts":
+    "94958a379117aff663dfd3cd8ceba7719d5fe726",
+  "src/modules/analysis/walk/interpreter-stdin.ts":
+    "880b67e3a46da4792ca707726c7baa714522fe89",
+  "src/modules/analysis/capability/heredoc/heredoc-body-collector.ts":
     "408e8a660a7172722d12e548ba943d1fd973c071",
 };

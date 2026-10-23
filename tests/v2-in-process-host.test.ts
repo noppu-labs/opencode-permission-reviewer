@@ -5,14 +5,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Plugin } from "@opencode/plugin";
-import type { V2HostApi } from "../src/opencode/v2/host-api.ts";
-import { createInProcessHost } from "../src/opencode/v2/in-process-host.ts";
+import type { V2HostApi } from "../src/adapters/opencode/v2/host-api.ts";
+import { createInProcessHost } from "../src/adapters/opencode/v2/in-process-host.ts";
 import {
   forgetIsolatedContext,
   isolatedContext,
   rememberIsolatedContext,
-} from "../src/opencode/v2/isolated-contexts.ts";
-import { openReviewerLocation } from "../src/opencode/v2/v2-review-location.ts";
+} from "../src/adapters/opencode/v2/isolated-contexts.ts";
+import { openReviewerLocation } from "../src/adapters/opencode/v2/v2-review-location.ts";
 
 type Context = Parameters<Plugin.Plugin["setup"]>[0];
 

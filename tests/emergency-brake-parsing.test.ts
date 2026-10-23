@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
-import { MAX_ANALYSIS_INPUT_CHARS } from "../src/shell-lexer.ts";
-import type { PermissionRequest } from "../src/types.ts";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { MAX_ANALYSIS_INPUT_CHARS } from "../src/modules/analysis/shell/shell-lexer.ts";
 import { request } from "./helpers.ts";
 
 const DESTRUCTION =

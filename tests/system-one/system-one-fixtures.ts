@@ -1,13 +1,15 @@
-import { resolveConfig } from "../../src/config.ts";
-import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
-import type { SystemOnePrimaryBasis } from "../../src/system-one/system-one-types.ts";
 import type {
-  ReviewEnvelope,
   ReviewExecutionResult,
+  SystemOnePrimaryBasis,
+} from "../../src/kernel/review-result.ts";
+import type {
   ReviewerConfig,
   SystemOneEscalationMode,
-} from "../../src/types.ts";
+} from "../../src/kernel/reviewer-config.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import type { ReviewEnvelope } from "../../src/modules/context/models/review-envelope.ts";
+import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
+import { SystemOneReviewerBackend } from "../../src/modules/reviewer/services/backend.ts";
 
 // Deliberately a hand copy, not SYSTEM_ONE_BASES: it is the only test pin of the 11-basis
 // wire contract (parseChoice's exactKeys).

@@ -71,18 +71,18 @@ Your pull request should also meet these rules:
 - These modules encode the safety invariants. A change to them needs tests that demonstrate the
   invariant (for example, that critical risk can never be approved) and the reasoning stated in the
   pull request.
-  - Decisions: `src/decision.ts`, `src/decision-gates.ts`, `src/decision-schema.ts` and
-    `src/policy.ts`.
-  - The brake: `src/emergency-brake.ts` and the `src/brake-*.ts` detectors it calls.
-  - The policy engine: `src/policy/policy-engine.ts`, `src/policy/policy-conditions.ts` and
-    `src/policy/profile-templates.ts`.
-  - The config trust boundary in `src/config/`: `loader.ts`, `layer-read.ts`, `trust-boundary.ts`,
+  - Decisions: `src/modules/decision/decision.ts`, `src/modules/decision/decision-gates.ts`, `src/modules/decision/decision-schema.ts` and
+    `src/modules/context/services/prompt/policy.ts`.
+  - The brake: `src/modules/analysis/brake/emergency-brake.ts` and the detectors in `src/modules/analysis/brake/` it calls.
+  - The policy engine: `src/modules/policy/policy-engine.ts`, `src/modules/policy/policy-conditions.ts` and
+    `src/modules/policy/profile-templates.ts`.
+  - The config trust boundary in `src/modules/config/services/`: `loader.ts`, `layer-read.ts`, `trust-boundary.ts`,
     the key lists in `trust-boundary-keys.ts`, `risk-policy-clamp.ts` and `trusted-degradation.ts`.
-  - The runtime enforcement path in `src/core/`: `review-engine.ts` with `review-result-gates.ts`,
+  - The runtime enforcement path in `src/modules/review/services/`: `review-engine.ts` with `review-result-gates.ts`,
     and `review-coordinator.ts` with the `review-pipeline.ts`, `review-disposition.ts`,
     `review-reply.ts`, `reply-events.ts` and `coordinator-state.ts` modules it delegates to.
-- The V1 adapter and isolated reply transport (`src/opencode/v1-adapter.ts`,
-  `src/opencode/reply-transport.ts`) reach into OpenCode's authenticated SDK transport. Changes
+- The V1 adapter and isolated reply transport (`src/adapters/opencode/v1-adapter.ts`,
+  `src/adapters/opencode/reply-transport.ts`) reach into OpenCode's authenticated SDK transport. Changes
   there must keep the "refusing unsafe partial startup" behavior.
 - The reviewer has no operational tools. On V2 it sees only its schema-validated result tool in
   its isolated location. Never give it operational tools or MCP access.

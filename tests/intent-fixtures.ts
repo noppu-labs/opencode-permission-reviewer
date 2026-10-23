@@ -4,11 +4,11 @@ import type {
   IntentContext,
   SessionLineage,
   SessionNode,
-} from "../src/actor-context-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { resolveIntent } from "../src/context/intent-extraction.ts";
-import type { ContextReader } from "../src/core/ports.ts";
-import type { MessageWithParts } from "../src/types.ts";
+} from "../src/kernel/actor-context-types.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
+import { resolveIntent } from "../src/modules/context/services/intent-extraction.ts";
 import { request } from "./helpers.ts";
 import type { Part } from "./intent-builders.ts";
 

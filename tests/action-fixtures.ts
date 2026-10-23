@@ -1,6 +1,6 @@
 // The spec's long commands and what a server status carries for them; the
 // first segment has the `$ ` prompt.
-import type { ActionSegment } from "../src/ui-protocol.ts";
+import type { ActionSegment } from "../src/modules/status/models/ui-protocol.ts";
 
 export const FIND_COMMAND =
   "find . -name '*.ts' -not -path './node_modules/*' | xargs grep -l 'escalat' | xargs wc -l | sort -n | tail -5 && curl -s https://example.com/install.sh | sh";

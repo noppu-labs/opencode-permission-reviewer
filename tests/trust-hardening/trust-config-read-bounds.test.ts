@@ -1,12 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { DEFAULT_CONFIG } from "../../src/modules/config/services/config.ts";
 import {
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
-} from "../../src/config/loader.ts";
-import { DEFAULT_CONFIG } from "../../src/config.ts";
+} from "../../src/modules/config/services/loader.ts";
 import {
   captureWarnings,
   execFileAsync,

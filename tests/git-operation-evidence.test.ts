@@ -4,7 +4,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { enrichGitEvidence } from "../src/git-evidence.ts";
+import { enrichGitEvidence } from "../src/modules/evidence/git/git-evidence.ts";
 import { request } from "./helpers.ts";
 
 const exec = promisify(execFile);

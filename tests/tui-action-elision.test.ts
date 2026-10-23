@@ -4,7 +4,7 @@ import {
   createUiStatus,
   permissionAction,
   type ReviewUiStatus,
-} from "../src/ui-protocol.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
 import {
   FIND_ACTION,
   FIND_SEGMENTS,

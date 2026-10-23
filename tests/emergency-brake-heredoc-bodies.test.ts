@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { MAX_BODY_COMMANDS } from "../src/brake-body-commands.ts";
-import { ANALYSIS_LIMIT_REASON } from "../src/brake-readings.ts";
-import { MAX_BODY_DEPTH } from "../src/capability/heredoc-body-commands.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { MAX_BODY_COMMANDS } from "../src/modules/analysis/brake/brake-body-commands.ts";
+import { ANALYSIS_LIMIT_REASON } from "../src/modules/analysis/brake/brake-readings.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { MAX_BODY_DEPTH } from "../src/modules/analysis/capability/heredoc/heredoc-body-commands.ts";
 import { request } from "./helpers.ts";
 
 const blocked =

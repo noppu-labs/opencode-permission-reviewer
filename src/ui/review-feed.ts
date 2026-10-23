@@ -1,11 +1,11 @@
 import type { Plugin } from "@opencode/plugin/tui";
-import { asObjectLike } from "../is-record.ts";
-import type { ReviewUiState } from "../ui-state.ts";
+import { ReviewerRpc } from "../modules/status/models/rpc.ts";
+import type { ReviewUiState } from "../modules/status/services/ui-state.ts";
+import { asObjectLike } from "../utils/is-record.ts";
 import { ConfigNotices } from "./config-notices.ts";
 import { manualToast } from "./manual-toast.ts";
 import { type Connection, receive, release } from "./review-connection.ts";
 import { isSnapshot, ReviewStore } from "./review-store.ts";
-import { ReviewerRpc } from "./rpc.ts";
 
 type Context = Parameters<Plugin.Definition["setup"]>[0];
 

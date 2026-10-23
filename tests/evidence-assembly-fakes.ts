@@ -1,14 +1,14 @@
 // Fake reader and providers for the assembleEvidence characterisation tests; every call lands in one shared log.
 
-import type { AskDecision } from "../src/actor-context-types.ts";
-import type { EvidenceAssemblyContext } from "../src/context/evidence-assembler.ts";
-import type { ContextReader } from "../src/core/ports.ts";
+import type { AskDecision } from "../src/kernel/actor-context-types.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
+import type { EvidenceAssemblyContext } from "../src/modules/context/services/evidence-assembler.ts";
 import type {
   EvidenceFragment,
   EvidenceProvider,
   EvidenceProviderInput,
-} from "../src/evidence/provider.ts";
-import type { ReviewerConfig } from "../src/types.ts";
+} from "../src/modules/evidence/providers/provider.ts";
 
 export const CURRENT = "ses_main";
 export const PARENT = "ses_parent";

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { brakeReadingsReason } from "../src/brake-readings.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
-import type { ShellQuoting } from "../src/shell-lex-state.ts";
+import { brakeReadingsReason } from "../src/modules/analysis/brake/brake-readings.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import type { ShellQuoting } from "../src/modules/analysis/shell/shell-lex-state.ts";
 import { request } from "./helpers.ts";
 
 const blocked =

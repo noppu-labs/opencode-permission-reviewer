@@ -4,13 +4,11 @@ import { readFile, rm } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import type { McpListOutput, OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
-import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../src/types.ts";
+import { V2ReviewerBackend } from "../src/adapters/opencode/v2/reviewer-backend.ts";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { config, decision, request } from "./helpers.ts";
 
 const OPERATIONAL = "/workspace/operational";

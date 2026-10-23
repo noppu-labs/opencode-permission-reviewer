@@ -1,17 +1,17 @@
 import { expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { assembleEvidence } from "../src/context/evidence-assembler.ts";
+import type { ClientResponse } from "../src/adapters/opencode/types.ts";
+import { createV1ContextReader } from "../src/adapters/opencode/v1/context-reader.ts";
+import { createV2ContextReader } from "../src/adapters/opencode/v2/context-reader.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
+import { assembleEvidence } from "../src/modules/context/services/evidence-assembler.ts";
 import {
   buildEvidence,
   buildIntentHistory,
   buildTranscript,
   selectIntentMessages,
-} from "../src/context.ts";
-import type { ContextReader } from "../src/core/ports.ts";
-import type { ClientResponse } from "../src/opencode/types.ts";
-import { createV1ContextReader } from "../src/opencode/v1/context-reader.ts";
-import { createV2ContextReader } from "../src/opencode/v2/context-reader.ts";
-import type { MessageWithParts } from "../src/types.ts";
+} from "../src/modules/context/services/prompt/context.ts";
 import { defined, MockClient, request } from "./helpers.ts";
 
 function intentMessagesOf(

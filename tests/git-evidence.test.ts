@@ -15,7 +15,7 @@ import { promisify } from "node:util";
 import {
   enrichGitEvidence,
   type GitEnrichmentResult,
-} from "../src/git-evidence.ts";
+} from "../src/modules/evidence/git/git-evidence.ts";
 import { request } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
@@ -130,7 +130,10 @@ else process.exit(1)
 `,
     );
     await chmod(executable, 0o755);
-    const entry = new URL("../src/git-evidence.ts", import.meta.url).href;
+    const entry = new URL(
+      "../src/modules/evidence/git/git-evidence.ts",
+      import.meta.url,
+    ).href;
     const command = "git checkout HEAD -- target.txt";
     const input = request({ patterns: [command], metadata: { command } });
     for (const stdout of ["", " M target.txt\n"]) {

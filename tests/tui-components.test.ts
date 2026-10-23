@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { createUiStatus, type ReviewUiStatus } from "../src/ui-protocol.ts";
+import {
+  createUiStatus,
+  type ReviewUiStatus,
+} from "../src/modules/status/models/ui-protocol.ts";
 import { request } from "./helpers.ts";
 import {
   ConfigNoticeSlot,

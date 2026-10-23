@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { actionSegments } from "../src/ui-action-segments.ts";
-import type { ActionSegment } from "../src/ui-protocol.ts";
+import type { ActionSegment } from "../src/modules/status/models/ui-protocol.ts";
+import { actionSegments } from "../src/modules/status/services/ui-action-segments.ts";
 
 /** A seeded generator, so every run checks the same commands. */
 function random(seed: number): () => number {

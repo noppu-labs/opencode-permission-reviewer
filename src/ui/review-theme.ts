@@ -1,5 +1,5 @@
 import type { ColorInput } from "@opentui/core";
-import { asObjectLike } from "../is-record.ts";
+import { asObjectLike } from "../utils/is-record.ts";
 import type { ReviewTheme } from "./components.tsx";
 
 const color = (value: unknown): ColorInput | undefined => {

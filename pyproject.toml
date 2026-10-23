@@ -57,9 +57,9 @@ ignore_names = ["do_POST", "log_message"]
 # foreign-language text on purpose.
 skip = "bun.lock,*.lock,./node_modules,./dist,./coverage,benchmarks/permission-reviewer/data/*,tests/live-fixture/*"
 # afterall: Bun's `afterAll` test hook.
-# unparseable: the runtime reason string in src/opencode/v1/v1-review-decision.ts, asserted by
+# unparseable: the runtime reason string in src/adapters/opencode/v1/v1-review-decision.ts, asserted by
 #   tests and quoted in docs and the CHANGELOG.
-# truncat: a regex stem in the pinned src/core/review-result-gates.ts (PINNED_BLOBS in
+# truncat: a regex stem in the pinned src/modules/review/services/review-result-gates.ts (PINNED_BLOBS in
 #   benchmarks/permission-reviewer/lib/pinned-blobs.mjs hashes that file).
 # opeator: a deliberate invalid enum value under test in
 #   tests/trust-hardening/trust-rule-conditions.test.ts.

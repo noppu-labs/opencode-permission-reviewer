@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CapturedFrame, CapturedSpan } from "@opentui/core";
 import type { ScreenName } from "../scripts/capture/screens.ts";
-import type { HandoffTrigger } from "../src/types.ts";
+import type { HandoffTrigger } from "../src/kernel/review-result.ts";
 // Before the dynamic imports below: see tests/tui-loader.ts.
 import "./tui-loader.ts";
 

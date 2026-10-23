@@ -1,6 +1,6 @@
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
-import type { ParsedCommand } from "../src/capability/capability-types.ts";
-import { parseCommand } from "../src/capability/command-parser.ts";
+import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import type { ParsedCommand } from "../src/modules/analysis/capability/models/capability-types.ts";
 
 const DIR = "/home/user/project";
 

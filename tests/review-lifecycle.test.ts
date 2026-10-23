@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
-import { ReviewLimiter } from "../src/core/review-limiter.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
+import { ReviewLimiter } from "../src/modules/review/services/review-limiter.ts";
 import { request, runtime } from "./helpers.ts";
 
 test("attempt identity, deadline, and terminal state cannot be resurrected", async () => {

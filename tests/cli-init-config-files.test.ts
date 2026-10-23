@@ -21,10 +21,10 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { applyPlannedWrites } from "../src/cli/init-apply.ts";
-import { planFileChange } from "../src/cli/init-config-files.ts";
-import { writeBackup, writeEntry } from "../src/cli/init-config-write.ts";
-import type { PackageInfo, PluginEntry } from "../src/cli/init-types.ts";
+import { applyPlannedWrites } from "../src/cli/init/init-apply.ts";
+import { planFileChange } from "../src/cli/init/init-config-files.ts";
+import { writeBackup, writeEntry } from "../src/cli/init/init-config-write.ts";
+import type { PackageInfo, PluginEntry } from "../src/cli/init/init-types.ts";
 
 const pkg: PackageInfo = {
   name: "test-plugin",

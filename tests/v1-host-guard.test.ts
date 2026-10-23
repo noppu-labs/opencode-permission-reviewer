@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { assertV1Host } from "../src/opencode/host-guard.ts";
+import { assertV1Host } from "../src/adapters/opencode/host-guard.ts";
 
 describe("legacy adapter host guard", () => {
   test("accepts a v1 client with the raw transport", () => {
