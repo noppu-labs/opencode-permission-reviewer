@@ -17,7 +17,7 @@ The deterministic gates check a decision's consistency, not its semantic correct
 model that misclassifies an unsafe action as low risk can produce an unsafe `allow` in either
 output format, so pick as strong a reviewer model as your budget allows.
 
-To report a vulnerability, see [SECURITY.md](../SECURITY.md).
+To report a vulnerability, see [SECURITY.md](SECURITY.md).
 
 ## Safety properties
 

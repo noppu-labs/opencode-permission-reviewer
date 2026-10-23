@@ -221,16 +221,16 @@ describe("npm pack ship set", () => {
       "README.md",
       "CHANGELOG.md",
       "LICENSE",
-      "LICENSE-APACHE",
-      "NOTICE",
-      "SECURITY.md",
+      "docs/LICENSE-APACHE",
+      "docs/NOTICE",
+      "docs/SECURITY.md",
       "dist/index.js",
       "dist/index.d.ts",
       "server.js",
       "tui.tsx",
       "rpc.js",
       "dist/rpc.js",
-      "MIGRATION.md",
+      "docs/MIGRATION.md",
       "dist/explain.js",
       // TUI ships as raw TSX so the host compiles it with its Solid pipeline.
       ...TUI_SHIP_FILES,
@@ -260,8 +260,8 @@ describe("npm pack ship set", () => {
         f.startsWith(".github/") ||
         f.startsWith("node_modules/") ||
         f === "AGENTS.md" ||
-        f === "CONTRIBUTING.md" ||
-        f === "CODE_OF_CONDUCT.md" ||
+        f === "docs/CONTRIBUTING.md" ||
+        f === "docs/CODE_OF_CONDUCT.md" ||
         f === "tsdown.config.ts" ||
         f === "tsconfig.json" ||
         f === "tsconfig.hook.json" ||

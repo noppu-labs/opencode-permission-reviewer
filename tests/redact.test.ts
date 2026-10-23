@@ -32,7 +32,7 @@ import {
 } from "./fixtures/synthetic-secrets.ts";
 import { request } from "./helpers.ts";
 
-// Scanner-prefixed fixtures are concatenated (see CONTRIBUTING.md, "Before
+// Scanner-prefixed fixtures are concatenated (see docs/CONTRIBUTING.md, "Before
 // opening a pull request"); the ones Biome's noSecrets flags live in
 // fixtures/synthetic-secrets.ts.
 const AWS_EX = "AKIA" + "IOSFODNN7EXAMPLE";

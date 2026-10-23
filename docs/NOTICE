@@ -5,7 +5,7 @@ This project is a fork of warc0s/opencode-permission-reviewer
 (https://github.com/warc0s/opencode-permission-reviewer), Copyright 2026 Warc0s,
 licensed under the Apache License, Version 2.0 (see ./LICENSE-APACHE). Code from
 that project remains under the Apache License, Version 2.0. Changes made in this
-fork are licensed under the MIT License (see ./LICENSE).
+fork are licensed under the MIT License (see ../LICENSE).
 
 The reviewer policy in src/modules/context/services/prompt/policy.ts is adapted
 from the OpenAI Codex Guardian auto-review policy and policy template:

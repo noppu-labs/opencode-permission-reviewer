@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.3] - 2026-10-24
+
+### Changed
+
+- The README's install section leads with `opencode plugin add` on OpenCode V2 and keeps the
+  `bunx ... init --tui` command for V1, where `opencode plugin` does not register the TUI
+  overlay. The README also opens with a banner image.
+- The npm package has a fuller description and more search keywords.
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `MIGRATION.md`, `NOTICE` and
+  `LICENSE-APACHE` moved from the repository root to `docs/`. The npm package now ships
+  `docs/MIGRATION.md`, `docs/NOTICE`, `docs/LICENSE-APACHE` and `docs/SECURITY.md` in place of
+  the root copies.
+- No behaviour change: the plugin code, package exports, command-line interface and
+  configuration are the same as in 3.2.2.
+
 ## [3.2.2] - 2026-10-23
 
 ### Changed

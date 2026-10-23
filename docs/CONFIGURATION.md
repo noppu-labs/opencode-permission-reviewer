@@ -81,7 +81,7 @@ it works with the background service, `opencode --standalone` and
 `OPENCODE_PERMISSION_REVIEWER_HOST_URL` and that server's `OPENCODE_PASSWORD`
 in the trusted process environment. An identity check rejects a server that is
 not running this plugin. Provider credentials stay inside OpenCode. See
-[Migration and rollback](../MIGRATION.md) for the full connection requirements.
+[Migration and rollback](MIGRATION.md) for the full connection requirements.
 
 ### Structured output, retention, and budget
 
