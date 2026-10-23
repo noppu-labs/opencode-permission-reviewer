@@ -3,9 +3,11 @@
 
 import type {
   HandoffInfo,
-  HandoffTrigger,
   OnHandoff,
   ReasoningHandoff,
+} from "../../../kernel/review-handoff.ts";
+import type {
+  HandoffTrigger,
   ReviewExecutionResult,
 } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";

@@ -2,6 +2,8 @@ import type { ReviewAttemptView } from "../../../kernel/review-attempt.ts";
 import type {
   OnHandoff,
   ReasoningHandoff,
+} from "../../../kernel/review-handoff.ts";
+import type {
   ReviewExecutionResult,
   SystemOneScores,
 } from "../../../kernel/review-result.ts";

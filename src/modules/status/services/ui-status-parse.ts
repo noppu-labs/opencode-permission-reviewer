@@ -1,6 +1,6 @@
 import type { ReviewDecision } from "../../../kernel/review-decision.ts";
+import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
 import type {
-  HandoffInfo,
   HandoffTrigger,
   ManualResolution,
 } from "../../../kernel/review-result.ts";

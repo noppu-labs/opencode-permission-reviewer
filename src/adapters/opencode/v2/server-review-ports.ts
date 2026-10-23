@@ -2,7 +2,7 @@
 // the host connection, the backend review and the attempt's liveness.
 
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
-import type { HandoffInfo } from "../../../kernel/review-result.ts";
+import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
 import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import {
   assembleEvidence,

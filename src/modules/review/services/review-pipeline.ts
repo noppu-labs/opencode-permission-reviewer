@@ -4,10 +4,8 @@
 
 import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
-import type {
-  HandoffInfo,
-  ReviewExecutionResult,
-} from "../../../kernel/review-result.ts";
+import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import { invariant } from "../../../utils/invariant.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { assembleEvidence } from "../../context/services/evidence-assembler.ts";

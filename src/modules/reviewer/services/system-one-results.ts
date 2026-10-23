@@ -2,9 +2,9 @@
 // undisposed until it is known to be final, and the reasoning reviewer's once
 // handed off, each with the resolution of an escalation.
 
+import type { ReasoningHandoff } from "../../../kernel/review-handoff.ts";
 import type {
   ManualResolution,
-  ReasoningHandoff,
   ReviewExecutionResult,
   SystemOneScores,
 } from "../../../kernel/review-result.ts";

@@ -1,7 +1,5 @@
-import type {
-  OnHandoff,
-  ReviewExecutionResult,
-} from "../../../kernel/review-result.ts";
+import type { OnHandoff } from "../../../kernel/review-handoff.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { isSystemOneReviewerModel } from "../../../modules/config/services/reviewer-model.ts";
 import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";

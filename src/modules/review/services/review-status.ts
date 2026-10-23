@@ -3,10 +3,8 @@
 
 import { withTimeout } from "../../../adapters/opencode/transport.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
-import type {
-  HandoffInfo,
-  ReviewExecutionResult,
-} from "../../../kernel/review-result.ts";
+import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import { isSystemOneReviewerModel } from "../../config/services/reviewer-model.ts";
