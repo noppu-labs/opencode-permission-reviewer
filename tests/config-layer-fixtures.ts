@@ -1,12 +1,12 @@
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import {
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
 } from "../src/modules/config/services/loader.ts";
 import type { InlineOptionsTrust } from "../src/modules/config/services/sources.ts";
-import type { ReviewerConfig } from "../src/types.ts";
 import { captureWarnings, tempDir } from "./trust-hardening/trust-fixtures.ts";
 
 /** Config layers for one load. A string is written as is, so a test can plant

@@ -2,7 +2,8 @@
 // hand-off, System One's scores, the reviewer outcome and decision, and the
 // reviewer session; and the resolved config's warnings.
 
-import type { ReviewExecutionResult, ReviewerConfig } from "../../../types.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { ReviewAuditRecord } from "../models/audit-record.ts";
 
 export function escalationFields(

@@ -2,6 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import { createV2ReviewerBackend } from "../../src/adapters/opencode/v2/backend-factory.ts";
+import type { ReviewExecutionResult } from "../../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../../src/kernel/reviewer-config.ts";
 import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
 import {
   type HandoffInfo,
@@ -9,7 +11,6 @@ import {
   SystemOneReviewerBackend,
 } from "../../src/modules/reviewer/services/backend.ts";
 import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/modules/reviewer/services/system-one-routing.ts";
-import type { ReviewExecutionResult, ReviewerConfig } from "../../src/types.ts";
 import { config } from "../helpers.ts";
 import {
   attemptWithRemaining,

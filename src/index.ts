@@ -89,6 +89,11 @@ const module: { id: string; server: Plugin; setup: typeof setup } = {
 export default module;
 // biome-ignore lint/performance/noBarrelFile: package entry for "." and "./server" (dist/index.js); the re-exports are the public API
 export { extractPermissionRequest } from "./adapters/opencode/event-normalizer.ts";
+export type * from "./kernel/actor-context-types.ts";
+export type * from "./kernel/permission-request.ts";
+export type * from "./kernel/review-decision.ts";
+export type * from "./kernel/review-result.ts";
+export type * from "./kernel/reviewer-config.ts";
 export { emergencyBrakeReason } from "./modules/analysis/brake/emergency-brake.ts";
 export type * from "./modules/analysis/capability/models/capability-types.ts";
 export type * from "./modules/audit/models/audit-record.ts";
@@ -98,7 +103,8 @@ export {
 } from "./modules/audit/services/audit.ts";
 export { resolveConfig } from "./modules/config/services/config.ts";
 export { loadResolvedConfig } from "./modules/config/services/loader.ts";
-export type * from "./modules/context/models/actor-context-types.ts";
+export type * from "./modules/context/models/message.ts";
+export type * from "./modules/context/models/review-envelope.ts";
 export {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
@@ -114,7 +120,6 @@ export {
   resolveEscalationDisposition,
 } from "./modules/review/services/decision/escalation.ts";
 export { ReviewCoordinator as ApprovalReviewerRuntime } from "./modules/review/services/review-coordinator.ts";
-export type * from "./modules/reviewer/models/system-one-types.ts";
 export {
   createUiStatus,
   decodeUiStatus,
@@ -122,5 +127,4 @@ export {
   permissionAction,
 } from "./modules/status/models/ui-protocol.ts";
 export { ReviewUiState } from "./modules/status/services/ui-state.ts";
-export type * from "./types.ts";
 export { redactSecrets } from "./utils/redact.ts";

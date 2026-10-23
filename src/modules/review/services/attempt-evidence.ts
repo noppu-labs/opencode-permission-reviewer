@@ -1,6 +1,6 @@
 // Evidence the coordinator bridges onto a request's attempt for its audit
 // record: merged only while the attempt is still active.
-import type { ReviewEnvelope } from "../../../types.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import type { ReviewAttempt } from "./review-attempt.ts";
 
 export function rememberEvidence(

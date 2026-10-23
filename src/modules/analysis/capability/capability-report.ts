@@ -1,6 +1,6 @@
 // Builds the CapabilityAssessment from the analyzer's accumulated facts: provenanced facts, summary, completeness and warnings.
 
-import type { Provenanced } from "../../context/models/actor-context-types.ts";
+import type { Provenanced } from "../../../kernel/actor-context-types.ts";
 import {
   hasCommandSubstitution,
   heuristicFact,

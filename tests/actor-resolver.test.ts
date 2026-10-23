@@ -3,13 +3,11 @@ import type {
   ClientResponse,
   OpenCodeClientLike,
 } from "../src/adapters/opencode/types.ts";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import { unknownResolution } from "../src/modules/context/models/unknown-resolution.ts";
 import { resolveActorContext } from "../src/modules/context/services/actor-resolver.ts";
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewerConfig,
-} from "../src/types.ts";
 
 // --- mock client ------------------------------------------------------------
 

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { IntentBlock } from "../src/modules/context/models/actor-context-types.ts";
-import type { MessageWithParts } from "../src/types.ts";
+import type { IntentBlock } from "../src/kernel/actor-context-types.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import { block, text, user } from "./intent-builders.ts";
 import { CURRENT, fakeReader, lineage, resolve } from "./intent-fixtures.ts";
 

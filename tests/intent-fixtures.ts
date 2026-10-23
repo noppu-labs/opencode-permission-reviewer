@@ -1,14 +1,14 @@
 // Fake ContextReader, lineage and resolveIntent call shared by the resolveIntent characterisation tests.
 
-import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import type {
   IntentContext,
   SessionLineage,
   SessionNode,
-} from "../src/modules/context/models/actor-context-types.ts";
+} from "../src/kernel/actor-context-types.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import { resolveIntent } from "../src/modules/context/services/intent-extraction.ts";
 import type { ContextReader } from "../src/modules/review/ports.ts";
-import type { MessageWithParts } from "../src/types.ts";
 import { request } from "./helpers.ts";
 import type { Part } from "./intent-builders.ts";
 

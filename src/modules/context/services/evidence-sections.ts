@@ -1,14 +1,14 @@
 // Reviewer prompt section renderers: action purpose, ask decisions, policy summary and the actor-context sections.
 
 import type {
-  PolicyTrace,
-  ReviewEnvelope,
-  ReviewerConfig,
-} from "../../../types.ts";
-import type {
   ActionPurpose,
   AskDecision,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type {
+  PolicyTrace,
+  ReviewerConfig,
+} from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../models/review-envelope.ts";
 import {
   renderActor,
   renderCompleteness,

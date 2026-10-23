@@ -1,7 +1,7 @@
 // Parsed-command and capability-assessment types the bash analyzer produces.
 
-import type { CapabilityActionClass } from "../../../../types.ts";
-import type { Provenanced } from "../../../context/models/actor-context-types.ts";
+import type { Provenanced } from "../../../../kernel/actor-context-types.ts";
+import type { CapabilityActionClass } from "../../../../kernel/reviewer-config.ts";
 
 // Capability facts are evidence for the reviewer prompt and inputs to the
 // declarative policy routes, which decide only under

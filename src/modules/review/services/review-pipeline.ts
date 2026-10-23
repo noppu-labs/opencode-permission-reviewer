@@ -3,13 +3,11 @@
 // disposition and the approved-script memory.
 
 import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
-import type {
-  PermissionRequest,
-  ReviewEnvelope,
-  ReviewExecutionResult,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import { invariant } from "../../../utils/invariant.ts";
 import { ATTEMPT_REGISTERED } from "../../audit/services/review-coordinator-support.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { assembleEvidence } from "../../context/services/evidence-assembler.ts";
 import type { HandoffInfo } from "../../reviewer/services/backend.ts";
 import { rememberEvidence } from "./attempt-evidence.ts";

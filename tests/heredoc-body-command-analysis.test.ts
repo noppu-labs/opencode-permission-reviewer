@@ -1,6 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { CapabilityActionClass } from "../src/kernel/reviewer-config.ts";
 import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
 import { walkBodyCommands } from "../src/modules/analysis/capability/body-command-walk.ts";
 import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
@@ -16,7 +17,6 @@ import type { ShellQuoting } from "../src/modules/analysis/shell/shell-lex-state
 import * as lexer from "../src/modules/analysis/shell/shell-lexer.ts";
 import { newAnalysisBudget } from "../src/modules/analysis/shell/shell-lexer.ts";
 import type { ShellSegment } from "../src/modules/analysis/shell/shell-token.ts";
-import type { CapabilityActionClass } from "../src/types.ts";
 
 interface AnalysisRow {
   id: string;

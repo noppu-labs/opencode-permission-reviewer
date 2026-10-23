@@ -1,3 +1,7 @@
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import { buildEvidenceResult } from "../../../modules/context/services/prompt/context.ts";
 import {
   buildReviewerPrompt,
@@ -6,12 +10,6 @@ import {
 import { enforceDecision } from "../../../modules/review/services/decision/decision-gates.ts";
 import { applyEscalationDisposition } from "../../../modules/review/services/decision/escalation.ts";
 import { formatFailureReason } from "../../../modules/review/services/decision/failure-reason.ts";
-import type {
-  ReviewDecision,
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
 
 /** Build the evidence prompt, folding its completeness into the envelope. */
 export function reviewerEvidencePrompt(

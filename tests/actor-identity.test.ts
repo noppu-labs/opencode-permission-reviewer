@@ -1,15 +1,15 @@
 import { describe, expect, test } from "bun:test";
+import type { Provenanced } from "../src/kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
+import type {
+  PolicyRule,
+  ReviewerConfig,
+} from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
-import type { Provenanced } from "../src/modules/context/models/actor-context-types.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import { resolveActorContext } from "../src/modules/context/services/actor-resolver.ts";
 import { evaluatePolicy } from "../src/modules/policy/policy-engine.ts";
 import type { ContextReader } from "../src/modules/review/ports.ts";
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  PolicyRule,
-  ReviewerConfig,
-} from "../src/types.ts";
 import { request } from "./helpers.ts";
 import { capability } from "./policy-fixtures.ts";
 

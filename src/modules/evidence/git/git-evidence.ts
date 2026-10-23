@@ -1,4 +1,4 @@
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { sourceCommand } from "../providers/source-command.ts";
 import { plannedActions } from "./git-command-plan.ts";
 import { verifiedInspection } from "./git-inspection-gate.ts";

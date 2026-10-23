@@ -22,64 +22,64 @@
 // intended reminder rather than a flake.
 export const PINNED_BLOBS = {
   "src/modules/context/services/prompt/policy.ts":
-    "d032f4d3aa1610e57c52aa360f5087826e94af88",
+    "89633734d7b4753c06d221d0487298b3dcd8403e",
   "src/modules/context/services/prompt/context.ts":
-    "ba2399075ae92c55178b953758f001deab9caa49",
+    "d0e3077d17634fc712b7f1e5539bb641e3ccf0d0",
   "src/modules/context/services/evidence-sections.ts":
-    "0cdbd66cc8e3b99ab3b5f332e236a5c003a16cfd",
+    "233251f24eaf2d63c493d1485fdcd0ea7d72ee26",
   "src/modules/context/services/prompt-budget.ts":
     "5c2b3aff99e9e4d8ca0822387b76f4aff6d91c51",
   "src/modules/context/services/actor-sections.ts":
-    "9410875588a1f5286b881aa2d9d5575619dfcc35",
+    "eceb157103b5861dab0381b18914caa5c73f9e43",
   "src/modules/context/services/capability-section.ts":
     "c8e4bee049460fa0130424e76ff1cf8653824bf0",
   "src/modules/context/services/evidence-layout.ts":
-    "3c3515df3fe33d2a8c9e9c98ce0b609276c0b508",
+    "81d44aeb010f81c98c9817444996483d92d6b82d",
   "src/modules/context/services/intent-history.ts":
-    "c3abc7d8aa79c9b98480216aced7fe2a369837a6",
+    "38cdd5e0c4a9c59e17f492731fba53161604f012",
   "src/modules/context/services/message-summary.ts":
-    "9c8521685ab246f3901a255352070567c97dde58",
+    "28531fd9a79158418fd0ca90f5c9a9daf705c6af",
   "src/modules/context/services/pending-permission.ts":
-    "a0e6f0799c27ebab2cab9af4709a9451777ca879",
+    "87e366d7e3f9585d324f9b60b4a403f32d5fc8b9",
   "src/modules/context/services/synthetic-parts.ts":
     "d57f10540a5b243a4da49f3dc72deb71d307d322",
   "src/modules/config/services/config.ts":
-    "425a9562de8c84221043f074fa37d86122bdf9c6",
+    "6cf62c92f67a143eebaf050141abee760882741a",
   "src/modules/config/models/config-fields.ts":
-    "7f694ccb89fcd9a00e72c36f58456aae47a9e0ea",
+    "ec0edb0053ffd41c6fd0a180fd3523a2dc5c664e",
   "src/modules/config/models/config-knobs.ts":
-    "63bb7054fe458596761a1b91f870bb85fd7fe8ce",
+    "97bc958a7cdb5c949ff685c509582595e667bff5",
   "src/modules/config/models/config-policy-rules.ts":
-    "d744795e5775ab16249c9b07a9ec91864af54350",
+    "f7cfcee7b003cc0535e5705b5e6fe711a4e70526",
   "src/modules/config/models/config-risk-policy.ts":
-    "7481defb9cb600c2107f55e2993549fe1b092b3a",
+    "4d6aac8fe9ab15504cfa7e510c80cceccb237892",
   "src/modules/config/models/config-rule-condition.ts":
-    "3d3fbbed1509d7f863aea1faa4fa4e1e78f45e71",
+    "e0661cdd322b9d47208d7097b904a4aa1293a149",
   "src/modules/reviewer/services/system-one-routing.ts":
-    "90af84e9be2cf5f25202904518ea8108f943cecb",
+    "4ceecf4292d4f6ead9ede8864d76704763cec4ff",
   "src/modules/reviewer/services/reviewer-model.ts":
-    "fa08a09bfc466912c5e25bbe042d93b785c0e3ee",
+    "2f8f5a063ad14bd9df81508f86d07db3b608d1d5",
   "src/modules/review/services/decision/decision.ts":
-    "c57b8fb2203e3d4ffbd67f0d565817e50c3d76aa",
+    "add472502af2eb787cc05b8ec8dabf6a64c936fa",
   "src/utils/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",
   "src/modules/review/services/decision/decision-gates.ts":
-    "72f170c5b89b7e89f46ab15f4da3ec7e653000a8",
+    "3d1cf7a15011cf9ead40c21f39f4774e291f47ce",
   "src/modules/review/services/decision/decision-schema.ts":
     "e60339d6fb71ac232b79c1261a02aae265f05852",
   "src/modules/policy/policy-engine.ts":
-    "18f59321a709e7fdbab3af5ef4795050b338c105",
+    "afdaa540196e3a5ab24e156363b85be73ee689d1",
   "src/modules/policy/policy-conditions.ts":
-    "73ca7b766e2eb826c0ba9c8412bd2d59fb67dc25",
+    "fcf045bab5994eb4de28ac82eccbd7535da3ec9a",
   "src/modules/policy/profile-templates.ts":
-    "3268ece34fde3e1f953a35b130d699a30e838121",
+    "024aa1f792ad81fd6df54d783733646fc229f484",
   "src/modules/review/services/decision/escalation.ts":
-    "2d6a905134b139b63f01ffe4aed005d53ab8fab6",
+    "4f8b6c55389bb980ff20a20471a516b9316cd180",
   "src/modules/review/services/review-engine.ts":
-    "ae05d2d6abdf06ff876d0d9729bbc0c466f014d6",
+    "e154ee73ca335dbf968269c393daecb1f05ca4df",
   "src/modules/review/services/review-result-gates.ts":
-    "cc9cbd2b2f23584d922a7b7baa53b90c06d06e9a",
+    "fbeed822dc8b4c58876bb969213fe25149de7702",
   "src/modules/analysis/brake/emergency-brake.ts":
-    "3ae7edc081766826d3b58ca82044f99d61ce2041",
+    "15101a06561a737fe862465884eacce3cc9dec88",
   "src/modules/analysis/brake/brake-body-commands.ts":
     "13e05c5003872bb6d0d4bfa977592b7e88427983",
   "src/modules/analysis/brake/brake-heredoc-texts.ts":
@@ -89,7 +89,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/brake/brake-logical-lines.ts":
     "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/modules/analysis/reviewed-command.ts":
-    "b21dbbcd5de53f2b19a7303bf345634e269b3182",
+    "720a9a831c0f783c23ba4246dffc56f39fb661c7",
   "src/modules/analysis/brake/brake-arguments.ts":
     "28cc08429cc6dfdfdd78bb66d1cb334dea30c3ce",
   "src/modules/analysis/brake/brake-rm-flags.ts":
@@ -128,7 +128,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/bash-command-tables.ts":
     "cd2340a5e08bc3b2828e023f8ce4d5fc385bc496",
   "src/modules/analysis/capability/bash-facts.ts":
-    "24e597378e8ccc868bbef5c65cfe20ec406c3aed",
+    "782f183721f7079ed2e28d76149d27ce4b50b977",
   "src/modules/analysis/capability/bash-mutation.ts":
     "16a94d493590de426830a76a41b60dbfe60555d5",
   "src/modules/analysis/shell/shell-effective-commands.ts":
@@ -195,25 +195,25 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
     "7f28c2b734ca0a6565701f844311df6a716246b2",
   "src/modules/reviewer/services/review.ts":
-    "9dcf75004f2b1ee728bf6e364f42faca6e1b2432",
+    "285a3dd41b9b7ef3762619b7165e4df653abf48d",
   "src/modules/reviewer/services/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
   "src/modules/reviewer/services/system-one-answers.ts":
-    "aba22fc8d890e3e1a8c554ae32cefea983e858cb",
+    "61585ac1ea01aea0fdf009bf4eb3166e9b5e1073",
   "src/modules/reviewer/services/system-one-choices.ts":
-    "ec09af4e8a6f3ee10bb861e2859e2dbc793760d8",
+    "53f71dc0779d5885568fe4b94d1df22934a8c96e",
   "src/modules/reviewer/services/system-one-consistency.ts":
-    "9c3db9233f68c446bfa34b703809d3da69aa8a1f",
+    "c2578fdee786a974c5cc9dc92199c73473138e4b",
   "src/modules/reviewer/services/system-one-verdict.ts":
-    "2ffe31f0119d4142a0a433a823e7859a91ac60a2",
+    "281ed11080a78c65febe3b71c6abcba969bc8051",
   "src/modules/analysis/capability/capability-facts.ts":
-    "7c5cd7f470f84d0b7443206a72cdfcfd62181c59",
+    "1df5af1b01e96b26de9763f313496baea819f78a",
   "src/modules/analysis/capability/capability-report.ts":
-    "45fe6030615147ad8a771e83547ab53f4fbc46bd",
+    "bfd7fd9a58edb6705beba05a7a1e3d61f3be4a52",
   "src/modules/analysis/capability/segment-heads.ts":
     "9b513db95b058fd30e88e55c65eea0428eb4615a",
   "src/modules/analysis/capability/action-class.ts":
-    "2b1f0b234bf13c90fef85a4f910c89df9d65f17b",
+    "419e9a1224fbdda3bdfecffdb396fe4b135540fe",
   "src/modules/analysis/capability/sensitive-path-reads.ts":
     "ce931101b619252f9373ef1af89e0a00f1e51cdc",
   "src/modules/analysis/capability/effective-command-classifiers.ts":

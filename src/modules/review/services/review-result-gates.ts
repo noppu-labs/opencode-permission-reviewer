@@ -2,12 +2,10 @@
 // config, incomplete action evidence), the escalation disposition, and the
 // remote-script guidance.
 
-import type {
-  PermissionRequest,
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { sourceCommand } from "../../evidence/providers/source-command.ts";
 import { applyEscalationDisposition } from "./decision/escalation.ts";
 

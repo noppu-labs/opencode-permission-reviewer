@@ -2,7 +2,7 @@ import type {
   ActorProfile,
   CapabilityActionClass,
   PolicyCondition,
-} from "../../../types.ts";
+} from "../../../kernel/reviewer-config.ts";
 
 export const ACTOR_PROFILES: ReadonlySet<ActorProfile> = new Set([
   "read-only",

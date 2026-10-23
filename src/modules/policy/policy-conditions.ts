@@ -1,16 +1,16 @@
+import type { ActorContext } from "../../kernel/actor-context-types.ts";
 import type {
   ActorProfile,
   CapabilityActionClass,
   PolicyCondition,
   RepositoryTrust,
   ReviewerConfig,
-} from "../../types.ts";
+} from "../../kernel/reviewer-config.ts";
 import type { CapabilityAssessment } from "../analysis/capability/models/capability-types.ts";
 import {
   CONDITION_FLAG_KEYS,
   type ConditionFlag,
 } from "../config/models/config-rule-condition.ts";
-import type { ActorContext } from "../context/models/actor-context-types.ts";
 
 // Condition matching for the declarative policy engine: one check per
 // condition kind (enum lists, capability flags), evaluated in a fixed order.

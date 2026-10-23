@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
-import type { ReviewerConfig } from "../src/types.ts";
 import { loadConfig } from "./config-layer-fixtures.ts";
 
 /** A value for every key the project layer may never set, each different

@@ -1,4 +1,4 @@
-import type { ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
   isProviderModelId,
   resolveEscalationReviewer,

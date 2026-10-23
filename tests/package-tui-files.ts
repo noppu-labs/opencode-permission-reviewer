@@ -42,6 +42,5 @@ export const TUI_SHIP_FILES: readonly string[] = [
   "dist/tui/modules/status/services/ui-text-elide.ts",
   "dist/tui/modules/status/services/ui-status-parse.ts",
   "dist/tui/modules/status/services/ui-state.ts",
-  "dist/tui/types.ts",
   "dist/tui/adapters/opencode/event-normalizer.ts",
 ];

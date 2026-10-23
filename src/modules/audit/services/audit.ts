@@ -1,7 +1,7 @@
 import { mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, resolve } from "node:path";
-import type { ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { ReviewAuditRecord } from "../models/audit-record.ts";
 import { appendAuditLine, readTail } from "../repositories/audit-files.ts";
 import { sanitizeAuditRecord } from "./audit-sanitize.ts";

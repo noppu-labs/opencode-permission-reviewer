@@ -1,5 +1,6 @@
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type { ReviewEnvelope, ReviewerConfig } from "../../../types.ts";
 import type { RuntimeContext } from "../types.ts";
 import type { IsolatedReviewerDirectory } from "./v1-isolated-directory.ts";
 import { assertNoMcpServers } from "./v1-mcp-guard.ts";

@@ -1,5 +1,5 @@
+import type { AskDecision } from "../../../kernel/actor-context-types.ts";
 import { isRecord } from "../../../utils/is-record.ts";
-import type { AskDecision } from "../models/actor-context-types.ts";
 import {
   parseAsked,
   parseReply,

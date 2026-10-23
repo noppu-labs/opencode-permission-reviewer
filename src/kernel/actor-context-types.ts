@@ -1,6 +1,6 @@
 // Actor, lineage, intent and evidence-completeness types carried alongside a permission request.
 
-import type { ActorProfile } from "../../../types.ts";
+import type { ActorProfile } from "./reviewer-config.ts";
 
 // Observe-only by default: these types reach the reviewer prompt and the
 // audit record, and drive declarative policy routes only under

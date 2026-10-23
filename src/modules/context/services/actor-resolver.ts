@@ -1,17 +1,15 @@
 import type { OpenCodeClientLike } from "../../../adapters/opencode/types.ts";
 import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
 import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewerConfig,
-} from "../../../types.ts";
-import type { ContextReader } from "../../review/ports.ts";
-import type {
   ActorContext,
   EvidenceCompleteness,
   IntentContext,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ContextReader } from "../../review/ports.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import {
   type ActorResolution,
   unknownResolution,

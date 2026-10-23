@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import {
   buildEvidence,
   buildIntentHistory,
@@ -10,7 +11,6 @@ import {
   buildReviewerPrompt,
   REVIEWER_SYSTEM_PROMPT,
 } from "../src/modules/context/services/prompt/policy.ts";
-import type { MessageWithParts } from "../src/types.ts";
 import { request } from "./helpers.ts";
 
 describe("review evidence", () => {

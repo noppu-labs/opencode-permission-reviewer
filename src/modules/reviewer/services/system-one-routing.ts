@@ -1,4 +1,4 @@
-import type { ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { isSystemOneReviewerModel } from "./reviewer-model.ts";
 
 /** The least review time a hand-off needs; with less the request escalates. */

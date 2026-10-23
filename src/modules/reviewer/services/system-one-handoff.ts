@@ -1,9 +1,12 @@
 // Whether a Jev result goes to the reasoning reviewer, under which trigger,
 // and whether the attempt can still afford it.
 
-import type { HandoffTrigger, ReviewExecutionResult } from "../../../types.ts";
+import type {
+  HandoffTrigger,
+  ReviewExecutionResult,
+  SystemOneSignals,
+} from "../../../kernel/review-result.ts";
 import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
-import type { SystemOneSignals } from "../models/system-one-types.ts";
 import {
   HANDOFF_BUDGET_FLOOR_MS,
   type SystemOneRouting,

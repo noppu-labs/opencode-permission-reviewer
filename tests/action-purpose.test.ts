@@ -1,16 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import type {
   IntentBlock,
   IntentContext,
-} from "../src/modules/context/models/actor-context-types.ts";
+} from "../src/kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import { resolveActionPurpose } from "../src/modules/context/services/action-purpose.ts";
 import { buildEvidence } from "../src/modules/context/services/prompt/context.ts";
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewEnvelope,
-} from "../src/types.ts";
 import { request } from "./helpers.ts";
 
 function intent(partial: Partial<IntentContext> = {}): IntentContext {

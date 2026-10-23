@@ -1,11 +1,9 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewExecutionResult } from "../../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../../src/kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../src/modules/context/models/review-envelope.ts";
 import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
 import { evaluateReview } from "../../src/modules/review/services/review-engine.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../src/types.ts";
 import {
   choice,
   envelope,

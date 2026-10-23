@@ -2,10 +2,10 @@
 import { createHash } from "node:crypto";
 import type { PermissionEvaluation } from "@opencode/plugin/promise/permission";
 import packageInfo from "../../../../package.json";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewAuditRecord } from "../../../modules/audit/models/audit-record.ts";
 import { configWarningsField } from "../../../modules/audit/services/review-audit-outcome.ts";
 import { REVIEWER_PROMPT_VERSION } from "../../../modules/context/services/prompt/policy.ts";
-import type { ReviewExecutionResult } from "../../../types.ts";
 import { evidenceFields } from "./server-audit-evidence.ts";
 import type { ReviewRun, ServerState } from "./server-state.ts";
 

@@ -1,28 +1,21 @@
-// The audit record schema and the decision-source label threaded into it.
+// The audit record schema.
 
+import type { EvidenceConfidence } from "../../../kernel/actor-context-types.ts";
 import type {
-  ActorProfile,
-  EscalatedFrom,
-  EscalationDisposition,
-  ManualResolution,
-  ReviewExecutionResult,
   ReviewOutcome,
   RiskLevel,
   ScopeAlignment,
   UserAuthorization,
-} from "../../../types.ts";
-import type { EvidenceConfidence } from "../../context/models/actor-context-types.ts";
-import type { SystemOneScores } from "../../reviewer/models/system-one-types.ts";
-
-/** Which layer produced the final decision for a request. Threaded into the
- *  audit record so reports can split outcomes by source. */
-export type DecisionSource =
-  | "emergency-brake"
-  | "deterministic-policy"
-  | "llm-reviewer"
-  | "system-one-reviewer"
-  | "manual-superseded"
-  | "failure-safe";
+} from "../../../kernel/review-decision.ts";
+import type {
+  DecisionSource,
+  EscalatedFrom,
+  EscalationDisposition,
+  ManualResolution,
+  ReviewExecutionResult,
+  SystemOneScores,
+} from "../../../kernel/review-result.ts";
+import type { ActorProfile } from "../../../kernel/reviewer-config.ts";
 
 export interface ReviewAuditRecord {
   /**

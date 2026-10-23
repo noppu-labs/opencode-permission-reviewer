@@ -3,7 +3,7 @@
 import type {
   SessionLineage,
   SessionNode,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
 
 export interface SessionMetadata {
   id: string;

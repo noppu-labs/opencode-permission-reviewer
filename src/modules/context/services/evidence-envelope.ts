@@ -1,10 +1,6 @@
 // The review envelope folded from the gathered evidence: enrichment text, ssh audit, purpose, transcript sections and completeness.
 
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewEnvelope,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type {
   CapabilityAssessment,
   ParsedCommand,
@@ -12,6 +8,8 @@ import type {
 import type { EvidenceFragment } from "../../evidence/providers/provider.ts";
 import type { SshAuditSummary } from "../../evidence/ssh/ssh-evidence.ts";
 import type { VerifiedScriptEvidence } from "../../evidence/ssh/verified-ssh-script.ts";
+import type { MessageWithParts } from "../models/message.ts";
+import type { ReviewEnvelope } from "../models/review-envelope.ts";
 import type { ActorResolution } from "../models/unknown-resolution.ts";
 import { resolveActionPurpose } from "./action-purpose.ts";
 import type { EvidenceAssemblyContext } from "./evidence-assembler.ts";

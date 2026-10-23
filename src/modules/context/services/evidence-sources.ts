@@ -2,17 +2,15 @@
 
 import type { OpenCodeClientLike } from "../../../adapters/opencode/types.ts";
 import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewEnvelope,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type {
   EvidenceFragment,
   EvidenceProvider,
 } from "../../evidence/providers/provider.ts";
 import type { VerifiedScriptEvidence } from "../../evidence/ssh/verified-ssh-script.ts";
 import type { ContextReader } from "../../review/ports.ts";
+import type { MessageWithParts } from "../models/message.ts";
+import type { ReviewEnvelope } from "../models/review-envelope.ts";
 import type { ActorResolution } from "../models/unknown-resolution.ts";
 import type { EvidenceAssemblyContext } from "./evidence-assembler.ts";
 import { normalizeMessages } from "./prompt/context.ts";

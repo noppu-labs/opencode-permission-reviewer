@@ -1,7 +1,8 @@
 // Validation of Jev's answer set: the six choices and the nine noul signals.
+
+import type { SystemOneSignals } from "../../../kernel/review-result.ts";
+import { SYSTEM_ONE_BASES as BASES } from "../../../kernel/review-result.ts";
 import { isRecord } from "../../../utils/is-record.ts";
-import type { SystemOneSignals } from "../models/system-one-types.ts";
-import { SYSTEM_ONE_BASES as BASES } from "../models/system-one-types.ts";
 import {
   finiteProbability,
   type ParsedChoice,

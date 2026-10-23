@@ -1,8 +1,9 @@
 // Whether the reviewer saw the action in full, and why the evidence falls short: purpose, the pending section, the verified script.
 
-import type { PermissionRequest, ReviewerConfig } from "../../../types.ts";
+import type { ActionPurpose } from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { VerifiedScriptEvidence } from "../../evidence/ssh/verified-ssh-script.ts";
-import type { ActionPurpose } from "../models/actor-context-types.ts";
 import type { ActorResolution } from "../models/unknown-resolution.ts";
 import { pendingPermissionSection } from "./pending-permission.ts";
 

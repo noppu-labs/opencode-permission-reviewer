@@ -1,4 +1,4 @@
-import type { ReviewerOutputFormat } from "../../../../types.ts";
+import type { ReviewerOutputFormat } from "../../../../kernel/reviewer-config.ts";
 import { redactSecrets } from "../../../../utils/redact.ts";
 import { DECISION_SCHEMA } from "../../../review/services/decision/decision-schema.ts";
 

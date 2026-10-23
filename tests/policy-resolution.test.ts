@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
+import type { PolicyRule } from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import { evaluatePolicy } from "../src/modules/policy/policy-engine.ts";
-import type { PolicyRule } from "../src/types.ts";
 import {
   capability,
   parsedRules,

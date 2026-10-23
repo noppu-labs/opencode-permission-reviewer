@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import {
   assembleEvidence,
   defaultEvidenceProviders,
@@ -21,7 +22,6 @@ import {
   VERIFIED_SCRIPT_LIMIT,
 } from "../src/modules/evidence/ssh/verified-ssh-script.ts";
 import { evaluateReview } from "../src/modules/review/services/review-engine.ts";
-import type { ReviewEnvelope } from "../src/types.ts";
 import { SK_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
 import { MockClient, request } from "./helpers.ts";
 

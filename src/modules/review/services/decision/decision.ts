@@ -2,7 +2,7 @@ import type {
   EvidenceSufficiency,
   ReviewDecision,
   ScopeAlignment,
-} from "../../../../types.ts";
+} from "../../../../kernel/review-decision.ts";
 import { isRecord } from "../../../../utils/is-record.ts";
 
 const OUTCOMES = new Set(["allow", "deny", "escalate"]);

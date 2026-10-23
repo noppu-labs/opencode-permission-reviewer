@@ -1,8 +1,8 @@
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
 import type {
   HandoffTrigger,
   ManualResolution,
-  ReviewDecision,
-} from "../../../types.ts";
+} from "../../../kernel/review-result.ts";
 import { isRecord } from "../../../utils/is-record.ts";
 import type { HandoffInfo } from "../../reviewer/services/backend.ts";
 import type { ActionSegment, ReviewUiStatus } from "../models/ui-protocol.ts";

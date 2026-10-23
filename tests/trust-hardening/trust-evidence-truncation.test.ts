@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { resolveConfig } from "../../src/modules/config/services/config.ts";
 import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import type { MessageWithParts } from "../../src/modules/context/models/message.ts";
 import {
   buildEvidence,
   buildTranscript,
 } from "../../src/modules/context/services/prompt/context.ts";
-import type { MessageWithParts } from "../../src/types.ts";
 import { MockClient, request, runtime } from "../helpers.ts";
 import { DIR, WT } from "./trust-fixtures.ts";
 

@@ -3,7 +3,7 @@ import { withTimeout } from "../../src/adapters/opencode/transport.ts";
 import { hostCompatibleFetch } from "../../src/adapters/opencode/v2/connection.ts";
 import { createV2ContextReader } from "../../src/adapters/opencode/v2/context-reader.ts";
 import { V2AskDecisions } from "../../src/adapters/opencode/v2/event-codec.ts";
-import type { MessageWithParts } from "../../src/types.ts";
+import type { MessageWithParts } from "../../src/modules/context/models/message.ts";
 import contracts from "./host-contracts.json";
 
 const [url, directory, hostVersion] = process.argv.slice(2);

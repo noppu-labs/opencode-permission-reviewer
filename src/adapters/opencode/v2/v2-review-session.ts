@@ -1,7 +1,8 @@
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { enforceDecision } from "../../../modules/review/services/decision/decision-gates.ts";
 import { applyEscalationDisposition } from "../../../modules/review/services/decision/escalation.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type { ReviewExecutionResult, ReviewerConfig } from "../../../types.ts";
 import type { V2HostApi } from "./host-api.ts";
 import { type PendingGeneration, TOOL } from "./v2-review-pending.ts";
 import { readReviewerResponse } from "./v2-review-response.ts";

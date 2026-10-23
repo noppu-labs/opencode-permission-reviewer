@@ -2,12 +2,13 @@
 // snapshot and normalise the action, verify its session and the host
 // connection, then run the review engine. Any failure escalates through the
 // failure-safe disposition.
+
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { NormalizedReviewRequest } from "../../../modules/review/models/contracts.ts";
 import { applyEscalationDisposition } from "../../../modules/review/services/decision/escalation.ts";
 import { formatFailureReason } from "../../../modules/review/services/decision/failure-reason.ts";
 import { evaluateReview } from "../../../modules/review/services/review-engine.ts";
 import { createServerUiStatus } from "../../../modules/status/services/ui-action-segments.ts";
-import type { ReviewExecutionResult } from "../../../types.ts";
 import { normalizeV2Permission } from "./permission-codec.ts";
 import { exactToolInput, snapshotAction } from "./server-events.ts";
 import { finishReview } from "./server-review-outcome.ts";

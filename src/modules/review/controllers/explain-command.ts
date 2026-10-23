@@ -1,7 +1,8 @@
 // The `explain` subcommand: dry-run one permission request through the capability analyzer and policy engine.
 import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
-import type { PermissionRequest, ReviewerConfig } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { analyzeCapability } from "../../analysis/capability/bash-analyzer.ts";
 import { parseCommand } from "../../analysis/capability/command-parser.ts";
 import { reviewedCommand } from "../../analysis/reviewed-command.ts";

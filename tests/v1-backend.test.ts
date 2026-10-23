@@ -21,13 +21,11 @@ import type {
   RuntimeContext,
 } from "../src/adapters/opencode/types.ts";
 import { V1ReviewerBackend } from "../src/adapters/opencode/v1/reviewer-backend.ts";
+import type { ReviewDecision } from "../src/kernel/review-decision.ts";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
-import type {
-  ReviewDecision,
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../src/types.ts";
 import { config, defined, request } from "./helpers.ts";
 
 /** A V1 fixture mirroring `v2-backend.test.ts`: the client exposes only the V1

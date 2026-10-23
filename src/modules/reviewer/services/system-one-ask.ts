@@ -1,4 +1,5 @@
-import type { ReviewEnvelope, ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import {
   enforceParsedSystemOneReview,

@@ -1,10 +1,13 @@
 import { describe, expect, test } from "bun:test";
 import type { ClientResponse } from "../src/adapters/opencode/types.ts";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_RISK_POLICY } from "../src/modules/config/models/config-risk-policy.ts";
 import {
   DEFAULT_CONFIG,
   resolveConfig,
 } from "../src/modules/config/services/config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import { enforceDecision } from "../src/modules/review/services/decision/decision-gates.ts";
 import {
   applyEscalationDisposition,
@@ -12,11 +15,6 @@ import {
 } from "../src/modules/review/services/decision/escalation.ts";
 import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { evaluateReview } from "../src/modules/review/services/review-engine.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 import { holdCalls, releaseAll } from "./runtime/runtime-fixtures.ts";
 import {

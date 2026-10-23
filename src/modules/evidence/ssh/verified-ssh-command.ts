@@ -1,7 +1,7 @@
 // The verified ssh script command: the one shell form that pipes a local script to ssh behind a
 // remote hash check, rendered and recognized exactly.
 
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { sourceCommand } from "../providers/source-command.ts";
 
 export interface VerifiedScriptCommand {

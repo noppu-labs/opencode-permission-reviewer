@@ -1,5 +1,5 @@
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
 import { parseDecisionFromText } from "../../../modules/review/services/decision/decision.ts";
-import type { ReviewDecision } from "../../../types.ts";
 import type { V2HostApi } from "./host-api.ts";
 import { type PendingGeneration, TOOL } from "./v2-review-pending.ts";
 

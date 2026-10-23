@@ -1,6 +1,7 @@
 // USER_INTENT_HISTORY blocks: the literal user text of a message, its USER_INTENT block, and the deduplicated summaries.
 
-import type { MessageWithParts, ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import { truncate } from "./prompt-budget.ts";
 import { isSyntheticPart } from "./synthetic-parts.ts";
 

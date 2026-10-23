@@ -2,8 +2,8 @@
 // probabilities over exactly the options that sum to 1 and favour the choice
 // (within a tolerance for supporting choices, which Jev rounds to hundredths).
 
+import type { SystemOneChoiceScore } from "../../../kernel/review-result.ts";
 import { isRecord } from "../../../utils/is-record.ts";
-import type { SystemOneChoiceScore } from "../models/system-one-types.ts";
 
 export type ParsedChoice<T extends string> = SystemOneChoiceScore<T> & {
   probabilities: Record<T, number>;

@@ -1,5 +1,5 @@
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import type { ContextReader } from "../src/modules/review/ports.ts";
-import type { MessageWithParts } from "../src/types.ts";
 import { defined } from "./helpers.ts";
 
 /** The IDs of the messages a reader's `intentMessages` returns. */

@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewDecision } from "../src/kernel/review-decision.ts";
 import {
   createUiStatus,
   decodeUiStatus,
@@ -14,7 +15,6 @@ import {
   LINE_BREAK,
   renderActionText,
 } from "../src/modules/status/services/ui-text-elide.ts";
-import type { ReviewDecision } from "../src/types.ts";
 import { decision, request } from "./helpers.ts";
 
 const options = {

@@ -1,6 +1,7 @@
 // The PENDING_PERMISSION section: the pending command bounded by middle elision, and whether the action reached the prompt in full.
 
-import type { PermissionRequest, ReviewerConfig } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { elideMiddle, stableJson } from "./prompt-budget.ts";
 
 /** Bound the pending command before serialization, eliding its middle rather

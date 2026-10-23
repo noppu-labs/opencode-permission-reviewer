@@ -1,6 +1,7 @@
 // Transcript blocks: the per-message MESSAGE block, its part filter and its dedupe fingerprint.
 
-import type { MessageWithParts, PermissionToolSource } from "../../../types.ts";
+import type { PermissionToolSource } from "../../../kernel/permission-request.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import { stableJson, truncate } from "./prompt-budget.ts";
 import { isSyntheticPart } from "./synthetic-parts.ts";
 

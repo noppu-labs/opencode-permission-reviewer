@@ -1,5 +1,5 @@
 import { basename, resolve } from "node:path";
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { scriptPath } from "../../analysis/walk/interpreter-script-target.ts";
 import {
   type ShellCommandSegmentWithDirectory,

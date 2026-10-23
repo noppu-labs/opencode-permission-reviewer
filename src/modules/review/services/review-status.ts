@@ -2,11 +2,9 @@
 // (model, variant, outcome, actor) and the bounded, logged publish call.
 
 import { withTimeout } from "../../../adapters/opencode/transport.ts";
-import type {
-  PermissionRequest,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import type { HandoffInfo } from "../../reviewer/services/backend.ts";
 import { isSystemOneReviewerModel } from "../../reviewer/services/reviewer-model.ts";

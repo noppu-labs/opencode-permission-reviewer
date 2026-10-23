@@ -4,7 +4,7 @@ import { normalizeV2Permission } from "../../../adapters/opencode/v2/permission-
 import type {
   PermissionRequest,
   PermissionToolSource,
-} from "../../../types.ts";
+} from "../../../kernel/permission-request.ts";
 import { asObjectLike } from "../../../utils/is-record.ts";
 
 export interface ExplainRequest {

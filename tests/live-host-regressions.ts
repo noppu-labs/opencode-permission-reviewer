@@ -20,8 +20,8 @@ import type {
   ClientResponse,
   OpenCodeClientLike,
 } from "../src/adapters/opencode/types.ts";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
 import { renderVerifiedSshScriptCommand } from "../src/modules/evidence/ssh/verified-ssh-command.ts";
-import type { ReviewExecutionResult } from "../src/types.ts";
 import { decision, request } from "./helpers.ts";
 
 const root: string = await mkdtemp(join(tmpdir(), "reviewer-host-regression-"));

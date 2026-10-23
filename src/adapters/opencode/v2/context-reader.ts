@@ -1,7 +1,7 @@
 import type { SessionInfo } from "@opencode/client";
+import type { MessageWithParts } from "../../../modules/context/models/message.ts";
 import { selectIntentMessages } from "../../../modules/context/services/prompt/context.ts";
 import type { ContextReader } from "../../../modules/review/ports.ts";
-import type { MessageWithParts } from "../../../types.ts";
 import { contextMessages, userMessage } from "./context-messages.ts";
 import type { V2HostApi } from "./host-api.ts";
 

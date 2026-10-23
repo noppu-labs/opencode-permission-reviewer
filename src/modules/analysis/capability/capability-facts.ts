@@ -1,7 +1,7 @@
 // The fact record analyzeCapability threads through its passes, and the write-effect update they share.
 
-import type { CapabilityActionClass } from "../../../types.ts";
-import type { EvidenceConfidence } from "../../context/models/actor-context-types.ts";
+import type { EvidenceConfidence } from "../../../kernel/actor-context-types.ts";
+import type { CapabilityActionClass } from "../../../kernel/reviewer-config.ts";
 import { classifyPath } from "./bash-mutation.ts";
 
 export type ClassConfidence = Extract<

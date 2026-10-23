@@ -58,7 +58,6 @@ const paths = [
   "modules/status/services/ui-text-elide.ts",
   "modules/status/services/ui-status-parse.ts",
   "modules/status/services/ui-state.ts",
-  "types.ts",
   "adapters/opencode/event-normalizer.ts",
 ];
 

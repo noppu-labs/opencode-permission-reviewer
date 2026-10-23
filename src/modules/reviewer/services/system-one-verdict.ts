@@ -1,12 +1,13 @@
 // Jev's verdict on its decision: the consistency contradictions that make it
 // difficult, whether reasoning should resolve it, and the scores kept for the
 // audit.
-import type { ReviewDecision, ReviewerConfig } from "../../../types.ts";
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
 import type {
   SystemOneChoiceScore,
   SystemOnePrimaryBasis,
   SystemOneScores,
-} from "../models/system-one-types.ts";
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { ParsedAnswers } from "./system-one-answers.ts";
 import { systemOneContradictions } from "./system-one-consistency.ts";
 

@@ -4,8 +4,8 @@
 import type {
   HandoffTrigger,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type {
   HandoffInfo,
   OnHandoff,

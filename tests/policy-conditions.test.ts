@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { PolicyCondition } from "../src/types.ts";
+import type { PolicyCondition } from "../src/kernel/reviewer-config.ts";
 import {
   actor,
   allTrue,

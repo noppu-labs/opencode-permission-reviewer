@@ -1,4 +1,5 @@
-import type { RiskPolicy, UserAuthorization } from "../../../types.ts";
+import type { UserAuthorization } from "../../../kernel/review-decision.ts";
+import type { RiskPolicy } from "../../../kernel/reviewer-config.ts";
 
 /** Default risk×authorization matrix. `critical` stays empty: critical risk
  *  never auto-allows. */

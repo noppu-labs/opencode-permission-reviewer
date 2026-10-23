@@ -2,13 +2,13 @@ import { describe, expect, spyOn, test } from "bun:test";
 import * as fs from "node:fs";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import {
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
 } from "../src/modules/config/services/loader.ts";
-import type { ReviewerConfig } from "../src/types.ts";
 import { loadLayers } from "./config-layer-fixtures.ts";
 import { captureWarnings, tempDir } from "./trust-hardening/trust-fixtures.ts";
 

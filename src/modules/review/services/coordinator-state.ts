@@ -6,11 +6,9 @@ import {
   createV1ReviewerBackend,
   type V1ReviewBackend,
 } from "../../../adapters/opencode/v1/backend-factory.ts";
-import type {
-  PermissionRequest,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import { defaultEvidenceProviders } from "../../context/services/evidence-assembler.ts";

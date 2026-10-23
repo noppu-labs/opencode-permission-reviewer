@@ -1,6 +1,6 @@
 // Action class claims made by the classifiers, and resolution for a command none claimed: the most specific observed surface wins, first match in a fixed order.
 
-import type { CapabilityActionClass } from "../../../types.ts";
+import type { CapabilityActionClass } from "../../../kernel/reviewer-config.ts";
 import type { CapabilityFacts, ClassConfidence } from "./capability-facts.ts";
 
 type ResolvedClass = readonly [CapabilityActionClass, ClassConfidence];

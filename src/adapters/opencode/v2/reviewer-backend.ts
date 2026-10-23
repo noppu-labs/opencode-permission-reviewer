@@ -1,10 +1,8 @@
 import type { Plugin } from "@opencode/plugin";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
 import type { V2HostApi } from "./host-api.ts";
 import { registerReviewerHooks } from "./v2-review-hooks.ts";
 import {

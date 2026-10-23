@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { ReviewEnvelope } from "../../../types.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import type { ApplicationResult } from "../models/contracts.ts";
 
 export type AttemptState = "reviewing" | "finished" | "cancelled" | "expired";

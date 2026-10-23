@@ -3,10 +3,11 @@ import type {
   ClientResponse,
   OpenCodeClientLike,
 } from "../../src/adapters/opencode/types.ts";
+import type { PermissionRequest } from "../../src/kernel/permission-request.ts";
 import { DEFAULT_CONFIG } from "../../src/modules/config/services/config.ts";
 import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import type { MessageWithParts } from "../../src/modules/context/models/message.ts";
 import { resolveActorContext } from "../../src/modules/context/services/actor-resolver.ts";
-import type { MessageWithParts, PermissionRequest } from "../../src/types.ts";
 import { request } from "../helpers.ts";
 
 afterEach(() => {

@@ -4,7 +4,7 @@ import type {
   IntentBlock,
   IntentContext,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
 
 /** Pick by creation time, not by array position: the intent arrays are
  *  concatenated local → parent → root, so the last element is the root's

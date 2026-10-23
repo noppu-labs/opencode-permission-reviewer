@@ -3,11 +3,9 @@
 // supersede before each step, and the failure-safe disposition and log of a
 // review that threw.
 
-import type {
-  PermissionRequest,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
   type CoordinatorState,
   isSuperseded,

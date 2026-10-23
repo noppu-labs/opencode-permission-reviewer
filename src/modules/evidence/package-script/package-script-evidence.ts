@@ -1,4 +1,4 @@
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { shellCommandSegmentsWithDirectory } from "../../analysis/walk/working-directory-segments.ts";
 import { sourceCommand } from "../providers/source-command.ts";
 import { scriptCalls } from "./package-script-calls.ts";

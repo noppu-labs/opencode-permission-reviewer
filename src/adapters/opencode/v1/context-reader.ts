@@ -1,9 +1,9 @@
+import type { MessageWithParts } from "../../../modules/context/models/message.ts";
 import {
   normalizeMessages,
   selectIntentMessages,
 } from "../../../modules/context/services/prompt/context.ts";
 import type { ContextReader } from "../../../modules/review/ports.ts";
-import type { MessageWithParts } from "../../../types.ts";
 import { asObjectLike } from "../../../utils/is-record.ts";
 import { responseData, withTimeout } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";

@@ -2,10 +2,11 @@
 // hash and the record's field groups, in the record's key order.
 import { createHash } from "node:crypto";
 import packageInfo from "../../../../package.json";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type {
-  PermissionRequest,
+  DecisionSource,
   ReviewExecutionResult,
-} from "../../../types.ts";
+} from "../../../kernel/review-result.ts";
 import { REVIEWER_PROMPT_VERSION } from "../../context/services/prompt/policy.ts";
 import { configFingerprint } from "../../evidence/ssh/verified-ssh-script.ts";
 import {
@@ -14,10 +15,7 @@ import {
 } from "../../review/services/coordinator-state.ts";
 import { DECISION_SCHEMA_VERSION } from "../../review/services/decision/decision.ts";
 import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
-import type {
-  DecisionSource,
-  ReviewAuditRecord,
-} from "../models/audit-record.ts";
+import type { ReviewAuditRecord } from "../models/audit-record.ts";
 import {
   actorFields,
   capabilityField,

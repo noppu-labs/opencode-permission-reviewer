@@ -44,11 +44,7 @@ const PRIVATE_DIRS = ["controllers", "repositories"];
  *  it. The test fails on a violation missing from this list and on an entry
  *  that no longer occurs, so the list only shrinks. */
 const ALLOWED: readonly string[] = [
-  "layer: modules/analysis/capability/bash-facts.ts -> modules/context/models/actor-context-types.ts",
-  "layer: modules/analysis/capability/capability-facts.ts -> modules/context/models/actor-context-types.ts",
-  "layer: modules/analysis/capability/capability-report.ts -> modules/context/models/actor-context-types.ts",
   "layer: modules/analysis/capability/git-subcommand-forms.ts -> modules/evidence/git/git-global-options.ts",
-  "layer: modules/analysis/capability/models/capability-types.ts -> modules/context/models/actor-context-types.ts",
   "layer: modules/analysis/walk/directory-tracker.ts -> modules/evidence/git/git-execution-directory.ts",
   "layer: modules/analysis/walk/effective-command-walk.ts -> modules/evidence/ssh/ssh-remote-command.ts",
   "layer: modules/analysis/walk/interpreter-script-target.ts -> modules/evidence/git/git-execution-directory.ts",
@@ -91,12 +87,8 @@ const ALLOWED: readonly string[] = [
   "layer: modules/reviewer/services/system-one-handoff.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/reviewer/services/system-one-results.ts -> modules/review/services/decision/escalation.ts",
   "layer: modules/reviewer/services/system-one-results.ts -> modules/review/services/decision/failure-reason.ts",
-  "layer: types.ts -> modules/analysis/capability/models/capability-types.ts",
-  "layer: types.ts -> modules/audit/models/audit-record.ts",
-  "layer: types.ts -> modules/context/models/actor-context-types.ts",
-  "layer: types.ts -> modules/evidence/ssh/verified-ssh-script.ts",
-  "layer: types.ts -> modules/reviewer/models/system-one-types.ts",
-  "module-cycle: analysis -> audit -> config -> context -> evidence -> kernel -> policy -> review -> reviewer -> status",
+  "module-cycle: analysis -> evidence",
+  "module-cycle: audit -> config -> context -> policy -> review -> reviewer -> status",
 ];
 
 /** Runtime import cycles inside analysis/ that predate the layout. A new
@@ -135,7 +127,6 @@ function unit(file: string): string {
     top === "cli"
   )
     return top;
-  if (file === "types.ts") return "kernel";
   return "entry";
 }
 
@@ -269,8 +260,5 @@ test("src/ has no runtime import cycles beyond the known ones", () => {
 
 test("the src/ root holds only the plugin entries", () => {
   const rootFiles = files.filter((f) => !f.includes("/"));
-  expect(rootFiles.filter((f) => f !== "types.ts")).toEqual([
-    "index.ts",
-    "tui.tsx",
-  ]);
+  expect(rootFiles).toEqual(["index.ts", "tui.tsx"]);
 });

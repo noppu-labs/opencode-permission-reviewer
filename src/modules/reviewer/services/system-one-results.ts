@@ -5,14 +5,14 @@
 import type {
   ManualResolution,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+  SystemOneScores,
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
   applyEscalationDisposition,
   type EscalationCategory,
 } from "../../review/services/decision/escalation.ts";
 import { formatFailureReason } from "../../review/services/decision/failure-reason.ts";
-import type { SystemOneScores } from "../models/system-one-types.ts";
 import type { JevOutcome } from "./system-one-handoff.ts";
 
 /** The reasoning reviewer a Jev result was handed to. */

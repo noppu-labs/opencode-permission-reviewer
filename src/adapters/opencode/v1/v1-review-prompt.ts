@@ -1,3 +1,5 @@
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { REVIEWER_SYSTEM_PROMPT } from "../../../modules/context/services/prompt/policy.ts";
 import {
   parseDecision,
@@ -5,7 +7,6 @@ import {
 } from "../../../modules/review/services/decision/decision.ts";
 import { DECISION_SCHEMA } from "../../../modules/review/services/decision/decision-schema.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type { ReviewDecision, ReviewerConfig } from "../../../types.ts";
 import {
   extractStructured,
   extractText,

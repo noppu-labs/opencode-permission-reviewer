@@ -4,7 +4,7 @@ import {
   isAlreadyResolvedError,
   withTimeout,
 } from "../../../adapters/opencode/transport.ts";
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { rememberEvidence } from "./attempt-evidence.ts";
 import type { CoordinatorState } from "./coordinator-state.ts";
 

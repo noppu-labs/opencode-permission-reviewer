@@ -1,4 +1,4 @@
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { keepBodyCommands } from "../capability/heredoc/heredoc-body-collector.ts";
 import type { BodyCommands } from "../capability/heredoc/heredoc-body-commands.ts";
 import { withScanBudget } from "../capability/heredoc/heredoc-scan-budget.ts";

@@ -1,4 +1,5 @@
-import type { ReviewEnvelope, ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import { redactSecrets } from "../../../utils/redact.ts";
 import { responseData, withTimeout } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";

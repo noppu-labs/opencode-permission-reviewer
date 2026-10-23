@@ -1,10 +1,10 @@
 import type {
-  MessageWithParts,
   PermissionRequest,
   PermissionToolSource,
-  ReviewEnvelope,
-  ReviewerConfig,
-} from "../../../../types.ts";
+} from "../../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../../kernel/reviewer-config.ts";
+import type { MessageWithParts } from "../../models/message.ts";
+import type { ReviewEnvelope } from "../../models/review-envelope.ts";
 import { evidenceBudget, evidenceSections } from "../evidence-layout.ts";
 import { renderAskDecisions } from "../evidence-sections.ts";
 import { distinctIntentSummaries, literalUserText } from "../intent-history.ts";

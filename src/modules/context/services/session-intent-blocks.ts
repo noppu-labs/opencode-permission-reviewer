@@ -1,11 +1,12 @@
 // Session intent blocks: the user-role text of one session as intent blocks, labeled by whether the session was delegated.
 
-import type { MessageWithParts, PermissionRequest } from "../../../types.ts";
 import type {
   IntentBlock,
   SessionLineage,
   SessionNode,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import { prov } from "./provenance.ts";
 import { isSyntheticPart } from "./synthetic-parts.ts";
 

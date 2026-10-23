@@ -1,12 +1,12 @@
 import type {
   HandoffTrigger,
-  ReviewEnvelope,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+  SystemOneScores,
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import { announceHandoff } from "../../status/services/ui-status-routing.ts";
-import type { SystemOneScores } from "../models/system-one-types.ts";
 import { askJev } from "./system-one-ask.ts";
 import { budgetExhaustedResult } from "./system-one-budget.ts";
 import {

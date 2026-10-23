@@ -1,14 +1,14 @@
 // The resolution result shape, and the "unknown" resolution returned when actor resolution fails outright.
 
-import type { PermissionRequest } from "../../../types.ts";
-import { UNKNOWN_PROFILE, UNKNOWN_STRING } from "../services/actor-identity.ts";
-import { prov } from "../services/provenance.ts";
 import type {
   ActorContext,
   EvidenceCompleteness,
   IntentContext,
   SessionLineage,
-} from "./actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import { UNKNOWN_PROFILE, UNKNOWN_STRING } from "../services/actor-identity.ts";
+import { prov } from "../services/provenance.ts";
 
 /**
  * Result of actor/lineage resolution. All fields are populated

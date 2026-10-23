@@ -2,16 +2,14 @@
 
 import { withTimeout } from "../../../adapters/opencode/transport.ts";
 import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewerConfig,
-} from "../../../types.ts";
-import type { ContextReader } from "../../review/ports.ts";
-import type {
   IntentBlock,
   IntentContext,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ContextReader } from "../../review/ports.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import { extractDelegatedTasks } from "./delegated-tasks.ts";
 import {
   intentCompleteness,

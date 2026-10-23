@@ -1,11 +1,11 @@
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type {
-  PermissionRequest,
   PolicyTrace,
-  ReviewEnvelope,
-  ReviewExecutionResult,
   ReviewerConfig,
-} from "../../../types.ts";
+} from "../../../kernel/reviewer-config.ts";
 import { emergencyBrakeReason } from "../../analysis/brake/emergency-brake.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { evaluatePolicy } from "../../policy/policy-engine.ts";
 import { applyEscalationDisposition } from "./decision/escalation.ts";
 import { gateReviewedResult } from "./review-result-gates.ts";
