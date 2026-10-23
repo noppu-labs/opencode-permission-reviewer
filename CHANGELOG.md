@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- The root `server.js`, `rpc.js` and `tui.tsx` re-export files. OpenCode V1 and V2 load the
+  plugin through the `package.json` `exports` map (`./server`, `./tui`, `./rpc`), which already
+  points into `dist/`, so neither host read them. A checkout path or the npm package name in
+  the config keeps working unchanged.
+
 ## [3.2.2] - 2026-10-23
 
 ### Changed

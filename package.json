@@ -33,9 +33,6 @@
     "opencode-permission-reviewer": "dist/explain.js"
   },
   "files": [
-    "server.js",
-    "rpc.js",
-    "tui.tsx",
     "dist/",
     "README.md",
     "MIGRATION.md",
