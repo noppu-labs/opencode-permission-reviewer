@@ -21,6 +21,7 @@ export function readConfigFile(path: string): ConfigSnapshot {
     fd = openSync(
       path,
       fsConstants.O_RDONLY | fsConstants.O_NOFOLLOW | fsConstants.O_NONBLOCK,
+      0o600,
     );
     if (!fstatSync(fd).isFile()) return { status: "error" };
     const raw = readFileSync(fd);

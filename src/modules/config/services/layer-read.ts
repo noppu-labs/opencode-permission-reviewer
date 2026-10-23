@@ -87,8 +87,9 @@ function openLayer(path: string): number | ConfigLayer {
   try {
     // Read-only descriptor open of an existing config path; no file is
     // created here and the descriptor must pass the regular-file check below.
-    // codeql[js/insecure-temporary-file]
-    return openSync(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
+    // The mode only applies with O_CREAT; it marks the open as owner-only for
+    // static analysis.
+    return openSync(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW, 0o600);
   } catch (error) {
     if ((error as { code?: unknown }).code === "ENOENT")
       return { raw: {}, status: "missing" };

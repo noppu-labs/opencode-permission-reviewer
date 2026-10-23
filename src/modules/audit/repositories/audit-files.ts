@@ -33,7 +33,7 @@ export function readTail(path: string): AuditTail | undefined {
   try {
     // O_NOFOLLOW rejects a symlinked audit path and O_NONBLOCK keeps a FIFO
     // from blocking the CLI before fstat can reject the non-regular file.
-    fd = openSync(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
+    fd = openSync(path, O_RDONLY | O_NONBLOCK | O_NOFOLLOW, 0o600);
     const info = fstatSync(fd);
     if (!info.isFile()) return undefined;
     return readWindow(fd, info.size);
