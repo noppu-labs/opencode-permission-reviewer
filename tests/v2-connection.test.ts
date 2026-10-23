@@ -100,34 +100,163 @@ test("explicit V2 host connection rejects missing authentication", async () => {
   }
 });
 
-test("registered V2 host connection rejects missing authentication", async () => {
+const SERVICE_URL = "http://127.0.0.1:4096/";
+const SERVICE_PASSWORD = "synthetic-service-password";
+
+/** A registration for a live loopback service, with `overrides` applied. */
+function registration(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    version: "2.0.3",
+    url: SERVICE_URL,
+    pid: process.pid,
+    password: SERVICE_PASSWORD,
+    ...overrides,
+  };
+}
+
+/** Runs `check` with `service.json` holding `entry` under a temporary XDG
+ *  state home and `OpenCode.make` stubbed to a client whose identity is
+ *  `identity`, then `onMake` with the stub. */
+async function withRegisteredService(
+  entry: Record<string, unknown>,
+  identity: string,
+  check: (connect: () => Promise<unknown>) => Promise<void>,
+  onMake: (make: Mock<() => OpenCodeClient>) => void,
+): Promise<void> {
   delete process.env[hostUrl];
   const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
   process.env[stateHome] = root;
   await mkdir(join(root, "opencode"));
   await writeFile(
     join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: "2.0.3",
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-    }),
+    JSON.stringify(entry),
   );
-  const { make, restore } = stubMake(() => fakeClient("expected"));
+  const { make, restore } = stubMake(() => fakeClient(identity));
   try {
-    await expect(
+    await check(() =>
       connectV2Host(
         "/workspace",
         "expected",
         "2.0.3",
         AbortSignal.timeout(1000),
       ),
-    ).rejects.toThrow("does not contain authentication");
-    expect(make).not.toHaveBeenCalled();
+    );
+    onMake(make);
   } finally {
     restore();
     await rm(root, { recursive: true, force: true });
   }
+}
+
+const notCalled = (make: Mock<() => OpenCodeClient>): void => {
+  expect(make).not.toHaveBeenCalled();
+};
+
+test.each([
+  [
+    "missing authentication",
+    { password: undefined },
+    "does not contain authentication",
+  ],
+  [
+    "a non-loopback URL",
+    { url: "https://example.invalid/" },
+    "must use a loopback address",
+  ],
+  [
+    "a URL that is not an origin",
+    { url: "http://127.0.0.1:4096/api?redirect=external" },
+    "must be a loopback origin",
+  ],
+  ["an invalid process ID", { pid: 0 }, "invalid process ID"],
+  [
+    "a process that is not running",
+    { pid: 2_147_483_647 },
+    "process that is not running",
+  ],
+  [
+    "an unparseable version",
+    { version: "latest" },
+    "does not match this host version",
+  ],
+  [
+    "a version from another minor release",
+    { version: "2.1.0" },
+    /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.3\. Run "opencode service restart"/,
+  ],
+  [
+    "a non-string version",
+    { version: { major: 2 } },
+    /the registered service is OpenCode an unrecognised version, this host is 2\.0\.3/,
+  ],
+] as const)(
+  "registered V2 services with %s are rejected",
+  async (_label, overrides, expected) => {
+    await withRegisteredService(
+      registration(overrides),
+      "expected",
+      async (connect) => {
+        await expect(connect()).rejects.toThrow(expected);
+      },
+      notCalled,
+    );
+  },
+);
+
+test.each([
+  ["the host's own release", "2.0.3"],
+  ["another patch release of the host", "2.0.4"],
+])(
+  "registered V2 services from %s are accepted with their credentials",
+  async (_label, version) => {
+    await withRegisteredService(
+      registration({ version }),
+      "expected",
+      async (connect) => {
+        await connect();
+      },
+      (make) => {
+        expect(make).toHaveBeenCalledTimes(1);
+        const options = (
+          make.mock.calls as unknown as Array<
+            [Parameters<typeof OpenCode.make>[0]]
+          >
+        )[0]?.[0];
+        expect(options).toMatchObject({
+          baseUrl: SERVICE_URL,
+          headers: {
+            authorization: `Basic ${Buffer.from(`opencode:${SERVICE_PASSWORD}`).toString("base64")}`,
+          },
+        });
+      },
+    );
+  },
+);
+
+test("registered V2 host identity mismatch names the registered service", async () => {
+  await withRegisteredService(
+    registration(),
+    "another-instance",
+    async (connect) => {
+      const error = await connect().then(
+        () => undefined,
+        (caught: unknown) => caught,
+      );
+      expect(error).toBeInstanceOf(Error);
+      const message = String((error as Error).message);
+      expect(message).toContain("does not belong to this host generation");
+      expect(message).toContain(
+        `the registered OpenCode service at ${SERVICE_URL}`,
+      );
+      expect(message).toContain("OPENCODE_PERMISSION_REVIEWER_HOST_URL");
+      expect(message).not.toContain(SERVICE_PASSWORD);
+    },
+    (make) => {
+      expect(make).toHaveBeenCalledTimes(1);
+    },
+  );
 });
 
 test("V2 host connection rejects an instance identity mismatch", async () => {
@@ -159,48 +288,6 @@ test("V2 host connection rejects an instance identity mismatch", async () => {
   }
 });
 
-test("registered V2 host identity mismatch names the registered service", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  await writeFile(
-    join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: "2.0.3",
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-      password: "synthetic-service-password",
-    }),
-  );
-  const { make, restore } = stubMake(() => fakeClient("another-instance"));
-  try {
-    let error: unknown;
-    try {
-      await connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      );
-    } catch (caught) {
-      error = caught;
-    }
-    expect(error).toBeInstanceOf(Error);
-    const message = String((error as Error).message);
-    expect(message).toContain("does not belong to this host generation");
-    expect(message).toContain(
-      "the registered OpenCode service at http://127.0.0.1:4096/",
-    );
-    expect(message).toContain("OPENCODE_PERMISSION_REVIEWER_HOST_URL");
-    expect(message).not.toContain("synthetic-service-password");
-    expect(make).toHaveBeenCalledTimes(1);
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
 test("V2 host transport retries only missing session wait endpoints with the legacy route", async () => {
   const paths: string[] = [];
   const delegate = mock(async (input: RequestInfo | URL) => {
@@ -226,256 +313,6 @@ test("V2 host transport retries only missing session wait endpoints with the leg
     "/api/experimental/session/ses_legacy/wait",
     "/api/session/ses_legacy/wait",
   ]);
-});
-
-test("V2 host connection falls back to a compatible registered service", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  await writeFile(
-    join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: "2.0.3",
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-      password: "synthetic-service-password",
-    }),
-  );
-  const { make, restore } = stubMake(() => fakeClient("expected"));
-  try {
-    await connectV2Host(
-      "/workspace",
-      "expected",
-      "2.0.3",
-      AbortSignal.timeout(1000),
-    );
-    expect(make).toHaveBeenCalledTimes(1);
-    const options = (
-      make.mock.calls as unknown as Array<[Parameters<typeof OpenCode.make>[0]]>
-    )[0]?.[0];
-    expect(options).toMatchObject({
-      baseUrl: "http://127.0.0.1:4096/",
-      headers: {
-        authorization: `Basic ${Buffer.from("opencode:synthetic-service-password").toString("base64")}`,
-      },
-    });
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
-test("registered V2 services must be local and belong to a live process", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  const registration = join(root, "opencode", "service.json");
-  const { make, restore } = stubMake(() => fakeClient("expected"));
-  try {
-    await writeFile(
-      registration,
-      JSON.stringify({
-        version: "2.0.3",
-        url: "https://example.invalid/",
-        pid: process.pid,
-        password: "synthetic-service-password",
-      }),
-    );
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow("must use a loopback address");
-
-    await writeFile(
-      registration,
-      JSON.stringify({
-        version: "2.0.3",
-        url: "http://127.0.0.1:4096/api?redirect=external",
-        pid: process.pid,
-        password: "synthetic-service-password",
-      }),
-    );
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow("must be a loopback origin");
-
-    await writeFile(
-      registration,
-      JSON.stringify({
-        version: "2.0.3",
-        url: "http://127.0.0.1:4096/",
-        pid: 0,
-        password: "synthetic-service-password",
-      }),
-    );
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow("invalid process ID");
-
-    await writeFile(
-      registration,
-      JSON.stringify({
-        version: "2.0.3",
-        url: "http://127.0.0.1:4096/",
-        pid: 2_147_483_647,
-        password: "synthetic-service-password",
-      }),
-    );
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow("process that is not running");
-    expect(make).not.toHaveBeenCalled();
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
-test("registered V2 services from another patch release of the host are accepted", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  await writeFile(
-    join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: "2.0.4",
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-      password: "synthetic-service-password",
-    }),
-  );
-  const { make, restore } = stubMake(() => fakeClient("expected"));
-  try {
-    await connectV2Host(
-      "/workspace",
-      "expected",
-      "2.0.3",
-      AbortSignal.timeout(1000),
-    );
-    expect(make).toHaveBeenCalledTimes(1);
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
-test("registered V2 services from another minor release are rejected with both versions", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  await writeFile(
-    join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: "2.1.0",
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-      password: "synthetic-service-password",
-    }),
-  );
-  const { make, restore } = stubMake(() => fakeClient("expected"));
-  try {
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow(
-      /does not match this host version: the registered service is OpenCode 2\.1\.0, this host is 2\.0\.3\. Run "opencode service restart"/,
-    );
-    expect(make).not.toHaveBeenCalled();
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
-test("registered V2 services with an unparseable version are rejected", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  await writeFile(
-    join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: "latest",
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-      password: "synthetic-service-password",
-    }),
-  );
-  const { make, restore } = stubMake(() => fakeClient("expected"));
-  try {
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow("does not match this host version");
-    expect(make).not.toHaveBeenCalled();
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
-});
-
-test("registered V2 services with a non-string version are rejected as unrecognised", async () => {
-  delete process.env[hostUrl];
-  const root = await mkdtemp(join(tmpdir(), "reviewer-v2-service-"));
-  process.env[stateHome] = root;
-  await mkdir(join(root, "opencode"));
-  await writeFile(
-    join(root, "opencode", "service.json"),
-    JSON.stringify({
-      version: { major: 2 },
-      url: "http://127.0.0.1:4096/",
-      pid: process.pid,
-      password: "synthetic-service-password",
-    }),
-  );
-  const { make, restore } = stubMake(() => fakeClient("expected"));
-  try {
-    await expect(
-      connectV2Host(
-        "/workspace",
-        "expected",
-        "2.0.3",
-        AbortSignal.timeout(1000),
-      ),
-    ).rejects.toThrow(
-      /the registered service is OpenCode an unrecognised version, this host is 2\.0\.3/,
-    );
-    expect(make).not.toHaveBeenCalled();
-  } finally {
-    restore();
-    await rm(root, { recursive: true, force: true });
-  }
 });
 
 test("isCompatibleHostVersion accepts the same major.minor across patches", () => {
