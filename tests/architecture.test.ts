@@ -37,7 +37,7 @@ const LAYER: Record<string, number> = {
 const OUTER = 6;
 
 /** Folders of a module that other modules may not import. Delivery layers
- *  (adapters, ui, cli, entry) may. */
+ *  (adapters, ui, cli, the root entry files) may. */
 const PRIVATE_DIRS = ["controllers", "repositories"];
 
 /** Files outside src/ that src/ may import. */
