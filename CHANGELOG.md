@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, `MIGRATION.md`, `NOTICE` and
+  `LICENSE-APACHE` moved from the repository root to `docs/`. The npm package now ships
+  `docs/MIGRATION.md`, `docs/NOTICE`, `docs/LICENSE-APACHE` and `docs/SECURITY.md` in place of
+  the root copies.
+
 ## [3.2.2] - 2026-10-23
 
 ### Changed

@@ -1,4 +1,4 @@
-// Synthetic, secret-shaped test values; none is a credential. See CONTRIBUTING.md, "Before opening
+// Synthetic, secret-shaped test values; none is a credential. See docs/CONTRIBUTING.md, "Before opening
 // a pull request".
 
 export const GITHUB_PAT =

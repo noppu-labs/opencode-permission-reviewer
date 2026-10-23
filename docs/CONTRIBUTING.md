@@ -32,7 +32,7 @@ pick `develop` as the base explicitly. Maintainers promote validated changes fro
 ## Before opening a pull request
 
 Run the checks that CI (`.github/workflows/ci.yml`) runs. CI also runs the real-host matrix and
-the benchmark, which the [development guide](docs/DEVELOPMENT.md) covers.
+the benchmark, which the [development guide](DEVELOPMENT.md) covers.
 
 ```sh
 bun run check           # build, typecheck, every hook on every file, gitleaks-tree, bun test
@@ -47,7 +47,7 @@ or skip tests to get `check` passing.
 
 Every accepted lint finding carries its reason on the line, as a line-level
 `// biome-ignore lint/<group>/<rule>: <reason>` comment. Don't add file-wide or ranged ignores
-(`biome-ignore-all`, `biome-ignore-start`). The [development guide](docs/DEVELOPMENT.md#quality-gates)
+(`biome-ignore-all`, `biome-ignore-start`). The [development guide](DEVELOPMENT.md#quality-gates)
 covers the other tools' conventions.
 
 Your pull request should also meet these rules:
@@ -89,18 +89,18 @@ Your pull request should also meet these rules:
 - Both real-host pytest harnesses under `tests/compatibility` must keep working. Their profiles
   and synthetic model providers must not inherit user configuration or credentials. Pin host
   versions and integrity, and verify server and TUI loading after a fresh build. See
-  [`tests/compatibility`](tests/compatibility/README.md).
+  [`tests/compatibility`](../tests/compatibility/README.md).
 - The TUI entry ships as raw TSX. Don't reintroduce a prebundled `dist/tui.js`; the
-  [development guide](docs/DEVELOPMENT.md) explains why.
+  [development guide](DEVELOPMENT.md) explains why.
 
-The [development guide](docs/DEVELOPMENT.md) covers the build output, live end-to-end testing,
+The [development guide](DEVELOPMENT.md) covers the build output, live end-to-end testing,
 the compatibility matrix, and the model benchmark.
 
 ## Conventions
 
 - Commit messages follow the conventional-commit style in the history (`fix(v2):`, `feat:`,
   `docs:`, `ci(release):`, `chore(deps):`, ...).
-- Documentation beyond the standard root files (README, CONTRIBUTING, SECURITY, LICENSE,
-  MIGRATION, CHANGELOG) lives in `docs/`.
+- Documentation lives in `docs/`, including this guide, the security policy and `NOTICE`. The
+  repository root keeps only README, LICENSE and CHANGELOG.
 - Report security issues as described in [SECURITY.md](SECURITY.md), not in public issues.
 - Participation is covered by the [code of conduct](CODE_OF_CONDUCT.md).

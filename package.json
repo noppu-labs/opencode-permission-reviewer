@@ -38,12 +38,12 @@
     "tui.tsx",
     "dist/",
     "README.md",
-    "MIGRATION.md",
+    "docs/MIGRATION.md",
     "CHANGELOG.md",
-    "NOTICE",
+    "docs/NOTICE",
     "LICENSE",
-    "LICENSE-APACHE",
-    "SECURITY.md"
+    "docs/LICENSE-APACHE",
+    "docs/SECURITY.md"
   ],
   "license": "MIT AND Apache-2.0",
   "author": "cris005",
