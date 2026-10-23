@@ -7,6 +7,8 @@
 [![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3.0-000000)](https://bun.sh)
 [![license](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue)](#license)
 
+![OpenCode Permission Reviewer: an AI reviewer for every permission prompt. A request from the agent goes to the reviewer, which weighs the task, the policy and the evidence, then allows it (bun test), denies it (rm -rf ~/.ssh) or asks you (git push -f).](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/social-preview.png)
+
 An OpenCode plugin that sends every `ask` permission to a tool-free AI reviewer. The reviewer
 reads the pending request, recent transcript evidence, what you asked for, and a policy you
 control. It then allows the action, denies it with a reason the agent can act on, or escalates
@@ -54,13 +56,16 @@ plugin, not affiliated with or endorsed by [Anomaly](https://anoma.ly).
 
 ## Install
 
+OpenCode V2 installs the package and registers it in one step:
+
 ```bash
-bun add @noppu-labs/opencode-permission-reviewer   # or: npm install @noppu-labs/opencode-permission-reviewer
+opencode plugin add @noppu-labs/opencode-permission-reviewer
 ```
 
-The CLI can register the plugin for you. `--host auto` detects V1 or V2, `--tui` also registers
-the overlay (V1 `tui.json` or V2 global `cli.json`), and `--npm` writes the package name instead
-of a path. It never overwrites an existing entry.
+On OpenCode V1, `opencode plugin` registers the server plugin but not the TUI overlay, so use
+the package's own CLI instead. `--host auto` detects V1 or V2, `--tui` also registers the
+overlay (V1 `tui.json` or V2 global `cli.json`), and `--npm` writes the package name instead of
+a path. It never overwrites an existing entry.
 
 ```bash
 bunx @noppu-labs/opencode-permission-reviewer init --host auto --npm --tui --yes
@@ -71,7 +76,7 @@ register the checkout's absolute path.
 
 ## Configure
 
-Register the plugin.
+To register the plugin by hand instead:
 
 OpenCode V1 (`opencode.json` in the project, or `~/.config/opencode/opencode.json`):
 
