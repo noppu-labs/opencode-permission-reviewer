@@ -30,54 +30,62 @@ See [Supply chain](./SUPPLY-CHAIN.md) for what that test enforces on dependencie
 
 ## Source layout
 
-`src/` is split into domain modules, host adapters and delivery layers. Put new code where this
-section says, and don't add files to the `src/` root.
+`src/` is split into layers. Put new code where this section says, and don't
+add files to the `src/` root. `tests/architecture.test.ts` enforces the rules.
 
 ```text
 src/
-├── index.ts  tui.tsx            # plugin entries (server, TUI); types.ts is being split into modules
-├── cli/explain.ts               # CLI dispatcher (package bin)
-├── ui/                          # TUI: Solid components, RPC client, review feed and store
-├── adapters/opencode/{v1,v2}/   # host integration; implements the review ports
+├── index.ts  tui.tsx            # plugin entries (server, TUI)
+├── kernel/                      # domain types nearly every module shares (PermissionRequest, ReviewerConfig, ...)
+├── utils/                       # domain-free helpers
 ├── modules/
-│   ├── review/                  # the review use case: ports.ts, controllers/, models/, services/ (+ services/decision/)
-│   ├── audit/                   # controllers/, models/, repositories/, services/
-│   ├── config/                  # controllers/ (config, doctor, init), models/, services/ (+ doctor/, init/)
-│   ├── context/                 # what the reviewer sees: models/, services/ (+ services/prompt/)
-│   ├── reviewer/                # System One and model routing: models/, services/
-│   ├── status/                  # server-side review status the TUI renders: models/, services/
-│   ├── policy/                  # rule engine (flat)
+│   ├── analysis/                # pure command analysis, no I/O: shell/, walk/, capability/, brake/, git/, ssh/
+│   ├── decision/                # parsing and gating the reviewer's decision, escalation
+│   ├── policy/                  # rule engine
 │   ├── evidence/                # providers/, files/, git/, ssh/, package-script/, local-script/
-│   └── analysis/                # pure command analysis, no I/O: shell/, walk/, capability/ (+ heredoc/, models/), brake/
-└── utils/                       # domain-free helpers: invariant, is-record, element-at, redact, descriptor-io, package-json
+│   ├── config/                  # controllers/ (config command), models/, services/
+│   ├── context/                 # what the reviewer sees: ports.ts, models/, services/
+│   ├── reviewer/                # System One: models/, services/
+│   ├── audit/                   # the audit file: models/, repositories/, services/
+│   ├── status/                  # review status and the RPC protocol the TUI uses: models/, services/
+│   └── review/                  # the review use case: ports.ts, controllers/, models/, services/
+├── adapters/opencode/{v1,v2}/   # host integration; implements the ports
+├── ui/                          # TUI components, feed and store
+└── cli/                         # explain.ts dispatcher, doctor/, init/
 ```
 
-Dependencies point inward:
+| Layer | Units                                                                 | May import        |
+| ----- | --------------------------------------------------------------------- | ----------------- |
+| 0     | `utils/`                                                              | nothing in `src/` |
+| 1     | `kernel/`                                                             | `utils/`          |
+| 2     | `analysis/`                                                           | layers 0–1        |
+| 3     | `decision/`, `policy/`, `evidence/`, `config/`, `context/`            | layers 0–3        |
+| 4     | `reviewer/`, `audit/`, `status/`                                      | layers 0–4        |
+| 5     | `review/`                                                             | layers 0–5        |
+| 6     | `adapters/`, `ui/`, `cli/`, entry points, any module's `controllers/` | anything          |
 
-1. `utils/` imports nothing from `src/`.
-2. `modules/analysis/` imports only `utils/`.
-3. `modules/policy/`, `evidence/`, `context/` and `config/` import `analysis/` and `utils/`, and do
-   not import each other in a cycle.
-4. `modules/review/`, `reviewer/`, `audit/` and `status/` may import the modules above. `review/`
-   reaches the host only through `review/ports.ts`.
-5. `adapters/`, `ui/`, `cli/` and the entry points may import anything, and nothing imports them.
-   The entry points wire adapters into modules.
+Modules in the same layer may import each other, but the module graph must
+have no cycles. Below layer 6, nothing imports another module's
+`controllers/` or `repositories/`. Modules have no `index.ts`: import the file
+you need. Barrel files are banned because the TUI ships raw and a barrel
+would pull server code into it.
 
 Where new code goes:
 
+- A type nearly every module needs → `kernel/`. A type with one owner → that
+  module's `models/` (or next to its code in a flat module).
 - A parser, lexer rule or command classifier → `modules/analysis/<area>/`.
-- A new evidence source → `modules/evidence/<source>/`, plus its `EvidenceProvider` in
-  `modules/evidence/providers/`.
-- A CLI subcommand → the owning module's `controllers/`, registered in `src/cli/explain.ts`.
-- Host-specific code (OpenCode SDK calls, event shapes) → `adapters/opencode/`, behind a port in
-  `modules/review/ports.ts` if a module needs it.
-- Types → the owning module's `models/` (or `types.ts` in a flat module). Never add to
-  `src/types.ts`; it is being split up.
+- A new evidence source → `modules/evidence/<source>/`, plus its
+  `EvidenceProvider` in `modules/evidence/providers/`.
+- A CLI subcommand for one module's domain → that module's `controllers/`.
+  One that inspects the host or the installation → `cli/<command>/`.
+  Register both in `src/cli/explain.ts`.
+- Something a module needs from the host → a port in that module's `ports.ts`,
+  implemented in `adapters/opencode/` and wired in by the entry points.
 - A helper with no domain knowledge → `utils/`.
 
-Layer folders (`controllers/`, `services/`, `models/`, `repositories/`) are used once a module has
-about 10 files. Inside a layered module a layer folder may hold one file. Smaller modules stay
-flat.
+Layer folders (`controllers/`, `services/`, `models/`, `repositories/`) are
+used once a module has about 10 files. Smaller modules stay flat.
 
 ## Quality gates
 
