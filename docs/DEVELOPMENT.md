@@ -45,8 +45,8 @@ src/
 │   ├── evidence/                # providers/, files/, git/, ssh/, package-script/, local-script/
 │   ├── config/                  # controllers/ (config command), models/, services/
 │   ├── context/                 # what the reviewer sees: ports.ts, models/, services/
-│   ├── reviewer/                # System One: models/, services/
-│   ├── audit/                   # the audit file: models/, repositories/, services/
+│   ├── reviewer/                # System One: services/
+│   ├── audit/                   # the audit file: controllers/ (audit command), models/, repositories/, services/
 │   ├── status/                  # review status and the RPC protocol the TUI uses: models/, services/
 │   └── review/                  # the review use case: ports.ts, controllers/, models/, services/
 ├── adapters/opencode/{v1,v2}/   # host integration; implements the ports
