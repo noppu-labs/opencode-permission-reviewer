@@ -6,7 +6,7 @@ in `tests/compatibility/host-contracts.json`.
 
 | Setting                | V1                            | V2                                    |
 | ---------------------- | ----------------------------- | ------------------------------------- |
-| Host                   | 1.18.29 or newer V1           | >=2.0.3 <3                            |
+| Host                   | 1.18.29 or newer V1           | >=2.0.22 <3                           |
 | Server config key      | `plugin`                      | `plugins`                             |
 | Entry with options     | `[package, options]`          | `{package, options}`                  |
 | Terminal config        | `tui.json` or `tui.jsonc`     | Global `cli.json`                     |
@@ -35,13 +35,9 @@ trusted restrictions.
 The reviewer model must be configured globally in OpenCode so its isolated
 location can resolve it without loading project providers or instructions.
 
-V2 service discovery reads OpenCode's local authenticated service registration
-instead of probing version-specific health endpoints. The registration must
-come from the same OpenCode major and minor version as the running host,
-identify a live process, and use a loopback URL;
-the reviewer then proves the plugin instance through its own RPC identity. It
-never starts a service. An independent server requires these trusted environment
-settings:
+On V2 the reviewer drives the review through the plugin context, so it works
+in every server mode with no setup. An independent server overrides the
+in-process host with these trusted environment settings:
 
 ```bash
 export OPENCODE_PERMISSION_REVIEWER_HOST_URL=http://127.0.0.1:4096

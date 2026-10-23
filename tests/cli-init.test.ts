@@ -125,12 +125,11 @@ describe("cli init", () => {
       ["1.18.28", false],
       ["1.18.29", true],
       ["2.0.2", false],
-      ["2.0.3", true],
-      ["2.0.4", true],
-      ["2.0.11", true],
-      ["2.0.12", true],
+      ["2.0.21", false],
+      ["2.0.22", true],
+      ["2.0.26", true],
       ["2.1.0", true],
-      ["2.0.3-beta.1", false],
+      ["2.0.22-beta.1", false],
       ["3.0.0", false],
     ] as const) {
       // Sequential: each case rewrites the same fake binary before spawning init against it.

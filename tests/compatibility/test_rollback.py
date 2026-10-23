@@ -10,7 +10,7 @@ from pathlib import Path
 def test_profile_rollback_preserves_config_sessions_and_audit(launch_host, activate_host, model_server):
     package = os.environ.get("PLUGIN_PACKAGE_PATH", str(Path(__file__).resolve().parents[2]))
     v1 = os.environ["OPENCODE_V1_1_18_35"]
-    v2 = os.environ["OPENCODE_V2_2_0_3"]
+    v2 = os.environ["OPENCODE_V2_2_0_22"]
     config_v1 = {"plugin": [[package, {"model": "fixture/reviewer"}]], "permission": {"bash": "ask"}}
     provider_v1 = {
         "provider": {

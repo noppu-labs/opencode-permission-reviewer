@@ -44,7 +44,7 @@ function normalizeNative(v: NativeInput): ExplainRequest {
       reviewID: "explain-dry-run",
       generation: "explain",
       directory: "",
-      hostVersion: "2.0.3",
+      hostVersion: "2.0.22",
     },
     v.input,
   );

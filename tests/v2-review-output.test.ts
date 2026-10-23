@@ -34,6 +34,7 @@ test("a structured review creates its session and polls it in order", async () =
   const run = v2ReviewFixture();
   expect((await run.review()).kind).toBe("allow");
   expect(run.calls.map(([name]) => name)).toEqual([
+    "mcp.list",
     "plugin.list",
     "mcp.list",
     "model.list",
@@ -62,7 +63,7 @@ test("a structured review creates its session and polls it in order", async () =
       ],
     }),
   );
-  expect(run.calls.slice(4).map(([, input]) => input)).toEqual([
+  expect(run.calls.slice(5).map(([, input]) => input)).toEqual([
     { sessionID: created.id, text: promptsOf(run.calls)[0] },
     { sessionID: created.id },
     { sessionID: created.id },
@@ -184,7 +185,7 @@ test.each([
     expect(result.reason).toBe(
       "reviewer session call failed (Error): Reviewer session identity or isolation location does not match",
     );
-    expect(run.calls.slice(4).map(([name]) => name)).toEqual([
+    expect(run.calls.slice(5).map(([name]) => name)).toEqual([
       "session.interrupt",
       "session.remove",
       "session.get",
