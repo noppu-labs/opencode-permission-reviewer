@@ -5,7 +5,7 @@
 [![downloads](https://img.shields.io/npm/dw/@noppu-labs/opencode-permission-reviewer)](https://www.npmjs.com/package/@noppu-labs/opencode-permission-reviewer)
 [![OpenCode](https://img.shields.io/badge/OpenCode-%E2%89%A51.18.29-6E56CF)](https://opencode.ai)
 [![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3.0-000000)](https://bun.sh)
-[![license](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue)](#license)
+[![license](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue)](NOTICE)
 
 ![OpenCode Permission Reviewer: an AI reviewer for every permission prompt. A request from the agent goes to the reviewer, which weighs the task, the policy and the evidence, then allows it, denies it or asks you.](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/social-preview.png)
 
@@ -156,10 +156,3 @@ and long commands.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Report security issues privately as described in
 [SECURITY.md](SECURITY.md).
-
-## License
-
-Changes made in this fork are released under the [MIT License](LICENSE). Code from the upstream
-project remains under the [Apache License 2.0](LICENSE-APACHE). The reviewer policy is adapted
-from [OpenAI Codex Guardian](https://github.com/openai/codex/tree/c82cb044f3413e6584308d969b94e7a1430711ab/codex-rs/core/src/guardian)
-(Apache-2.0, Copyright OpenAI and contributors); [NOTICE](NOTICE) has the full attribution.
