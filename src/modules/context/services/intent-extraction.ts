@@ -8,8 +8,8 @@ import type {
 } from "../../../kernel/actor-context-types.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type { MessageWithParts } from "../models/message.ts";
+import type { ContextReader } from "../ports.ts";
 import { extractDelegatedTasks } from "./delegated-tasks.ts";
 import {
   intentCompleteness,

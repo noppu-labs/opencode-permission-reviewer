@@ -3,9 +3,9 @@ import type { RuntimeContext } from "../../../adapters/opencode/types.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
-import { writeReviewAudit } from "../../audit/services/review-coordinator-support.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
+import { writeReviewAudit } from "./audit/review-coordinator-support.ts";
 import {
   type CoordinatorState,
   coordinatorState,

@@ -1,9 +1,9 @@
 // Review audit writing for the coordinator: the audit writer and the attempt-registration invariant message.
 
-import type { PermissionRequest } from "../../../kernel/permission-request.ts";
-import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
-import { invariant } from "../../../utils/invariant.ts";
-import type { CoordinatorState } from "../../review/services/coordinator-state.ts";
+import type { PermissionRequest } from "../../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../../kernel/review-result.ts";
+import { invariant } from "../../../../utils/invariant.ts";
+import type { CoordinatorState } from "../coordinator-state.ts";
 import {
   type AuditRecordScope,
   buildReviewAuditRecord,

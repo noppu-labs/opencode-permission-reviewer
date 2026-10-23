@@ -44,23 +44,14 @@ const PRIVATE_DIRS = ["controllers", "repositories"];
  *  it. The test fails on a violation missing from this list and on an entry
  *  that no longer occurs, so the list only shrinks. */
 const ALLOWED: readonly string[] = [
-  "layer: modules/audit/services/review-audit-facts.ts -> modules/review/services/review-attempt.ts",
-  "layer: modules/audit/services/review-audit-record.ts -> modules/review/services/coordinator-state.ts",
-  "layer: modules/audit/services/review-audit-record.ts -> modules/review/services/review-attempt.ts",
-  "layer: modules/audit/services/review-coordinator-support.ts -> modules/review/services/coordinator-state.ts",
   "layer: modules/context/services/actor-resolver.ts -> adapters/opencode/types.ts",
   "layer: modules/context/services/actor-resolver.ts -> adapters/opencode/v1/context-reader.ts",
-  "layer: modules/context/services/actor-resolver.ts -> modules/review/ports.ts",
   "layer: modules/context/services/evidence-assembler.ts -> adapters/opencode/transport.ts",
   "layer: modules/context/services/evidence-assembler.ts -> adapters/opencode/types.ts",
-  "layer: modules/context/services/evidence-assembler.ts -> modules/review/ports.ts",
   "layer: modules/context/services/evidence-sources.ts -> adapters/opencode/types.ts",
   "layer: modules/context/services/evidence-sources.ts -> adapters/opencode/v1/context-reader.ts",
-  "layer: modules/context/services/evidence-sources.ts -> modules/review/ports.ts",
   "layer: modules/context/services/intent-extraction.ts -> adapters/opencode/transport.ts",
-  "layer: modules/context/services/intent-extraction.ts -> modules/review/ports.ts",
   "layer: modules/context/services/session-lineage.ts -> adapters/opencode/transport.ts",
-  "layer: modules/context/services/session-lineage.ts -> modules/review/ports.ts",
   "layer: modules/review/services/coordinator-state.ts -> adapters/opencode/types.ts",
   "layer: modules/review/services/coordinator-state.ts -> adapters/opencode/v1/backend-factory.ts",
   "layer: modules/review/services/review-coordinator.ts -> adapters/opencode/transport.ts",
@@ -68,10 +59,6 @@ const ALLOWED: readonly string[] = [
   "layer: modules/review/services/review-pipeline.ts -> adapters/opencode/v1/context-reader.ts",
   "layer: modules/review/services/review-reply.ts -> adapters/opencode/transport.ts",
   "layer: modules/review/services/review-status.ts -> adapters/opencode/transport.ts",
-  "layer: modules/reviewer/services/backend.ts -> modules/review/services/review-attempt.ts",
-  "layer: modules/reviewer/services/system-one-ask.ts -> modules/review/services/review-attempt.ts",
-  "layer: modules/reviewer/services/system-one-handoff.ts -> modules/review/services/review-attempt.ts",
-  "module-cycle: audit -> context -> review -> reviewer -> status",
 ];
 
 /** Runtime import cycles inside analysis/ that predate the layout. A new

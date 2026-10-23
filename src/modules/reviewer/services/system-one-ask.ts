@@ -1,6 +1,6 @@
+import type { ReviewAttemptView } from "../../../kernel/review-attempt.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
-import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
@@ -18,7 +18,7 @@ export async function askJev(
   config: ReviewerConfig,
   invoke: SystemOneInvoke | undefined,
   envelope: ReviewEnvelope,
-  attempt: ReviewAttempt,
+  attempt: ReviewAttemptView,
 ): Promise<JevOutcome> {
   try {
     const state = systemOneState(envelope, config);

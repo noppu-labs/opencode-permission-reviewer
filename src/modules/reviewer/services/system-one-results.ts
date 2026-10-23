@@ -4,6 +4,7 @@
 
 import type {
   ManualResolution,
+  ReasoningHandoff,
   ReviewExecutionResult,
   SystemOneScores,
 } from "../../../kernel/review-result.ts";
@@ -14,16 +15,6 @@ import {
 } from "../../decision/escalation.ts";
 import { formatFailureReason } from "../../decision/failure-reason.ts";
 import type { JevOutcome } from "./system-one-handoff.ts";
-
-/** The reasoning reviewer a Jev result was handed to. */
-export interface ReasoningHandoff {
-  model: string;
-  /** Jev rated the request critical, and its rating holds. */
-  jevCritical: boolean;
-  escalatedFrom: Required<
-    NonNullable<ReviewExecutionResult["reviewerEscalatedFrom"]>
-  >;
-}
 
 /** Jev's own result before any disposition, and the category that disposes
  *  it if it turns out to be final. */

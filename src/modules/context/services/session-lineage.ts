@@ -7,7 +7,7 @@ import type {
 } from "../../../kernel/actor-context-types.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { invariant } from "../../../utils/invariant.ts";
-import type { ContextReader } from "../../review/ports.ts";
+import type { ContextReader } from "../ports.ts";
 import {
   bareSession,
   lineageOrigin,

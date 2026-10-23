@@ -8,10 +8,10 @@ import type {
   EvidenceProvider,
 } from "../../evidence/providers/provider.ts";
 import type { VerifiedScriptEvidence } from "../../evidence/ssh/verified-ssh-script.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type { MessageWithParts } from "../models/message.ts";
 import type { ReviewEnvelope } from "../models/review-envelope.ts";
 import type { ActorResolution } from "../models/unknown-resolution.ts";
+import type { ContextReader } from "../ports.ts";
 import type { EvidenceAssemblyContext } from "./evidence-assembler.ts";
 import { normalizeMessages } from "./prompt/context.ts";
 

@@ -1,7 +1,6 @@
 // Who decided, and why the reasoning reviewer ran, as the TUI shows it.
 
-import type { HandoffTrigger } from "../kernel/review-result.ts";
-import type { HandoffInfo } from "../modules/reviewer/services/backend.ts";
+import type { HandoffInfo, HandoffTrigger } from "../kernel/review-result.ts";
 import type { ReviewUiStatus } from "../modules/status/models/ui-protocol.ts";
 
 type PhraseSource = Pick<

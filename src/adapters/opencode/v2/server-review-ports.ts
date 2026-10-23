@@ -2,6 +2,7 @@
 // the host connection, the backend review and the attempt's liveness.
 
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { HandoffInfo } from "../../../kernel/review-result.ts";
 import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import {
   assembleEvidence,
@@ -9,7 +10,6 @@ import {
 } from "../../../modules/context/services/evidence-assembler.ts";
 import type { NormalizedReviewRequest } from "../../../modules/review/models/contracts.ts";
 import type { ReviewEnginePorts } from "../../../modules/review/services/review-engine.ts";
-import type { HandoffInfo } from "../../../modules/reviewer/services/backend.ts";
 import { createServerUiStatus } from "../../../modules/status/services/ui-action-segments.ts";
 import { createV2ContextReader } from "./context-reader.ts";
 import type { V2HostApi } from "./host-api.ts";

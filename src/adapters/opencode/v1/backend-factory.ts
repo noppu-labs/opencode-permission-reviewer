@@ -1,12 +1,12 @@
-import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type {
+  OnHandoff,
+  ReviewExecutionResult,
+} from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { isSystemOneReviewerModel } from "../../../modules/config/services/reviewer-model.ts";
 import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import {
-  type OnHandoff,
-  SystemOneReviewerBackend,
-} from "../../../modules/reviewer/services/backend.ts";
+import { SystemOneReviewerBackend } from "../../../modules/reviewer/services/backend.ts";
 import type { RuntimeContext } from "../types.ts";
 import { V1ReviewerBackend } from "./reviewer-backend.ts";
 

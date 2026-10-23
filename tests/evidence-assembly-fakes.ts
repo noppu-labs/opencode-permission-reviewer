@@ -2,13 +2,13 @@
 
 import type { AskDecision } from "../src/kernel/actor-context-types.ts";
 import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
 import type { EvidenceAssemblyContext } from "../src/modules/context/services/evidence-assembler.ts";
 import type {
   EvidenceFragment,
   EvidenceProvider,
   EvidenceProviderInput,
 } from "../src/modules/evidence/providers/provider.ts";
-import type { ContextReader } from "../src/modules/review/ports.ts";
 
 export const CURRENT = "ses_main";
 export const PARENT = "ses_parent";

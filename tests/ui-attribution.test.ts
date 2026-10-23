@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { HandoffTrigger } from "../src/kernel/review-result.ts";
-import type { HandoffInfo } from "../src/modules/reviewer/services/backend.ts";
+import type {
+  HandoffInfo,
+  HandoffTrigger,
+} from "../src/kernel/review-result.ts";
 import {
   createUiStatus,
   type ReviewUiStatus,

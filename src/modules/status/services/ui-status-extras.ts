@@ -2,8 +2,10 @@
 // command cap. Oversized identifiers are not cut, so they can still overflow it.
 
 import type { ReviewDecision } from "../../../kernel/review-decision.ts";
-import type { ManualResolution } from "../../../kernel/review-result.ts";
-import type { HandoffInfo } from "../../reviewer/services/backend.ts";
+import type {
+  HandoffInfo,
+  ManualResolution,
+} from "../../../kernel/review-result.ts";
 
 const MAX_LIST_ENTRIES = 5;
 const MAX_ENTRY_CHARS = 200;

@@ -9,8 +9,8 @@ import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
 import { SshEvidenceProvider } from "../../evidence/providers/ssh-provider.ts";
 import { parseVerifiedSshScriptCommand } from "../../evidence/ssh/verified-ssh-command.ts";
 import type { ScriptAnalysisRegistry } from "../../evidence/ssh/verified-ssh-script.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type { ReviewEnvelope } from "../models/review-envelope.ts";
+import type { ContextReader } from "../ports.ts";
 import { resolveActorContext } from "./actor-resolver.ts";
 import type { AskDecisionSource } from "./ask-decisions.ts";
 import {

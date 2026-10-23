@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
-import { ATTEMPT_REGISTERED } from "../src/modules/audit/services/review-coordinator-support.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { ATTEMPT_REGISTERED } from "../src/modules/review/services/audit/review-coordinator-support.ts";
 import {
   attemptWith,
   auditCall,

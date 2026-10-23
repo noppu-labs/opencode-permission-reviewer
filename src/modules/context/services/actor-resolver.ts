@@ -8,12 +8,12 @@ import type {
 } from "../../../kernel/actor-context-types.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type { MessageWithParts } from "../models/message.ts";
 import {
   type ActorResolution,
   unknownResolution,
 } from "../models/unknown-resolution.ts";
+import type { ContextReader } from "../ports.ts";
 import { assembleActorContext, resolveCurrentActor } from "./actor-identity.ts";
 import { resolveIntent } from "./intent-extraction.ts";
 import { walkLineage } from "./session-lineage.ts";

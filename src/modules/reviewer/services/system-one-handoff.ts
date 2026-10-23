@@ -1,6 +1,7 @@
 // Whether a Jev result goes to the reasoning reviewer, under which trigger,
 // and whether the attempt can still afford it.
 
+import type { ReviewAttemptView } from "../../../kernel/review-attempt.ts";
 import type {
   HandoffTrigger,
   ReviewExecutionResult,
@@ -10,7 +11,6 @@ import {
   HANDOFF_BUDGET_FLOOR_MS,
   type SystemOneRouting,
 } from "../../config/services/system-one-routing.ts";
-import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import type { ParsedSystemOneReview } from "./system-one-verdict.ts";
 
 /** What came back from Jev: a parsed and enforced verdict, an invalid
@@ -93,7 +93,7 @@ export function jevCriticalHolds(
 
 /** Why a due hand-off cannot run, or undefined when it can. */
 export function handoffBlock(
-  attempt: ReviewAttempt,
+  attempt: ReviewAttemptView,
 ): "inactive" | "budget-exhausted" | undefined {
   if (!attempt.active()) return "inactive";
   return attempt.remainingMs() < HANDOFF_BUDGET_FLOOR_MS

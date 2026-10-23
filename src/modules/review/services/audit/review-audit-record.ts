@@ -1,21 +1,18 @@
 // The review audit record built from a finished attempt: the request's action
 // hash and the record's field groups, in the record's key order.
 import { createHash } from "node:crypto";
-import packageInfo from "../../../../package.json";
-import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import packageInfo from "../../../../../package.json";
+import type { PermissionRequest } from "../../../../kernel/permission-request.ts";
 import type {
   DecisionSource,
   ReviewExecutionResult,
-} from "../../../kernel/review-result.ts";
-import { REVIEWER_PROMPT_VERSION } from "../../context/services/prompt/policy.ts";
-import { DECISION_SCHEMA_VERSION } from "../../decision/decision.ts";
-import { configFingerprint } from "../../evidence/ssh/verified-ssh-script.ts";
-import {
-  type CoordinatorState,
-  isSuperseded,
-} from "../../review/services/coordinator-state.ts";
-import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
-import type { ReviewAuditRecord } from "../models/audit-record.ts";
+} from "../../../../kernel/review-result.ts";
+import type { ReviewAuditRecord } from "../../../audit/models/audit-record.ts";
+import { REVIEWER_PROMPT_VERSION } from "../../../context/services/prompt/policy.ts";
+import { DECISION_SCHEMA_VERSION } from "../../../decision/decision.ts";
+import { configFingerprint } from "../../../evidence/ssh/verified-ssh-script.ts";
+import { type CoordinatorState, isSuperseded } from "../coordinator-state.ts";
+import type { ReviewAttempt } from "../review-attempt.ts";
 import {
   actorFields,
   capabilityField,

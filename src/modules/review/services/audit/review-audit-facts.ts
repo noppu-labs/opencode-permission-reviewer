@@ -2,8 +2,8 @@
 // completeness, the verified script, the actor, the capability flags that
 // held, the policy trace and the latest ask decisions.
 
-import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
-import type { ReviewAuditRecord } from "../models/audit-record.ts";
+import type { ReviewAuditRecord } from "../../../audit/models/audit-record.ts";
+import type { ReviewAttempt } from "../review-attempt.ts";
 
 type Evidence = ReviewAttempt["evidence"];
 type Capability = NonNullable<Evidence["capability"]>;

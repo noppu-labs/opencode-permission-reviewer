@@ -1,12 +1,13 @@
+import type { ReviewAttemptView } from "../../../kernel/review-attempt.ts";
 import type {
-  HandoffTrigger,
+  OnHandoff,
+  ReasoningHandoff,
   ReviewExecutionResult,
   SystemOneScores,
 } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { resolveSystemOneRouting } from "../../config/services/system-one-routing.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
-import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import { announceHandoff } from "../../status/services/ui-status-routing.ts";
 import { askJev } from "./system-one-ask.ts";
 import { budgetExhaustedResult } from "./system-one-budget.ts";
@@ -22,38 +23,27 @@ import {
   handoffReason,
   jevResult,
   jevScores,
-  type ReasoningHandoff,
   reasoningFailureResult,
   reasoningResult,
 } from "./system-one-results.ts";
 
-export type ReasoningEscalation = (
+export type ReasoningEscalation<
+  Attempt extends ReviewAttemptView = ReviewAttemptView,
+> = (
   envelope: ReviewEnvelope,
-  attempt: ReviewAttempt,
+  attempt: Attempt,
 ) => Promise<ReviewExecutionResult>;
-
-/** Jev's hand-off to the reasoning reviewer, on the second "reviewing" status
- *  and on the result of a handed-off review. */
-export interface HandoffInfo {
-  from: string;
-  to: string;
-  trigger: HandoffTrigger;
-  /** Jev's failure ("timeout"), only when `trigger` is `jev-failure`. */
-  failureKind?: string;
-}
-
-/** Called at most once per review, right before the reasoning reviewer is
- *  invoked; never on the budget-floor or inactive-attempt paths. */
-export type OnHandoff = (handoff: HandoffInfo) => void;
 
 /** Calls Jev directly and hands its result to the reasoning reviewer at most
  *  once, when the hand-off decision says so. */
-export class SystemOneReviewerBackend {
+export class SystemOneReviewerBackend<
+  Attempt extends ReviewAttemptView = ReviewAttemptView,
+> {
   private readonly jobs = new Set<Promise<ReviewExecutionResult>>();
 
   constructor(
     private readonly config: ReviewerConfig,
-    private readonly escalation?: ReasoningEscalation,
+    private readonly escalation?: ReasoningEscalation<Attempt>,
     private readonly escalationModel?: string,
     private readonly invoke?: SystemOneInvoke,
     private readonly recordReviewerMs?: (
@@ -68,8 +58,8 @@ export class SystemOneReviewerBackend {
 
   review(
     envelope: ReviewEnvelope,
-    attempt: ReviewAttempt,
-    escalation: ReasoningEscalation | undefined = this.escalation,
+    attempt: Attempt,
+    escalation: ReasoningEscalation<Attempt> | undefined = this.escalation,
     onHandoff?: OnHandoff,
   ): Promise<ReviewExecutionResult> {
     const job = this.runReview(
@@ -88,8 +78,8 @@ export class SystemOneReviewerBackend {
 
   private async runReview(
     envelope: ReviewEnvelope,
-    attempt: ReviewAttempt,
-    escalation: ReasoningEscalation | undefined,
+    attempt: Attempt,
+    escalation: ReasoningEscalation<Attempt> | undefined,
     onHandoff: OnHandoff | undefined,
   ): Promise<ReviewExecutionResult> {
     const started = performance.now();
@@ -107,8 +97,8 @@ export class SystemOneReviewerBackend {
   private async route(
     jev: JevOutcome,
     envelope: ReviewEnvelope,
-    attempt: ReviewAttempt,
-    escalation: ReasoningEscalation | undefined,
+    attempt: Attempt,
+    escalation: ReasoningEscalation<Attempt> | undefined,
     onHandoff: OnHandoff | undefined,
   ): Promise<ReviewExecutionResult> {
     const own = jevResult(jev, this.config);
@@ -143,8 +133,8 @@ export class SystemOneReviewerBackend {
 
   private async handOff(
     envelope: ReviewEnvelope,
-    attempt: ReviewAttempt,
-    escalation: ReasoningEscalation,
+    attempt: Attempt,
+    escalation: ReasoningEscalation<Attempt>,
     handoff: ReasoningHandoff,
     systemOne: SystemOneScores | undefined,
   ): Promise<ReviewExecutionResult> {

@@ -2,15 +2,13 @@
 // in the TUI package (`scripts/copy-tui.ts`).
 
 import type {
+  HandoffInfo,
   HandoffTrigger,
+  OnHandoff,
+  ReasoningHandoff,
   ReviewExecutionResult,
 } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
-import type {
-  HandoffInfo,
-  OnHandoff,
-} from "../../reviewer/services/backend.ts";
-import type { ReasoningHandoff } from "../../reviewer/services/system-one-results.ts";
 import { failureKind } from "../models/failure-kind.ts";
 import type { UiStatusOptions } from "../models/ui-protocol.ts";
 

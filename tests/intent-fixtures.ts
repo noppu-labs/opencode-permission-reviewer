@@ -7,8 +7,8 @@ import type {
 } from "../src/kernel/actor-context-types.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
 import { resolveIntent } from "../src/modules/context/services/intent-extraction.ts";
-import type { ContextReader } from "../src/modules/review/ports.ts";
 import { request } from "./helpers.ts";
 import type { Part } from "./intent-builders.ts";
 

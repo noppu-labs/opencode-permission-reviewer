@@ -7,14 +7,14 @@ import { join } from "node:path";
 import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
 import type { normalizeV2Permission } from "../src/adapters/opencode/v2/permission-codec.ts";
 import { setupWithServices } from "../src/adapters/opencode/v2/server.ts";
-import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
-import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
-import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
-import type { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import type {
   HandoffInfo,
   OnHandoff,
-} from "../src/modules/reviewer/services/backend.ts";
+  ReviewExecutionResult,
+} from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
+import type { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { config, decision, defined } from "./helpers.ts";
 import { hostEventStream } from "./v2-host-event-stream.ts";
 

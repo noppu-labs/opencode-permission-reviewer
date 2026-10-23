@@ -1,7 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionSource } from "../src/kernel/review-result.ts";
+import type {
+  DecisionSource,
+  ReasoningHandoff,
+} from "../src/kernel/review-result.ts";
 import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
-import type { ReasoningHandoff } from "../src/modules/reviewer/services/system-one-results.ts";
 import {
   announceHandoff,
   configNoticeFields,
