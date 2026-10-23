@@ -1,3 +1,4 @@
+import type { Logger } from "../../../utils/logger.ts";
 import type { RuntimeContext } from "../types.ts";
 import { setupIsolatedDirectory } from "./v1-review-isolation.ts";
 
@@ -7,7 +8,7 @@ export class IsolatedReviewerDirectory {
   private pending: Promise<string | undefined> | undefined;
   constructor(
     private readonly ctx: Pick<RuntimeContext, "reviewerDirectoryBase">,
-    private readonly log: (message: string, details?: unknown) => void,
+    private readonly log: Logger,
   ) {}
 
   /**

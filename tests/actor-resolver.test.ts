@@ -24,7 +24,7 @@ interface MockOptions {
   messagesUnavailable?: string[]; // sessionIDs whose messages fetch should fail
 }
 
-function buildClient(opts: MockOptions = {}): ContextReader {
+function buildReader(opts: MockOptions = {}): ContextReader {
   const sessions = opts.sessions ?? {};
   const failing = new Set(opts.messagesUnavailable ?? []);
   const client: OpenCodeClientLike = {
@@ -128,7 +128,7 @@ describe("actor resolver — current-session actor", () => {
     const res = await resolveActorContext(
       request("ses_current", { messageID: "msg_a", callID: "call_1" }),
       messages,
-      buildClient(),
+      buildReader(),
       "/repo",
       cfg,
     );
@@ -143,7 +143,7 @@ describe("actor resolver — current-session actor", () => {
     const res = await resolveActorContext(
       request("ses_current", { messageID: "msg_a", callID: "call_x" }),
       messages,
-      buildClient(),
+      buildReader(),
       "/repo",
       cfg,
     );
@@ -155,7 +155,7 @@ describe("actor resolver — current-session actor", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      buildClient(),
+      buildReader(),
       "/repo",
       cfg,
     );
@@ -166,7 +166,7 @@ describe("actor resolver — current-session actor", () => {
 
 describe("actor resolver — lineage walk", () => {
   test("single parent: depth 1", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         ses_current: { meta: { id: "ses_current", parentID: "ses_parent" } },
         ses_parent: { meta: { id: "ses_parent" } },
@@ -175,7 +175,7 @@ describe("actor resolver — lineage walk", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -188,7 +188,7 @@ describe("actor resolver — lineage walk", () => {
   });
 
   test("multi-level chain: depth 3", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         a: { meta: { id: "a", parentID: "b" } },
         b: { meta: { id: "b", parentID: "c" } },
@@ -199,7 +199,7 @@ describe("actor resolver — lineage walk", () => {
     const res = await resolveActorContext(
       request("a"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -208,7 +208,7 @@ describe("actor resolver — lineage walk", () => {
   });
 
   test("cycle detection stops the walk", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         a: { meta: { id: "a", parentID: "b" } },
         b: { meta: { id: "b", parentID: "a" } },
@@ -217,7 +217,7 @@ describe("actor resolver — lineage walk", () => {
     const res = await resolveActorContext(
       request("a"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -228,7 +228,7 @@ describe("actor resolver — lineage walk", () => {
   });
 
   test("depth cap marks truncated", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         a: { meta: { id: "a", parentID: "b" } },
         b: { meta: { id: "b", parentID: "c" } },
@@ -238,7 +238,7 @@ describe("actor resolver — lineage walk", () => {
         f: { meta: { id: "f" } },
       },
     });
-    const res = await resolveActorContext(request("a"), [], client, "/repo", {
+    const res = await resolveActorContext(request("a"), [], reader, "/repo", {
       ...cfg,
       maxSessionDepth: 2,
     });
@@ -247,7 +247,7 @@ describe("actor resolver — lineage walk", () => {
   });
 
   test("missing parent (404) is recorded, not fatal", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         ses_current: { meta: { id: "ses_current", parentID: "ghost" } },
       },
@@ -255,7 +255,7 @@ describe("actor resolver — lineage walk", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -266,13 +266,13 @@ describe("actor resolver — lineage walk", () => {
   });
 
   test("root session (no parentID): depth 0, root is self", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: { ses_current: { meta: { id: "ses_current" } } },
     });
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -281,11 +281,11 @@ describe("actor resolver — lineage walk", () => {
   });
 
   test("session.get unavailable degrades to depth 0", async () => {
-    const client = buildClient({ getUnavailable: true });
+    const reader = buildReader({ getUnavailable: true });
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -297,7 +297,7 @@ describe("actor resolver — lineage walk", () => {
 
 describe("actor resolver — intent separation", () => {
   test("subtask in parent becomes delegatedTask", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         ses_current: { meta: { id: "ses_current", parentID: "ses_parent" } },
         ses_parent: {
@@ -320,7 +320,7 @@ describe("actor resolver — intent separation", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -331,7 +331,7 @@ describe("actor resolver — intent separation", () => {
   });
 
   test("no subtask in parent yields empty delegatedTask and partial completeness", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         ses_current: { meta: { id: "ses_current", parentID: "ses_parent" } },
         ses_parent: { meta: { id: "ses_parent" }, messages: [] },
@@ -340,7 +340,7 @@ describe("actor resolver — intent separation", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -350,7 +350,7 @@ describe("actor resolver — intent separation", () => {
   });
 
   test("direct user intent is separated from delegated task", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         ses_current: { meta: { id: "ses_current", parentID: "ses_parent" } },
         ses_parent: {
@@ -368,7 +368,7 @@ describe("actor resolver — intent separation", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       [],
-      client,
+      reader,
       "/repo",
       cfg,
     );
@@ -391,7 +391,7 @@ describe("actor resolver — intent separation", () => {
     const res = await resolveActorContext(
       request("ses_current"),
       messages,
-      buildClient(),
+      buildReader(),
       "/repo",
       cfg,
     );
@@ -439,7 +439,7 @@ describe("actor resolver — resilience", () => {
     const res = await resolveActorContext(
       request("ses_current", { messageID: "msg_a", callID: "c" }),
       messages,
-      buildClient(),
+      buildReader(),
       "/repo",
       { ...cfg, actorProfiles: { "lint-bot": "read-only" } },
     );
@@ -453,7 +453,7 @@ describe("actor resolver — resilience", () => {
 // mapping is applied, and completeness reflects a fully-walked lineage.
 describe("actor resolver — multi-hop lineage happy path", () => {
   test("three-level chain resolves root, depth, profile and completeness", async () => {
-    const client = buildClient({
+    const reader = buildReader({
       sessions: {
         leaf: { meta: { id: "leaf", parentID: "mid" } },
         mid: { meta: { id: "mid", parentID: "root", agent: "mid-agent" } },
@@ -474,7 +474,7 @@ describe("actor resolver — multi-hop lineage happy path", () => {
     const res = await resolveActorContext(
       request("leaf", { messageID: "msg_leaf", callID: "call_leaf" }),
       messages,
-      client,
+      reader,
       "/repo",
       { ...cfg, actorProfiles: { generalist: "workspace" } },
     );

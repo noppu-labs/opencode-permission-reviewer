@@ -7,8 +7,8 @@ import type {
   ReviewerBackend,
   ReviewHost,
 } from "../../../modules/review/ports.ts";
-import type { Logger } from "../../../modules/review/services/coordinator-state.ts";
 import { ReviewCoordinator } from "../../../modules/review/services/review-coordinator.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import { isAlreadyResolvedError } from "../transport.ts";
 import type { RuntimeContext } from "../types.ts";
 import { createV1ReviewerBackend } from "./backend-factory.ts";

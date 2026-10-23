@@ -1,16 +1,16 @@
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import { withTimeout } from "../../../utils/with-timeout.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
 import type { ReviewHost } from "../ports.ts";
-import { writeReviewAudit } from "./audit/review-coordinator-support.ts";
+import { writeReviewAudit } from "./audit-record/review-coordinator-support.ts";
 import {
   type CoordinatorState,
   coordinatorState,
   isSuperseded,
-  type Logger,
   startAttempt,
   supersedeResult,
 } from "./coordinator-state.ts";

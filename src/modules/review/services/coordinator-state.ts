@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import { defaultEvidenceProviders } from "../../context/services/evidence-assembler.ts";
@@ -17,10 +18,11 @@ import type {
 import { recordReviewerMs } from "./attempt-evidence.ts";
 import { ReviewAttempt } from "./review-attempt.ts";
 
-export type Logger = (message: string, details?: unknown) => void;
-
 export interface CoordinatorState {
   readonly host: ReviewHost;
+  /** The same object as `host.context`. Helpers that need only the host
+   *  context pick this field, so their callers and fixtures need not build a
+   *  whole `ReviewHost`. */
   readonly ctx: ReviewHostContext;
   readonly config: ReviewerConfig;
   readonly generation: string;
@@ -29,9 +31,8 @@ export interface CoordinatorState {
   /**
    * Request IDs a human (or any other reply source) resolved while the
    * automatic review was in flight; that review then gives up with no UI
-   * status and no reply. OpenCode resolves a request first-writer-wins, so a
-   * late programmatic reply gets 404 `PermissionNotFoundError`, which
-   * `sendPermissionReply` treats the same way.
+   * status and no reply. A late reply to an already-resolved request is
+   * recognised by `ReviewHost.isAlreadyResolvedError` and handled the same way.
    */
   readonly resolvedManually: Set<string>;
   readonly log: Logger;

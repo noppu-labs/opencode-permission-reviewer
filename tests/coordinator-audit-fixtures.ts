@@ -7,7 +7,7 @@ import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
 import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
-import { writeReviewAudit } from "../src/modules/review/services/audit/review-coordinator-support.ts";
+import { writeReviewAudit } from "../src/modules/review/services/audit-record/review-coordinator-support.ts";
 import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { decision, MockClient, request } from "./helpers.ts";
 import { actor, capability } from "./policy-fixtures.ts";

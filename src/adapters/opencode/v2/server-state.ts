@@ -12,6 +12,7 @@ import { ScriptAnalysisRegistry } from "../../../modules/evidence/ssh/verified-s
 import type { NormalizedReviewRequest } from "../../../modules/review/models/contracts.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
 import type { ReviewUiStatus } from "../../../modules/status/models/ui-protocol.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import type { V2ReviewBackend } from "./backend-factory.ts";
 import type { resolveV2Host } from "./connection.ts";
 import { V2AskDecisions } from "./event-codec.ts";
@@ -62,7 +63,7 @@ export interface ServerState {
   eventStreamHealthy: boolean;
   connectionState: "not-probed" | "verified" | "failed";
   readonly subscription: AbortController;
-  readonly log: (message: string, details?: unknown) => void;
+  readonly log: Logger;
   readonly audit: ReturnType<typeof createAuditWriter>;
   readonly effectiveConfigHash: string;
   readonly registrations: Array<{ dispose(): Promise<void> }>;

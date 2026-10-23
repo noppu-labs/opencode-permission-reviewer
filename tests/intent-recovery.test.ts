@@ -266,7 +266,7 @@ test("assembled prompt carries recovered authorization once within the existing 
     },
   ];
   const envelope = await assembleEvidence(req, [], {
-    client: {
+    reader: {
       messages: async () => messages,
       intentMessages: async () => [
         user("goal", "Fix the bug and run the tests."),
@@ -294,7 +294,7 @@ test("assembled prompt carries recovered authorization once within the existing 
 test("failure to recover literal history cannot silently authorize from stale context", async () => {
   await expect(
     assembleEvidence(request(), [], {
-      client: {
+      reader: {
         messages: async () => [user("old", "Run tests")],
         intentMessages: async () => {
           throw new Error("History unavailable");

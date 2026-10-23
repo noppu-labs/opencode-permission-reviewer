@@ -27,7 +27,7 @@ async function collectEvidence(
     permission.request,
     defaultEvidenceProviders(),
     {
-      client: createV2ContextReader(client, run.attempt.signal),
+      reader: createV2ContextReader(client, run.attempt.signal),
       directory: server.directory,
       worktree: server.ctx.location.project.directory,
       config: server.config,

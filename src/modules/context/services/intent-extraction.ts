@@ -25,7 +25,7 @@ import { METADATA_TIMEOUT_MS } from "./session-lineage.ts";
 // --- parent/root message fetch for intent extraction ------------------------
 
 async function fetchMessagesBounded(
-  client: ContextReader,
+  reader: ContextReader,
   sessionID: string,
   directory: string,
   limit: number,
@@ -33,9 +33,9 @@ async function fetchMessagesBounded(
 ): Promise<MessageWithParts[]> {
   try {
     const response = await withTimeout(
-      intentOnly && client.intentMessages
-        ? client.intentMessages(sessionID, directory, limit)
-        : client.messages(sessionID, directory, limit),
+      intentOnly && reader.intentMessages
+        ? reader.intentMessages(sessionID, directory, limit)
+        : reader.messages(sessionID, directory, limit),
       METADATA_TIMEOUT_MS,
     );
     return normalizeFetched(response);
@@ -53,7 +53,7 @@ export async function resolveIntent(
   request: PermissionRequest,
   currentMessages: MessageWithParts[],
   lineage: SessionLineage,
-  client: ContextReader,
+  reader: ContextReader,
   directory: string,
   config: ReviewerConfig,
 ): Promise<IntentContext> {
@@ -81,8 +81,8 @@ export async function resolveIntent(
   const parent = lineage.nodes[1];
   if (parent) {
     const [parentMessages, parentIntent] = await Promise.all([
-      fetchMessagesBounded(client, parent.sessionID, directory, limit),
-      fetchMessagesBounded(client, parent.sessionID, directory, limit, true),
+      fetchMessagesBounded(reader, parent.sessionID, directory, limit),
+      fetchMessagesBounded(reader, parent.sessionID, directory, limit, true),
     ]);
     delegatedTask.push(
       ...extractDelegatedTasks(
@@ -99,7 +99,7 @@ export async function resolveIntent(
   const root = lineage.nodes[lineage.nodes.length - 1];
   if (root && root !== parent && root.sessionID !== request.sessionID) {
     const rootMessages = await fetchMessagesBounded(
-      client,
+      reader,
       root.sessionID,
       directory,
       limit,

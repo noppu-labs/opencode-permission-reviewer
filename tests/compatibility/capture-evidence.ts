@@ -75,7 +75,7 @@ const envelope: ReviewEnvelope = await assembleEvidence(
   request,
   defaultEvidenceProviders(),
   {
-    client: reader,
+    reader,
     directory,
     worktree: directory,
     config,
