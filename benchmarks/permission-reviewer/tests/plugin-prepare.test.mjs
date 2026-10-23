@@ -132,9 +132,7 @@ test("bash commands are parsed and analysed; other requests carry no command ana
 });
 
 test("the adapter's parsers are the core's decision and System One parsers", async () => {
-  const decisions = await core(
-    "src/modules/review/services/decision/decision.ts",
-  );
+  const decisions = await core("src/modules/decision/decision.ts");
   const review = await core("src/modules/reviewer/services/review.ts");
   const { config } = await adapter.prepare(bashInput(), textModel);
   const text = JSON.stringify({ version: 2, outcome: "deny" });

@@ -1,7 +1,7 @@
 import { satisfies } from "semver";
 import { loadResolvedConfig } from "../../../modules/config/services/loader.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
 import { SUPPORTED_V2_RANGE } from "../host-guard.ts";
-import { withTimeout } from "../transport.ts";
 import { createV2ReviewerBackend } from "./backend-factory.ts";
 import { resolveV2Host } from "./connection.ts";
 import { registerToolHooks, watchHostEvents } from "./server-events.ts";

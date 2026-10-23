@@ -1,6 +1,7 @@
 // The reviewer evidence layout: the section order with PENDING_PERMISSION first, and the total evidence budget.
 
-import type { ReviewEnvelope, ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../models/review-envelope.ts";
 import {
   actorEvidenceSections,
   renderActionPurpose,

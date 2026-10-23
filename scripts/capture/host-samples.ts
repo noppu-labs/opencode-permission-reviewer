@@ -1,5 +1,5 @@
 import { resolveConfig } from "../../src/modules/config/services/config.ts";
-import { formatFailureReason } from "../../src/modules/review/services/decision/failure-reason.ts";
+import { formatFailureReason } from "../../src/modules/decision/failure-reason.ts";
 import { budgetExhaustedResult } from "../../src/modules/reviewer/services/system-one-budget.ts";
 import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import { handoffStatus, JEV, jevStatus, LUNA } from "./fixtures.ts";

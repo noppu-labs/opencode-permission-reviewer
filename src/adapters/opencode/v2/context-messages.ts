@@ -1,5 +1,5 @@
 import type { SessionInfo } from "@opencode/client";
-import type { MessageWithParts } from "../../../types.ts";
+import type { MessageWithParts } from "../../../modules/context/models/message.ts";
 import type { V2HostApi } from "./host-api.ts";
 
 type ContextMessage = Awaited<

@@ -1,13 +1,13 @@
 // Session ancestry walk: bounded, cycle-checked session.get traversal into a SessionLineage.
 
-import { withTimeout } from "../../../adapters/opencode/transport.ts";
-import type { ReviewerConfig } from "../../../types.ts";
-import { invariant } from "../../../utils/invariant.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type {
   SessionLineage,
   SessionNode,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { invariant } from "../../../utils/invariant.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
+import type { ContextReader } from "../ports.ts";
 import {
   bareSession,
   lineageOrigin,

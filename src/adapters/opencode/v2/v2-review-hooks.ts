@@ -3,7 +3,7 @@ import type { SessionContext } from "@opencode/plugin/promise/session";
 import type { ToolContext } from "@opencode/plugin/promise/tool";
 import type { z } from "zod";
 import { REVIEWER_SYSTEM_PROMPT } from "../../../modules/context/services/prompt/policy.ts";
-import { parseDecision } from "../../../modules/review/services/decision/decision.ts";
+import { parseDecision } from "../../../modules/decision/decision.ts";
 import {
   type PendingGeneration,
   resultSchema,

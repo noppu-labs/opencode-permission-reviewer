@@ -1,16 +1,16 @@
 // The requesting actor: agent and mode read from the tool message, the mapped profile, and the lineage-derived session facts.
 
 import type {
-  ActorProfile,
-  MessageWithParts,
-  PermissionRequest,
-  ReviewerConfig,
-} from "../../../types.ts";
-import type {
   ActorContext,
   Provenanced,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type {
+  ActorProfile,
+  ReviewerConfig,
+} from "../../../kernel/reviewer-config.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import { prov } from "./provenance.ts";
 
 export const UNKNOWN_STRING = prov<string | undefined>(

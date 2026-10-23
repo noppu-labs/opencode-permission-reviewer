@@ -1,11 +1,11 @@
 import type {
   HandoffTrigger,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
-import { applyEscalationDisposition } from "../../review/services/decision/escalation.ts";
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../../config/services/system-one-routing.ts";
+import { applyEscalationDisposition } from "../../decision/escalation.ts";
 import type { JevResult } from "./system-one-results.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "./system-one-routing.ts";
 
 const TRIGGER_CAUSE: Record<HandoffTrigger, string> = {
   "jev-escalate": "Jev escalated",

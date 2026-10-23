@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
+import type { HandoffTrigger } from "../src/kernel/review-result.ts";
 import { budgetExhaustedResult } from "../src/modules/reviewer/services/system-one-budget.ts";
 import {
   createUiStatus,
   type ReviewUiStatus,
 } from "../src/modules/status/models/ui-protocol.ts";
-import type { HandoffTrigger } from "../src/types.ts";
 import { manualToast } from "../src/ui/manual-toast.ts";
 import { config, request } from "./helpers.ts";
 

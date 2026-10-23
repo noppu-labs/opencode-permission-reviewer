@@ -2,16 +2,14 @@
 // cancelled action, the permission effect the hook returns, and the UI status
 // and audit record queued after it.
 
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewUiStatus } from "../../../modules/status/models/ui-protocol.ts";
 import { createServerUiStatus } from "../../../modules/status/services/ui-action-segments.ts";
 import {
   decidedByField,
   statusRouting,
 } from "../../../modules/status/services/ui-status-routing.ts";
-import type {
-  PermissionRequest,
-  ReviewExecutionResult,
-} from "../../../types.ts";
 import { reviewAuditRecord } from "./server-audit.ts";
 import { snapshotAction } from "./server-events.ts";
 import type { ReviewRun, ServerState } from "./server-state.ts";

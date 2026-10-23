@@ -1,5 +1,5 @@
 import type { OpenCodeEvent } from "@opencode/client";
-import type { AskDecision } from "../../../modules/context/models/actor-context-types.ts";
+import type { AskDecision } from "../../../kernel/actor-context-types.ts";
 import {
   AskDecisionRegistry,
   type AskDecisionSource,

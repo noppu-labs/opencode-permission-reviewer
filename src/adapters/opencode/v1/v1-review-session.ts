@@ -1,6 +1,8 @@
-import type { ReviewEnvelope, ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import { redactSecrets } from "../../../utils/redact.ts";
-import { responseData, withTimeout } from "../transport.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
+import { responseData } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";
 
 /** Create an instruction-isolated session or fail into the configured error route. */

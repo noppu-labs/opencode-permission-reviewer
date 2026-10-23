@@ -1,11 +1,11 @@
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
+import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
 import type {
-  ActorProfile,
   EscalationDisposition,
   ManualResolution,
-  PermissionRequest,
-  ReviewDecision,
-} from "../../../types.ts";
-import type { HandoffInfo } from "../../reviewer/services/backend.ts";
+} from "../../../kernel/review-result.ts";
+import type { ActorProfile } from "../../../kernel/reviewer-config.ts";
 import {
   boundedText,
   fitStatus,

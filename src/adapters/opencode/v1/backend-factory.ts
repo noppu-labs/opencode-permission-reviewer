@@ -1,26 +1,13 @@
+import type { OnHandoff } from "../../../kernel/review-handoff.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { isSystemOneReviewerModel } from "../../../modules/config/services/reviewer-model.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
+import type { ReviewerBackend } from "../../../modules/review/ports.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import {
-  type OnHandoff,
-  SystemOneReviewerBackend,
-} from "../../../modules/reviewer/services/backend.ts";
-import { isSystemOneReviewerModel } from "../../../modules/reviewer/services/reviewer-model.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import { SystemOneReviewerBackend } from "../../../modules/reviewer/services/backend.ts";
 import type { RuntimeContext } from "../types.ts";
 import { V1ReviewerBackend } from "./reviewer-backend.ts";
-
-export interface V1ReviewBackend {
-  owns(sessionID: string): boolean;
-  review(
-    envelope: ReviewEnvelope,
-    attempt: ReviewAttempt,
-    onHandoff?: OnHandoff,
-  ): Promise<ReviewExecutionResult>;
-  waitForIdle(): Promise<void>;
-}
 
 function escalationConfig(config: ReviewerConfig): ReviewerConfig | undefined {
   const escalation = config.escalationReviewer;
@@ -38,7 +25,7 @@ export function createV1ReviewerBackend(
   config: ReviewerConfig,
   log: (message: string, details?: unknown) => void,
   recordReviewerMs: (envelope: ReviewEnvelope, ms: number) => void,
-): V1ReviewBackend {
+): ReviewerBackend {
   if (!isSystemOneReviewerModel(config.model)) {
     return new V1ReviewerBackend(ctx, config, log, recordReviewerMs);
   }

@@ -1,11 +1,12 @@
+import type { MessageWithParts } from "../../../modules/context/models/message.ts";
+import type { ContextReader } from "../../../modules/context/ports.ts";
 import {
   normalizeMessages,
   selectIntentMessages,
 } from "../../../modules/context/services/prompt/context.ts";
-import type { ContextReader } from "../../../modules/review/ports.ts";
-import type { MessageWithParts } from "../../../types.ts";
 import { asObjectLike } from "../../../utils/is-record.ts";
-import { responseData, withTimeout } from "../transport.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
+import { responseData } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";
 
 const MAX_INTENT_SCAN_MESSAGES = 2_000;

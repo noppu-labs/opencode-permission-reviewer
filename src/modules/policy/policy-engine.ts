@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
-import type { PolicyRule, PolicyTrace, ReviewerConfig } from "../../types.ts";
+import type { ActorContext } from "../../kernel/actor-context-types.ts";
+import type {
+  PolicyRule,
+  PolicyTrace,
+  ReviewerConfig,
+} from "../../kernel/reviewer-config.ts";
 import type { CapabilityAssessment } from "../analysis/capability/models/capability-types.ts";
-import type { ActorContext } from "../context/models/actor-context-types.ts";
 import { conditionMatches } from "./policy-conditions.ts";
 
 /*

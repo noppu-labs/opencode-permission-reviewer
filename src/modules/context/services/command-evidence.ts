@@ -1,6 +1,6 @@
 // Evidence derived from the pending bash command itself: the verified ssh script it runs, and its capability facts.
 
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { analyzeCapability } from "../../analysis/capability/bash-analyzer.ts";
 import { parseCommand } from "../../analysis/capability/command-parser.ts";
 import type {

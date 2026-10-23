@@ -1,13 +1,11 @@
-import { withTimeout } from "../../../adapters/opencode/transport.ts";
-import type { RuntimeContext } from "../../../adapters/opencode/types.ts";
-import type {
-  PermissionRequest,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
-import { writeReviewAudit } from "../../audit/services/review-coordinator-support.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
+import type { ReviewHost } from "../ports.ts";
+import { writeReviewAudit } from "./audit/review-coordinator-support.ts";
 import {
   type CoordinatorState,
   coordinatorState,
@@ -37,13 +35,19 @@ export class ReviewCoordinator {
   private readonly pending = new Map<string, Promise<unknown>>();
 
   constructor(
-    ctx: RuntimeContext,
+    host: ReviewHost,
     config: ReviewerConfig,
     logger?: Logger,
     providers?: EvidenceProvider[],
     askDecisions?: AskDecisionSource,
   ) {
-    this.state = coordinatorState(ctx, config, logger, providers, askDecisions);
+    this.state = coordinatorState(
+      host,
+      config,
+      logger,
+      providers,
+      askDecisions,
+    );
   }
 
   pendingCount(): number {

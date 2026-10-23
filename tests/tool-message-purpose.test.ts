@@ -2,9 +2,10 @@ import { describe, expect, test } from "bun:test";
 import type {
   ActionPurpose,
   IntentContext,
-} from "../src/modules/context/models/actor-context-types.ts";
+} from "../src/kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import { resolveActionPurpose } from "../src/modules/context/services/action-purpose.ts";
-import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
 import { request } from "./helpers.ts";
 
 const FALLBACK: IntentContext = {

@@ -1,7 +1,7 @@
 // The value options (port, identity file, host-key checking) read around an ssh destination.
 
 import { elementAt } from "../../../utils/element-at.ts";
-import { sshValueOption } from "./ssh-value-options.ts";
+import { sshValueOption } from "../../analysis/ssh/ssh-value-options.ts";
 
 /** The value options scanned around the destination; a value can be missing. */
 export type SshOptions = {

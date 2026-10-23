@@ -22,64 +22,64 @@
 // intended reminder rather than a flake.
 export const PINNED_BLOBS = {
   "src/modules/context/services/prompt/policy.ts":
-    "d032f4d3aa1610e57c52aa360f5087826e94af88",
+    "679d436176b2a3b781a058d31c51f7d0fd77f287",
   "src/modules/context/services/prompt/context.ts":
-    "ba2399075ae92c55178b953758f001deab9caa49",
+    "d0e3077d17634fc712b7f1e5539bb641e3ccf0d0",
   "src/modules/context/services/evidence-sections.ts":
-    "0cdbd66cc8e3b99ab3b5f332e236a5c003a16cfd",
+    "233251f24eaf2d63c493d1485fdcd0ea7d72ee26",
   "src/modules/context/services/prompt-budget.ts":
     "5c2b3aff99e9e4d8ca0822387b76f4aff6d91c51",
   "src/modules/context/services/actor-sections.ts":
-    "9410875588a1f5286b881aa2d9d5575619dfcc35",
+    "eceb157103b5861dab0381b18914caa5c73f9e43",
   "src/modules/context/services/capability-section.ts":
     "c8e4bee049460fa0130424e76ff1cf8653824bf0",
   "src/modules/context/services/evidence-layout.ts":
-    "3c3515df3fe33d2a8c9e9c98ce0b609276c0b508",
+    "81d44aeb010f81c98c9817444996483d92d6b82d",
   "src/modules/context/services/intent-history.ts":
-    "c3abc7d8aa79c9b98480216aced7fe2a369837a6",
+    "38cdd5e0c4a9c59e17f492731fba53161604f012",
   "src/modules/context/services/message-summary.ts":
-    "9c8521685ab246f3901a255352070567c97dde58",
+    "28531fd9a79158418fd0ca90f5c9a9daf705c6af",
   "src/modules/context/services/pending-permission.ts":
-    "a0e6f0799c27ebab2cab9af4709a9451777ca879",
+    "87e366d7e3f9585d324f9b60b4a403f32d5fc8b9",
   "src/modules/context/services/synthetic-parts.ts":
     "d57f10540a5b243a4da49f3dc72deb71d307d322",
   "src/modules/config/services/config.ts":
-    "425a9562de8c84221043f074fa37d86122bdf9c6",
+    "65657daae76fd4404429e247fee09c44169bfab2",
   "src/modules/config/models/config-fields.ts":
-    "7f694ccb89fcd9a00e72c36f58456aae47a9e0ea",
+    "fc5d43ec9c4c4607d5553af79b11006c956592da",
   "src/modules/config/models/config-knobs.ts":
-    "63bb7054fe458596761a1b91f870bb85fd7fe8ce",
+    "97bc958a7cdb5c949ff685c509582595e667bff5",
   "src/modules/config/models/config-policy-rules.ts":
-    "d744795e5775ab16249c9b07a9ec91864af54350",
+    "226b2c0af8361e7dd49d3dc170a0dd8b95c9ede7",
   "src/modules/config/models/config-risk-policy.ts":
-    "7481defb9cb600c2107f55e2993549fe1b092b3a",
-  "src/modules/config/models/config-rule-condition.ts":
-    "3d3fbbed1509d7f863aea1faa4fa4e1e78f45e71",
-  "src/modules/reviewer/services/system-one-routing.ts":
-    "90af84e9be2cf5f25202904518ea8108f943cecb",
-  "src/modules/reviewer/services/reviewer-model.ts":
-    "fa08a09bfc466912c5e25bbe042d93b785c0e3ee",
-  "src/modules/review/services/decision/decision.ts":
-    "c57b8fb2203e3d4ffbd67f0d565817e50c3d76aa",
+    "4d6aac8fe9ab15504cfa7e510c80cceccb237892",
+  "src/modules/policy/config-rule-condition.ts":
+    "715b0c26ea736ec7c3a2c49196ec36e9d22ec51f",
+  "src/modules/config/services/system-one-routing.ts":
+    "4ceecf4292d4f6ead9ede8864d76704763cec4ff",
+  "src/modules/config/services/reviewer-model.ts":
+    "b662c31acc12c8b13db9015124f17cbc2b9faabe",
+  "src/modules/decision/decision.ts":
+    "5be4072b5621cefb276291d866089364df31cdc7",
   "src/utils/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",
-  "src/modules/review/services/decision/decision-gates.ts":
-    "72f170c5b89b7e89f46ab15f4da3ec7e653000a8",
-  "src/modules/review/services/decision/decision-schema.ts":
+  "src/modules/decision/decision-gates.ts":
+    "7cb92a403c9ca5a7c8b9b5ffc3b962887c3088f6",
+  "src/modules/decision/decision-schema.ts":
     "e60339d6fb71ac232b79c1261a02aae265f05852",
   "src/modules/policy/policy-engine.ts":
-    "18f59321a709e7fdbab3af5ef4795050b338c105",
+    "afdaa540196e3a5ab24e156363b85be73ee689d1",
   "src/modules/policy/policy-conditions.ts":
-    "73ca7b766e2eb826c0ba9c8412bd2d59fb67dc25",
+    "7f1a3bc3cca9159ed37313eea6134e3f6b8db9fd",
   "src/modules/policy/profile-templates.ts":
-    "3268ece34fde3e1f953a35b130d699a30e838121",
-  "src/modules/review/services/decision/escalation.ts":
-    "2d6a905134b139b63f01ffe4aed005d53ab8fab6",
+    "024aa1f792ad81fd6df54d783733646fc229f484",
+  "src/modules/decision/escalation.ts":
+    "c21a24121188eabd76a6980ef4475123fa32c2a6",
   "src/modules/review/services/review-engine.ts":
-    "ae05d2d6abdf06ff876d0d9729bbc0c466f014d6",
+    "adb1325c3522ce3434a41e02d6212431906cbee4",
   "src/modules/review/services/review-result-gates.ts":
-    "cc9cbd2b2f23584d922a7b7baa53b90c06d06e9a",
+    "183cce730bdc30be3ab0e7478dbea44acbbb01f3",
   "src/modules/analysis/brake/emergency-brake.ts":
-    "3ae7edc081766826d3b58ca82044f99d61ce2041",
+    "15101a06561a737fe862465884eacce3cc9dec88",
   "src/modules/analysis/brake/brake-body-commands.ts":
     "13e05c5003872bb6d0d4bfa977592b7e88427983",
   "src/modules/analysis/brake/brake-heredoc-texts.ts":
@@ -89,7 +89,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/brake/brake-logical-lines.ts":
     "bede2fb62d66aca29e4d712c73e72ddb3fb424ae",
   "src/modules/analysis/reviewed-command.ts":
-    "b21dbbcd5de53f2b19a7303bf345634e269b3182",
+    "720a9a831c0f783c23ba4246dffc56f39fb661c7",
   "src/modules/analysis/brake/brake-arguments.ts":
     "28cc08429cc6dfdfdd78bb66d1cb334dea30c3ce",
   "src/modules/analysis/brake/brake-rm-flags.ts":
@@ -128,21 +128,21 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/bash-command-tables.ts":
     "cd2340a5e08bc3b2828e023f8ce4d5fc385bc496",
   "src/modules/analysis/capability/bash-facts.ts":
-    "24e597378e8ccc868bbef5c65cfe20ec406c3aed",
+    "782f183721f7079ed2e28d76149d27ce4b50b977",
   "src/modules/analysis/capability/bash-mutation.ts":
     "16a94d493590de426830a76a41b60dbfe60555d5",
   "src/modules/analysis/shell/shell-effective-commands.ts":
     "2bb231f309bbeedbc693a7322daa582fc7dd5f32",
   "src/modules/analysis/walk/effective-command-walk.ts":
-    "b1b01409ad937fb31945fbf0d4be31f6279098c1",
+    "38659a0e41699c10708e8fb279f4da2993c80b23",
   "src/modules/analysis/shell/shell-wrapper-options.ts":
     "9ea1dd744c9fd01b3b89b4c7b3b46dace167e2be",
   "src/modules/analysis/shell/shell-command-strings.ts":
     "7628a529bd65b238d7a68c1f39ca051295be6c18",
   "src/modules/analysis/walk/env-split-string.ts":
     "f6aa3fdd17c06a50bd56c2b3b554e7c7e534409c",
-  "src/modules/evidence/ssh/ssh-remote-command.ts":
-    "ddb15caeccde11d81748f13792dadb6c1596a6c2",
+  "src/modules/analysis/ssh/ssh-remote-command.ts":
+    "ea7dbf3f8ef00362424ec04a06836bd32385c58a",
   "src/modules/analysis/shell/shell-lexer.ts":
     "ebc1a6be46c2cfb5826323361f34d371bd7473ff",
   "src/utils/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
@@ -186,7 +186,7 @@ export const PINNED_BLOBS = {
     "004bf2986c2606da3d240e72caadce506e665c2b",
   "src/modules/analysis/shell/shell-pair-text.ts":
     "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
-  "src/modules/evidence/ssh/ssh-value-options.ts":
+  "src/modules/analysis/ssh/ssh-value-options.ts":
     "019a1adcb3840b41cbc8415b833afffbe53279df",
   "src/modules/analysis/walk/watch-command.ts":
     "5091cdd9eefd7b2a5a5256f74dcc1220ca7c0959",
@@ -195,25 +195,25 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
     "7f28c2b734ca0a6565701f844311df6a716246b2",
   "src/modules/reviewer/services/review.ts":
-    "9dcf75004f2b1ee728bf6e364f42faca6e1b2432",
+    "2c8a43ab5443837a0a91945de32a1552559f9374",
   "src/modules/reviewer/services/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
   "src/modules/reviewer/services/system-one-answers.ts":
-    "aba22fc8d890e3e1a8c554ae32cefea983e858cb",
+    "61585ac1ea01aea0fdf009bf4eb3166e9b5e1073",
   "src/modules/reviewer/services/system-one-choices.ts":
-    "ec09af4e8a6f3ee10bb861e2859e2dbc793760d8",
+    "53f71dc0779d5885568fe4b94d1df22934a8c96e",
   "src/modules/reviewer/services/system-one-consistency.ts":
-    "9c3db9233f68c446bfa34b703809d3da69aa8a1f",
+    "c2578fdee786a974c5cc9dc92199c73473138e4b",
   "src/modules/reviewer/services/system-one-verdict.ts":
-    "2ffe31f0119d4142a0a433a823e7859a91ac60a2",
+    "281ed11080a78c65febe3b71c6abcba969bc8051",
   "src/modules/analysis/capability/capability-facts.ts":
-    "7c5cd7f470f84d0b7443206a72cdfcfd62181c59",
+    "1df5af1b01e96b26de9763f313496baea819f78a",
   "src/modules/analysis/capability/capability-report.ts":
-    "45fe6030615147ad8a771e83547ab53f4fbc46bd",
+    "bfd7fd9a58edb6705beba05a7a1e3d61f3be4a52",
   "src/modules/analysis/capability/segment-heads.ts":
     "9b513db95b058fd30e88e55c65eea0428eb4615a",
   "src/modules/analysis/capability/action-class.ts":
-    "2b1f0b234bf13c90fef85a4f910c89df9d65f17b",
+    "419e9a1224fbdda3bdfecffdb396fe4b135540fe",
   "src/modules/analysis/capability/sensitive-path-reads.ts":
     "ce931101b619252f9373ef1af89e0a00f1e51cdc",
   "src/modules/analysis/capability/effective-command-classifiers.ts":
@@ -233,8 +233,8 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/read-only-tool-mutations.ts":
     "d294f341527939ea34a9b072cdb4597faeb751e8",
   "src/modules/analysis/capability/git-subcommand-forms.ts":
-    "d3a241d29199c02d3603e4b5d2a4156b53389a1a",
-  "src/modules/evidence/git/git-global-options.ts":
+    "1f9d6c9486ffe0b939b8b82aaf33cfee3639f941",
+  "src/modules/analysis/git/git-global-options.ts":
     "e03c7a37d23795e84f55407aab35eda5ecada332",
   "src/modules/analysis/capability/heredoc/heredoc-delimiter.ts":
     "9d562f06e93e87b42ad6af008e5c77b057d477bd",

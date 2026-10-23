@@ -3,6 +3,8 @@ import type { ClientResponse } from "../src/adapters/opencode/types.ts";
 import { createV1ContextReader } from "../src/adapters/opencode/v1/context-reader.ts";
 import { createV2ContextReader } from "../src/adapters/opencode/v2/context-reader.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { MessageWithParts } from "../src/modules/context/models/message.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
 import { assembleEvidence } from "../src/modules/context/services/evidence-assembler.ts";
 import {
   buildEvidence,
@@ -10,8 +12,6 @@ import {
   buildTranscript,
   selectIntentMessages,
 } from "../src/modules/context/services/prompt/context.ts";
-import type { ContextReader } from "../src/modules/review/ports.ts";
-import type { MessageWithParts } from "../src/types.ts";
 import { defined, MockClient, request } from "./helpers.ts";
 
 function intentMessagesOf(

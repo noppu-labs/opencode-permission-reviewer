@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   extractJsonFromText,
   parseDecisionFromText,
-} from "../src/modules/review/services/decision/decision.ts";
+} from "../src/modules/decision/decision.ts";
 import { decision } from "./helpers.ts";
 
 const valid = decision("allow");

@@ -1,6 +1,7 @@
 // Purpose recovered from the assistant message that issued the pending tool call, and the bound every purpose text shares.
 
-import type { MessageWithParts, PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { MessageWithParts } from "../models/message.ts";
 
 const MAX_PURPOSE_CHARS = 500;
 

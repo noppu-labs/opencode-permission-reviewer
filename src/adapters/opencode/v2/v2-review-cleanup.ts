@@ -1,4 +1,4 @@
-import type { ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { V2HostApi } from "./host-api.ts";
 import type { PendingGeneration } from "./v2-review-pending.ts";
 

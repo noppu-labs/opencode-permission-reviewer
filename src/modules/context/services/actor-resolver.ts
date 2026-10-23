@@ -1,21 +1,17 @@
-import type { OpenCodeClientLike } from "../../../adapters/opencode/types.ts";
-import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewerConfig,
-} from "../../../types.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type {
   ActorContext,
   EvidenceCompleteness,
   IntentContext,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import {
   type ActorResolution,
   unknownResolution,
 } from "../models/unknown-resolution.ts";
+import type { ContextReader } from "../ports.ts";
 import { assembleActorContext, resolveCurrentActor } from "./actor-identity.ts";
 import { resolveIntent } from "./intent-extraction.ts";
 import { walkLineage } from "./session-lineage.ts";
@@ -74,14 +70,12 @@ function assessCompleteness(
 export async function resolveActorContext(
   request: PermissionRequest,
   messages: MessageWithParts[],
-  client: OpenCodeClientLike | ContextReader,
+  reader: ContextReader,
   directory: string,
   config: ReviewerConfig,
   intentMessages = messages,
 ): Promise<ActorResolution> {
   try {
-    const reader =
-      "messages" in client ? client : createV1ContextReader(client);
     const current = resolveCurrentActor(request, messages);
     const lineage = await walkLineage(
       reader,

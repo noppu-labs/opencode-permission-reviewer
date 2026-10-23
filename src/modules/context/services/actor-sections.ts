@@ -6,7 +6,7 @@ import type {
   IntentBlock,
   Provenanced,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
 import { keepMostRecentBlocks, stableJson } from "./prompt-budget.ts";
 
 function provValue<T>(p: Provenanced<T> | undefined): T | "unavailable" {

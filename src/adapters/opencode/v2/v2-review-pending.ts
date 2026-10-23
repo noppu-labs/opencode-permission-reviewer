@@ -1,15 +1,13 @@
 import { z } from "zod";
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import { buildEvidenceResult } from "../../../modules/context/services/prompt/context.ts";
 import {
   buildReviewerPrompt,
   DEFAULT_TENANT_POLICY,
 } from "../../../modules/context/services/prompt/policy.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type {
-  ReviewDecision,
-  ReviewEnvelope,
-  ReviewerConfig,
-} from "../../../types.ts";
 
 /** The tool a structured reviewer session returns its decision with. */
 export const TOOL = "permission_reviewer_result";

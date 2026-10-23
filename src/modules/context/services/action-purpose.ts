@@ -1,10 +1,11 @@
-import type { MessageWithParts, PermissionRequest } from "../../../types.ts";
 import type {
   ActionPurpose,
   EvidenceConfidence,
   IntentBlock,
   IntentContext,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import {
   boundPurpose,
   purposeFromToolMessage,

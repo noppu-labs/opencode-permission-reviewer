@@ -1,6 +1,6 @@
-import { isValidEscalationReviewer } from "../../reviewer/services/reviewer-model.ts";
 import { countInvalidPolicyRules } from "../models/config-policy-rules.ts";
 import type { ConfigLayer } from "./layer-read.ts";
+import { isValidEscalationReviewer } from "./reviewer-model.ts";
 import type { InlineOptionsTrust } from "./sources.ts";
 
 /** Trusted mode fields and the values resolveConfig honors. A mistyped mode

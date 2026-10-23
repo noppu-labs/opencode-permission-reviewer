@@ -1,4 +1,4 @@
-import type { PolicyRule } from "../../../types.ts";
+import type { PolicyRule } from "../../../kernel/reviewer-config.ts";
 import { isRecord } from "../../../utils/is-record.ts";
 import { DEFAULT_RISK_POLICY } from "../models/config-risk-policy.ts";
 import { DEFAULT_CONFIG } from "./config.ts";

@@ -2,9 +2,9 @@
 
 import { basename } from "node:path";
 import { elementAt } from "../../../utils/element-at.ts";
+import { UNRESOLVED_EXPANSION } from "../../analysis/git/git-execution-directory.ts";
+import { gitSubcommandIndex } from "../../analysis/git/git-global-options.ts";
 import { localExecutableCommand } from "../providers/local-command.ts";
-import { UNRESOLVED_EXPANSION } from "./git-execution-directory.ts";
-import { gitSubcommandIndex } from "./git-global-options.ts";
 
 /** Subcommands whose first positional names (or implies) a remote. */
 const GIT_REMOTE_COMMANDS = new Set([

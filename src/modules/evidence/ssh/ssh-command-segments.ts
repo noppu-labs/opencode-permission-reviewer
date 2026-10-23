@@ -1,14 +1,14 @@
 // Shell command parsing for evidence: ssh and cat operands.
 
 import { basename } from "node:path";
-import { UNRESOLVED_EXPANSION } from "../git/git-execution-directory.ts";
-import { sshDestinationHost } from "./ssh-destination.ts";
-import { sshLoginUser } from "./ssh-login-user.ts";
-import { recordSshOptions, type SshOptions } from "./ssh-option-values.ts";
+import { UNRESOLVED_EXPANSION } from "../../analysis/git/git-execution-directory.ts";
 import {
   sshDestinationIndex,
   sshRemoteCommandIndex,
-} from "./ssh-value-options.ts";
+} from "../../analysis/ssh/ssh-value-options.ts";
+import { sshDestinationHost } from "./ssh-destination.ts";
+import { sshLoginUser } from "./ssh-login-user.ts";
+import { recordSshOptions, type SshOptions } from "./ssh-option-values.ts";
 
 export function findSshIndex(tokens: ReadonlyArray<string>): number {
   return tokens.findIndex((token) => basename(token) === "ssh");

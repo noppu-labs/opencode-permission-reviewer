@@ -1,5 +1,5 @@
-import type { PolicyRule } from "../../../types.ts";
-import { validateCondition } from "./config-rule-condition.ts";
+import type { PolicyRule } from "../../../kernel/reviewer-config.ts";
+import { validateCondition } from "../../policy/config-rule-condition.ts";
 
 const VALID_EFFECTS: ReadonlySet<string> = new Set([
   "review",

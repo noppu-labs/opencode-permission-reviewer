@@ -1,6 +1,6 @@
 // The `config print-effective` subcommand: the resolved config, its sources and the effective policy hash.
 import { parseArgs } from "node:util";
-import type { ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
   filterProjectAllowRules,
   hashEffectivePolicy,

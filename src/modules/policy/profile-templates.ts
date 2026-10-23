@@ -1,4 +1,4 @@
-import type { PolicyRule } from "../../types.ts";
+import type { PolicyRule } from "../../kernel/reviewer-config.ts";
 
 /**
  * The conservative profile routing templates. These are NOT active by default

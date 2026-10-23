@@ -3,7 +3,7 @@
 // cycle, depth and record bounds.
 
 import { dirname } from "node:path";
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { shellCommandSegmentsWithDirectory } from "../../analysis/walk/working-directory-segments.ts";
 import { enrichLocalScriptEvidence } from "../local-script/local-script-evidence.ts";
 import type { EvidenceScope } from "../providers/provider.ts";

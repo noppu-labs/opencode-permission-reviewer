@@ -1,12 +1,12 @@
 import type { JsonValue, SystemOneResult } from "@typesafe-ai/sdk";
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
 import type {
-  ReviewDecision,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+  SystemOnePrimaryBasis,
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { isRecord } from "../../../utils/is-record.ts";
-import { enforceDecision } from "../../review/services/decision/decision-gates.ts";
-import type { SystemOnePrimaryBasis } from "../models/system-one-types.ts";
+import { enforceDecision } from "../../decision/decision-gates.ts";
 import { type ParsedAnswers, parseAnswers } from "./system-one-answers.ts";
 import { exactKeys } from "./system-one-choices.ts";
 import { SYSTEM_ONE_QUESTIONS } from "./system-one-questions.ts";

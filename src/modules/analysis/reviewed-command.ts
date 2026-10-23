@@ -1,4 +1,4 @@
-import type { PermissionRequest } from "../../types.ts";
+import type { PermissionRequest } from "../../kernel/permission-request.ts";
 
 export function commandText(
   request: PermissionRequest,

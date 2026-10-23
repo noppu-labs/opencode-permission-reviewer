@@ -2,7 +2,7 @@
 // evidence completeness, ssh records, the verified script, the latest ask
 // decisions and the actor.
 import type { ReviewAuditRecord } from "../../../modules/audit/models/audit-record.ts";
-import type { ReviewEnvelope } from "../../../types.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 
 type Actor = NonNullable<ReviewEnvelope["actor"]>;
 type VerifiedScript = NonNullable<ReviewEnvelope["verifiedScript"]>;

@@ -1,28 +1,27 @@
 // The review coordinator's shared state, built once per coordinator, and the
 // supersede check and result every review step uses.
 import { randomUUID } from "node:crypto";
-import type { RuntimeContext } from "../../../adapters/opencode/types.ts";
-import {
-  createV1ReviewerBackend,
-  type V1ReviewBackend,
-} from "../../../adapters/opencode/v1/backend-factory.ts";
-import type {
-  PermissionRequest,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import { defaultEvidenceProviders } from "../../context/services/evidence-assembler.ts";
 import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
 import { ScriptAnalysisRegistry } from "../../evidence/ssh/verified-ssh-script.ts";
+import type {
+  ReviewerBackend,
+  ReviewHost,
+  ReviewHostContext,
+} from "../ports.ts";
 import { recordReviewerMs } from "./attempt-evidence.ts";
 import { ReviewAttempt } from "./review-attempt.ts";
 
 export type Logger = (message: string, details?: unknown) => void;
 
 export interface CoordinatorState {
-  readonly ctx: RuntimeContext;
+  readonly host: ReviewHost;
+  readonly ctx: ReviewHostContext;
   readonly config: ReviewerConfig;
   readonly generation: string;
   readonly attempts: Map<string, ReviewAttempt>;
@@ -36,7 +35,7 @@ export interface CoordinatorState {
    */
   readonly resolvedManually: Set<string>;
   readonly log: Logger;
-  readonly backend: V1ReviewBackend;
+  readonly backend: ReviewerBackend;
   readonly providers: EvidenceProvider[];
   readonly scriptRegistry: ScriptAnalysisRegistry;
   /** Live ask-decision capture (enrichment-only; undefined when disabled). */
@@ -48,7 +47,7 @@ export interface CoordinatorState {
 }
 
 export function coordinatorState(
-  ctx: RuntimeContext,
+  host: ReviewHost,
   config: ReviewerConfig,
   logger?: Logger,
   providers?: EvidenceProvider[],
@@ -56,14 +55,15 @@ export function coordinatorState(
 ): CoordinatorState {
   const log = logger ?? ((): void => {});
   const state: CoordinatorState = {
-    ctx,
+    host,
+    ctx: host.context,
     config,
     generation: randomUUID(),
     attempts: new Map<string, ReviewAttempt>(),
     stopped: false,
     resolvedManually: new Set<string>(),
     log,
-    backend: createV1ReviewerBackend(ctx, config, log, (envelope, ms) =>
+    backend: host.createReviewerBackend(config, log, (envelope, ms) =>
       recordReviewerMs(state.attempts, envelope, ms),
     ),
     providers: providers ?? defaultEvidenceProviders(),

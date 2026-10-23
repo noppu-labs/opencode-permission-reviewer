@@ -71,7 +71,7 @@ Your pull request should also meet these rules:
 - These modules encode the safety invariants. A change to them needs tests that demonstrate the
   invariant (for example, that critical risk can never be approved) and the reasoning stated in the
   pull request.
-  - Decisions: `src/modules/review/services/decision/decision.ts`, `src/modules/review/services/decision/decision-gates.ts`, `src/modules/review/services/decision/decision-schema.ts` and
+  - Decisions: `src/modules/decision/decision.ts`, `src/modules/decision/decision-gates.ts`, `src/modules/decision/decision-schema.ts` and
     `src/modules/context/services/prompt/policy.ts`.
   - The brake: `src/modules/analysis/brake/emergency-brake.ts` and the detectors in `src/modules/analysis/brake/` it calls.
   - The policy engine: `src/modules/policy/policy-engine.ts`, `src/modules/policy/policy-conditions.ts` and

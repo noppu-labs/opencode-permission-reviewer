@@ -1,6 +1,6 @@
 // Provenanced fact builders and command-shape probes for the bash capability analyzer.
 
-import type { Provenanced } from "../../context/models/actor-context-types.ts";
+import type { Provenanced } from "../../../kernel/actor-context-types.ts";
 import { shellBasename } from "../shell/shell-lexer.ts";
 import type { ShellToken } from "../shell/shell-token.ts";
 import { INTERPRETERS } from "./bash-command-tables.ts";

@@ -1,17 +1,17 @@
 import { describe, expect, test } from "bun:test";
+import { V1ReviewCoordinator as ApprovalReviewerRuntime } from "../src/adapters/opencode/v1/review-host.ts";
+import type { AskDecision } from "../src/kernel/actor-context-types.ts";
 import {
   DEFAULT_CONFIG,
   resolveConfig,
 } from "../src/modules/config/services/config.ts";
-import type { AskDecision } from "../src/modules/context/models/actor-context-types.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
 } from "../src/modules/context/services/ask-decisions.ts";
 import { renderAskDecisions } from "../src/modules/context/services/evidence-sections.ts";
 import { buildEvidence } from "../src/modules/context/services/prompt/context.ts";
-import { ReviewCoordinator as ApprovalReviewerRuntime } from "../src/modules/review/services/review-coordinator.ts";
-import type { ReviewEnvelope } from "../src/types.ts";
 import { SK_CREDENTIAL_LONG } from "./fixtures/synthetic-secrets.ts";
 import { runtime as buildRuntime, defined, request } from "./helpers.ts";
 

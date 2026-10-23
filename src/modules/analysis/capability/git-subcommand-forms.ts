@@ -1,6 +1,6 @@
 // The git subcommand of a command and whether that invocation is one of the subcommand's mutating forms.
 
-import { gitSubcommandIndex } from "../../evidence/git/git-global-options.ts";
+import { gitSubcommandIndex } from "../git/git-global-options.ts";
 import type { ShellToken } from "../shell/shell-token.ts";
 import {
   BRANCH_LIST_OPTIONS,
@@ -10,7 +10,7 @@ import {
 } from "./bash-command-tables.ts";
 
 /** Resolve a git subcommand from the token stream, skipping global git
- *  options and their separate values (see `src/modules/evidence/git/git-global-options.ts`), so
+ *  options and their separate values (see `src/modules/analysis/git/git-global-options.ts`), so
  *  `git -C /repo push` still detects the `push` mutation. */
 export function gitSubcommandOf(cmd: ShellToken[]): {
   sub?: string;

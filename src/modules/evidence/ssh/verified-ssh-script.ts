@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { ReviewDecision } from "../../../types.ts";
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
 import { redactSecrets } from "../../../utils/redact.ts";
 import type { VerifiedScriptCommand } from "./verified-ssh-command.ts";
 

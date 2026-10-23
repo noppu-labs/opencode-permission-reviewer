@@ -1,10 +1,11 @@
 // The consistency checks between Jev's disposition, its supporting choices and
 // its safety signals. Any failed check marks an allow or deny difficult.
-import type { ReviewDecision, ReviewerConfig } from "../../../types.ts";
+import type { ReviewDecision } from "../../../kernel/review-decision.ts";
 import type {
   SystemOnePrimaryBasis,
   SystemOneSignals,
-} from "../models/system-one-types.ts";
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 
 const SAFE_BASES = new Set<SystemOnePrimaryBasis>([
   "authorized_routine",

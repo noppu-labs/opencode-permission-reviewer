@@ -1,7 +1,8 @@
 import { describe, expect, test } from "bun:test";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
-import { applyEscalationDisposition } from "../src/modules/review/services/decision/escalation.ts";
-import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
+import { applyEscalationDisposition } from "../src/modules/decision/escalation.ts";
 import { decision, systemOneScores } from "./helpers.ts";
 
 const DENY_MODE: ReviewerConfig = { ...DEFAULT_CONFIG, escalationMode: "deny" };

@@ -1,9 +1,7 @@
 import { expect, test } from "bun:test";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../src/types.ts";
+import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
+import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import { config, decision, defined, systemOneScores } from "./helpers.ts";
 import { until } from "./poll-until.ts";
 import { lifecycle } from "./v2-server-fixture.ts";

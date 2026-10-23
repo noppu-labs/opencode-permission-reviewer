@@ -1,9 +1,7 @@
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
 import type { RuntimeContext } from "../types.ts";
 import { IsolatedReviewerDirectory } from "./v1-isolated-directory.ts";
 import type { V1ReviewRun } from "./v1-review-lifecycle.ts";

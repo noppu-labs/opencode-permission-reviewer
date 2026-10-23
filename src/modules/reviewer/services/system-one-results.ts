@@ -2,28 +2,19 @@
 // undisposed until it is known to be final, and the reasoning reviewer's once
 // handed off, each with the resolution of an escalation.
 
+import type { ReasoningHandoff } from "../../../kernel/review-handoff.ts";
 import type {
   ManualResolution,
   ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+  SystemOneScores,
+} from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
   applyEscalationDisposition,
   type EscalationCategory,
-} from "../../review/services/decision/escalation.ts";
-import { formatFailureReason } from "../../review/services/decision/failure-reason.ts";
-import type { SystemOneScores } from "../models/system-one-types.ts";
+} from "../../decision/escalation.ts";
+import { formatFailureReason } from "../../decision/failure-reason.ts";
 import type { JevOutcome } from "./system-one-handoff.ts";
-
-/** The reasoning reviewer a Jev result was handed to. */
-export interface ReasoningHandoff {
-  model: string;
-  /** Jev rated the request critical, and its rating holds. */
-  jevCritical: boolean;
-  escalatedFrom: Required<
-    NonNullable<ReviewExecutionResult["reviewerEscalatedFrom"]>
-  >;
-}
 
 /** Jev's own result before any disposition, and the category that disposes
  *  it if it turns out to be final. */

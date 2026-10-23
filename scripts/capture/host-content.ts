@@ -1,6 +1,6 @@
 import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { systemOneRoutingWarnings } from "../../src/modules/config/services/system-one-routing.ts";
 import { globalLayerDegradation } from "../../src/modules/config/services/trusted-degradation.ts";
-import { systemOneRoutingWarnings } from "../../src/modules/reviewer/services/system-one-routing.ts";
 import {
   type ConfigToast,
   configToasts,

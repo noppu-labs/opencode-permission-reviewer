@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import type { PermissionRequest } from "../src/kernel/permission-request.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import { REVIEWER_PROMPT_VERSION } from "../src/modules/context/services/prompt/policy.ts";
 import type { EvidenceFragment } from "../src/modules/evidence/providers/provider.ts";
@@ -11,7 +12,6 @@ import {
   configFingerprint,
   ScriptAnalysisRegistry,
 } from "../src/modules/evidence/ssh/verified-ssh-script.ts";
-import type { PermissionRequest } from "../src/types.ts";
 import { CURRENT, PARENT } from "./evidence-assembly-fakes.ts";
 import { assemble, delegatedSessions } from "./evidence-assembly-fixtures.ts";
 import { request } from "./helpers.ts";

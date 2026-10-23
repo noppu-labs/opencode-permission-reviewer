@@ -4,7 +4,8 @@ import { OpenCode } from "@opencode/client";
 import { createOpencodeClient } from "@opencode-ai/sdk";
 import type { OpenCodeClientLike } from "../../src/adapters/opencode/types.ts";
 import { hostCompatibleFetch } from "../../src/adapters/opencode/v2/connection.ts";
-import type { PermissionRequest, ReviewEnvelope } from "../../src/types.ts";
+import type { PermissionRequest } from "../../src/kernel/permission-request.ts";
+import type { ReviewEnvelope } from "../../src/modules/context/models/review-envelope.ts";
 
 const [generation, url, directory, sessionID, command, sourceRoot] =
   process.argv.slice(2);

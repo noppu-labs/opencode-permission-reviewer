@@ -1,5 +1,5 @@
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import type { ReviewerConfig } from "../../../types.ts";
 import type { V2HostApi } from "./host-api.ts";
 
 type CatalogModel = Awaited<

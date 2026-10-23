@@ -1,13 +1,11 @@
 import { randomBytes } from "node:crypto";
-import { applyEscalationDisposition } from "../../../modules/review/services/decision/escalation.ts";
-import { formatFailureReason } from "../../../modules/review/services/decision/failure-reason.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { splitModel } from "../../../modules/config/services/reviewer-model.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
+import { applyEscalationDisposition } from "../../../modules/decision/escalation.ts";
+import { formatFailureReason } from "../../../modules/decision/failure-reason.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import { splitModel } from "../../../modules/reviewer/services/reviewer-model.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
 import type { V2HostApi } from "./host-api.ts";
 import { finishReviewSession } from "./v2-review-cleanup.ts";
 import type { ReviewerLocation } from "./v2-review-location.ts";

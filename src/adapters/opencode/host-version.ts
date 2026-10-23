@@ -1,5 +1,5 @@
 import type { PluginInput } from "@opencode-ai/plugin";
-import { withTimeout } from "./transport.ts";
+import { withTimeout } from "../../utils/with-timeout.ts";
 
 interface RawClient {
   get?(options: {

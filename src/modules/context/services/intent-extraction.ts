@@ -1,17 +1,15 @@
 // Intent extraction: bounded parent/root message fetches and the direct, delegated and local intent blocks.
 
-import { withTimeout } from "../../../adapters/opencode/transport.ts";
-import type {
-  MessageWithParts,
-  PermissionRequest,
-  ReviewerConfig,
-} from "../../../types.ts";
-import type { ContextReader } from "../../review/ports.ts";
 import type {
   IntentBlock,
   IntentContext,
   SessionLineage,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
+import type { MessageWithParts } from "../models/message.ts";
+import type { ContextReader } from "../ports.ts";
 import { extractDelegatedTasks } from "./delegated-tasks.ts";
 import {
   intentCompleteness,

@@ -1,16 +1,19 @@
 // The review's own permission reply: bounded, timed into the attempt, and
 // treated as superseded when the host says the request was already resolved.
-import {
-  isAlreadyResolvedError,
-  withTimeout,
-} from "../../../adapters/opencode/transport.ts";
-import type { PermissionRequest } from "../../../types.ts";
+
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
 import { rememberEvidence } from "./attempt-evidence.ts";
 import type { CoordinatorState } from "./coordinator-state.ts";
 
 type ReplyScope = Pick<
   CoordinatorState,
-  "ctx" | "attempts" | "resolvedManually" | "log" | "metadataCallTimeoutMs"
+  | "host"
+  | "ctx"
+  | "attempts"
+  | "resolvedManually"
+  | "log"
+  | "metadataCallTimeoutMs"
 >;
 
 /**
@@ -48,7 +51,7 @@ export async function sendPermissionReply(
     timings: { ...currentTimings, replyMs },
   });
   if (response.error !== undefined) {
-    if (isAlreadyResolvedError(response.error)) {
+    if (scope.host.isAlreadyResolvedError(response.error)) {
       attempt.application = "superseded";
       scope.resolvedManually.add(request.id);
       scope.log(

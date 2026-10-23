@@ -1,10 +1,6 @@
-import { withTimeout } from "../../../adapters/opencode/transport.ts";
-import type { OpenCodeClientLike } from "../../../adapters/opencode/types.ts";
-import type {
-  PermissionRequest,
-  ReviewEnvelope,
-  ReviewerConfig,
-} from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
 import { GitEvidenceProvider } from "../../evidence/providers/git-provider.ts";
 import { LocalScriptEvidenceProvider } from "../../evidence/providers/local-script-provider.ts";
 import { PackageScriptEvidenceProvider } from "../../evidence/providers/package-script-provider.ts";
@@ -12,7 +8,8 @@ import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
 import { SshEvidenceProvider } from "../../evidence/providers/ssh-provider.ts";
 import { parseVerifiedSshScriptCommand } from "../../evidence/ssh/verified-ssh-command.ts";
 import type { ScriptAnalysisRegistry } from "../../evidence/ssh/verified-ssh-script.ts";
-import type { ContextReader } from "../../review/ports.ts";
+import type { ReviewEnvelope } from "../models/review-envelope.ts";
+import type { ContextReader } from "../ports.ts";
 import { resolveActorContext } from "./actor-resolver.ts";
 import type { AskDecisionSource } from "./ask-decisions.ts";
 import {
@@ -22,13 +19,12 @@ import {
 import { envelopeFrom } from "./evidence-envelope.ts";
 import {
   collectFragments,
-  contextReader,
   readTranscripts,
   transcriptMessages,
 } from "./evidence-sources.ts";
 
 export interface EvidenceAssemblyContext {
-  client: OpenCodeClientLike | ContextReader;
+  client: ContextReader;
   directory: string;
   worktree: string;
   config: ReviewerConfig;
@@ -49,7 +45,7 @@ export async function assembleEvidence(
   ctx: EvidenceAssemblyContext,
 ): Promise<ReviewEnvelope> {
   const contextStart = performance.now();
-  const reader = contextReader(ctx.client);
+  const reader = ctx.client;
   // A transcript fetch that never settles would leave the review pending
   // forever; bound it well above any realistic fetch time.
   const responses = await withTimeout(

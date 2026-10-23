@@ -2,7 +2,7 @@
 // whether they apply, and subshell groups that save and restore the parent state.
 
 import { isAbsolute, resolve } from "node:path";
-import { UNRESOLVED_EXPANSION } from "../../evidence/git/git-execution-directory.ts";
+import { UNRESOLVED_EXPANSION } from "../git/git-execution-directory.ts";
 
 interface PendingCd {
   before?: string;

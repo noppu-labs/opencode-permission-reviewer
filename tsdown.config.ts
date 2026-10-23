@@ -35,5 +35,5 @@ const base: UserConfig = {
 export default defineConfig([
   { ...base, entry: { index: "src/index.ts" } },
   { ...base, entry: { explain: "src/cli/explain.ts" } },
-  { ...base, entry: { rpc: "src/ui/rpc.ts" } },
+  { ...base, entry: { rpc: "src/modules/status/models/rpc.ts" } },
 ]);

@@ -1,15 +1,11 @@
 import type { Plugin } from "@opencode/plugin";
+import type { OnHandoff } from "../../../kernel/review-handoff.ts";
+import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { isSystemOneReviewerModel } from "../../../modules/config/services/reviewer-model.ts";
+import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import {
-  type OnHandoff,
-  SystemOneReviewerBackend,
-} from "../../../modules/reviewer/services/backend.ts";
-import { isSystemOneReviewerModel } from "../../../modules/reviewer/services/reviewer-model.ts";
-import type {
-  ReviewEnvelope,
-  ReviewExecutionResult,
-  ReviewerConfig,
-} from "../../../types.ts";
+import { SystemOneReviewerBackend } from "../../../modules/reviewer/services/backend.ts";
 import type { V2HostApi } from "./host-api.ts";
 import { V2ReviewerBackend } from "./reviewer-backend.ts";
 
@@ -48,7 +44,7 @@ export function createV2ReviewerBackend(
   const secondary = secondaryConfig
     ? new V2ReviewerBackend(context, secondaryConfig)
     : undefined;
-  const primary = new SystemOneReviewerBackend(
+  const primary = new SystemOneReviewerBackend<ReviewAttempt>(
     config,
     undefined,
     secondaryConfig?.model,

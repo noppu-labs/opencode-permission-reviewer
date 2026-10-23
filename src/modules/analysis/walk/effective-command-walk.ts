@@ -1,7 +1,6 @@
 // The effective-command walk: peels one level of a segment and re-enters command strings and operand tails under the depth and expansion caps.
 
 import { elementAt } from "../../../utils/element-at.ts";
-import { remoteCommandTexts } from "../../evidence/ssh/ssh-remote-command.ts";
 import { wrapperCommandString } from "../shell/shell-command-strings.ts";
 import { shellBasename as basename } from "../shell/shell-lexer.ts";
 import { TRANSPARENT_WRAPPERS } from "../shell/shell-lexer-tables.ts";
@@ -16,6 +15,7 @@ import {
   skipWrapperArguments,
   timeoutCommandIndex,
 } from "../shell/shell-wrapper-options.ts";
+import { remoteCommandTexts } from "../ssh/ssh-remote-command.ts";
 import { peelEnv } from "./env-readings.ts";
 import { operandTailIndex } from "./operand-tail-index.ts";
 import { walkLimitReached } from "./walk-limits.ts";

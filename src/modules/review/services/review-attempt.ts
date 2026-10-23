@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
-import type { ReviewEnvelope } from "../../../types.ts";
+import type { ReviewAttemptView } from "../../../kernel/review-attempt.ts";
+import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import type { ApplicationResult } from "../models/contracts.ts";
 
 export type AttemptState = "reviewing" | "finished" | "cancelled" | "expired";
 
 /** One invocation owns its deadline, identity, and terminal transition. */
-export class ReviewAttempt {
+export class ReviewAttempt implements ReviewAttemptView {
   application: ApplicationResult = "human-pending";
   readonly evidence: Partial<
     Pick<

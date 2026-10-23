@@ -6,7 +6,7 @@ import {
 import {
   isSystemOneReviewerModel,
   isValidEscalationReviewer,
-} from "../src/modules/reviewer/services/reviewer-model.ts";
+} from "../src/modules/config/services/reviewer-model.ts";
 
 describe("resolveConfig structured fields", () => {
   test("output keys keep their order, since the server hashes the serialized config", () => {

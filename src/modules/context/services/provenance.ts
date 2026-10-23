@@ -3,7 +3,7 @@
 import type {
   EvidenceConfidence,
   Provenanced,
-} from "../models/actor-context-types.ts";
+} from "../../../kernel/actor-context-types.ts";
 
 export function prov<T>(
   value: T,

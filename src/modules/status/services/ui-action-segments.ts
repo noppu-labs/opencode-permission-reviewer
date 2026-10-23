@@ -1,6 +1,6 @@
 // Server only: it runs the shell lexer, which the TUI never ships.
 
-import type { PermissionRequest } from "../../../types.ts";
+import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { extractHeredocs } from "../../analysis/capability/heredoc/heredoc-extractor.ts";
 import { lexSegments } from "../../analysis/shell/shell-scanner.ts";
 import {

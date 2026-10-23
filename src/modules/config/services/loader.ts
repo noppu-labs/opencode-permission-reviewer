@@ -1,6 +1,6 @@
 import { homedir } from "node:os";
 import { join } from "node:path";
-import type { ReviewerConfig } from "../../../types.ts";
+import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { countInvalidPolicyRules } from "../models/config-policy-rules.ts";
 import { DEFAULT_CONFIG, resolveConfig } from "./config.ts";
 import { type ConfigLayer, readConfigLayer } from "./layer-read.ts";

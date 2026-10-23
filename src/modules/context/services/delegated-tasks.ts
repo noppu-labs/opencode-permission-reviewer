@@ -1,7 +1,7 @@
 // Delegated tasks: the subtask and task-tool parts of a parent session that created this session, as intent blocks.
 
-import type { MessageWithParts } from "../../../types.ts";
-import type { IntentBlock } from "../models/actor-context-types.ts";
+import type { IntentBlock } from "../../../kernel/actor-context-types.ts";
+import type { MessageWithParts } from "../models/message.ts";
 import { prov } from "./provenance.ts";
 
 function promptOrDescription(
