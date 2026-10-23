@@ -1,11 +1,11 @@
 // Best-effort publishing of the reviewer's UI status: the status a phase shows
 // (model, variant, outcome, actor) and the bounded, logged publish call.
 
-import { withTimeout } from "../../../adapters/opencode/transport.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
 import { isSystemOneReviewerModel } from "../../config/services/reviewer-model.ts";
 import type { ReviewUiStatus } from "../../status/models/ui-protocol.ts";

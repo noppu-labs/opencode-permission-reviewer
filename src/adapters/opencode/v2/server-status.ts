@@ -7,7 +7,7 @@ import type {
 } from "@opencode/plugin/promise/rpc";
 import { ReviewerRpc } from "../../../modules/status/models/rpc.ts";
 import type { ReviewUiStatus } from "../../../modules/status/models/ui-protocol.ts";
-import { withTimeout } from "../transport.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
 import type { ServerState } from "./server-state.ts";
 
 /** The server state once its reviewer RPC is registered. */

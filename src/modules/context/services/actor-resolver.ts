@@ -1,5 +1,3 @@
-import type { OpenCodeClientLike } from "../../../adapters/opencode/types.ts";
-import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
 import type {
   ActorContext,
   EvidenceCompleteness,
@@ -72,14 +70,12 @@ function assessCompleteness(
 export async function resolveActorContext(
   request: PermissionRequest,
   messages: MessageWithParts[],
-  client: OpenCodeClientLike | ContextReader,
+  reader: ContextReader,
   directory: string,
   config: ReviewerConfig,
   intentMessages = messages,
 ): Promise<ActorResolution> {
   try {
-    const reader =
-      "messages" in client ? client : createV1ContextReader(client);
     const current = resolveCurrentActor(request, messages);
     const lineage = await walkLineage(
       reader,

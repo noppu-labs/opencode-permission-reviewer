@@ -43,23 +43,7 @@ const PRIVATE_DIRS = ["controllers", "repositories"];
 /** Import edges that break a rule today, each removed by the task that fixes
  *  it. The test fails on a violation missing from this list and on an entry
  *  that no longer occurs, so the list only shrinks. */
-const ALLOWED: readonly string[] = [
-  "layer: modules/context/services/actor-resolver.ts -> adapters/opencode/types.ts",
-  "layer: modules/context/services/actor-resolver.ts -> adapters/opencode/v1/context-reader.ts",
-  "layer: modules/context/services/evidence-assembler.ts -> adapters/opencode/transport.ts",
-  "layer: modules/context/services/evidence-assembler.ts -> adapters/opencode/types.ts",
-  "layer: modules/context/services/evidence-sources.ts -> adapters/opencode/types.ts",
-  "layer: modules/context/services/evidence-sources.ts -> adapters/opencode/v1/context-reader.ts",
-  "layer: modules/context/services/intent-extraction.ts -> adapters/opencode/transport.ts",
-  "layer: modules/context/services/session-lineage.ts -> adapters/opencode/transport.ts",
-  "layer: modules/review/services/coordinator-state.ts -> adapters/opencode/types.ts",
-  "layer: modules/review/services/coordinator-state.ts -> adapters/opencode/v1/backend-factory.ts",
-  "layer: modules/review/services/review-coordinator.ts -> adapters/opencode/transport.ts",
-  "layer: modules/review/services/review-coordinator.ts -> adapters/opencode/types.ts",
-  "layer: modules/review/services/review-pipeline.ts -> adapters/opencode/v1/context-reader.ts",
-  "layer: modules/review/services/review-reply.ts -> adapters/opencode/transport.ts",
-  "layer: modules/review/services/review-status.ts -> adapters/opencode/transport.ts",
-];
+const ALLOWED: readonly string[] = [];
 
 /** Runtime import cycles inside analysis/ that predate the layout. A new
  *  cycle, or one of these growing, fails the test. */

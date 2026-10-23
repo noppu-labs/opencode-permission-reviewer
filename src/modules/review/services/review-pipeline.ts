@@ -2,7 +2,6 @@
 // collection with its audit bridge, the engine and model call, then the
 // disposition and the approved-script memory.
 
-import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { HandoffInfo } from "../../../kernel/review-handoff.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
@@ -55,8 +54,7 @@ async function collectEnvelope(
   request: PermissionRequest,
 ): Promise<ReviewEnvelope> {
   const envelope = await assembleEvidence(request, state.providers, {
-    client: createV1ContextReader(
-      state.ctx.client,
+    client: state.host.createContextReader(
       state.attempts.get(request.id)?.signal,
     ),
     directory: state.ctx.directory,

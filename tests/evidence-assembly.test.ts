@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { createV1ContextReader } from "../src/adapters/opencode/v1/context-reader.ts";
 import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import type { MessageWithParts } from "../src/modules/context/models/message.ts";
@@ -227,7 +228,7 @@ describe("assembleEvidence", () => {
   test("a v1 client is wrapped in a context reader", async () => {
     const client = new MockClient();
     const { envelope } = await assemble(request(), {
-      context: { client },
+      context: { client: createV1ContextReader(client) },
     });
     expect(client.messageQueries.length).toBeGreaterThan(0);
     expect(envelope.request.id).toBe("per_1");

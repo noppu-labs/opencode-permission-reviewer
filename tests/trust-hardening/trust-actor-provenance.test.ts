@@ -1,12 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import type {
-  ClientResponse,
-  OpenCodeClientLike,
-} from "../../src/adapters/opencode/types.ts";
+import type { ClientResponse } from "../../src/adapters/opencode/types.ts";
+import { createV1ContextReader } from "../../src/adapters/opencode/v1/context-reader.ts";
 import type { PermissionRequest } from "../../src/kernel/permission-request.ts";
 import { DEFAULT_CONFIG } from "../../src/modules/config/services/config.ts";
 import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
 import type { MessageWithParts } from "../../src/modules/context/models/message.ts";
+import type { ContextReader } from "../../src/modules/context/ports.ts";
 import { resolveActorContext } from "../../src/modules/context/services/actor-resolver.ts";
 import { request } from "../helpers.ts";
 
@@ -19,8 +18,8 @@ function actorClient(
     string,
     { meta?: Record<string, unknown>; messages?: MessageWithParts[] }
   >,
-): OpenCodeClientLike {
-  return {
+): ContextReader {
+  return createV1ContextReader({
     session: {
       create: async () => ({ data: {} }),
       get: async (options: unknown) => {
@@ -38,7 +37,7 @@ function actorClient(
       prompt: async () => ({ data: {} }),
     },
     tool: { ids: async () => ({ data: [] }) },
-  };
+  });
 }
 
 describe("trust hardening — actor intent provenance", () => {

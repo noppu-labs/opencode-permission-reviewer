@@ -3,13 +3,15 @@ import type {
   ClientResponse,
   OpenCodeClientLike,
 } from "../src/adapters/opencode/types.ts";
+import { createV1ContextReader } from "../src/adapters/opencode/v1/context-reader.ts";
 import type { PermissionRequest } from "../src/kernel/permission-request.ts";
 import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
 import type { MessageWithParts } from "../src/modules/context/models/message.ts";
 import { unknownResolution } from "../src/modules/context/models/unknown-resolution.ts";
+import type { ContextReader } from "../src/modules/context/ports.ts";
 import { resolveActorContext } from "../src/modules/context/services/actor-resolver.ts";
 
-// --- mock client ------------------------------------------------------------
+// --- mock client, read through the V1 context reader ------------------------
 
 interface SessionFixture {
   meta?: Record<string, unknown>; // returned by session.get; omit to simulate 404
@@ -22,7 +24,7 @@ interface MockOptions {
   messagesUnavailable?: string[]; // sessionIDs whose messages fetch should fail
 }
 
-function buildClient(opts: MockOptions = {}): OpenCodeClientLike {
+function buildClient(opts: MockOptions = {}): ContextReader {
   const sessions = opts.sessions ?? {};
   const failing = new Set(opts.messagesUnavailable ?? []);
   const client: OpenCodeClientLike = {
@@ -52,7 +54,7 @@ function buildClient(opts: MockOptions = {}): OpenCodeClientLike {
       return { data: meta };
     };
   }
-  return client;
+  return createV1ContextReader(client);
 }
 
 function readPathId(options: unknown): string | undefined {
@@ -417,7 +419,7 @@ describe("actor resolver — resilience", () => {
     const res = await resolveActorContext(
       request("ses_current", { messageID: "m", callID: "c" }),
       [],
-      client,
+      createV1ContextReader(client),
       "/repo",
       cfg,
     );

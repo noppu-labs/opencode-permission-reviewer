@@ -1,7 +1,5 @@
-// The evidence reads the assembler starts: the context reader, both transcript reads, every provider, and the lineage-scoped ask decisions.
+// The evidence reads the assembler starts: both transcript reads, every provider, and the lineage-scoped ask decisions.
 
-import type { OpenCodeClientLike } from "../../../adapters/opencode/types.ts";
-import { createV1ContextReader } from "../../../adapters/opencode/v1/context-reader.ts";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type {
   EvidenceFragment,
@@ -14,12 +12,6 @@ import type { ActorResolution } from "../models/unknown-resolution.ts";
 import type { ContextReader } from "../ports.ts";
 import type { EvidenceAssemblyContext } from "./evidence-assembler.ts";
 import { normalizeMessages } from "./prompt/context.ts";
-
-export function contextReader(
-  client: OpenCodeClientLike | ContextReader,
-): ContextReader {
-  return "messages" in client ? client : createV1ContextReader(client);
-}
 
 /** Both transcript reads, started together; `intentMessages` is optional on the reader. */
 export function readTranscripts(

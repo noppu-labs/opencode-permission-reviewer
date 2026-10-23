@@ -1,5 +1,6 @@
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import { responseData, withTimeout } from "../transport.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
+import { responseData } from "../transport.ts";
 import type { OpenCodeClientLike } from "../types.ts";
 
 /** A plain object (or null-prototype) record: the shape `mcp.status` returns. */

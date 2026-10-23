@@ -7,12 +7,8 @@ import {
 } from "../../../modules/decision/decision.ts";
 import { DECISION_SCHEMA } from "../../../modules/decision/decision-schema.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import {
-  extractStructured,
-  extractText,
-  responseData,
-  withTimeout,
-} from "../transport.ts";
+import { withTimeout } from "../../../utils/with-timeout.ts";
+import { extractStructured, extractText, responseData } from "../transport.ts";
 import type { ClientResponse, OpenCodeClientLike } from "../types.ts";
 
 /** Corrective note for the single text-mode retry; `promptForDecision`
