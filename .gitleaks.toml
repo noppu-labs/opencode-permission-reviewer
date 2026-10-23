@@ -17,3 +17,7 @@ targetRules = ["generic-api-key"]
 condition = "AND"
 paths = ['''^benchmarks/permission-reviewer/lib/pinned-blobs\.mjs$''']
 regexes = ['''^f3bf94abd5cad440aa52cac8063fe768f215c873$''']
+
+[[allowlists]]
+description = "Gitignored local tool state and agent notes; the whole-tree scan (`gitleaks dir`) does not read .gitignore"
+paths = ['''^(docs/superpowers|\.superpowers|\.gitnexus|\.codegraph|\.opencode)/''']

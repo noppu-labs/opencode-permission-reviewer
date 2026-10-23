@@ -1,0 +1,3 @@
+# docs/superpowers/ is gitignored scratch space that can hold copies of the test suite.
+[test]
+pathIgnorePatterns = ["docs/superpowers/**"]
