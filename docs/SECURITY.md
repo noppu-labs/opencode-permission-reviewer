@@ -18,10 +18,10 @@ The plugin approves or denies AI-agent actions on your behalf, so most security 
 where it approves something it should not. In scope:
 
 - An automatic approval that breaks one of the deterministic invariants in
-  [docs/SAFETY.md](docs/SAFETY.md), such as approving an action the reviewer classified as
+  [docs/SAFETY.md](SAFETY.md), such as approving an action the reviewer classified as
   critical, or approving after a reviewer failure.
 - Project or inline configuration that weakens trusted global settings (see the trust rules in
-  [docs/CONFIGURATION.md](docs/CONFIGURATION.md)).
+  [docs/CONFIGURATION.md](CONFIGURATION.md)).
 - The reviewer session gaining tools, MCP servers, or repository instructions.
 - Credentials leaking into reviewer evidence, the audit log, or the TUI.
 - The release pipeline: npm publishing, provenance, checksums, and the SBOM.
@@ -29,7 +29,7 @@ where it approves something it should not. In scope:
 A reviewer model that misjudges an action's risk is a known limit of the design, not a
 vulnerability on its own. The plugin checks a decision's consistency, not its semantic
 correctness. Other plugins loaded into the same OpenCode host can also override its decisions.
-[docs/SAFETY.md](docs/SAFETY.md) covers the threat model.
+[docs/SAFETY.md](SAFETY.md) covers the threat model.
 
 This project is a fork of
 [warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer).
@@ -46,5 +46,5 @@ or `npm ci` (npm 8.15.0 or later), run this in the installing project:
 npm audit signatures
 ```
 
-[docs/SUPPLY-CHAIN.md](docs/SUPPLY-CHAIN.md) describes what the package ships and the known
+[docs/SUPPLY-CHAIN.md](SUPPLY-CHAIN.md) describes what the package ships and the known
 residual exposure in its dependency tree.

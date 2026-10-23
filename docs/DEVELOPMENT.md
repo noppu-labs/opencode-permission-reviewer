@@ -3,7 +3,7 @@
 Guide for developing and maintaining the plugin: how `dist/` is built, the quality gates, the live
 end-to-end tests against real OpenCode hosts, the synthetic model benchmark, and the TUI screens
 in the docs. Setup, the `check` scripts, and pull request rules are in
-[CONTRIBUTING](../CONTRIBUTING.md#before-opening-a-pull-request).
+[CONTRIBUTING](CONTRIBUTING.md#before-opening-a-pull-request).
 
 ## Build output (`dist/`)
 
