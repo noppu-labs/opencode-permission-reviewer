@@ -15,11 +15,6 @@ control. It then allows the action, denies it with a reason the agent can act on
 it to you. Routine actions stop waiting for a keystroke, and risky ones are still blocked or
 brought to you.
 
-This is a fork of [warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer),
-published to npm as `@noppu-labs/opencode-permission-reviewer`. It includes changes upstream
-has not released, such as Jev's System One scores in audit records. It is an unofficial community
-plugin, not affiliated with or endorsed by [Anomaly](https://anoma.ly).
-
 ## What it does
 
 - Leaves your existing policy alone: `allow` rules continue and `deny` rules stay blocked
