@@ -7,7 +7,7 @@
 [![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3.0-000000)](https://bun.sh)
 [![license](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue)](#license)
 
-![OpenCode Permission Reviewer: an AI reviewer for every permission prompt. A request from the agent goes to the reviewer, which weighs the task, the policy and the evidence, then allows it (bun test), denies it (rm -rf ~/.ssh) or asks you (git push -f).](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/social-preview.png)
+![OpenCode Permission Reviewer: an AI reviewer for every permission prompt. A request from the agent goes to the reviewer, which weighs the task, the policy and the evidence, then allows it, denies it or asks you.](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/social-preview.png)
 
 An OpenCode plugin that sends every `ask` permission to a tool-free AI reviewer. The reviewer
 reads the pending request, recent transcript evidence, what you asked for, and a policy you
