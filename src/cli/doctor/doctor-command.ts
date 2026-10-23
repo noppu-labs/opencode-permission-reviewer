@@ -1,22 +1,16 @@
 // The `doctor` subcommand: versions, config sources, audit path writability and policy mode.
 import { parseArgs } from "node:util";
-import { findPackageJson } from "../../../utils/package-json.ts";
-import { resolveAuditPath } from "../../audit/services/audit.ts";
+import { resolveAuditPath } from "../../modules/audit/services/audit.ts";
+import { inspectConfigSources } from "../../modules/config/controllers/config-sources.ts";
+import { loadResolvedConfig } from "../../modules/config/services/loader.ts";
 import {
   filterProjectAllowRules,
   hashEffectivePolicy,
-} from "../../policy/policy-engine.ts";
-import {
-  checkWritable,
-  connectedStatus,
-} from "../services/doctor/doctor-probes.ts";
-import {
-  type DoctorReport,
-  printDoctorHuman,
-} from "../services/doctor/doctor-report.ts";
-import { probeOpencodeVersion } from "../services/init/init-host-version.ts";
-import { loadResolvedConfig } from "../services/loader.ts";
-import { inspectConfigSources } from "./config-sources.ts";
+} from "../../modules/policy/policy-engine.ts";
+import { findPackageJson } from "../../utils/package-json.ts";
+import { probeOpencodeVersion } from "../init/init-host-version.ts";
+import { checkWritable, connectedStatus } from "./doctor-probes.ts";
+import { type DoctorReport, printDoctorHuman } from "./doctor-report.ts";
 
 export async function runDoctor(argv: string[]): Promise<number> {
   const { values } = parseArgs({

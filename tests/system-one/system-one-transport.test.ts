@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { isSystemOneReviewerModel } from "../../src/modules/config/services/reviewer-model.ts";
 import { SystemOneReviewerBackend } from "../../src/modules/reviewer/services/backend.ts";
 import { parseSystemOneReview } from "../../src/modules/reviewer/services/review.ts";
-import { isSystemOneReviewerModel } from "../../src/modules/reviewer/services/reviewer-model.ts";
 import { createSystemOneInvoker } from "../../src/modules/reviewer/services/system-one-invoker.ts";
 import { SYSTEM_ONE_QUESTIONS } from "../../src/modules/reviewer/services/system-one-questions.ts";
 import { response, reviewOnce } from "./system-one-fixtures.ts";

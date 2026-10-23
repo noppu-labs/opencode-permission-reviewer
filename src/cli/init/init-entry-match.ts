@@ -2,7 +2,7 @@
 import { realpathSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import type { PackageInfo } from "../../models/init-types.ts";
+import type { PackageInfo } from "./init-types.ts";
 
 export function isOurEntry(
   entry: unknown,

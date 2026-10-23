@@ -1,7 +1,7 @@
 // The Bun and OpenCode version checks `init` reports, the OpenCode binary probe `doctor` shares, and host detection.
 import { satisfies } from "semver";
-import { SUPPORTED_V2_RANGE } from "../../../../adapters/opencode/host-guard.ts";
-import type { HostGeneration, PackageInfo } from "../../models/init-types.ts";
+import { SUPPORTED_V2_RANGE } from "../../adapters/opencode/host-guard.ts";
+import type { HostGeneration, PackageInfo } from "./init-types.ts";
 
 export interface VersionCheck {
   name: string;

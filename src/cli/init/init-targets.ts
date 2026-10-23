@@ -2,11 +2,7 @@
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
-import type {
-  HostGeneration,
-  PackageInfo,
-  PluginEntry,
-} from "../../models/init-types.ts";
+import type { HostGeneration, PackageInfo, PluginEntry } from "./init-types.ts";
 
 export function buildEntry(
   pkg: PackageInfo,

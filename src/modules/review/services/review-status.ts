@@ -6,8 +6,8 @@ import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { reviewBudgetMs } from "../../config/services/config.ts";
+import { isSystemOneReviewerModel } from "../../config/services/reviewer-model.ts";
 import type { HandoffInfo } from "../../reviewer/services/backend.ts";
-import { isSystemOneReviewerModel } from "../../reviewer/services/reviewer-model.ts";
 import type { ReviewUiStatus } from "../../status/models/ui-protocol.ts";
 import { createServerUiStatus } from "../../status/services/ui-action-segments.ts";
 import {

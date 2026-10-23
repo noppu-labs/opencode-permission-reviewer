@@ -48,12 +48,6 @@ const ALLOWED: readonly string[] = [
   "layer: modules/audit/services/review-audit-record.ts -> modules/review/services/coordinator-state.ts",
   "layer: modules/audit/services/review-audit-record.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/audit/services/review-coordinator-support.ts -> modules/review/services/coordinator-state.ts",
-  "layer: modules/config/services/config.ts -> modules/reviewer/services/reviewer-model.ts",
-  "layer: modules/config/services/config.ts -> modules/reviewer/services/system-one-routing.ts",
-  "layer: modules/config/services/doctor/doctor-probes.ts -> adapters/opencode/v2/connection.ts",
-  "layer: modules/config/services/doctor/doctor-probes.ts -> ui/rpc.ts",
-  "layer: modules/config/services/init/init-host-version.ts -> adapters/opencode/host-guard.ts",
-  "layer: modules/config/services/trusted-degradation.ts -> modules/reviewer/services/reviewer-model.ts",
   "layer: modules/context/services/actor-resolver.ts -> adapters/opencode/types.ts",
   "layer: modules/context/services/actor-resolver.ts -> adapters/opencode/v1/context-reader.ts",
   "layer: modules/context/services/actor-resolver.ts -> modules/review/ports.ts",
@@ -77,7 +71,7 @@ const ALLOWED: readonly string[] = [
   "layer: modules/reviewer/services/backend.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/reviewer/services/system-one-ask.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/reviewer/services/system-one-handoff.ts -> modules/review/services/review-attempt.ts",
-  "module-cycle: audit -> config -> context -> policy -> review -> reviewer -> status",
+  "module-cycle: audit -> context -> review -> reviewer -> status",
 ];
 
 /** Runtime import cycles inside analysis/ that predate the layout. A new

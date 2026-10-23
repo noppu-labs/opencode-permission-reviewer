@@ -2,8 +2,8 @@
 import { mkdir, open } from "node:fs/promises";
 import { dirname } from "node:path";
 import { OpenCode } from "@opencode/client";
-import { validateHostEndpoint } from "../../../../adapters/opencode/v2/connection.ts";
-import { ReviewerRpc } from "../../../../ui/rpc.ts";
+import { validateHostEndpoint } from "../../adapters/opencode/v2/connection.ts";
+import { ReviewerRpc } from "../../modules/status/models/rpc.ts";
 
 /** The reviewer status a running host reports over its RPC route. */
 export async function connectedStatus(

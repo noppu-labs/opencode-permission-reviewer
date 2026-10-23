@@ -2,8 +2,8 @@ import type {
   EscalationReviewerConfig,
   ReviewerConfig,
 } from "../../../kernel/reviewer-config.ts";
-import { nonEmptyStringOr } from "../../config/models/config-fields.ts";
-import { boundedInteger } from "../../config/models/config-knobs.ts";
+import { nonEmptyStringOr } from "../models/config-fields.ts";
+import { boundedInteger } from "../models/config-knobs.ts";
 
 export function splitModel(model: string): {
   providerID: string;

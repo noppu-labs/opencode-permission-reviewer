@@ -2,13 +2,13 @@ import { describe, expect, test } from "bun:test";
 import type { ReviewExecutionResult } from "../../src/kernel/review-result.ts";
 import type { ReviewerConfig } from "../../src/kernel/reviewer-config.ts";
 import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/modules/config/services/system-one-routing.ts";
 import type { ReviewEnvelope } from "../../src/modules/context/models/review-envelope.ts";
 import { DEFAULT_TENANT_POLICY } from "../../src/modules/context/services/prompt/policy.ts";
 import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
 import { evaluateReview } from "../../src/modules/review/services/review-engine.ts";
 import { SystemOneReviewerBackend } from "../../src/modules/reviewer/services/backend.ts";
 import type { SystemOneState } from "../../src/modules/reviewer/services/review.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/modules/reviewer/services/system-one-routing.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "../fixtures/synthetic-secrets.ts";
 import {
   attemptWithRemaining,

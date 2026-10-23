@@ -4,6 +4,7 @@ import type {
   SystemOneScores,
 } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { resolveSystemOneRouting } from "../../config/services/system-one-routing.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import { announceHandoff } from "../../status/services/ui-status-routing.ts";
@@ -25,7 +26,6 @@ import {
   reasoningFailureResult,
   reasoningResult,
 } from "./system-one-results.ts";
-import { resolveSystemOneRouting } from "./system-one-routing.ts";
 
 export type ReasoningEscalation = (
   envelope: ReviewEnvelope,

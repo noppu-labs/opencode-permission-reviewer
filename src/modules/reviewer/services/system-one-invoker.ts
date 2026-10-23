@@ -4,6 +4,7 @@
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { redactSecrets } from "../../../utils/redact.ts";
+import { splitModel } from "../../config/services/reviewer-model.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { buildEvidenceResult } from "../../context/services/prompt/context.ts";
 import {
@@ -11,7 +12,6 @@ import {
   REVIEWER_SYSTEM_PROMPT,
 } from "../../context/services/prompt/policy.ts";
 import type { SystemOneState } from "./review.ts";
-import { splitModel } from "./reviewer-model.ts";
 import { SYSTEM_ONE_QUESTIONS } from "./system-one-questions.ts";
 
 export type SystemOneInvoke = (

@@ -10,7 +10,7 @@ import type { CapabilityAssessment } from "../analysis/capability/models/capabil
 import {
   CONDITION_FLAG_KEYS,
   type ConditionFlag,
-} from "../config/models/config-rule-condition.ts";
+} from "./config-rule-condition.ts";
 
 // Condition matching for the declarative policy engine: one check per
 // condition kind (enum lists, capability flags), evaluated in a fixed order.

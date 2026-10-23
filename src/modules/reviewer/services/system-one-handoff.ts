@@ -6,11 +6,11 @@ import type {
   ReviewExecutionResult,
   SystemOneSignals,
 } from "../../../kernel/review-result.ts";
-import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import {
   HANDOFF_BUDGET_FLOOR_MS,
   type SystemOneRouting,
-} from "./system-one-routing.ts";
+} from "../../config/services/system-one-routing.ts";
+import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import type { ParsedSystemOneReview } from "./system-one-verdict.ts";
 
 /** What came back from Jev: a parsed and enforced verdict, an invalid

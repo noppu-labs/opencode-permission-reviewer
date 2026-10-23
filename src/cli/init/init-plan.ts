@@ -1,6 +1,5 @@
 // Resolving `init`'s host, plugin entry and per-file plans from its options, refusing uncertain or conflicting hosts.
 
-import type { HostGeneration, PackageInfo } from "../../models/init-types.ts";
 import { planFileChange } from "./init-config-files.ts";
 import { readConfigFile } from "./init-config-read.ts";
 import {
@@ -10,6 +9,7 @@ import {
 } from "./init-host-version.ts";
 import type { InitPlan } from "./init-report.ts";
 import { buildEntry, resolveTargets } from "./init-targets.ts";
+import type { HostGeneration, PackageInfo } from "./init-types.ts";
 
 interface PlanOptions {
   host: string;

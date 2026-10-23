@@ -8,7 +8,7 @@ import {
   resolveSystemOneRouting,
   type SystemOneRouting,
   systemOneRoutingWarnings,
-} from "../src/modules/reviewer/services/system-one-routing.ts";
+} from "../src/modules/config/services/system-one-routing.ts";
 
 const JEV = "opencode/jev-1";
 const REVIEWER = { model: "openai/gpt-6-luna" };

@@ -1,13 +1,13 @@
 // Applying `init`'s planned config writes: re-plan each file, refuse stale or malformed ones, back up, write.
 import { existsSync } from "node:fs";
+import { planFileChange } from "./init-config-files.ts";
+import { writeBackup, writeEntry } from "./init-config-write.ts";
 import type {
   FilePlan,
   HostGeneration,
   PackageInfo,
   PluginEntry,
-} from "../../models/init-types.ts";
-import { planFileChange } from "./init-config-files.ts";
-import { writeBackup, writeEntry } from "./init-config-write.ts";
+} from "./init-types.ts";
 
 /** Each plan is re-resolved against the current file before its write, so a
  *  file edited or created since planning refuses its write instead of acting

@@ -2,6 +2,10 @@ import { describe, expect, test } from "bun:test";
 import type { HandoffTrigger } from "../../src/kernel/review-result.ts";
 import { resolveConfig } from "../../src/modules/config/services/config.ts";
 import {
+  HANDOFF_BUDGET_FLOOR_MS,
+  type SystemOneRouting,
+} from "../../src/modules/config/services/system-one-routing.ts";
+import {
   enforceParsedSystemOneReview,
   parseSystemOneReview,
 } from "../../src/modules/reviewer/services/review.ts";
@@ -10,10 +14,6 @@ import {
   handoffTrigger,
   type JevOutcome,
 } from "../../src/modules/reviewer/services/system-one-handoff.ts";
-import {
-  HANDOFF_BUDGET_FLOOR_MS,
-  type SystemOneRouting,
-} from "../../src/modules/reviewer/services/system-one-routing.ts";
 import { defined } from "../helpers.ts";
 import {
   attemptWithRemaining,

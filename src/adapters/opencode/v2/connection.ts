@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer";
 import { OpenCode, type OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
-import { ReviewerRpc } from "../../../ui/rpc.ts";
+import { ReviewerRpc } from "../../../modules/status/models/rpc.ts";
 import type { V2HostApi } from "./host-api.ts";
 import { createInProcessHost } from "./in-process-host.ts";
 

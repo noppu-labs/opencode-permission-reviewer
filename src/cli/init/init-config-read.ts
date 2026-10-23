@@ -7,7 +7,7 @@ import {
   openSync,
   readFileSync,
 } from "node:fs";
-import { stripCommentsAndTrailingCommas } from "../jsonc.ts";
+import { stripCommentsAndTrailingCommas } from "../../modules/config/services/jsonc.ts";
 
 type ConfigSnapshot =
   | { status: "read"; config: Record<string, unknown>; fingerprint: string }

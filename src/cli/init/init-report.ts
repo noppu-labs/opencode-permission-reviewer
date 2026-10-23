@@ -1,12 +1,12 @@
 // What `init` prints: its usage, the JSON plan report on stdout and the human plan report on stderr.
 import { existsSync } from "node:fs";
+import type { VersionCheck } from "./init-host-version.ts";
 import type {
   FilePlan,
   HostGeneration,
   PackageInfo,
   PluginEntry,
-} from "../../models/init-types.ts";
-import type { VersionCheck } from "./init-host-version.ts";
+} from "./init-types.ts";
 
 export interface InitPlan {
   host: HostGeneration;

@@ -5,8 +5,8 @@ import type {
   RpcHandlers,
   RpcRegistration,
 } from "@opencode/plugin/promise/rpc";
+import { ReviewerRpc } from "../../../modules/status/models/rpc.ts";
 import type { ReviewUiStatus } from "../../../modules/status/models/ui-protocol.ts";
-import { ReviewerRpc } from "../../../ui/rpc.ts";
 import { withTimeout } from "../transport.ts";
 import type { ServerState } from "./server-state.ts";
 

@@ -1,7 +1,7 @@
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import { splitModel } from "../../../modules/config/services/reviewer-model.ts";
 import type { ReviewEnvelope } from "../../../modules/context/models/review-envelope.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
-import { splitModel } from "../../../modules/reviewer/services/reviewer-model.ts";
 import {
   reviewerEvidencePrompt,
   reviewerFailure,

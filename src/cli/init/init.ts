@@ -9,15 +9,11 @@
 
 import { existsSync } from "node:fs";
 import { parseArgs } from "node:util";
-import { findPackageJson } from "../../../utils/package-json.ts";
-import type { PackageInfo } from "../models/init-types.ts";
-import { applyPlannedWrites } from "../services/init/init-apply.ts";
-import { planInit } from "../services/init/init-plan.ts";
-import {
-  printInitHuman,
-  printInitJson,
-  usage,
-} from "../services/init/init-report.ts";
+import { findPackageJson } from "../../utils/package-json.ts";
+import { applyPlannedWrites } from "./init-apply.ts";
+import { planInit } from "./init-plan.ts";
+import { printInitHuman, printInitJson, usage } from "./init-report.ts";
+import type { PackageInfo } from "./init-types.ts";
 
 export async function runInit(argv: string[]): Promise<number> {
   const { values } = parseArgs({

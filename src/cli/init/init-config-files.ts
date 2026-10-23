@@ -1,15 +1,15 @@
 // Planning `init`'s change to one config file: create, append with a backup, noop when already registered, or error.
 import { existsSync } from "node:fs";
 import { dirname } from "node:path";
-import { isRecord } from "../../../../utils/is-record.ts";
+import { isRecord } from "../../utils/is-record.ts";
+import { readConfigFile } from "./init-config-read.ts";
+import { isOurEntry } from "./init-entry-match.ts";
 import {
   type FilePlan,
   type HostGeneration,
   type PackageInfo,
   pluginKey,
-} from "../../models/init-types.ts";
-import { readConfigFile } from "./init-config-read.ts";
-import { isOurEntry } from "./init-entry-match.ts";
+} from "./init-types.ts";
 
 export function planFileChange(
   path: string,

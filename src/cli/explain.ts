@@ -6,10 +6,10 @@
  */
 import { runAudit } from "../modules/audit/controllers/audit-command.ts";
 import { runConfig } from "../modules/config/controllers/config-command.ts";
-import { runDoctor } from "../modules/config/controllers/doctor-command.ts";
-import { runInit } from "../modules/config/controllers/init.ts";
 import { runExplain } from "../modules/review/controllers/explain-command.ts";
 import { runScript } from "../modules/review/controllers/script-command.ts";
+import { runDoctor } from "./doctor/doctor-command.ts";
+import { runInit } from "./init/init.ts";
 
 // Guarded so importing the module (e.g. via the "./cli" export or in tests)
 // never triggers the CLI or kills the importing process; only a direct

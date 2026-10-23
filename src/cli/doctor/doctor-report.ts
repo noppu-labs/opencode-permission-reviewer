@@ -1,6 +1,6 @@
 // The `doctor` report's shape and its human rendering on stderr.
-import type { ReviewerConfig } from "../../../../kernel/reviewer-config.ts";
-import type { SourceInfo } from "../../controllers/config-sources.ts";
+import type { ReviewerConfig } from "../../kernel/reviewer-config.ts";
+import type { SourceInfo } from "../../modules/config/controllers/config-sources.ts";
 
 export interface DoctorReport {
   mode: "connected" | "local-only";

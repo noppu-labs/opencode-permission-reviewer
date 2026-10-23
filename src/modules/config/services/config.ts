@@ -1,10 +1,5 @@
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
-  isProviderModelId,
-  resolveEscalationReviewer,
-} from "../../reviewer/services/reviewer-model.ts";
-import { withSystemOneRoutingWarnings } from "../../reviewer/services/system-one-routing.ts";
-import {
   isStringArray,
   nonEmptyStringOr,
   optional,
@@ -28,6 +23,11 @@ import {
   DEFAULT_RISK_POLICY,
   resolveRiskPolicy,
 } from "../models/config-risk-policy.ts";
+import {
+  isProviderModelId,
+  resolveEscalationReviewer,
+} from "./reviewer-model.ts";
+import { withSystemOneRoutingWarnings } from "./system-one-routing.ts";
 
 export const DEFAULT_CONFIG: ReviewerConfig = {
   model: "openai/gpt-6-luna",

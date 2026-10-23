@@ -13,13 +13,13 @@ import {
 } from "node:fs";
 import { dirname } from "node:path";
 import { applyEdits, modify } from "jsonc-parser";
+import { backupPath } from "./init-config-files.ts";
+import { fingerprintOf, parseConfigText } from "./init-config-read.ts";
 import {
   type HostGeneration,
   type PluginEntry,
   pluginKey,
-} from "../../models/init-types.ts";
-import { backupPath } from "./init-config-files.ts";
-import { fingerprintOf, parseConfigText } from "./init-config-read.ts";
+} from "./init-types.ts";
 
 /** Copy the current file to a backup name, claiming the destination
  *  atomically: when the planned name was taken concurrently, the next free

@@ -4,7 +4,7 @@ import type {
   RepositoryTrust,
   ReviewerConfig,
 } from "../../../kernel/reviewer-config.ts";
-import { ACTOR_PROFILES } from "./config-rule-condition.ts";
+import { ACTOR_PROFILES } from "../../policy/config-rule-condition.ts";
 
 /** Parse a trusted name→profile mapping. Invalid entries are dropped. */
 export function resolveActorProfiles(

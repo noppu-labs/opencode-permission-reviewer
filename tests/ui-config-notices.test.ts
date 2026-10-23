@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { systemOneRoutingWarnings } from "../src/modules/reviewer/services/system-one-routing.ts";
+import { systemOneRoutingWarnings } from "../src/modules/config/services/system-one-routing.ts";
 import {
   ConfigNotices,
   type ConfigToast,
