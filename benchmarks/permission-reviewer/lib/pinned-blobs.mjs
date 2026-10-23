@@ -134,15 +134,15 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/shell/shell-effective-commands.ts":
     "2bb231f309bbeedbc693a7322daa582fc7dd5f32",
   "src/modules/analysis/walk/effective-command-walk.ts":
-    "b1b01409ad937fb31945fbf0d4be31f6279098c1",
+    "38659a0e41699c10708e8fb279f4da2993c80b23",
   "src/modules/analysis/shell/shell-wrapper-options.ts":
     "9ea1dd744c9fd01b3b89b4c7b3b46dace167e2be",
   "src/modules/analysis/shell/shell-command-strings.ts":
     "7628a529bd65b238d7a68c1f39ca051295be6c18",
   "src/modules/analysis/walk/env-split-string.ts":
     "f6aa3fdd17c06a50bd56c2b3b554e7c7e534409c",
-  "src/modules/evidence/ssh/ssh-remote-command.ts":
-    "ddb15caeccde11d81748f13792dadb6c1596a6c2",
+  "src/modules/analysis/ssh/ssh-remote-command.ts":
+    "ea7dbf3f8ef00362424ec04a06836bd32385c58a",
   "src/modules/analysis/shell/shell-lexer.ts":
     "ebc1a6be46c2cfb5826323361f34d371bd7473ff",
   "src/utils/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
@@ -186,7 +186,7 @@ export const PINNED_BLOBS = {
     "004bf2986c2606da3d240e72caadce506e665c2b",
   "src/modules/analysis/shell/shell-pair-text.ts":
     "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
-  "src/modules/evidence/ssh/ssh-value-options.ts":
+  "src/modules/analysis/ssh/ssh-value-options.ts":
     "019a1adcb3840b41cbc8415b833afffbe53279df",
   "src/modules/analysis/walk/watch-command.ts":
     "5091cdd9eefd7b2a5a5256f74dcc1220ca7c0959",
@@ -233,8 +233,8 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/read-only-tool-mutations.ts":
     "d294f341527939ea34a9b072cdb4597faeb751e8",
   "src/modules/analysis/capability/git-subcommand-forms.ts":
-    "d3a241d29199c02d3603e4b5d2a4156b53389a1a",
-  "src/modules/evidence/git/git-global-options.ts":
+    "1f9d6c9486ffe0b939b8b82aaf33cfee3639f941",
+  "src/modules/analysis/git/git-global-options.ts":
     "e03c7a37d23795e84f55407aab35eda5ecada332",
   "src/modules/analysis/capability/heredoc/heredoc-delimiter.ts":
     "9d562f06e93e87b42ad6af008e5c77b057d477bd",

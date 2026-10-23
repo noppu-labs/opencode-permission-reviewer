@@ -4,16 +4,16 @@ import { basename, join } from "node:path";
 import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
 import { analyzeEffectiveCommands } from "../src/modules/analysis/shell/shell-effective-commands.ts";
 import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
-import { permuteAutosshWords } from "../src/modules/evidence/ssh/autossh-permutation.ts";
+import { permuteAutosshWords } from "../src/modules/analysis/ssh/autossh-permutation.ts";
 import {
   readAutosshArguments,
   readMoshArguments,
-} from "../src/modules/evidence/ssh/ssh-arguments.ts";
-import { sshDestinationHost } from "../src/modules/evidence/ssh/ssh-destination.ts";
+} from "../src/modules/analysis/ssh/ssh-arguments.ts";
 import {
   readSshArguments,
   type SshCall,
-} from "../src/modules/evidence/ssh/ssh-value-options.ts";
+} from "../src/modules/analysis/ssh/ssh-value-options.ts";
+import { sshDestinationHost } from "../src/modules/evidence/ssh/ssh-destination.ts";
 import { capabilityProfile } from "./capability-profile.ts";
 import { defined, request } from "./helpers.ts";
 

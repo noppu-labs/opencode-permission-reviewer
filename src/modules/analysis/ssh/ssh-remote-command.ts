@@ -1,7 +1,7 @@
 // The remote command of an `ssh`, `mosh` or `autossh` invocation: what follows its options and host.
 
-import { SSH_TOOLS } from "../../analysis/capability/bash-command-tables.ts";
-import type { ShellToken } from "../../analysis/shell/shell-token.ts";
+import { SSH_TOOLS } from "../capability/bash-command-tables.ts";
+import type { ShellToken } from "../shell/shell-token.ts";
 import { permuteAutosshWords } from "./autossh-permutation.ts";
 import { readAutosshArguments, readMoshArguments } from "./ssh-arguments.ts";
 import {

@@ -1,11 +1,11 @@
 // Git command planning: parses the reviewed command into the Git actions, targets and remotes it would touch.
 
-import { shellCommandSegmentsWithDirectory } from "../../analysis/walk/working-directory-segments.ts";
 import {
   gitExecutionDirectory,
   recordExecutionDirectory,
   settledExecutionDirectory,
-} from "./git-execution-directory.ts";
+} from "../../analysis/git/git-execution-directory.ts";
+import { shellCommandSegmentsWithDirectory } from "../../analysis/walk/working-directory-segments.ts";
 import {
   plannedInvocation,
   positionalAfter,

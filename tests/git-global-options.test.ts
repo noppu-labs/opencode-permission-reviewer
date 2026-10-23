@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { gitSubcommandIndex } from "../src/modules/evidence/git/git-global-options.ts";
+import { gitSubcommandIndex } from "../src/modules/analysis/git/git-global-options.ts";
 
 const subcommandOf = (command: string): string | undefined => {
   const values = command.split(" ");

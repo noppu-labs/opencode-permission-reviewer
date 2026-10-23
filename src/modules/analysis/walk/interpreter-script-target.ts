@@ -2,7 +2,7 @@
 // an argument list to the script operand.
 
 import { elementAt } from "../../../utils/element-at.ts";
-import { UNRESOLVED_EXPANSION } from "../../evidence/git/git-execution-directory.ts";
+import { UNRESOLVED_EXPANSION } from "../git/git-execution-directory.ts";
 import {
   OPTIONS_WITH_VALUE,
   stopsBeforeTarget,

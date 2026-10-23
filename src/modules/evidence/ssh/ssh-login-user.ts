@@ -1,9 +1,9 @@
 // The login user of an ssh call, in the order OpenSSH's `ssh.c` sets it.
 
 import { elementAt } from "../../../utils/element-at.ts";
+import { readSshArguments } from "../../analysis/ssh/ssh-value-options.ts";
 import { sshDestinationHost } from "./ssh-destination.ts";
 import { recordSshOptions, type SshOptions } from "./ssh-option-values.ts";
-import { readSshArguments } from "./ssh-value-options.ts";
 
 /** The user of ssh's arguments from `start`, the word after `ssh`: the first
  *  one set by `-l` or `-o User=` before the destination, the destination's

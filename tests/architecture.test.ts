@@ -44,10 +44,6 @@ const PRIVATE_DIRS = ["controllers", "repositories"];
  *  it. The test fails on a violation missing from this list and on an entry
  *  that no longer occurs, so the list only shrinks. */
 const ALLOWED: readonly string[] = [
-  "layer: modules/analysis/capability/git-subcommand-forms.ts -> modules/evidence/git/git-global-options.ts",
-  "layer: modules/analysis/walk/directory-tracker.ts -> modules/evidence/git/git-execution-directory.ts",
-  "layer: modules/analysis/walk/effective-command-walk.ts -> modules/evidence/ssh/ssh-remote-command.ts",
-  "layer: modules/analysis/walk/interpreter-script-target.ts -> modules/evidence/git/git-execution-directory.ts",
   "layer: modules/audit/services/review-audit-facts.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/audit/services/review-audit-record.ts -> modules/review/services/coordinator-state.ts",
   "layer: modules/audit/services/review-audit-record.ts -> modules/review/services/review-attempt.ts",
@@ -81,7 +77,6 @@ const ALLOWED: readonly string[] = [
   "layer: modules/reviewer/services/backend.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/reviewer/services/system-one-ask.ts -> modules/review/services/review-attempt.ts",
   "layer: modules/reviewer/services/system-one-handoff.ts -> modules/review/services/review-attempt.ts",
-  "module-cycle: analysis -> evidence",
   "module-cycle: audit -> config -> context -> policy -> review -> reviewer -> status",
 ];
 
