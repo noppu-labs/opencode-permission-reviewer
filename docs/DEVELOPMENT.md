@@ -36,7 +36,7 @@ add files to the `src/` root. `tests/architecture.test.ts` enforces the rules.
 ```text
 src/
 ├── index.ts  tui.tsx            # plugin entries (server, TUI)
-├── kernel/                      # domain types nearly every module shares (PermissionRequest, ReviewerConfig, ...)
+├── kernel/                      # domain types nearly every module shares, and the constant tables they derive from (PermissionRequest, ReviewerConfig, ...)
 ├── utils/                       # domain-free helpers
 ├── modules/
 │   ├── analysis/                # pure command analysis, no I/O: shell/, walk/, capability/, brake/, git/, ssh/
@@ -72,8 +72,8 @@ would pull server code into it.
 
 Where new code goes:
 
-- A type nearly every module needs → `kernel/`. A type with one owner → that
-  module's `models/` (or next to its code in a flat module).
+- A type nearly every module needs (or a constant table it is derived from) →
+  `kernel/`. A type with one owner → that module's `models/` (or next to its code in a flat module).
 - A parser, lexer rule or command classifier → `modules/analysis/<area>/`.
 - A new evidence source → `modules/evidence/<source>/`, plus its
   `EvidenceProvider` in `modules/evidence/providers/`.
