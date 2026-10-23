@@ -11,8 +11,8 @@ import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import {
   applyEscalationDisposition,
   type EscalationCategory,
-} from "../../review/services/decision/escalation.ts";
-import { formatFailureReason } from "../../review/services/decision/failure-reason.ts";
+} from "../../decision/escalation.ts";
+import { formatFailureReason } from "../../decision/failure-reason.ts";
 import type { JevOutcome } from "./system-one-handoff.ts";
 
 /** The reasoning reviewer a Jev result was handed to. */

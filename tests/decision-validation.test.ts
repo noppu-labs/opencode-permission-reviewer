@@ -6,8 +6,8 @@ import type {
 } from "../src/kernel/reviewer-config.ts";
 import { DEFAULT_RISK_POLICY } from "../src/modules/config/models/config-risk-policy.ts";
 import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
-import { parseDecision } from "../src/modules/review/services/decision/decision.ts";
-import { enforceDecision } from "../src/modules/review/services/decision/decision-gates.ts";
+import { parseDecision } from "../src/modules/decision/decision.ts";
+import { enforceDecision } from "../src/modules/decision/decision-gates.ts";
 import { decision } from "./helpers.ts";
 
 function raw(overrides: Record<string, unknown>): Record<string, unknown> {

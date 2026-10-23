@@ -8,12 +8,12 @@ import type {
   ReviewExecutionResult,
 } from "../../../kernel/review-result.ts";
 import { REVIEWER_PROMPT_VERSION } from "../../context/services/prompt/policy.ts";
+import { DECISION_SCHEMA_VERSION } from "../../decision/decision.ts";
 import { configFingerprint } from "../../evidence/ssh/verified-ssh-script.ts";
 import {
   type CoordinatorState,
   isSuperseded,
 } from "../../review/services/coordinator-state.ts";
-import { DECISION_SCHEMA_VERSION } from "../../review/services/decision/decision.ts";
 import type { ReviewAttempt } from "../../review/services/review-attempt.ts";
 import type { ReviewAuditRecord } from "../models/audit-record.ts";
 import {

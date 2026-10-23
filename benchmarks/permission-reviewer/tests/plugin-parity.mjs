@@ -17,14 +17,10 @@ const adapter = await openPlugin(repo, {
   allowDrift: process.argv.includes("--allow-drift"),
 });
 const coreDecision = await import(
-  pathToFileURL(
-    resolve(repo, "src/modules/review/services/decision/decision.ts"),
-  ).href
+  pathToFileURL(resolve(repo, "src/modules/decision/decision.ts")).href
 );
 const coreGates = await import(
-  pathToFileURL(
-    resolve(repo, "src/modules/review/services/decision/decision-gates.ts"),
-  ).href
+  pathToFileURL(resolve(repo, "src/modules/decision/decision-gates.ts")).href
 );
 const context = await import(
   pathToFileURL(resolve(repo, "src/modules/context/services/prompt/context.ts"))

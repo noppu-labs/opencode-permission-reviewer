@@ -2,8 +2,8 @@ import type {
   EvidenceSufficiency,
   ReviewDecision,
   ScopeAlignment,
-} from "../../../../kernel/review-decision.ts";
-import { isRecord } from "../../../../utils/is-record.ts";
+} from "../../kernel/review-decision.ts";
+import { isRecord } from "../../utils/is-record.ts";
 
 const OUTCOMES = new Set(["allow", "deny", "escalate"]);
 const RISKS = new Set(["low", "medium", "high", "critical"]);

@@ -6,8 +6,8 @@ import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
+import { applyEscalationDisposition } from "../../decision/escalation.ts";
 import { sourceCommand } from "../../evidence/providers/source-command.ts";
-import { applyEscalationDisposition } from "./decision/escalation.ts";
 
 export function gateReviewedResult(
   request: PermissionRequest,

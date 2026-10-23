@@ -8,7 +8,7 @@ import type { normalizeV2Permission } from "../src/adapters/opencode/v2/permissi
 import { V2ReviewerBackend } from "../src/adapters/opencode/v2/reviewer-backend.ts";
 import { setupWithServices } from "../src/adapters/opencode/v2/server.ts";
 import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
-import { formatFailureReason } from "../src/modules/review/services/decision/failure-reason.ts";
+import { formatFailureReason } from "../src/modules/decision/failure-reason.ts";
 import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { config, defined, MockClient, request, runtime } from "./helpers.ts";
 import { hostEventStream } from "./v2-host-event-stream.ts";

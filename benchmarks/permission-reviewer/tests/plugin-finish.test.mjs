@@ -9,12 +9,8 @@ import {
   textModel,
 } from "./plugin-fixtures.mjs";
 
-const gates = await core(
-  "src/modules/review/services/decision/decision-gates.ts",
-);
-const escalation = await core(
-  "src/modules/review/services/decision/escalation.ts",
-);
+const gates = await core("src/modules/decision/decision-gates.ts");
+const escalation = await core("src/modules/decision/escalation.ts");
 const systemOne = await core("src/modules/reviewer/services/review.ts");
 const invalid = "Reviewer returned missing, invalid or ambiguous output.";
 

@@ -8,11 +8,11 @@ import {
   resolveConfig,
 } from "../src/modules/config/services/config.ts";
 import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
-import { enforceDecision } from "../src/modules/review/services/decision/decision-gates.ts";
+import { enforceDecision } from "../src/modules/decision/decision-gates.ts";
 import {
   applyEscalationDisposition,
   resolveEscalationDisposition,
-} from "../src/modules/review/services/decision/escalation.ts";
+} from "../src/modules/decision/escalation.ts";
 import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { evaluateReview } from "../src/modules/review/services/review-engine.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";

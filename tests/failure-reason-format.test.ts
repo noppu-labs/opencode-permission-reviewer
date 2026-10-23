@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatFailureReason } from "../src/modules/review/services/decision/failure-reason.ts";
+import { formatFailureReason } from "../src/modules/decision/failure-reason.ts";
 
 function withCause(message: string, cause: unknown): Error {
   const error = new Error(message) as Error & { cause?: unknown };

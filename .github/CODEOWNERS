@@ -2,7 +2,7 @@
 * @cris005
 
 # Safety-critical paths require explicit review attention (no auto-merge).
-/src/modules/review/services/decision/         @cris005
+/src/modules/decision/                         @cris005
 /src/modules/context/services/prompt/policy.ts @cris005
 /src/modules/analysis/brake/                   @cris005
 /src/modules/policy/                           @cris005

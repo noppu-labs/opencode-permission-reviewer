@@ -6,13 +6,13 @@
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { applyEscalationDisposition } from "../../decision/escalation.ts";
+import { formatFailureReason } from "../../decision/failure-reason.ts";
 import {
   type CoordinatorState,
   isSuperseded,
   supersedeResult,
 } from "./coordinator-state.ts";
-import { applyEscalationDisposition } from "./decision/escalation.ts";
-import { formatFailureReason } from "./decision/failure-reason.ts";
 import type { ReviewAttempt } from "./review-attempt.ts";
 import { sendPermissionReply } from "./review-reply.ts";
 import { publishReviewStatus } from "./review-status.ts";

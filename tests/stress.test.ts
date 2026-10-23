@@ -10,11 +10,11 @@ import { parseCommand } from "../src/modules/analysis/capability/command-parser.
 import { legacySanitizedCommand } from "../src/modules/analysis/capability/heredoc/heredoc-legacy.ts";
 import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
 import { analyzeBashCommand } from "../src/modules/context/services/command-evidence.ts";
+import { parseDecision } from "../src/modules/decision/decision.ts";
 import { enrichGitEvidence } from "../src/modules/evidence/git/git-evidence.ts";
 import { enrichLocalScriptEvidence } from "../src/modules/evidence/local-script/local-script-evidence.ts";
 import { parseSsh } from "../src/modules/evidence/ssh/ssh-command-segments.ts";
 import { enrichSshEvidence } from "../src/modules/evidence/ssh/ssh-evidence.ts";
-import { parseDecision } from "../src/modules/review/services/decision/decision.ts";
 import {
   createUiStatus,
   decodeUiStatus,

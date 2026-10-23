@@ -5,8 +5,8 @@ import {
   loadResolvedConfig,
   setGlobalConfigPathForTests,
 } from "../../src/modules/config/services/loader.ts";
+import { enforceDecision } from "../../src/modules/decision/decision-gates.ts";
 import { evaluatePolicy } from "../../src/modules/policy/policy-engine.ts";
-import { enforceDecision } from "../../src/modules/review/services/decision/decision-gates.ts";
 import { defined, MockClient, request, runtime } from "../helpers.ts";
 import {
   captureWarnings,

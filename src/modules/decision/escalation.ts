@@ -1,9 +1,9 @@
-import type { ReviewOutcome } from "../../../../kernel/review-decision.ts";
+import type { ReviewOutcome } from "../../kernel/review-decision.ts";
 import type {
   EscalationDisposition,
   ReviewExecutionResult,
-} from "../../../../kernel/review-result.ts";
-import type { ReviewerConfig } from "../../../../kernel/reviewer-config.ts";
+} from "../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../kernel/reviewer-config.ts";
 
 /**
  * Categories that can be hardened independently of the global escalation mode

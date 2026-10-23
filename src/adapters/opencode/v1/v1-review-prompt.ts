@@ -4,8 +4,8 @@ import { REVIEWER_SYSTEM_PROMPT } from "../../../modules/context/services/prompt
 import {
   parseDecision,
   parseDecisionFromText,
-} from "../../../modules/review/services/decision/decision.ts";
-import { DECISION_SCHEMA } from "../../../modules/review/services/decision/decision-schema.ts";
+} from "../../../modules/decision/decision.ts";
+import { DECISION_SCHEMA } from "../../../modules/decision/decision-schema.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
 import {
   extractStructured,

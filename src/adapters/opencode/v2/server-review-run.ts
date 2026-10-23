@@ -4,9 +4,9 @@
 // failure-safe disposition.
 
 import type { ReviewExecutionResult } from "../../../kernel/review-result.ts";
+import { applyEscalationDisposition } from "../../../modules/decision/escalation.ts";
+import { formatFailureReason } from "../../../modules/decision/failure-reason.ts";
 import type { NormalizedReviewRequest } from "../../../modules/review/models/contracts.ts";
-import { applyEscalationDisposition } from "../../../modules/review/services/decision/escalation.ts";
-import { formatFailureReason } from "../../../modules/review/services/decision/failure-reason.ts";
 import { evaluateReview } from "../../../modules/review/services/review-engine.ts";
 import { createServerUiStatus } from "../../../modules/status/services/ui-action-segments.ts";
 import { normalizeV2Permission } from "./permission-codec.ts";

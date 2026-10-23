@@ -1,11 +1,11 @@
 // Modules whose coverage is a safety invariant: a line drop here is a likely
 // behavioral regression, not a cosmetic gap.
 export const CRITICAL_MODULES: ReadonlySet<string> = new Set([
-  "src/modules/review/services/decision/decision.ts",
-  "src/modules/review/services/decision/decision-gates.ts",
-  "src/modules/review/services/decision/decision-schema.ts",
+  "src/modules/decision/decision.ts",
+  "src/modules/decision/decision-gates.ts",
+  "src/modules/decision/decision-schema.ts",
   "src/utils/is-record.ts",
-  "src/modules/review/services/decision/escalation.ts",
+  "src/modules/decision/escalation.ts",
   "src/modules/context/services/prompt/policy.ts",
   "src/modules/policy/policy-engine.ts",
   "src/modules/policy/policy-conditions.ts",

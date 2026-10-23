@@ -1,6 +1,6 @@
-import type { ReviewDecision } from "../../../../kernel/review-decision.ts";
-import type { ReviewExecutionResult } from "../../../../kernel/review-result.ts";
-import type { ReviewerConfig } from "../../../../kernel/reviewer-config.ts";
+import type { ReviewDecision } from "../../kernel/review-decision.ts";
+import type { ReviewExecutionResult } from "../../kernel/review-result.ts";
+import type { ReviewerConfig } from "../../kernel/reviewer-config.ts";
 
 /**
  * The escalation reason for an `allow` that the risk matrix or a schema v2

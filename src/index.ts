@@ -109,16 +109,16 @@ export {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
 } from "./modules/context/services/ask-decisions.ts";
-export { enrichGitEvidence } from "./modules/evidence/git/git-evidence.ts";
-export { enrichLocalScriptEvidence } from "./modules/evidence/local-script/local-script-evidence.ts";
-export { enrichSshEvidence } from "./modules/evidence/ssh/ssh-evidence.ts";
-export { parseDecision } from "./modules/review/services/decision/decision.ts";
-export { enforceDecision } from "./modules/review/services/decision/decision-gates.ts";
-export { DECISION_SCHEMA } from "./modules/review/services/decision/decision-schema.ts";
+export { parseDecision } from "./modules/decision/decision.ts";
+export { enforceDecision } from "./modules/decision/decision-gates.ts";
+export { DECISION_SCHEMA } from "./modules/decision/decision-schema.ts";
 export {
   applyEscalationDisposition,
   resolveEscalationDisposition,
-} from "./modules/review/services/decision/escalation.ts";
+} from "./modules/decision/escalation.ts";
+export { enrichGitEvidence } from "./modules/evidence/git/git-evidence.ts";
+export { enrichLocalScriptEvidence } from "./modules/evidence/local-script/local-script-evidence.ts";
+export { enrichSshEvidence } from "./modules/evidence/ssh/ssh-evidence.ts";
 export { ReviewCoordinator as ApprovalReviewerRuntime } from "./modules/review/services/review-coordinator.ts";
 export {
   createUiStatus,

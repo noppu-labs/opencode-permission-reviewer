@@ -1,6 +1,6 @@
 import type { ReviewerOutputFormat } from "../../../../kernel/reviewer-config.ts";
 import { redactSecrets } from "../../../../utils/redact.ts";
-import { DECISION_SCHEMA } from "../../../review/services/decision/decision-schema.ts";
+import { DECISION_SCHEMA } from "../../../decision/decision-schema.ts";
 
 /*
  * Adapted from the OpenAI Codex Guardian auto-review policy and policy
