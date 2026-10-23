@@ -71,17 +71,9 @@ interface Edge {
 }
 
 function unit(file: string): string {
+  if (file === "index.ts" || file === "tui.tsx") return "entry";
   const [top, mod] = file.split("/");
-  if (top === "modules") return mod as string;
-  if (
-    top === "utils" ||
-    top === "kernel" ||
-    top === "adapters" ||
-    top === "ui" ||
-    top === "cli"
-  )
-    return top;
-  return "entry";
+  return top === "modules" ? (mod as string) : (top as string);
 }
 
 /** A module's controllers/ are a delivery layer: they may import anything. */
@@ -97,6 +89,7 @@ const transpiler = new Bun.Transpiler({ loader: "tsx" });
 const files: string[] = Array.from(
   new Bun.Glob("**/*.{ts,tsx}").scanSync({ cwd: SRC }),
 ).sort();
+const fileSet = new Set(files);
 const edgesAll: Edge[] = [];
 const runtimeEdges: Edge[] = [];
 for (const file of files) {
@@ -215,4 +208,18 @@ test("src/ has no runtime import cycles beyond the known ones", () => {
 test("the src/ root holds only the plugin entries", () => {
   const rootFiles = files.filter((f) => !f.includes("/"));
   expect(rootFiles).toEqual(["index.ts", "tui.tsx"]);
+});
+
+test("every file in src/ belongs to a unit with a layer", () => {
+  const unknown = files
+    .filter((f) => !(unit(f) in LAYER))
+    .map((f) => `unknown-unit: ${f} (unit "${unit(f)}")`);
+  expect(unknown).toEqual([]);
+});
+
+test("every import inside src/ resolves to a scanned file", () => {
+  const unresolved = [...edgesAll, ...runtimeEdges]
+    .filter(({ to }) => !fileSet.has(to))
+    .map(({ from, to }) => `unresolved: ${from} -> ${to}`);
+  expect([...new Set(unresolved)].sort()).toEqual([]);
 });
