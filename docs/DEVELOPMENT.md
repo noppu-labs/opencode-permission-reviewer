@@ -28,6 +28,57 @@ commit build output. `tests/package-smoke.test.ts` builds, packs, and verifies t
 ships exactly the expected set, including the raw TUI files and the absence of a prebundled TUI.
 See [Supply chain](./SUPPLY-CHAIN.md) for what that test enforces on dependencies.
 
+## Source layout
+
+`src/` is split into domain modules, host adapters and delivery layers. Put new code where this
+section says, and don't add files to the `src/` root.
+
+```text
+src/
+├── index.ts  tui.tsx            # plugin entries (server, TUI); types.ts is being split into modules
+├── cli/explain.ts               # CLI dispatcher (package bin)
+├── ui/                          # TUI: Solid components, RPC client, review feed and store
+├── adapters/opencode/{v1,v2}/   # host integration; implements the review ports
+├── modules/
+│   ├── review/                  # the review use case: ports.ts, controllers/, models/, services/ (+ services/decision/)
+│   ├── audit/                   # controllers/, models/, repositories/, services/
+│   ├── config/                  # controllers/ (config, doctor, init), models/, services/ (+ doctor/, init/)
+│   ├── context/                 # what the reviewer sees: models/, services/ (+ services/prompt/)
+│   ├── reviewer/                # System One and model routing: models/, services/
+│   ├── status/                  # server-side review status the TUI renders: models/, services/
+│   ├── policy/                  # rule engine (flat)
+│   ├── evidence/                # providers/, files/, git/, ssh/, package-script/, local-script/
+│   └── analysis/                # pure command analysis, no I/O: shell/, walk/, capability/ (+ heredoc/, models/), brake/
+└── utils/                       # domain-free helpers: invariant, is-record, element-at, redact, descriptor-io, package-json
+```
+
+Dependencies point inward:
+
+1. `utils/` imports nothing from `src/`.
+2. `modules/analysis/` imports only `utils/`.
+3. `modules/policy/`, `evidence/`, `context/` and `config/` import `analysis/` and `utils/`, and do
+   not import each other in a cycle.
+4. `modules/review/`, `reviewer/`, `audit/` and `status/` may import the modules above. `review/`
+   reaches the host only through `review/ports.ts`.
+5. `adapters/`, `ui/`, `cli/` and the entry points may import anything, and nothing imports them.
+   The entry points wire adapters into modules.
+
+Where new code goes:
+
+- A parser, lexer rule or command classifier → `modules/analysis/<area>/`.
+- A new evidence source → `modules/evidence/<source>/`, plus its `EvidenceProvider` in
+  `modules/evidence/providers/`.
+- A CLI subcommand → the owning module's `controllers/`, registered in `src/cli/explain.ts`.
+- Host-specific code (OpenCode SDK calls, event shapes) → `adapters/opencode/`, behind a port in
+  `modules/review/ports.ts` if a module needs it.
+- Types → the owning module's `models/` (or `types.ts` in a flat module). Never add to
+  `src/types.ts`; it is being split up.
+- A helper with no domain knowledge → `utils/`.
+
+Layer folders (`controllers/`, `services/`, `models/`, `repositories/`) are used once a module has
+about 10 files. Inside a layered module a layer folder may hold one file. Smaller modules stay
+flat.
+
 ## Quality gates
 
 `pre-commit` is the single runner. `bun run check` is the local equivalent of CI: it builds and
@@ -124,7 +175,7 @@ Every accepted finding carries its reason where it applies:
 
 - Biome: a line-level `// biome-ignore lint/<group>/<rule>: <reason>`. No `biome-ignore-all` and no
   `biome-ignore-start`/`-end` ranges.
-  Instead of a non-null assertion (`!`), use `invariant()` (`src/invariant.ts`) in `src` and
+  Instead of a non-null assertion (`!`), use `invariant()` (`src/utils/invariant.ts`) in `src` and
   `defined()` (`tests/helpers.ts`) in tests.
 - Python: `# noqa: <code>` with a reason, `# nosec <id> # <reason>`, or
   `# complexipy: ignore (<reason>)` on the def line. Two `pyproject.toml` per-file ruff ignores
