@@ -1,6 +1,6 @@
 import type { Hooks } from "@opencode-ai/plugin";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
 import { server } from "../../src/index.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
 import { MockClient, request } from "../helpers.ts";
 
 const configPath: string | undefined = process.argv[2];

@@ -15,13 +15,13 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
   RuntimeContext,
-} from "../src/opencode/types.ts";
-import { V1ReviewerBackend } from "../src/opencode/v1/reviewer-backend.ts";
+} from "../src/adapters/opencode/types.ts";
+import { V1ReviewerBackend } from "../src/adapters/opencode/v1/reviewer-backend.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import type {
   ReviewDecision,
   ReviewEnvelope,

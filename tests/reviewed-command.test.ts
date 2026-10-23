@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { analyzeBashCommand } from "../src/context/command-evidence.ts";
-import { sourceCommand } from "../src/evidence/source-command.ts";
-import { reviewedCommand } from "../src/reviewed-command.ts";
+import { reviewedCommand } from "../src/modules/analysis/reviewed-command.ts";
+import { analyzeBashCommand } from "../src/modules/context/services/command-evidence.ts";
+import { sourceCommand } from "../src/modules/evidence/providers/source-command.ts";
 import { request } from "./helpers.ts";
 
 const CTX = { directory: "/work/repo", worktree: "/work/repo" };

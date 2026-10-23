@@ -1,7 +1,7 @@
 // The server's config warnings in the TUI: one toast per distinct entry per
 // TUI session, and a one-line sidebar summary while any remain. The same
 // `status` read also names the server's reasoning reviewer.
-import { asObjectLike } from "../is-record.ts";
+import { asObjectLike } from "../utils/is-record.ts";
 
 interface NoticeLists {
   configWarnings?: readonly string[] | undefined;

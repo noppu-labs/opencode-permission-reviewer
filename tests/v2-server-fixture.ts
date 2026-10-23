@@ -5,10 +5,13 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { OpenCodeClient, OpenCodeEvent } from "@opencode/client";
-import type { ReviewAttempt } from "../src/core/review-attempt.ts";
-import type { normalizeV2Permission } from "../src/opencode/v2/permission-codec.ts";
-import { setupWithServices } from "../src/opencode/v2/server.ts";
-import type { HandoffInfo, OnHandoff } from "../src/system-one/backend.ts";
+import type { normalizeV2Permission } from "../src/adapters/opencode/v2/permission-codec.ts";
+import { setupWithServices } from "../src/adapters/opencode/v2/server.ts";
+import type { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
+import type {
+  HandoffInfo,
+  OnHandoff,
+} from "../src/modules/reviewer/services/backend.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,

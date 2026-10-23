@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import type { SessionLineage } from "../src/actor-context-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { walkLineage } from "../src/context/session-lineage.ts";
-import type { ContextReader } from "../src/core/ports.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { SessionLineage } from "../src/modules/context/models/actor-context-types.ts";
+import { walkLineage } from "../src/modules/context/services/session-lineage.ts";
+import type { ContextReader } from "../src/modules/review/ports.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 
 function fakeReader(sessions: Record<string, unknown>): {

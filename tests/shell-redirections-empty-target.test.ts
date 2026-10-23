@@ -3,9 +3,9 @@ import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
   type ShellQuoting,
-} from "../src/shell-lex-state.ts";
-import { normalizeShellRedirections } from "../src/shell-redirections.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
+} from "../src/modules/analysis/shell/shell-lex-state.ts";
+import { normalizeShellRedirections } from "../src/modules/analysis/shell/shell-redirections.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
 
 interface Normalized {
   words: string;

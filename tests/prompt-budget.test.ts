@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { renderPolicySummary } from "../src/context/evidence-sections.ts";
+import { renderPolicySummary } from "../src/modules/context/services/evidence-sections.ts";
 import {
   elideMiddle,
   keepMostRecentBlocks,
-} from "../src/context/prompt-budget.ts";
+} from "../src/modules/context/services/prompt-budget.ts";
 
 describe("keepMostRecentBlocks", () => {
   test("an empty budget or block list yields nothing", () => {

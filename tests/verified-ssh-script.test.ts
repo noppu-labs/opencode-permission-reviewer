@@ -5,23 +5,23 @@ import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { DEFAULT_CONFIG } from "../src/config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import {
   assembleEvidence,
   defaultEvidenceProviders,
-} from "../src/context/evidence-assembler.ts";
-import { buildEvidenceResult } from "../src/context.ts";
-import { evaluateReview } from "../src/core/review-engine.ts";
-import type { ReviewEnvelope } from "../src/types.ts";
-import { collectVerifiedSshScript } from "../src/verified-script-evidence.ts";
+} from "../src/modules/context/services/evidence-assembler.ts";
+import { buildEvidenceResult } from "../src/modules/context/services/prompt/context.ts";
+import { collectVerifiedSshScript } from "../src/modules/evidence/ssh/verified-script-evidence.ts";
 import {
   parseVerifiedSshScriptCommand,
   renderVerifiedSshScriptCommand,
-} from "../src/verified-ssh-command.ts";
+} from "../src/modules/evidence/ssh/verified-ssh-command.ts";
 import {
   ScriptAnalysisRegistry,
   VERIFIED_SCRIPT_LIMIT,
-} from "../src/verified-ssh-script.ts";
+} from "../src/modules/evidence/ssh/verified-ssh-script.ts";
+import { evaluateReview } from "../src/modules/review/services/review-engine.ts";
+import type { ReviewEnvelope } from "../src/types.ts";
 import { SK_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
 import { MockClient, request } from "./helpers.ts";
 

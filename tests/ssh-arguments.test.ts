@@ -1,16 +1,19 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { basename, join } from "node:path";
-import { permuteAutosshWords } from "../src/autossh-permutation.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
-import { analyzeEffectiveCommands } from "../src/shell-effective-commands.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { analyzeEffectiveCommands } from "../src/modules/analysis/shell/shell-effective-commands.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
+import { permuteAutosshWords } from "../src/modules/evidence/ssh/autossh-permutation.ts";
 import {
   readAutosshArguments,
   readMoshArguments,
-} from "../src/ssh-arguments.ts";
-import { sshDestinationHost } from "../src/ssh-destination.ts";
-import { readSshArguments, type SshCall } from "../src/ssh-value-options.ts";
+} from "../src/modules/evidence/ssh/ssh-arguments.ts";
+import { sshDestinationHost } from "../src/modules/evidence/ssh/ssh-destination.ts";
+import {
+  readSshArguments,
+  type SshCall,
+} from "../src/modules/evidence/ssh/ssh-value-options.ts";
 import { capabilityProfile } from "./capability-profile.ts";
 import { defined, request } from "./helpers.ts";
 

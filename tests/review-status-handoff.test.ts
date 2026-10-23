@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { publishHandoffStatus } from "../src/core/review-status.ts";
+import { publishHandoffStatus } from "../src/modules/review/services/review-status.ts";
 import { config, request } from "./helpers.ts";
 
 type Scope = Parameters<typeof publishHandoffStatus>[0];

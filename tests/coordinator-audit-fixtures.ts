@@ -1,12 +1,12 @@
 // Fixtures for the review audit writer suite: the writer's call shape, a
 // registered attempt, and one fully populated evidence set with its record.
 
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
-import { writeReviewAudit } from "../src/core/review-coordinator-support.ts";
-import { probeCapabilities } from "../src/opencode/capability-detection.ts";
-import type { RuntimeContext } from "../src/opencode/types.ts";
+import { probeCapabilities } from "../src/adapters/opencode/capability-detection.ts";
+import type { RuntimeContext } from "../src/adapters/opencode/types.ts";
+import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
+import { writeReviewAudit } from "../src/modules/audit/services/review-coordinator-support.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
 import { decision, MockClient, request } from "./helpers.ts";
 import { actor, capability } from "./policy-fixtures.ts";

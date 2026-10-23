@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
 import { request } from "./helpers.ts";
 
 describe("deterministic emergency brake", () => {

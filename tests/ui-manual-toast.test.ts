@@ -1,8 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { budgetExhaustedResult } from "../src/system-one/system-one-budget.ts";
+import { budgetExhaustedResult } from "../src/modules/reviewer/services/system-one-budget.ts";
+import {
+  createUiStatus,
+  type ReviewUiStatus,
+} from "../src/modules/status/models/ui-protocol.ts";
 import type { HandoffTrigger } from "../src/types.ts";
 import { manualToast } from "../src/ui/manual-toast.ts";
-import { createUiStatus, type ReviewUiStatus } from "../src/ui-protocol.ts";
 import { config, request } from "./helpers.ts";
 
 const FALLBACK =

@@ -3,8 +3,8 @@ import { createHash } from "node:crypto";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ClientResponse } from "../src/opencode/types.ts";
-import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
+import type { ClientResponse } from "../src/adapters/opencode/types.ts";
+import { renderVerifiedSshScriptCommand } from "../src/modules/evidence/ssh/verified-ssh-command.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 import { holdCalls, releaseAll } from "./runtime/runtime-fixtures.ts";
 

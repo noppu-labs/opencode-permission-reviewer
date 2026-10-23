@@ -1,7 +1,7 @@
-import { resolveConfig } from "../../src/config.ts";
-import { formatFailureReason } from "../../src/failure-reason.ts";
-import { budgetExhaustedResult } from "../../src/system-one/system-one-budget.ts";
-import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { formatFailureReason } from "../../src/modules/review/services/decision/failure-reason.ts";
+import { budgetExhaustedResult } from "../../src/modules/reviewer/services/system-one-budget.ts";
+import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import { handoffStatus, JEV, jevStatus, LUNA } from "./fixtures.ts";
 import { PUSH } from "./samples.ts";
 
@@ -16,7 +16,7 @@ function reasoningTimeout(): string {
   return formatFailureReason("reasoning reviewer", error);
 }
 
-/** The reason of `budgetExhaustedResult` (src/system-one/system-one-budget.ts)
+/** The reason of `budgetExhaustedResult` (src/modules/reviewer/services/system-one-budget.ts)
  *  after Jev escalated with 9s of the budget left. */
 function budgetReason(): string {
   const own = {

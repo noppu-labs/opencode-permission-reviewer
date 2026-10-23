@@ -4,8 +4,8 @@ import {
   type Message,
   type Part,
 } from "@opencode-ai/sdk/v2";
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
-import { splitModel } from "../src/reviewer-model.ts";
+import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
+import { splitModel } from "../src/modules/reviewer/services/reviewer-model.ts";
 
 const baseUrl: string = process.argv[2] ?? "http://127.0.0.1:41973";
 const smoke = process.argv.includes("--smoke");

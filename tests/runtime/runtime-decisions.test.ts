@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
-import type { ClientResponse } from "../../src/opencode/types.ts";
-import { REVIEWER_SYSTEM_PROMPT } from "../../src/policy.ts";
-import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
+import type { ClientResponse } from "../../src/adapters/opencode/types.ts";
+import { REVIEWER_SYSTEM_PROMPT } from "../../src/modules/context/services/prompt/policy.ts";
+import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import { decision, defined, MockClient, request, runtime } from "../helpers.ts";
 import { manualReply, phases, replyBody } from "./runtime-fixtures.ts";
 

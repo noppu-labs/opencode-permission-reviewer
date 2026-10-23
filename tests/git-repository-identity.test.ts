@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { resolveRemoteTargets } from "../src/git-remote-targets.ts";
+import { resolveRemoteTargets } from "../src/modules/evidence/git/git-remote-targets.ts";
 import {
   git,
   isolateGlobalGitConfig,

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { applyEscalationDisposition } from "../src/escalation.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { applyEscalationDisposition } from "../src/modules/review/services/decision/escalation.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../src/types.ts";
 import { decision, systemOneScores } from "./helpers.ts";
 

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { JSX } from "@opentui/solid";
-import type { ReviewUiStatus } from "../../src/ui-protocol.ts";
+import type { ReviewUiStatus } from "../../src/modules/status/models/ui-protocol.ts";
 import {
   bashRequest,
   CAPTURE_NOW,

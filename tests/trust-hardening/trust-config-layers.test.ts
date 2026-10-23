@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { rmSync } from "node:fs";
+import { DEFAULT_CONFIG } from "../../src/modules/config/services/config.ts";
 import {
   loadResolvedConfig,
   setGlobalConfigPathForTests,
-} from "../../src/config/loader.ts";
-import { DEFAULT_CONFIG } from "../../src/config.ts";
+} from "../../src/modules/config/services/loader.ts";
 import {
   captureWarnings,
   isolateGlobal,

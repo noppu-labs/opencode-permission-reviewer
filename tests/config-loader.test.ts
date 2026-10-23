@@ -2,14 +2,17 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { parseJsonc } from "../src/config/jsonc.ts";
+import {
+  DEFAULT_CONFIG,
+  resolveConfig,
+} from "../src/modules/config/services/config.ts";
+import { parseJsonc } from "../src/modules/config/services/jsonc.ts";
 import {
   globalConfigPath,
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
-} from "../src/config/loader.ts";
-import { DEFAULT_CONFIG, resolveConfig } from "../src/config.ts";
+} from "../src/modules/config/services/loader.ts";
 import { defined } from "./helpers.ts";
 
 describe("JSONC parser", () => {

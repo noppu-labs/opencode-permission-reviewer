@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { HeredocRecord } from "../src/capability/capability-types.ts";
 import {
   extractHeredocs,
   type HeredocOptions,
-} from "../src/capability/heredoc-extractor.ts";
+} from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
+import type { HeredocRecord } from "../src/modules/analysis/capability/models/capability-types.ts";
 
 // Characterisation of extractHeredocs branches: the scanner's quoting, comment
 // and arithmetic states, every delimiter-word form and the ANSI-C escapes. Each

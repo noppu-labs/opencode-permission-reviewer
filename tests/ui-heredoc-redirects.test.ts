@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
 import {
   type HeredocRedirect,
   heredocRedirects,
-} from "../src/ui-heredoc-redirects.ts";
+} from "../src/modules/status/services/ui-heredoc-redirects.ts";
 import { TUI_SHIP_FILES } from "./package-tui-files.ts";
 
 const redirects = (command: string): HeredocRedirect[] | undefined =>

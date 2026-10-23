@@ -7,7 +7,7 @@ import {
   hostCompatibleFetch,
   resolveV2Host,
   validateHostEndpoint,
-} from "../src/opencode/v2/connection.ts";
+} from "../src/adapters/opencode/v2/connection.ts";
 import { HTTP_URL_WITH_USERINFO } from "./fixtures/synthetic-secrets.ts";
 import { defined } from "./helpers.ts";
 

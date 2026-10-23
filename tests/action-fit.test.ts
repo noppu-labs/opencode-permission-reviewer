@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import type { ReviewUiStatus } from "../src/modules/status/models/ui-protocol.ts";
+import { createServerUiStatus } from "../src/modules/status/services/ui-action-segments.ts";
 import {
   type ActionFitPart,
   fitAction,
   singleLine,
 } from "../src/ui/action-fit.ts";
 import { sliceParts, textColumns } from "../src/ui/fit-parts.ts";
-import { createServerUiStatus } from "../src/ui-action-segments.ts";
-import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 import {
   FIND_ACTION,
   FIND_SEGMENTS,
@@ -406,7 +406,10 @@ describe("fitting an action to a width", () => {
     const imports = new Bun.Transpiler({ loader: "ts" })
       .scan(source)
       .imports.map((entry) => entry.path);
-    expect(imports).toEqual(["../ui-text-elide.ts", "./fit-parts.ts"]);
+    expect(imports).toEqual([
+      "../modules/status/services/ui-text-elide.ts",
+      "./fit-parts.ts",
+    ]);
     expect(TUI_SHIP_FILES).toContain("dist/tui/ui/action-fit.ts");
     expect(TUI_SHIP_FILES).toContain("dist/tui/ui/fit-parts.ts");
     expect(

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { resolveConfig } from "../../src/config.ts";
-import { parseSystemOneReview } from "../../src/system-one/review.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { parseSystemOneReview } from "../../src/modules/reviewer/services/review.ts";
 import { defined } from "../helpers.ts";
 import { choice, PRIMARY_BASES, response } from "./system-one-fixtures.ts";
 

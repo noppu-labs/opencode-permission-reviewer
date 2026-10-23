@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
-import { heredocBodies } from "../src/ui-heredoc-lines.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
+import { heredocBodies } from "../src/modules/status/services/ui-heredoc-lines.ts";
 
 const counts = (command: string): number[] | undefined =>
   heredocBodies(command, extractHeredocs(command))?.map((body) => body.lines);

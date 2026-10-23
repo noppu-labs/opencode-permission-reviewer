@@ -1,7 +1,7 @@
 // The toast a manual outcome raises: title, variant and lead sentence follow
 // how the review ended, then the reason.
-import { failureKind } from "../failure-kind.ts";
-import type { ReviewUiStatus } from "../ui-protocol.ts";
+import { failureKind } from "../modules/status/models/failure-kind.ts";
+import type { ReviewUiStatus } from "../modules/status/models/ui-protocol.ts";
 import { handoffCause, modelLabel, shortModelName } from "./attribution.ts";
 
 export interface ManualToast {
@@ -12,7 +12,7 @@ export interface ManualToast {
 
 const NO_TIME_LEAD = "No review time left for";
 const GENERIC_REVIEWER = "the reasoning reviewer";
-/** `budgetExhaustedResult`'s reason (`src/system-one/system-one-budget.ts`):
+/** `budgetExhaustedResult`'s reason (`src/modules/reviewer/services/system-one-budget.ts`):
  *  "<lead> after <cause>: <budget sentence> <Jev reason>". */
 const BUDGET_REASON =
   /^No review time left for the reasoning reviewer after (.+?): ([\s\S]*)$/;

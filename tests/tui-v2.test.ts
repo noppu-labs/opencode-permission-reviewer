@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { createUiStatus } from "../src/ui-protocol.ts";
+import { createUiStatus } from "../src/modules/status/models/ui-protocol.ts";
 import { defined, request } from "./helpers.ts";
 import { resolveReviewTheme, setupTuiV2, testRender } from "./tui-loader.ts";
 import type { Channel } from "./tui-v2-feed-data.ts";

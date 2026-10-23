@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import { evaluateReview } from "../../src/core/review-engine.ts";
+import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
+import { evaluateReview } from "../../src/modules/review/services/review-engine.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,

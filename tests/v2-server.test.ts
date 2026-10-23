@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { setupWithServices } from "../src/opencode/v2/server.ts";
+import { setupWithServices } from "../src/adapters/opencode/v2/server.ts";
 import type { ReviewExecutionResult } from "../src/types.ts";
 import { decision, systemOneScores } from "./helpers.ts";
 import { fixture, type ServerFixture } from "./v2-server-fixture.ts";

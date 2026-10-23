@@ -4,8 +4,8 @@ import {
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
-} from "../src/config/loader.ts";
-import type { InlineOptionsTrust } from "../src/config/sources.ts";
+} from "../src/modules/config/services/loader.ts";
+import type { InlineOptionsTrust } from "../src/modules/config/services/sources.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 import { captureWarnings, tempDir } from "./trust-hardening/trust-fixtures.ts";
 

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
-import type { ClientResponse } from "../src/opencode/types.ts";
-import { createV1ContextReader } from "../src/opencode/v1/context-reader.ts";
+import type { ClientResponse } from "../src/adapters/opencode/types.ts";
+import { createV1ContextReader } from "../src/adapters/opencode/v1/context-reader.ts";
 import type { MessageWithParts } from "../src/types.ts";
 import { MockClient } from "./helpers.ts";
 import { intentIDs } from "./intent-ids.ts";

@@ -1,8 +1,8 @@
 // The assembleEvidence call shared by the characterisation tests, over the fakes in evidence-assembly-fakes.ts.
 
-import type { AskDecision } from "../src/actor-context-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { assembleEvidence } from "../src/context/evidence-assembler.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { AskDecision } from "../src/modules/context/models/actor-context-types.ts";
+import { assembleEvidence } from "../src/modules/context/services/evidence-assembler.ts";
 import type {
   PermissionRequest,
   ReviewEnvelope,

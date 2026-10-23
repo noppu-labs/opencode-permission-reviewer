@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { substitutionAt } from "../src/shell-substitution.ts";
-import { substitutionBodyEnd } from "../src/shell-substitution-end.ts";
+import { substitutionAt } from "../src/modules/analysis/shell/shell-substitution.ts";
+import { substitutionBodyEnd } from "../src/modules/analysis/shell/shell-substitution-end.ts";
 
 const BRACE = "$" + "{";
 

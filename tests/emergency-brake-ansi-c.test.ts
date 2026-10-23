@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { brakeReadingsReason } from "../src/brake-readings.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { brakeReadingsReason } from "../src/modules/analysis/brake/brake-readings.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
 import { request } from "./helpers.ts";
 
 const blocked =

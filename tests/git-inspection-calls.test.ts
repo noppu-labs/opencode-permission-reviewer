@@ -86,7 +86,10 @@ async function inspect(
   await chmod(join(bin, "git"), 0o755);
   const log = join(bin, "calls.jsonl");
   await writeFile(log, "");
-  const entry = new URL("../src/git-evidence.ts", import.meta.url).href;
+  const entry = new URL(
+    "../src/modules/evidence/git/git-evidence.ts",
+    import.meta.url,
+  ).href;
   const input = request({ patterns: [command], metadata: { command } });
   const child = Bun.spawn({
     cmd: [

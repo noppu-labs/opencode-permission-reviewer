@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
 import { request } from "./helpers.ts";
 
 const blocked =

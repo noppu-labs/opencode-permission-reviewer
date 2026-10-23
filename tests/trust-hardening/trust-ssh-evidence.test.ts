@@ -1,9 +1,9 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { includeEvidenceFile } from "../../src/evidence-file-reader.ts";
-import { enrichSshEvidence } from "../../src/ssh-evidence.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import { includeEvidenceFile } from "../../src/modules/evidence/files/evidence-file-reader.ts";
+import { enrichSshEvidence } from "../../src/modules/evidence/ssh/ssh-evidence.ts";
 import { bashRequest, execFileAsync, tempDir } from "./trust-fixtures.ts";
 
 afterEach(() => {

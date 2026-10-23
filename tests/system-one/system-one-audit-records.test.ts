@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ReviewAuditRecord } from "../../src/audit-record.ts";
+import type { ReviewAuditRecord } from "../../src/modules/audit/models/audit-record.ts";
 import type { EscalationReviewerConfig } from "../../src/types.ts";
 import { decision, MockClient, request, runtime } from "../helpers.ts";
 import { choice, response } from "./system-one-fixtures.ts";

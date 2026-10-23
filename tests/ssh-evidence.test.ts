@@ -9,10 +9,10 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { approvedEvidenceRoots } from "../src/evidence-path-policy.ts";
-import { enrichLocalScriptEvidence } from "../src/local-script-evidence.ts";
-import { enrichSshEvidence } from "../src/ssh-evidence.ts";
-import { shellCommandSegmentsWithDirectory } from "../src/working-directory-segments.ts";
+import { shellCommandSegmentsWithDirectory } from "../src/modules/analysis/walk/working-directory-segments.ts";
+import { approvedEvidenceRoots } from "../src/modules/evidence/files/evidence-path-policy.ts";
+import { enrichLocalScriptEvidence } from "../src/modules/evidence/local-script/local-script-evidence.ts";
+import { enrichSshEvidence } from "../src/modules/evidence/ssh/ssh-evidence.ts";
 import { SK_EXAMPLE_CREDENTIAL } from "./fixtures/synthetic-secrets.ts";
 import { defined, request } from "./helpers.ts";
 

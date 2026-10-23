@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { resolveActorContext } from "../src/context/actor-resolver.ts";
-import { unknownResolution } from "../src/context/unknown-resolution.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
-} from "../src/opencode/types.ts";
+} from "../src/adapters/opencode/types.ts";
+import { unknownResolution } from "../src/modules/context/models/unknown-resolution.ts";
+import { resolveActorContext } from "../src/modules/context/services/actor-resolver.ts";
 import type {
   MessageWithParts,
   PermissionRequest,
@@ -101,7 +101,7 @@ function userMessage(id: string, text: string): MessageWithParts {
   return { info: { id, role: "user" }, parts: [{ type: "text", text }] };
 }
 
-import { DEFAULT_CONFIG } from "../src/config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import { defined } from "./helpers.ts";
 
 const cfg: ReviewerConfig = {

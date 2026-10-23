@@ -3,8 +3,8 @@ import {
   CP_LONG_OPTIONS,
   RM_LONG_OPTIONS,
   SFDISK_LONG_OPTIONS,
-} from "../src/gnu-long-option-tables.ts";
-import { resolveGnuLongOption } from "../src/gnu-long-options.ts";
+} from "../src/modules/analysis/walk/gnu-long-option-tables.ts";
+import { resolveGnuLongOption } from "../src/modules/analysis/walk/gnu-long-options.ts";
 
 const resolve = (token: string): string | undefined =>
   resolveGnuLongOption(token, RM_LONG_OPTIONS)?.name;

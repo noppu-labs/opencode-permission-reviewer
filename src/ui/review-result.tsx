@@ -4,7 +4,7 @@ import type { ColorInput } from "@opentui/core";
 import { useTerminalDimensions } from "@opentui/solid";
 import type { JSX } from "solid-js";
 import { Show } from "solid-js";
-import type { ReviewUiStatus } from "../ui-protocol.ts";
+import type { ReviewUiStatus } from "../modules/status/models/ui-protocol.ts";
 import { type ActionFitPart, fitAction, singleLine } from "./action-fit.ts";
 import { ActionSpans, stripActionColumns } from "./action-spans.tsx";
 import { resultDetail } from "./attribution.ts";

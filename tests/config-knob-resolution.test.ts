@@ -3,7 +3,7 @@ import {
   DEFAULT_CONFIG,
   resolveConfig,
   reviewBudgetMs,
-} from "../src/config.ts";
+} from "../src/modules/config/services/config.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 
 type Knob = [key: keyof ReviewerConfig, min: number, max: number];

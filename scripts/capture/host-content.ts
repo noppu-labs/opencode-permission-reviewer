@@ -1,7 +1,6 @@
-import { globalLayerDegradation } from "../../src/config/trusted-degradation.ts";
-import { resolveConfig } from "../../src/config.ts";
-import { invariant } from "../../src/invariant.ts";
-import { systemOneRoutingWarnings } from "../../src/system-one-routing.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { globalLayerDegradation } from "../../src/modules/config/services/trusted-degradation.ts";
+import { systemOneRoutingWarnings } from "../../src/modules/reviewer/services/system-one-routing.ts";
 import {
   type ConfigToast,
   configToasts,
@@ -9,6 +8,7 @@ import {
   sidebarLine,
 } from "../../src/ui/config-notices.ts";
 import { type ManualToast, manualToast } from "../../src/ui/manual-toast.ts";
+import { invariant } from "../../src/utils/invariant.ts";
 import { textRow } from "./ansi.ts";
 import {
   CAPTION_COLOR,

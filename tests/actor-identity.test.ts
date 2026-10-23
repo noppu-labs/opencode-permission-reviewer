@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { Provenanced } from "../src/actor-context-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { resolveActorContext } from "../src/context/actor-resolver.ts";
-import type { ContextReader } from "../src/core/ports.ts";
-import { evaluatePolicy } from "../src/policy/policy-engine.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { Provenanced } from "../src/modules/context/models/actor-context-types.ts";
+import { resolveActorContext } from "../src/modules/context/services/actor-resolver.ts";
+import { evaluatePolicy } from "../src/modules/policy/policy-engine.ts";
+import type { ContextReader } from "../src/modules/review/ports.ts";
 import type {
   MessageWithParts,
   PermissionRequest,

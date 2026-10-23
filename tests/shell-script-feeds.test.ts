@@ -1,27 +1,33 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
-import { separatePlaceholders } from "../src/capability/heredoc-scripts.ts";
-import { analyzeSegmentRedirections } from "../src/shell-effective-commands.ts";
-import { lexSegmentsBounded, newAnalysisBudget } from "../src/shell-lexer.ts";
-import { heredocPlaceholders } from "../src/shell-redirections.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
+import { separatePlaceholders } from "../src/modules/analysis/capability/heredoc/heredoc-scripts.ts";
+import { analyzeSegmentRedirections } from "../src/modules/analysis/shell/shell-effective-commands.ts";
+import {
+  lexSegmentsBounded,
+  newAnalysisBudget,
+} from "../src/modules/analysis/shell/shell-lexer.ts";
+import { heredocPlaceholders } from "../src/modules/analysis/shell/shell-redirections.ts";
 import {
   buildFeedInput,
   pipedFromSegments,
   type SegmentFeedParts,
   scriptFeedsOfSegments,
-} from "../src/shell-script-feed-input.ts";
+} from "../src/modules/analysis/shell/shell-script-feed-input.ts";
 import {
   type ScriptFeed,
   scriptFeeds,
   stdinScripts,
-} from "../src/shell-script-feeds.ts";
+} from "../src/modules/analysis/shell/shell-script-feeds.ts";
 import {
   type ScriptRedirection,
   stdinSource,
-} from "../src/shell-stdin-source.ts";
-import type { ShellSegment, ShellToken } from "../src/shell-token.ts";
+} from "../src/modules/analysis/shell/shell-stdin-source.ts";
+import type {
+  ShellSegment,
+  ShellToken,
+} from "../src/modules/analysis/shell/shell-token.ts";
 
 interface FeedRow {
   id: string;

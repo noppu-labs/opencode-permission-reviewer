@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import { analyzeEffectiveCommands } from "../src/shell-effective-commands.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
+import { analyzeEffectiveCommands } from "../src/modules/analysis/shell/shell-effective-commands.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
 import { defined } from "./helpers.ts";
 
 /** Walk the first segment of `command` against a budget with the given
