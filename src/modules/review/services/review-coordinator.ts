@@ -6,7 +6,7 @@ import { withTimeout } from "../../../utils/with-timeout.ts";
 import type { AskDecisionSource } from "../../context/services/ask-decisions.ts";
 import type { EvidenceProvider } from "../../evidence/providers/provider.ts";
 import type { ReviewHost } from "../ports.ts";
-import { writeReviewAudit } from "./audit/review-coordinator-support.ts";
+import { writeReviewAudit } from "./audit-record/review-coordinator-support.ts";
 import {
   type CoordinatorState,
   coordinatorState,

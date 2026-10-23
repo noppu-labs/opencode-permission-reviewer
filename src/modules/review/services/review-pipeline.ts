@@ -9,7 +9,7 @@ import { invariant } from "../../../utils/invariant.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { assembleEvidence } from "../../context/services/evidence-assembler.ts";
 import { rememberEvidence } from "./attempt-evidence.ts";
-import { ATTEMPT_REGISTERED } from "./audit/review-coordinator-support.ts";
+import { ATTEMPT_REGISTERED } from "./audit-record/review-coordinator-support.ts";
 import {
   type CoordinatorState,
   isSuperseded,
