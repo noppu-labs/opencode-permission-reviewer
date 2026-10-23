@@ -32,13 +32,16 @@ const LAYER: Record<string, number> = {
   adapters: 6,
   ui: 6,
   cli: 6,
-  entry: 6,
+  "(root)": 6,
 };
 const OUTER = 6;
 
 /** Folders of a module that other modules may not import. Delivery layers
- *  (adapters, ui, cli, entry) may. */
+ *  (adapters, ui, cli, the root entry files) may. */
 const PRIVATE_DIRS = ["controllers", "repositories"];
+
+/** Files outside src/ that src/ may import. */
+const EXTERNAL_ALLOWED = new Set(["package.json"]);
 
 /** Import edges that break a rule today, each removed by the task that fixes
  *  it. The test fails on a violation missing from this list and on an entry
@@ -71,7 +74,7 @@ interface Edge {
 }
 
 function unit(file: string): string {
-  if (file === "index.ts" || file === "tui.tsx") return "entry";
+  if (file === "index.ts" || file === "tui.tsx") return "(root)";
   const [top, mod] = file.split("/");
   return top === "modules" ? (mod as string) : (top as string);
 }
@@ -92,14 +95,15 @@ const files: string[] = Array.from(
 const fileSet = new Set(files);
 const edgesAll: Edge[] = [];
 const runtimeEdges: Edge[] = [];
+const externalEdges: Edge[] = [];
 for (const file of files) {
   const text = readFileSync(join(SRC, file), "utf8");
   const resolveSpec = (spec: string): string | undefined => {
-    const target = relative(
-      SRC,
-      normalize(join(dirname(join(SRC, file)), spec)),
-    );
-    return target.startsWith("..") ? undefined : target;
+    const absolute = normalize(join(dirname(join(SRC, file)), spec));
+    const target = relative(SRC, absolute);
+    if (!target.startsWith("..")) return target;
+    externalEdges.push({ from: file, to: relative(ROOT, absolute) });
+    return undefined;
   };
   for (const match of text.matchAll(SPECIFIER)) {
     const to = resolveSpec(match[1] as string);
@@ -222,4 +226,11 @@ test("every import inside src/ resolves to a scanned file", () => {
     .filter(({ to }) => !fileSet.has(to))
     .map(({ from, to }) => `unresolved: ${from} -> ${to}`);
   expect([...new Set(unresolved)].sort()).toEqual([]);
+});
+
+test("imports that leave src/ target only allowed files", () => {
+  const external = externalEdges
+    .filter(({ to }) => !EXTERNAL_ALLOWED.has(to))
+    .map(({ from, to }) => `external: ${from} -> ${to}`);
+  expect([...new Set(external)].sort()).toEqual([]);
 });

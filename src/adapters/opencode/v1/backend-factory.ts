@@ -6,6 +6,7 @@ import type { ReviewEnvelope } from "../../../modules/context/models/review-enve
 import type { ReviewerBackend } from "../../../modules/review/ports.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
 import { SystemOneReviewerBackend } from "../../../modules/reviewer/services/backend.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import type { RuntimeContext } from "../types.ts";
 import { V1ReviewerBackend } from "./reviewer-backend.ts";
 
@@ -23,7 +24,7 @@ function escalationConfig(config: ReviewerConfig): ReviewerConfig | undefined {
 export function createV1ReviewerBackend(
   ctx: RuntimeContext,
   config: ReviewerConfig,
-  log: (message: string, details?: unknown) => void,
+  log: Logger,
   recordReviewerMs: (envelope: ReviewEnvelope, ms: number) => void,
 ): ReviewerBackend {
   if (!isSystemOneReviewerModel(config.model)) {

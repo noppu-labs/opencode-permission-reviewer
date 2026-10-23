@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { lstat as LStat } from "node:fs/promises";
 import { join } from "node:path";
+import type { Logger } from "../../../utils/logger.ts";
 import type { RuntimeContext } from "../types.ts";
 
 /** Refuse symlinks, hardlinks, and special files before opening anything. */
@@ -53,7 +54,7 @@ async function writeIsolatedFile(path: string, content: string): Promise<void> {
  *  the isolated location. */
 export async function setupIsolatedDirectory(
   ctx: Pick<RuntimeContext, "reviewerDirectoryBase">,
-  log: (message: string, details?: unknown) => void,
+  log: Logger,
 ): Promise<string | undefined> {
   try {
     const { mkdir } = await import("node:fs/promises");

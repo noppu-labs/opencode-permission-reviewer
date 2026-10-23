@@ -1,5 +1,6 @@
 import type { AskDecision } from "../../../kernel/actor-context-types.ts";
 import { isRecord } from "../../../utils/is-record.ts";
+import type { Logger } from "../../../utils/logger.ts";
 import {
   parseAsked,
   parseReply,
@@ -38,8 +39,6 @@ import { PendingAsks } from "./pending-asks.ts";
 export const DISMISSED_ANSWER = "Dismissed by user";
 
 const MAX_RESOLVED = 500;
-
-type Logger = (message: string, details?: unknown) => void;
 
 interface ResolvedDecision extends AskDecision {
   requestID: string;

@@ -9,7 +9,7 @@ import { invariant } from "../../../utils/invariant.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { assembleEvidence } from "../../context/services/evidence-assembler.ts";
 import { rememberEvidence } from "./attempt-evidence.ts";
-import { ATTEMPT_REGISTERED } from "./audit/review-coordinator-support.ts";
+import { ATTEMPT_REGISTERED } from "./audit-record/review-coordinator-support.ts";
 import {
   type CoordinatorState,
   isSuperseded,
@@ -54,7 +54,7 @@ async function collectEnvelope(
   request: PermissionRequest,
 ): Promise<ReviewEnvelope> {
   const envelope = await assembleEvidence(request, state.providers, {
-    client: state.host.createContextReader(
+    reader: state.host.createContextReader(
       state.attempts.get(request.id)?.signal,
     ),
     directory: state.ctx.directory,

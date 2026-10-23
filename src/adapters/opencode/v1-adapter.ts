@@ -2,6 +2,7 @@ import {
   encodeUiStatus,
   type ReviewUiStatus,
 } from "../../modules/status/models/ui-protocol.ts";
+import type { Logger } from "../../utils/logger.ts";
 import type {
   OpenCodeCapabilities,
   PermissionReplyInput,
@@ -23,8 +24,6 @@ type TypedTuiPublish = (options: {
   body: { type: string; properties: { command: string } };
   query?: { directory?: string };
 }) => Promise<unknown>;
-
-type Logger = (message: string, details?: unknown) => void;
 
 /** The reply shape the coordinator sends (kept so its call sites stay
  *  unchanged while the reply logic itself is isolated in the transport). */

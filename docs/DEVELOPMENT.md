@@ -36,8 +36,8 @@ add files to the `src/` root. `tests/architecture.test.ts` enforces the rules.
 ```text
 src/
 ├── index.ts  tui.tsx            # plugin entries (server, TUI)
-├── kernel/                      # domain types nearly every module shares (PermissionRequest, ReviewerConfig, ...)
-├── utils/                       # domain-free helpers
+├── kernel/                      # domain types nearly every module shares, and the constant tables they derive from (PermissionRequest, ReviewerConfig, ...)
+├── utils/                       # domain-free helpers and types
 ├── modules/
 │   ├── analysis/                # pure command analysis, no I/O: shell/, walk/, capability/, brake/, git/, ssh/
 │   ├── decision/                # parsing and gating the reviewer's decision, escalation
@@ -72,8 +72,8 @@ would pull server code into it.
 
 Where new code goes:
 
-- A type nearly every module needs → `kernel/`. A type with one owner → that
-  module's `models/` (or next to its code in a flat module).
+- A type nearly every module needs (or a constant table it is derived from) →
+  `kernel/`. A type with one owner → that module's `models/` (or next to its code in a flat module).
 - A parser, lexer rule or command classifier → `modules/analysis/<area>/`.
 - A new evidence source → `modules/evidence/<source>/`, plus its
   `EvidenceProvider` in `modules/evidence/providers/`.
@@ -82,7 +82,7 @@ Where new code goes:
   Register both in `src/cli/explain.ts`.
 - Something a module needs from the host → a port in that module's `ports.ts`,
   implemented in `adapters/opencode/` and wired in by the entry points.
-- A helper with no domain knowledge → `utils/`.
+- A helper or type with no domain knowledge → `utils/`.
 
 Layer folders (`controllers/`, `services/`, `models/`, `repositories/`) are
 used once a module has about 10 files. Smaller modules stay flat.

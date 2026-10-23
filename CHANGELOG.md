@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.2.2] - 2026-10-23
+
+### Changed
+
+- Internal follow-ups to the `src/` restructure: one shared logger type, clearer names for the
+  context reader and the review audit-record helpers, and a stricter layer test. No behaviour
+  change: the package exports, command-line interface, configuration and shipped files are the
+  same as in 3.2.1.
+
 ## [3.2.1] - 2026-10-23
 
 ### Changed

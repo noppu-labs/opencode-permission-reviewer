@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import test from "node:test";
 import { runBenchmark } from "../lib/run.mjs";
-import { readJSON } from "../lib/util.mjs";
+import { delay, readJSON } from "../lib/util.mjs";
 import { fakeAdapter, success } from "./helpers.mjs";
 import {
   eventsOf,
@@ -14,6 +15,13 @@ import {
   runInput,
   scripted,
 } from "./run-fixtures.mjs";
+
+/** Resolves once the run's events file records `event`. */
+async function whenEvent(dir, event) {
+  const path = join(dir, "events.jsonl");
+  while (!(await readFile(path, "utf8")).includes(`"event":"${event}"`))
+    await delay(5);
+}
 
 const defects = [
   [new Error("synthetic prepare defect"), "synthetic prepare defect"],
@@ -76,11 +84,17 @@ test("a safety stop interrupts another worker waiting to retry", async () =>
 test("an interrupt during the request delay ends the job before it calls the provider", async () =>
   inTemp(async (dir) => {
     const listeners = process.listenerCount("SIGINT");
+    const before = process.listeners("SIGINT");
     const answer = scripted(success());
     const summary = await runBenchmark({
       ...runInput(dir, { minRequestDelayMs: 300, maxRequestDelayMs: 300 }),
       completion: async (...request) => {
-        setTimeout(process.listeners("SIGINT").at(-1), 50);
+        const added = process
+          .listeners("SIGINT")
+          .filter((l) => !before.includes(l));
+        assert.equal(added.length, 1);
+        // Fire once job 2 is in its request delay; a fixed timer can fire before job 2 starts.
+        whenEvent(dir, "request-wait").then(added[0]);
         return answer(...request);
       },
     });

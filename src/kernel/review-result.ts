@@ -1,3 +1,5 @@
+// Review results, hand-off triggers, decision sources and the System One score types (with their basis table).
+
 import type {
   EvidenceSufficiency,
   ReviewDecision,
