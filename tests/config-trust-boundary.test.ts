@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 import { loadConfig } from "./config-layer-fixtures.ts";
 

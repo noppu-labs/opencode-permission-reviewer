@@ -3,14 +3,14 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
+import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
 import {
   createAuditWriter,
   readAuditSummary,
   resolveAuditPath,
-} from "../src/audit.ts";
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { redactSecrets } from "../src/redact.ts";
+} from "../src/modules/audit/services/audit.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { redactSecrets } from "../src/utils/redact.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { defined, systemOneScores } from "./helpers.ts";
 

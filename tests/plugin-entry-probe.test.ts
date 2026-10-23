@@ -1,8 +1,8 @@
 import { afterEach, beforeAll, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
 import { server } from "../src/index.ts";
+import { setGlobalConfigPathForTests } from "../src/modules/config/services/loader.ts";
 import { MockClient, request } from "./helpers.ts";
 
 type Get = (options: { url: string; signal: AbortSignal }) => Promise<unknown>;

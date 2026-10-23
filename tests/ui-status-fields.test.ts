@@ -3,7 +3,7 @@ import {
   createUiStatus,
   decodeUiStatus,
   UI_COMMAND_PREFIX,
-} from "../src/ui-protocol.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
 import { decision, request } from "./helpers.ts";
 
 const options = {

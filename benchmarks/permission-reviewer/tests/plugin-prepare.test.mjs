@@ -3,12 +3,14 @@ import test from "node:test";
 import { sha256 } from "../lib/util.mjs";
 import { adapter, bashInput, core, textModel } from "./plugin-fixtures.mjs";
 
-const { DEFAULT_CONFIG } = await core("src/config.ts");
-const policy = await core("src/policy.ts");
-const context = await core("src/context.ts");
-const parser = await core("src/capability/command-parser.ts");
-const analyzer = await core("src/capability/bash-analyzer.ts");
-const questions = await core("src/system-one/system-one-questions.ts");
+const { DEFAULT_CONFIG } = await core("src/modules/config/services/config.ts");
+const policy = await core("src/modules/context/services/prompt/policy.ts");
+const context = await core("src/modules/context/services/prompt/context.ts");
+const parser = await core("src/modules/analysis/capability/command-parser.ts");
+const analyzer = await core("src/modules/analysis/capability/bash-analyzer.ts");
+const questions = await core(
+  "src/modules/reviewer/services/system-one-questions.ts",
+);
 
 test("the case config overrides defaults and the model picks model, variant and output format", async () => {
   const input = bashInput();
@@ -130,8 +132,10 @@ test("bash commands are parsed and analysed; other requests carry no command ana
 });
 
 test("the adapter's parsers are the core's decision and System One parsers", async () => {
-  const decisions = await core("src/decision.ts");
-  const review = await core("src/system-one/review.ts");
+  const decisions = await core(
+    "src/modules/review/services/decision/decision.ts",
+  );
+  const review = await core("src/modules/reviewer/services/review.ts");
   const { config } = await adapter.prepare(bashInput(), textModel);
   const text = JSON.stringify({ version: 2, outcome: "deny" });
   assert.deepEqual(adapter.parse(text), decisions.parseDecisionFromText(text));

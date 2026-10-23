@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
+import type { ReviewUiStatus } from "../src/modules/status/models/ui-protocol.ts";
 import type { ReviewerConfig } from "../src/types.ts";
 import { resultDetail } from "../src/ui/attribution.ts";
-import type { ReviewUiStatus } from "../src/ui-protocol.ts";
 import { decision, defined } from "./helpers.ts";
 import { until } from "./poll-until.ts";
 import {

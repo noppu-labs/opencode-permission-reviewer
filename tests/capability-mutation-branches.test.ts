@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { classifyPath } from "../src/capability/bash-mutation.ts";
+import { classifyPath } from "../src/modules/analysis/capability/bash-mutation.ts";
 import {
   gitSubcommandMutates,
   gitSubcommandOf,
-} from "../src/capability/git-subcommand-forms.ts";
-import { mutationOperands } from "../src/capability/mutation-operands.ts";
-import { readOnlyToolMutation } from "../src/capability/read-only-tool-mutations.ts";
-import type { ShellToken } from "../src/shell-token.ts";
+} from "../src/modules/analysis/capability/git-subcommand-forms.ts";
+import { mutationOperands } from "../src/modules/analysis/capability/mutation-operands.ts";
+import { readOnlyToolMutation } from "../src/modules/analysis/capability/read-only-tool-mutations.ts";
+import type { ShellToken } from "../src/modules/analysis/shell/shell-token.ts";
 
 // Characterisation of the capability mutation-helper branches. Each row asserts
 // the current output.

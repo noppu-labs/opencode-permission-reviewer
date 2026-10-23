@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { extractJsonFromText, parseDecisionFromText } from "../src/decision.ts";
+import {
+  extractJsonFromText,
+  parseDecisionFromText,
+} from "../src/modules/review/services/decision/decision.ts";
 import { decision } from "./helpers.ts";
 
 const valid = decision("allow");

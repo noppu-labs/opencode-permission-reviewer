@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { adapter, bashInput, core, textModel } from "./plugin-fixtures.mjs";
 
-const context = await core("src/context.ts");
+const context = await core("src/modules/context/services/prompt/context.ts");
 
 test("the envelope copies its inputs, adds optional fields only when given and keeps its key order", async () => {
   const input = bashInput();

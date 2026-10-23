@@ -22,7 +22,7 @@ export const message = (id, role, text, part = {}, created) => ({
   parts: [{ type: "text", text, ...part }],
 });
 export const textModel = { id: "text", model: "m", format: "text" };
-const engine = await core("src/core/review-engine.ts");
+const engine = await core("src/modules/review/services/review-engine.ts");
 /** The core's effective outcome when the reviewer returns `result` for a prepared request. */
 export const replay = (prepared, result) =>
   engine.evaluateReview(prepared.envelope.request, prepared.config, {

@@ -1,17 +1,20 @@
 import type {
+  CapabilityAssessment,
+  ParsedCommand,
+} from "./modules/analysis/capability/models/capability-types.ts";
+import type {
+  DecisionSource,
+  ReviewAuditRecord,
+} from "./modules/audit/models/audit-record.ts";
+import type {
   ActionPurpose,
   ActorContext,
   AskDecision,
   EvidenceCompleteness,
   IntentContext,
   SessionLineage,
-} from "./actor-context-types.ts";
-import type { DecisionSource, ReviewAuditRecord } from "./audit-record.ts";
-import type {
-  CapabilityAssessment,
-  ParsedCommand,
-} from "./capability/capability-types.ts";
-import type { SystemOneScores } from "./system-one/system-one-types.ts";
+} from "./modules/context/models/actor-context-types.ts";
+import type { SystemOneScores } from "./modules/reviewer/models/system-one-types.ts";
 
 export type RiskLevel = "low" | "medium" | "high" | "critical";
 export type UserAuthorization = "high" | "medium" | "low" | "unknown";
@@ -231,7 +234,7 @@ export interface ReviewEnvelope {
   transcript: string;
   intentHistory: string;
   enrichment: string;
-  verifiedScript?: import("./verified-ssh-script.ts").VerifiedScriptEvidence;
+  verifiedScript?: import("./modules/evidence/ssh/verified-ssh-script.ts").VerifiedScriptEvidence;
   sshAudit: NonNullable<ReviewAuditRecord["ssh"]>;
   preflightDenial?: string;
   /** Agent-aware context (actor, lineage, intent). Observe-only: flows into the

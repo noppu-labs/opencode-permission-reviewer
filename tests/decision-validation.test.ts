@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { DEFAULT_RISK_POLICY } from "../src/config-risk-policy.ts";
-import { parseDecision } from "../src/decision.ts";
-import { enforceDecision } from "../src/decision-gates.ts";
+import { DEFAULT_RISK_POLICY } from "../src/modules/config/models/config-risk-policy.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { parseDecision } from "../src/modules/review/services/decision/decision.ts";
+import { enforceDecision } from "../src/modules/review/services/decision/decision-gates.ts";
 import type {
   ReviewDecision,
   ReviewerConfig,

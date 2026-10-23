@@ -1,10 +1,10 @@
-import { asObjectLike } from "../is-record.ts";
 import {
   decodeUiStatus,
   encodeUiStatus,
   type ReviewUiStatus,
-} from "../ui-protocol.ts";
-import { ReviewUiState } from "../ui-state.ts";
+} from "../modules/status/models/ui-protocol.ts";
+import { ReviewUiState } from "../modules/status/services/ui-state.ts";
+import { asObjectLike } from "../utils/is-record.ts";
 
 interface ReviewSnapshot extends Record<string, unknown> {
   generation: string;

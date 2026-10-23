@@ -4,7 +4,7 @@ import { join } from "node:path";
 import {
   decodeAnsiCWord,
   unescapeAnsiC,
-} from "../src/capability/ansi-c-quoting.ts";
+} from "../src/modules/analysis/capability/heredoc/ansi-c-quoting.ts";
 
 /** [text between `$'` and the closing `'`, bash's value, the heredoc-delimiter
  *  reading from `unescapeAnsiC`], one row per line in

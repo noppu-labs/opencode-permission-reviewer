@@ -1,6 +1,6 @@
 // Message, part and intent-block builders shared by the resolveIntent characterisation tests.
 
-import type { IntentBlock } from "../src/actor-context-types.ts";
+import type { IntentBlock } from "../src/modules/context/models/actor-context-types.ts";
 import type { MessageWithParts } from "../src/types.ts";
 
 export type Part = Record<string, unknown>;

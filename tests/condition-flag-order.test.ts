@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { Provenanced } from "../src/actor-context-types.ts";
-import type { CapabilityAssessment } from "../src/capability/capability-types.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { validateCondition } from "../src/config-rule-condition.ts";
-import { conditionMatches } from "../src/policy/policy-conditions.ts";
+import type { CapabilityAssessment } from "../src/modules/analysis/capability/models/capability-types.ts";
+import { validateCondition } from "../src/modules/config/models/config-rule-condition.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { Provenanced } from "../src/modules/context/models/actor-context-types.ts";
+import { conditionMatches } from "../src/modules/policy/policy-conditions.ts";
 import {
   capability,
   type FactValue,

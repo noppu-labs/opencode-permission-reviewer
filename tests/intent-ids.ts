@@ -1,4 +1,4 @@
-import type { ContextReader } from "../src/core/ports.ts";
+import type { ContextReader } from "../src/modules/review/ports.ts";
 import type { MessageWithParts } from "../src/types.ts";
 import { defined } from "./helpers.ts";
 

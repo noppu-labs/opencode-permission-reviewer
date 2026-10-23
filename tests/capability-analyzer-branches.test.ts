@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import type { ParsedCommand } from "../src/capability/capability-types.ts";
+import type { ParsedCommand } from "../src/modules/analysis/capability/models/capability-types.ts";
 import { capabilityProfile } from "./capability-profile.ts";
 
 // Characterisation of analyzeCapability branches. Each row asserts the class,

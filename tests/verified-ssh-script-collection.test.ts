@@ -3,12 +3,12 @@ import { createHash } from "node:crypto";
 import { mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { collectVerifiedSshScript } from "../src/verified-script-evidence.ts";
+import { collectVerifiedSshScript } from "../src/modules/evidence/ssh/verified-script-evidence.ts";
 import {
   ScriptAnalysisRegistry,
   VERIFIED_SCRIPT_LIMIT,
   type VerifiedScriptEvidence,
-} from "../src/verified-ssh-script.ts";
+} from "../src/modules/evidence/ssh/verified-ssh-script.ts";
 import { POSTGRES_URL_WITH_PASSWORD } from "./fixtures/synthetic-secrets.ts";
 
 let directory = "";

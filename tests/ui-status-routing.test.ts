@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import type { DecisionSource } from "../src/audit-record.ts";
-import type { ReasoningHandoff } from "../src/system-one/system-one-results.ts";
-import type { ReviewerConfig } from "../src/types.ts";
+import type { DecisionSource } from "../src/modules/audit/models/audit-record.ts";
+import type { ReasoningHandoff } from "../src/modules/reviewer/services/system-one-results.ts";
 import {
   announceHandoff,
   configNoticeFields,
@@ -9,7 +8,8 @@ import {
   handoffInfo,
   resultHandoff,
   statusRouting,
-} from "../src/ui-status-routing.ts";
+} from "../src/modules/status/services/ui-status-routing.ts";
+import type { ReviewerConfig } from "../src/types.ts";
 
 const JEV = "opencode/jev-1.13-free";
 const LUNA = "openai/gpt-6-luna";

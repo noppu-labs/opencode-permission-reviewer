@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test";
-import type { HandoffInfo } from "../src/system-one/backend.ts";
+import type { HandoffInfo } from "../src/modules/reviewer/services/backend.ts";
+import {
+  createUiStatus,
+  type ReviewUiStatus,
+} from "../src/modules/status/models/ui-protocol.ts";
 import type { HandoffTrigger } from "../src/types.ts";
 import {
   attributionText,
@@ -9,7 +13,6 @@ import {
   reviewerLabel,
   shortModelName,
 } from "../src/ui/attribution.ts";
-import { createUiStatus, type ReviewUiStatus } from "../src/ui-protocol.ts";
 import { request } from "./helpers.ts";
 
 const JEV = "opencode/jev-1.13-free";

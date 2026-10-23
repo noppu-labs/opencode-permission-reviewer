@@ -4,7 +4,7 @@ import {
   locateToken,
   onlySkipped,
   touchesOperator,
-} from "../src/ui-raw-source.ts";
+} from "../src/modules/status/services/ui-raw-source.ts";
 import { TUI_SHIP_FILES } from "./package-tui-files.ts";
 
 describe("a token's source text", () => {

@@ -1,7 +1,7 @@
-import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import { probeCapabilities } from "../../src/opencode/capability-detection.ts";
-import type { RuntimeContext } from "../../src/opencode/types.ts";
-import { V1ReviewerBackend } from "../../src/opencode/v1/reviewer-backend.ts";
+import { probeCapabilities } from "../../src/adapters/opencode/capability-detection.ts";
+import type { RuntimeContext } from "../../src/adapters/opencode/types.ts";
+import { V1ReviewerBackend } from "../../src/adapters/opencode/v1/reviewer-backend.ts";
+import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
 import { config, MockClient, request } from "../helpers.ts";
 
 const base: string | undefined = process.argv[2];

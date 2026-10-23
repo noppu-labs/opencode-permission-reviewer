@@ -6,7 +6,7 @@ import { mkdtemp, realpath, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import type { PlannedGitActions } from "../src/git-command-plan.ts";
+import type { PlannedGitActions } from "../src/modules/evidence/git/git-command-plan.ts";
 
 const exec = promisify(execFile);
 const directories: string[] = [];

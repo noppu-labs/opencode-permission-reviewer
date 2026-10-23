@@ -1,7 +1,7 @@
 import { afterAll, expect, test } from "bun:test";
 import { appendFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { filterNeutralizationArgs } from "../src/git-filter-neutralization.ts";
+import { filterNeutralizationArgs } from "../src/modules/evidence/git/git-filter-neutralization.ts";
 import {
   git,
   isolateGlobalGitConfig,

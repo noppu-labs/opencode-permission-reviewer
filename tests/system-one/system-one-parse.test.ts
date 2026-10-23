@@ -1,11 +1,11 @@
 import { describe, expect, test } from "bun:test";
-import { resolveConfig } from "../../src/config.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
 import {
   enforceParsedSystemOneReview,
   enforceSystemOneDecision,
   parseSystemOneReview,
-} from "../../src/system-one/review.ts";
-import { SYSTEM_ONE_QUESTIONS } from "../../src/system-one/system-one-questions.ts";
+} from "../../src/modules/reviewer/services/review.ts";
+import { SYSTEM_ONE_QUESTIONS } from "../../src/modules/reviewer/services/system-one-questions.ts";
 import { defined } from "../helpers.ts";
 import { choice, PRIMARY_BASES, response } from "./system-one-fixtures.ts";
 

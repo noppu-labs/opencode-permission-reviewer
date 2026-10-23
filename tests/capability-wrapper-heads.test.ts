@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
-import { gnuSplitWords } from "../src/env-split-words.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { gnuSplitWords } from "../src/modules/analysis/walk/env-split-words.ts";
 import { capabilityProfile } from "./capability-profile.ts";
 import { request } from "./helpers.ts";
 

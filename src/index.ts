@@ -4,15 +4,15 @@ import type {
   PluginInput,
   PluginOptions,
 } from "@opencode-ai/plugin";
-import { createAuditWriter } from "./audit.ts";
-import { loadResolvedConfig } from "./config/loader.ts";
-import { AskDecisionRegistry } from "./context/ask-decisions.ts";
-import { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
-import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
-import { probeHostVersion } from "./opencode/host-version.ts";
-import type { RuntimeContext } from "./opencode/types.ts";
-import { createV1Adapter } from "./opencode/v1-adapter.ts";
-import { setup } from "./opencode/v2/server.ts";
+import { extractPermissionRequest } from "./adapters/opencode/event-normalizer.ts";
+import { probeHostVersion } from "./adapters/opencode/host-version.ts";
+import type { RuntimeContext } from "./adapters/opencode/types.ts";
+import { createV1Adapter } from "./adapters/opencode/v1-adapter.ts";
+import { setup } from "./adapters/opencode/v2/server.ts";
+import { createAuditWriter } from "./modules/audit/services/audit.ts";
+import { loadResolvedConfig } from "./modules/config/services/loader.ts";
+import { AskDecisionRegistry } from "./modules/context/services/ask-decisions.ts";
+import { ReviewCoordinator as ApprovalReviewerRuntime } from "./modules/review/services/review-coordinator.ts";
 
 type HookEvent = Parameters<NonNullable<Hooks["event"]>>[0];
 
@@ -87,37 +87,40 @@ const module: { id: string; server: Plugin; setup: typeof setup } = {
 };
 
 export default module;
-export type * from "./actor-context-types.ts";
 // biome-ignore lint/performance/noBarrelFile: package entry for "." and "./server" (dist/index.js); the re-exports are the public API
-export { createAuditWriter, DEFAULT_AUDIT_PATH } from "./audit.ts";
-export type * from "./audit-record.ts";
-export type * from "./capability/capability-types.ts";
-export { loadResolvedConfig } from "./config/loader.ts";
-export { resolveConfig } from "./config.ts";
+export { extractPermissionRequest } from "./adapters/opencode/event-normalizer.ts";
+export { emergencyBrakeReason } from "./modules/analysis/brake/emergency-brake.ts";
+export type * from "./modules/analysis/capability/models/capability-types.ts";
+export type * from "./modules/audit/models/audit-record.ts";
+export {
+  createAuditWriter,
+  DEFAULT_AUDIT_PATH,
+} from "./modules/audit/services/audit.ts";
+export { resolveConfig } from "./modules/config/services/config.ts";
+export { loadResolvedConfig } from "./modules/config/services/loader.ts";
+export type * from "./modules/context/models/actor-context-types.ts";
 export {
   AskDecisionRegistry,
   DISMISSED_ANSWER,
-} from "./context/ask-decisions.ts";
-export { ReviewCoordinator as ApprovalReviewerRuntime } from "./core/review-coordinator.ts";
-export { parseDecision } from "./decision.ts";
-export { enforceDecision } from "./decision-gates.ts";
-export { DECISION_SCHEMA } from "./decision-schema.ts";
-export { emergencyBrakeReason } from "./emergency-brake.ts";
+} from "./modules/context/services/ask-decisions.ts";
+export { enrichGitEvidence } from "./modules/evidence/git/git-evidence.ts";
+export { enrichLocalScriptEvidence } from "./modules/evidence/local-script/local-script-evidence.ts";
+export { enrichSshEvidence } from "./modules/evidence/ssh/ssh-evidence.ts";
+export { parseDecision } from "./modules/review/services/decision/decision.ts";
+export { enforceDecision } from "./modules/review/services/decision/decision-gates.ts";
+export { DECISION_SCHEMA } from "./modules/review/services/decision/decision-schema.ts";
 export {
   applyEscalationDisposition,
   resolveEscalationDisposition,
-} from "./escalation.ts";
-export { enrichGitEvidence } from "./git-evidence.ts";
-export { enrichLocalScriptEvidence } from "./local-script-evidence.ts";
-export { extractPermissionRequest } from "./opencode/event-normalizer.ts";
-export { redactSecrets } from "./redact.ts";
-export { enrichSshEvidence } from "./ssh-evidence.ts";
-export type * from "./system-one/system-one-types.ts";
-export type * from "./types.ts";
+} from "./modules/review/services/decision/escalation.ts";
+export { ReviewCoordinator as ApprovalReviewerRuntime } from "./modules/review/services/review-coordinator.ts";
+export type * from "./modules/reviewer/models/system-one-types.ts";
 export {
   createUiStatus,
   decodeUiStatus,
   encodeUiStatus,
   permissionAction,
-} from "./ui-protocol.ts";
-export { ReviewUiState } from "./ui-state.ts";
+} from "./modules/status/models/ui-protocol.ts";
+export { ReviewUiState } from "./modules/status/services/ui-state.ts";
+export type * from "./types.ts";
+export { redactSecrets } from "./utils/redact.ts";

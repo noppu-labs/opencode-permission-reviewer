@@ -1,17 +1,20 @@
 import { describe, expect, test } from "bun:test";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
-import { commandSegments } from "../src/command-segments.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
 import {
   analyzeEffectiveCommands,
   effectiveCommands,
-} from "../src/shell-effective-commands.ts";
-import { newAnalysisBudget, shellBasename } from "../src/shell-lexer.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
+} from "../src/modules/analysis/shell/shell-effective-commands.ts";
+import {
+  newAnalysisBudget,
+  shellBasename,
+} from "../src/modules/analysis/shell/shell-lexer.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
 import {
   type ShellSegment,
   type ShellToken,
   tokenCharIsQuoted,
-} from "../src/shell-token.ts";
+} from "../src/modules/analysis/shell/shell-token.ts";
+import { commandSegments } from "../src/modules/analysis/walk/command-segments.ts";
 import { defined } from "./helpers.ts";
 
 function values(tokens: { value: string }[]): string[] {

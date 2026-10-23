@@ -2,7 +2,7 @@ import {
   createUiStatus,
   type ReviewUiPhase,
   type ReviewUiStatus,
-} from "../src/ui-protocol.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
 import { defined, request } from "./helpers.ts";
 
 /**

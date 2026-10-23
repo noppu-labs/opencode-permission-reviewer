@@ -6,7 +6,7 @@ import { join } from "node:path";
 import {
   enrichSshEvidence,
   type SshEnrichmentResult,
-} from "../src/ssh-evidence.ts";
+} from "../src/modules/evidence/ssh/ssh-evidence.ts";
 import { request } from "./helpers.ts";
 
 let directory = "";

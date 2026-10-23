@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import type { ReviewUiStatus } from "../src/ui-protocol.ts";
+import type { ReviewUiStatus } from "../src/modules/status/models/ui-protocol.ts";
 import { decision } from "./helpers.ts";
 import { until } from "./poll-until.ts";
 import { lifecycle } from "./v2-server-fixture.ts";

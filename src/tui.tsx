@@ -3,19 +3,19 @@ import type { PluginOptions } from "@opencode-ai/plugin";
 import type { TuiPlugin, TuiPluginApi } from "@opencode-ai/plugin/tui";
 import type { JSX } from "solid-js";
 import { createSignal, Show } from "solid-js";
-import { loadResolvedConfig } from "./config/loader.ts";
-import { reviewBudgetMs } from "./config.ts";
 // Import the normalizer directly: `./index.ts` re-exports it, but importing that
 // would evaluate the whole server engine (git/ssh evidence, `node:child_process`)
 // inside the TUI process.
-import { extractPermissionRequest } from "./opencode/event-normalizer.ts";
+import { extractPermissionRequest } from "./adapters/opencode/event-normalizer.ts";
+import { reviewBudgetMs } from "./modules/config/services/config.ts";
+import { loadResolvedConfig } from "./modules/config/services/loader.ts";
+import type { ReviewUiStatus } from "./modules/status/models/ui-protocol.ts";
+import { ReviewUiState } from "./modules/status/services/ui-state.ts";
 import { ConfigNoticeSlot, SPINNER } from "./ui/components.tsx";
 import { ReviewOverlay } from "./ui/review-overlay.tsx";
 import { ReviewResult } from "./ui/review-result.tsx";
 import { activeStatus, createV1Host } from "./ui/v1-host.ts";
 import { setupTuiV2 } from "./ui/v2.tsx";
-import type { ReviewUiStatus } from "./ui-protocol.ts";
-import { ReviewUiState } from "./ui-state.ts";
 
 const REVIEW_MODE = "permission-reviewer";
 

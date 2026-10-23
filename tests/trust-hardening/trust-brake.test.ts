@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { emergencyBrakeReason } from "../../src/emergency-brake.ts";
+import { emergencyBrakeReason } from "../../src/modules/analysis/brake/emergency-brake.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
 import { bashRequest } from "./trust-fixtures.ts";
 
 afterEach(() => {

@@ -1,20 +1,20 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { extractHeredocs } from "../src/capability/heredoc-extractor.ts";
+import { extractHeredocs } from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
 import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
   type ShellQuoting,
-} from "../src/shell-lex-state.ts";
-import { normalizeShellRedirections } from "../src/shell-redirections.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
+} from "../src/modules/analysis/shell/shell-lex-state.ts";
+import { normalizeShellRedirections } from "../src/modules/analysis/shell/shell-redirections.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
 import {
   hasQuotedChar,
   type ShellSegment,
   sliceToken,
   tokenCharIsQuoted,
-} from "../src/shell-token.ts";
+} from "../src/modules/analysis/shell/shell-token.ts";
 
 function scan(command: string, quoting?: ShellQuoting): ShellSegment[] {
   const budget: LexBudget = {

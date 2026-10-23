@@ -9,9 +9,9 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { analyzeCapability } from "../src/capability/bash-analyzer.ts";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { enrichPackageScriptEvidence } from "../src/package-script-evidence.ts";
+import { analyzeCapability } from "../src/modules/analysis/capability/bash-analyzer.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { enrichPackageScriptEvidence } from "../src/modules/evidence/package-script/package-script-evidence.ts";
 import { request } from "./helpers.ts";
 
 const directories: string[] = [];

@@ -1,13 +1,13 @@
 import { expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { isRecord } from "../src/is-record.ts";
 import {
   decodeUiStatus,
   encodeUiStatus,
   type ReviewUiStatus,
-} from "../src/ui-protocol.ts";
-import { parseUiStatus } from "../src/ui-status-parse.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
+import { parseUiStatus } from "../src/modules/status/services/ui-status-parse.ts";
+import { isRecord } from "../src/utils/is-record.ts";
 import { FIND_COMMAND, FIND_SEGMENTS } from "./action-fixtures.ts";
 import { decision, MockClient, request, runtime } from "./helpers.ts";
 import { until } from "./poll-until.ts";
@@ -72,8 +72,8 @@ test("server code builds every status through createServerUiStatus", () => {
     .filter((file) => call.test(readFileSync(join(ROOT, file), "utf8")))
     .sort();
   expect(callers).toEqual([
-    "src/ui-action-segments.ts",
-    "src/ui-protocol.ts",
-    "src/ui-state.ts",
+    "src/modules/status/models/ui-protocol.ts",
+    "src/modules/status/services/ui-action-segments.ts",
+    "src/modules/status/services/ui-state.ts",
   ]);
 });

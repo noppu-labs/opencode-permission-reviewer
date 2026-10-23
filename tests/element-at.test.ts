@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { elementAt } from "../src/element-at.ts";
+import { elementAt } from "../src/utils/element-at.ts";
 
 describe("elementAt", () => {
   test("returns the element at an in-range index, including falsy ones", () => {

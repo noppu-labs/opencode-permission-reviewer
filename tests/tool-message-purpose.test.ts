@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type {
   ActionPurpose,
   IntentContext,
-} from "../src/actor-context-types.ts";
-import { resolveActionPurpose } from "../src/context/action-purpose.ts";
+} from "../src/modules/context/models/actor-context-types.ts";
+import { resolveActionPurpose } from "../src/modules/context/services/action-purpose.ts";
 import type { MessageWithParts, PermissionRequest } from "../src/types.ts";
 import { request } from "./helpers.ts";
 

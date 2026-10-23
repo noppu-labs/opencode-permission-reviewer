@@ -1,11 +1,14 @@
 import { describe, expect, test } from "bun:test";
-import { resolveConfig, reviewBudgetMs } from "../src/config.ts";
+import {
+  resolveConfig,
+  reviewBudgetMs,
+} from "../src/modules/config/services/config.ts";
 import {
   HANDOFF_BUDGET_FLOOR_MS,
   resolveSystemOneRouting,
   type SystemOneRouting,
   systemOneRoutingWarnings,
-} from "../src/system-one-routing.ts";
+} from "../src/modules/reviewer/services/system-one-routing.ts";
 
 const JEV = "opencode/jev-1";
 const REVIEWER = { model: "openai/gpt-6-luna" };

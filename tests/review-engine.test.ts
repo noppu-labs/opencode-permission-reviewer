@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import {
   evaluateReview,
   type ReviewEnginePorts,
-} from "../src/core/review-engine.ts";
+} from "../src/modules/review/services/review-engine.ts";
 import type {
   PermissionRequest,
   PolicyRule,

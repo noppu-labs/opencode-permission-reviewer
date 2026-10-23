@@ -1,12 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import {
   buildEvidence,
   buildIntentHistory,
   buildTranscript,
   normalizeMessages,
-} from "../src/context.ts";
-import { buildReviewerPrompt, REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
+} from "../src/modules/context/services/prompt/context.ts";
+import {
+  buildReviewerPrompt,
+  REVIEWER_SYSTEM_PROMPT,
+} from "../src/modules/context/services/prompt/policy.ts";
 import type { MessageWithParts } from "../src/types.ts";
 import { request } from "./helpers.ts";
 

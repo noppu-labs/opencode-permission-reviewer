@@ -3,15 +3,15 @@ import { createHash } from "node:crypto";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import type { EvidenceFragment } from "../src/evidence/provider.ts";
-import { REVIEWER_PROMPT_VERSION } from "../src/policy.ts";
-import type { PermissionRequest } from "../src/types.ts";
-import { renderVerifiedSshScriptCommand } from "../src/verified-ssh-command.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import { REVIEWER_PROMPT_VERSION } from "../src/modules/context/services/prompt/policy.ts";
+import type { EvidenceFragment } from "../src/modules/evidence/providers/provider.ts";
+import { renderVerifiedSshScriptCommand } from "../src/modules/evidence/ssh/verified-ssh-command.ts";
 import {
   configFingerprint,
   ScriptAnalysisRegistry,
-} from "../src/verified-ssh-script.ts";
+} from "../src/modules/evidence/ssh/verified-ssh-script.ts";
+import type { PermissionRequest } from "../src/types.ts";
 import { CURRENT, PARENT } from "./evidence-assembly-fakes.ts";
 import { assemble, delegatedSessions } from "./evidence-assembly-fixtures.ts";
 import { request } from "./helpers.ts";

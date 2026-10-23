@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
-import type { ClientResponse } from "../../src/opencode/types.ts";
+import type { ClientResponse } from "../../src/adapters/opencode/types.ts";
 import type { ReviewExecutionResult } from "../../src/types.ts";
 import { decision, defined, MockClient, request, runtime } from "../helpers.ts";
 import { holdCalls, phases, replyBody } from "./runtime-fixtures.ts";

@@ -8,7 +8,7 @@ import {
   loadResolvedConfig,
   projectConfigPath,
   setGlobalConfigPathForTests,
-} from "../../src/config/loader.ts";
+} from "../../src/modules/config/services/loader.ts";
 import type { PermissionRequest, ReviewerConfig } from "../../src/types.ts";
 import { MockClient, request, runtime } from "../helpers.ts";
 

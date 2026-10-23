@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { ReviewAttempt } from "../src/core/review-attempt.ts";
+import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { decision } from "./helpers.ts";
 import {
   answer,

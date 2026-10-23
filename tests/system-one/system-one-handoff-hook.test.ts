@@ -1,14 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import type { OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
-import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import { createV2ReviewerBackend } from "../../src/opencode/v2/backend-factory.ts";
+import { createV2ReviewerBackend } from "../../src/adapters/opencode/v2/backend-factory.ts";
+import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
 import {
   type HandoffInfo,
   type OnHandoff,
   SystemOneReviewerBackend,
-} from "../../src/system-one/backend.ts";
-import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/system-one-routing.ts";
+} from "../../src/modules/reviewer/services/backend.ts";
+import { HANDOFF_BUDGET_FLOOR_MS } from "../../src/modules/reviewer/services/system-one-routing.ts";
 import type { ReviewExecutionResult, ReviewerConfig } from "../../src/types.ts";
 import { config } from "../helpers.ts";
 import {

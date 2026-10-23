@@ -2,8 +2,8 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { OpenCode } from "@opencode/client";
 import { createOpencodeClient } from "@opencode-ai/sdk";
-import type { OpenCodeClientLike } from "../../src/opencode/types.ts";
-import { hostCompatibleFetch } from "../../src/opencode/v2/connection.ts";
+import type { OpenCodeClientLike } from "../../src/adapters/opencode/types.ts";
+import { hostCompatibleFetch } from "../../src/adapters/opencode/v2/connection.ts";
 import type { PermissionRequest, ReviewEnvelope } from "../../src/types.ts";
 
 const [generation, url, directory, sessionID, command, sourceRoot] =
@@ -19,15 +19,19 @@ const [
   { buildEvidenceResult },
   { resolveConfig },
 ]: [
-  typeof import("../../src/context/evidence-assembler.ts"),
-  typeof import("../../src/context.ts"),
-  typeof import("../../src/config.ts"),
+  typeof import("../../src/modules/context/services/evidence-assembler.ts"),
+  typeof import("../../src/modules/context/services/prompt/context.ts"),
+  typeof import("../../src/modules/config/services/config.ts"),
 ] = await Promise.all([
-  load<typeof import("../../src/context/evidence-assembler.ts")>(
-    "context/evidence-assembler.ts",
+  load<
+    typeof import("../../src/modules/context/services/evidence-assembler.ts")
+  >("modules/context/services/evidence-assembler.ts"),
+  load<typeof import("../../src/modules/context/services/prompt/context.ts")>(
+    "modules/context/services/prompt/context.ts",
   ),
-  load<typeof import("../../src/context.ts")>("context.ts"),
-  load<typeof import("../../src/config.ts")>("config.ts"),
+  load<typeof import("../../src/modules/config/services/config.ts")>(
+    "modules/config/services/config.ts",
+  ),
 ]);
 const controller = new AbortController();
 const password: string | undefined = process.env.OPENCODE_PASSWORD;
@@ -39,9 +43,9 @@ const headers = password
 const reader =
   generation === "v1"
     ? (
-        await load<typeof import("../../src/opencode/v1/context-reader.ts")>(
-          "opencode/v1/context-reader.ts",
-        )
+        await load<
+          typeof import("../../src/adapters/opencode/v1/context-reader.ts")
+        >("adapters/opencode/v1/context-reader.ts")
       ).createV1ContextReader(
         createOpencodeClient({
           baseUrl: url,
@@ -50,9 +54,9 @@ const reader =
         controller.signal,
       )
     : (
-        await load<typeof import("../../src/opencode/v2/context-reader.ts")>(
-          "opencode/v2/context-reader.ts",
-        )
+        await load<
+          typeof import("../../src/adapters/opencode/v2/context-reader.ts")
+        >("adapters/opencode/v2/context-reader.ts")
       ).createV2ContextReader(
         OpenCode.make({ baseUrl: url, headers, fetch: hostCompatibleFetch() }),
         controller.signal,

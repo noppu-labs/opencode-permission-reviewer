@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test";
 import type { Plugin } from "@opencode/plugin";
-import { V2ReviewerBackend } from "../src/opencode/v2/reviewer-backend.ts";
-import { REVIEWER_SYSTEM_PROMPT } from "../src/policy.ts";
+import { V2ReviewerBackend } from "../src/adapters/opencode/v2/reviewer-backend.ts";
+import { REVIEWER_SYSTEM_PROMPT } from "../src/modules/context/services/prompt/policy.ts";
 import { config, decision } from "./helpers.ts";
 import {
   answer,

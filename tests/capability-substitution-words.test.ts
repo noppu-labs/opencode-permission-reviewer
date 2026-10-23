@@ -1,9 +1,9 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { brakeReadingsReason } from "../src/brake-readings.ts";
-import { analyzeBashCommand } from "../src/context/command-evidence.ts";
-import { emergencyBrakeReason } from "../src/emergency-brake.ts";
+import { brakeReadingsReason } from "../src/modules/analysis/brake/brake-readings.ts";
+import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
+import { analyzeBashCommand } from "../src/modules/context/services/command-evidence.ts";
 import type { CapabilityActionClass } from "../src/types.ts";
 import { request } from "./helpers.ts";
 

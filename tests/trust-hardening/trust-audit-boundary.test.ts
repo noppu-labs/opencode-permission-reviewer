@@ -1,9 +1,12 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { createAuditWriter, readAuditSummary } from "../../src/audit.ts";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { resolveConfig } from "../../src/config.ts";
+import {
+  createAuditWriter,
+  readAuditSummary,
+} from "../../src/modules/audit/services/audit.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "../fixtures/synthetic-secrets.ts";
 import { defined, toJsonl } from "../helpers.ts";
 import { tempDir } from "./trust-fixtures.ts";

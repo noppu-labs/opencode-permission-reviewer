@@ -2,14 +2,14 @@ import { describe, expect, test } from "bun:test";
 import {
   type LexBudget,
   MAX_SUBSTITUTION_CHARS,
-} from "../src/shell-lex-state.ts";
-import { lexSegmentsBounded } from "../src/shell-lexer.ts";
+} from "../src/modules/analysis/shell/shell-lex-state.ts";
+import { lexSegmentsBounded } from "../src/modules/analysis/shell/shell-lexer.ts";
 import {
   normalizeShellRedirections,
   type ShellRedirection,
-} from "../src/shell-redirections.ts";
-import { lexSegments } from "../src/shell-scanner.ts";
-import type { ShellToken } from "../src/shell-token.ts";
+} from "../src/modules/analysis/shell/shell-redirections.ts";
+import { lexSegments } from "../src/modules/analysis/shell/shell-scanner.ts";
+import type { ShellToken } from "../src/modules/analysis/shell/shell-token.ts";
 
 const budget = (tokensRemaining: number): LexBudget => ({
   tokensRemaining,

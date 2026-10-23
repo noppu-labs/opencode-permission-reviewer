@@ -2,8 +2,8 @@ import { describe, expect, test } from "bun:test";
 import type {
   OpenCodeCapabilities,
   RawTransport,
-} from "../src/opencode/adapter.ts";
-import { createReplyTransport } from "../src/opencode/reply-transport.ts";
+} from "../src/adapters/opencode/adapter.ts";
+import { createReplyTransport } from "../src/adapters/opencode/reply-transport.ts";
 
 const RAW_CAPS: OpenCodeCapabilities = {
   publicPermissionReply: false,

@@ -1,11 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { setGlobalConfigPathForTests } from "../../src/config/loader.ts";
-import { DEFAULT_CONFIG } from "../../src/config.ts";
-import { resolveActorContext } from "../../src/context/actor-resolver.ts";
 import type {
   ClientResponse,
   OpenCodeClientLike,
-} from "../../src/opencode/types.ts";
+} from "../../src/adapters/opencode/types.ts";
+import { DEFAULT_CONFIG } from "../../src/modules/config/services/config.ts";
+import { setGlobalConfigPathForTests } from "../../src/modules/config/services/loader.ts";
+import { resolveActorContext } from "../../src/modules/context/services/actor-resolver.ts";
 import type { MessageWithParts, PermissionRequest } from "../../src/types.ts";
 import { request } from "../helpers.ts";
 

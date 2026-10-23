@@ -2,7 +2,7 @@ import { afterEach } from "bun:test";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { enrichPackageScriptEvidence } from "../src/package-script-evidence.ts";
+import { enrichPackageScriptEvidence } from "../src/modules/evidence/package-script/package-script-evidence.ts";
 import { request } from "./helpers.ts";
 
 export const COVERAGE =

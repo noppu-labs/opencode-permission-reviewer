@@ -6,18 +6,18 @@ import { sourceSnapshot } from "./source-snapshot.mjs";
 import { assert } from "./util.mjs";
 
 const CORE_MODULES = {
-  policy: "src/policy.ts",
-  context: "src/context.ts",
-  config: "src/config.ts",
-  decision: "src/decision.ts",
-  decisionGates: "src/decision-gates.ts",
-  decisionSchema: "src/decision-schema.ts",
-  escalation: "src/escalation.ts",
-  engine: "src/core/review-engine.ts",
-  parser: "src/capability/command-parser.ts",
-  analyzer: "src/capability/bash-analyzer.ts",
-  systemOne: "src/system-one/review.ts",
-  systemOneQuestions: "src/system-one/system-one-questions.ts",
+  policy: "src/modules/context/services/prompt/policy.ts",
+  context: "src/modules/context/services/prompt/context.ts",
+  config: "src/modules/config/services/config.ts",
+  decision: "src/modules/review/services/decision/decision.ts",
+  decisionGates: "src/modules/review/services/decision/decision-gates.ts",
+  decisionSchema: "src/modules/review/services/decision/decision-schema.ts",
+  escalation: "src/modules/review/services/decision/escalation.ts",
+  engine: "src/modules/review/services/review-engine.ts",
+  parser: "src/modules/analysis/capability/command-parser.ts",
+  analyzer: "src/modules/analysis/capability/bash-analyzer.ts",
+  systemOne: "src/modules/reviewer/services/review.ts",
+  systemOneQuestions: "src/modules/reviewer/services/system-one-questions.ts",
 };
 async function loadCore(repo) {
   const names = Object.keys(CORE_MODULES);

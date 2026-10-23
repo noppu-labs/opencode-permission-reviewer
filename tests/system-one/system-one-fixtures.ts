@@ -1,7 +1,7 @@
-import { resolveConfig } from "../../src/config.ts";
-import { ReviewAttempt } from "../../src/core/review-attempt.ts";
-import { SystemOneReviewerBackend } from "../../src/system-one/backend.ts";
-import type { SystemOnePrimaryBasis } from "../../src/system-one/system-one-types.ts";
+import { resolveConfig } from "../../src/modules/config/services/config.ts";
+import { ReviewAttempt } from "../../src/modules/review/services/review-attempt.ts";
+import type { SystemOnePrimaryBasis } from "../../src/modules/reviewer/models/system-one-types.ts";
+import { SystemOneReviewerBackend } from "../../src/modules/reviewer/services/backend.ts";
 import type {
   ReviewEnvelope,
   ReviewExecutionResult,

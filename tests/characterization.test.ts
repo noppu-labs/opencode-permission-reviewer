@@ -1,8 +1,8 @@
 import { beforeAll, describe, expect, test } from "bun:test";
 import { mkdir } from "node:fs/promises";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import type { ClientResponse } from "../src/opencode/types.ts";
-import type { ReviewUiStatus } from "../src/ui-protocol.ts";
+import type { ClientResponse } from "../src/adapters/opencode/types.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import type { ReviewUiStatus } from "../src/modules/status/models/ui-protocol.ts";
 import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 beforeAll(async () => {

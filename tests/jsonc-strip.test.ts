@@ -3,7 +3,7 @@ import {
   parseJsonc,
   parseJsoncStrict,
   stripCommentsAndTrailingCommas,
-} from "../src/config/jsonc.ts";
+} from "../src/modules/config/services/jsonc.ts";
 
 describe("JSONC stripping", () => {
   test("an escaped quote does not end the string, so later markers stay text", () => {

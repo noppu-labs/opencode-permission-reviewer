@@ -1,7 +1,15 @@
 // Ships to the TUI, so it imports no shell module.
 
-import type { ActionSegment, ReviewUiStatus } from "../ui-protocol.ts";
-import { ELISION, elideMiddle, keepHead, keepTail } from "../ui-text-elide.ts";
+import type {
+  ActionSegment,
+  ReviewUiStatus,
+} from "../modules/status/models/ui-protocol.ts";
+import {
+  ELISION,
+  elideMiddle,
+  keepHead,
+  keepTail,
+} from "../modules/status/services/ui-text-elide.ts";
 import {
   type FitPart,
   merged,

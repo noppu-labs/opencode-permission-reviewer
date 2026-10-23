@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   type PlannedGitActions,
   plannedActions,
-} from "../src/git-command-plan.ts";
+} from "../src/modules/evidence/git/git-command-plan.ts";
 
 const EMPTY: PlannedGitActions = {
   relevant: false,

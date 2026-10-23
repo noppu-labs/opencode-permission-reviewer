@@ -3,13 +3,13 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TuiPluginApi, TuiPluginMeta } from "@opencode-ai/plugin/tui";
-import { setGlobalConfigPathForTests } from "../src/config/loader.ts";
+import { setGlobalConfigPathForTests } from "../src/modules/config/services/loader.ts";
 import {
   createUiStatus,
   encodeUiStatus,
   type ReviewUiStatus,
-} from "../src/ui-protocol.ts";
-import { ReviewUiState } from "../src/ui-state.ts";
+} from "../src/modules/status/models/ui-protocol.ts";
+import { ReviewUiState } from "../src/modules/status/services/ui-state.ts";
 import { defined, request } from "./helpers.ts";
 import { tui } from "./tui-loader.ts";
 

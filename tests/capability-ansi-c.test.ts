@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { analyzeBashCommand } from "../src/context/command-evidence.ts";
+import { analyzeBashCommand } from "../src/modules/context/services/command-evidence.ts";
 import type { CapabilityActionClass } from "../src/types.ts";
 import { request } from "./helpers.ts";
 

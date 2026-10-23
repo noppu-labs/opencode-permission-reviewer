@@ -1,7 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { parseCommand } from "../src/capability/command-parser.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
-import { buildIntentHistory, buildTranscript } from "../src/context.ts";
+import { parseCommand } from "../src/modules/analysis/capability/command-parser.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
+import {
+  buildIntentHistory,
+  buildTranscript,
+} from "../src/modules/context/services/prompt/context.ts";
 import type { MessageWithParts, ReviewEnvelope } from "../src/types.ts";
 import { CURRENT, PARENT } from "./evidence-assembly-fakes.ts";
 import { assemble, delegatedSessions } from "./evidence-assembly-fixtures.ts";

@@ -4,8 +4,8 @@ import { join } from "node:path";
 import {
   heredocBodyCommands,
   MAX_BODY_DEPTH,
-} from "../src/capability/heredoc-body-commands.ts";
-import * as extractor from "../src/capability/heredoc-extractor.ts";
+} from "../src/modules/analysis/capability/heredoc/heredoc-body-commands.ts";
+import * as extractor from "../src/modules/analysis/capability/heredoc/heredoc-extractor.ts";
 
 interface BodyRow {
   id: string;

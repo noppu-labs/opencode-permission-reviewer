@@ -1,12 +1,15 @@
 import { describe, expect, test } from "bun:test";
-import { DEFAULT_CONFIG } from "../src/config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import {
   buildEvidence,
   buildTranscript,
   normalizeMessages,
-} from "../src/context.ts";
-import { buildReviewerPrompt, DEFAULT_TENANT_POLICY } from "../src/policy.ts";
-import { redactSecrets } from "../src/redact.ts";
+} from "../src/modules/context/services/prompt/context.ts";
+import {
+  buildReviewerPrompt,
+  DEFAULT_TENANT_POLICY,
+} from "../src/modules/context/services/prompt/policy.ts";
+import { redactSecrets } from "../src/utils/redact.ts";
 import {
   ANTHROPIC_KEY,
   BASIC_DASHED_PADDED,

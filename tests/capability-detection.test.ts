@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { probeCapabilities } from "../src/opencode/capability-detection.ts";
+import { probeCapabilities } from "../src/adapters/opencode/capability-detection.ts";
 
 describe("capability detection", () => {
   test("v1 server client profile", () => {

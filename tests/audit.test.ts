@@ -20,13 +20,13 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
+import type { ReviewAuditRecord } from "../src/modules/audit/models/audit-record.ts";
 import {
   createAuditWriter,
   DEFAULT_AUDIT_PATH,
   readAuditSummary,
-} from "../src/audit.ts";
-import type { ReviewAuditRecord } from "../src/audit-record.ts";
-import { DEFAULT_CONFIG } from "../src/config.ts";
+} from "../src/modules/audit/services/audit.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import { GITHUB_PAT_ALPHANUMERIC } from "./fixtures/synthetic-secrets.ts";
 import { defined, systemOneScores, toJsonl } from "./helpers.ts";
 
@@ -333,9 +333,9 @@ describe("audit writer", () => {
       process.execPath,
       [
         "-e",
-        `const { createAuditWriter } = await import(${JSON.stringify(join(repoRoot, "src/audit.ts"))})
+        `const { createAuditWriter } = await import(${JSON.stringify(join(repoRoot, "src/modules/audit/services/audit.ts"))})
 const writer = createAuditWriter({
-  ...(await import(${JSON.stringify(join(repoRoot, "src/config.ts"))})).DEFAULT_CONFIG,
+  ...(await import(${JSON.stringify(join(repoRoot, "src/modules/config/services/config.ts"))})).DEFAULT_CONFIG,
   audit: true,
   auditPath: ${JSON.stringify(fifoPath)},
 }, (_msg, details) => console.log(JSON.stringify(details)))
@@ -516,7 +516,7 @@ describe("audit summary hardening", () => {
   });
 
   test("summarizes only the bounded tail when the file exceeds the read cap", async () => {
-    // Mirrors AUDIT_READ_CAP_BYTES in src/audit.ts. The file is built
+    // Mirrors AUDIT_READ_CAP_BYTES in src/modules/audit/services/audit.ts. The file is built
     // sparsely: one header line at offset 0, a hole of unwritten zeros,
     // and the tail block at a far offset, so no 64 MiB buffer is allocated
     // by the test itself. A leading newline isolates the zero hole from

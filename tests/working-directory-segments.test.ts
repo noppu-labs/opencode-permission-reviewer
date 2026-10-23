@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test";
 import {
   type ShellCommandSegmentWithDirectory,
   shellCommandSegmentsWithDirectory,
-} from "../src/working-directory-segments.ts";
+} from "../src/modules/analysis/walk/working-directory-segments.ts";
 
 const AMBIGUOUS_AFTER_CD =
   "working directory after cd is conditional or ambiguous";
