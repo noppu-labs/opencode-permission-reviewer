@@ -59,6 +59,11 @@ updates:
       - dependency-name: "@typesafe-ai/sdk"
         versions:
           - "0.7.0"
+      # 0.23.2 moves to rolldown-plugin-dts 0.29 (beta), whose declaration
+      # build needs TypeScript 7.1 or isolatedDeclarations; on 7.0 it fails.
+      - dependency-name: tsdown
+        versions:
+          - "0.23.2"
     commit-message:
       prefix: chore
       include: scope
