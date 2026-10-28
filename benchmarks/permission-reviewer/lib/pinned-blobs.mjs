@@ -60,7 +60,7 @@ export const PINNED_BLOBS = {
   "src/modules/config/services/reviewer-model.ts":
     "ffd63e49a0e4f71d395ed7beb9bd9c5af8a1bd66",
   "src/modules/config/models/system-one-providers.ts":
-    "4b4ca8d9708841e3034bd3fb22713259ac1b6ae3",
+    "92e99e4143017ee2aec54f0cf1805f84405f9554",
   "src/modules/decision/decision.ts":
     "5be4072b5621cefb276291d866089364df31cdc7",
   "src/utils/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",

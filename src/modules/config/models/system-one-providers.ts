@@ -1,5 +1,6 @@
 // The providers that serve System One decision models: which model IDs each
 // accepts, where its endpoint lives and which key it reads.
+import { OPENROUTER_DECISION_MODELS } from "./openrouter-decision-models.ts";
 
 export interface SystemOneProvider {
   readonly keyEnv: string;
@@ -28,6 +29,46 @@ const returnsJev = (_modelID: string, returned: string): boolean =>
   isJev(returned);
 const sameModel = (modelID: string, returned: string): boolean =>
   returned === modelID;
+
+// New Jev and d1 releases count before the weekly list picks them up.
+const OPENROUTER_FAMILIES: readonly RegExp[] = [
+  /^~?typesafe\/jev-(?:\d|latest)/,
+  /^~?liquid\/d1(?:$|[-.:])/,
+];
+const OPENROUTER_ROUTING_SUFFIX = /:[a-z0-9-]+$/;
+const OPENROUTER_ALIAS = /^~(.+)-latest$/;
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const OPENROUTER_INCOMPATIBLE: Readonly<Record<string, string>> =
+  OPENROUTER_DECISION_MODELS.incompatible;
+
+const openRouterIncompatibleReason = (modelID: string): string | undefined =>
+  Object.hasOwn(OPENROUTER_INCOMPATIBLE, modelID)
+    ? OPENROUTER_INCOMPATIBLE[modelID]
+    : undefined;
+
+const openRouterAccepts = (modelID: string): boolean =>
+  Object.hasOwn(OPENROUTER_DECISION_MODELS.models, modelID) ||
+  openRouterIncompatibleReason(modelID) !== undefined ||
+  OPENROUTER_FAMILIES.some((family) => family.test(modelID));
+
+// OpenRouter answers with the dated canonical slug, and an alias with the
+// slug of whichever release it points at.
+const openRouterAcceptsResponse = (
+  modelID: string,
+  returned: string,
+): boolean => {
+  const base = modelID.replace(OPENROUTER_ROUTING_SUFFIX, "");
+  const alias = OPENROUTER_ALIAS.exec(base)?.[1];
+  if (alias !== undefined)
+    return new RegExp(`^${escapeRegExp(alias)}(?:$|[-.])`).test(returned);
+  return (
+    returned === base ||
+    new RegExp(`^${escapeRegExp(base)}-\\d{8}$`).test(returned)
+  );
+};
 
 export const SYSTEM_ONE_PROVIDERS: Readonly<Record<string, SystemOneProvider>> =
   {
@@ -67,5 +108,17 @@ export const SYSTEM_ONE_PROVIDERS: Readonly<Record<string, SystemOneProvider>> =
       accepts: (modelID: string): boolean =>
         BASETEN_DECISION_MODELS.has(modelID),
       acceptsResponse: sameModel,
+    },
+    openrouter: {
+      keyEnv: "OPENROUTER_API_KEY",
+      baseURL: "https://openrouter.ai/api",
+      keyShape: {
+        pattern: /^sk-or-v1-[0-9a-f]{64}$/,
+        message:
+          'OPENROUTER_API_KEY is not an OpenRouter key (expected the "sk-or-v1-" prefix)',
+      },
+      accepts: openRouterAccepts,
+      acceptsResponse: openRouterAcceptsResponse,
+      incompatibleReason: openRouterIncompatibleReason,
     },
   };
