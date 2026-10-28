@@ -303,6 +303,21 @@ OpenCode conversations or execute fixture actions. See its
 [evaluation protocol](../benchmarks/permission-reviewer/docs/METHODOLOGY.md) and
 [results table](../benchmarks/permission-reviewer/RESULTS.md).
 
+## OpenRouter decision models
+
+The `openrouter-models` workflow runs weekly (Mondays) and on demand. It runs
+`scripts/openrouter-decision-models.ts`, which rewrites
+`src/modules/config/models/openrouter-decision-models.ts` from the OpenRouter model list. When
+that file changes, the job force-pushes `chore/openrouter-models` and opens or updates a pull
+request against `develop`.
+
+- A pull request opened with `GITHUB_TOKEN` does not start CI by itself. Approve the workflow run
+  on the pull request, or push an empty commit from a personal account.
+- The repository setting "Allow GitHub Actions to create and approve pull requests" must be on, or
+  the job cannot open the pull request.
+- Edit only the `benchmarked` and `incompatible` fields by hand. The script keeps them and
+  regenerates the rest, so any other hand edit is overwritten by the next run.
+
 ## TUI screens
 
 The images in `docs/images/`, shown in the README and the [TUI guide](TUI.md), are rendered from
