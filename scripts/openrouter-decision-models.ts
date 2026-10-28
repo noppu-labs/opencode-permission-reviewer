@@ -8,7 +8,12 @@
  * `changed=true` to $GITHUB_OUTPUT and writes the PR body to
  * $RUNNER_TEMP/openrouter-models-pr.md.
  */
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  mkdtempSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
@@ -171,16 +176,17 @@ async function main(): Promise<void> {
   }
   writeFileSync(MODULE_PATH, after);
 
-  const bodyPath = join(
-    process.env.RUNNER_TEMP ?? tmpdir(),
-    "openrouter-models-pr.md",
-  );
+  // Outside Actions, a fresh private directory: a fixed name in the shared tmp dir could be pre-planted.
+  const bodyDir =
+    process.env.RUNNER_TEMP ||
+    mkdtempSync(join(tmpdir(), "openrouter-models-"));
+  const bodyPath = join(bodyDir, "openrouter-models-pr.md");
   writeFileSync(bodyPath, pullRequestBody(added, removed));
   const output = process.env.GITHUB_OUTPUT;
   if (output !== undefined && output !== "")
     appendFileSync(output, "changed=true\n");
   console.log(
-    `OpenRouter decision models changed: +${added.length} -${removed.length}`,
+    `OpenRouter decision models changed: +${added.length} -${removed.length}; PR body at ${bodyPath}`,
   );
 }
 
