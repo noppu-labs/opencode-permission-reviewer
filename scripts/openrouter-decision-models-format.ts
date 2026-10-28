@@ -1,4 +1,6 @@
 /** Formatting and safety helpers for scripts/openrouter-decision-models.ts. */
+import { join } from "node:path";
+
 const LINE_WIDTH = 80;
 
 /** Quote a string the way Biome does: double quotes unless that needs more escapes. */
@@ -21,10 +23,16 @@ export function renderRow(key: string, flat: string, expanded: string): string {
 export function formatWithBiome(text: string, path: string): string {
   const result = Bun.spawnSync(
     ["bunx", "biome", "format", `--stdin-file-path=${path}`],
-    { stdin: Buffer.from(text), stderr: "inherit" },
+    {
+      cwd: join(import.meta.dir, ".."),
+      stdin: Buffer.from(text),
+      stderr: "inherit",
+    },
   );
-  if (result.exitCode !== 0) throw new Error("biome format failed");
-  return result.stdout.toString();
+  const formatted = result.stdout.toString();
+  if (result.exitCode !== 0 || formatted.trim() === "")
+    throw new Error("biome format failed");
+  return formatted;
 }
 
 /** Refuse a run that would delete over half of the listed models. */
