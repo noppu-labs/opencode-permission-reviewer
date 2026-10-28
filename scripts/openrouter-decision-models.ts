@@ -134,7 +134,7 @@ export function pullRequestBody(
 
 ${bulletList(added)}
 
-New models start with \`benchmarked: false\`. If one is known not to work with our System One request, move it to \`incompatible\` with the reason.
+New models start with \`benchmarked: false\`. If one is known not to work with our System One request, move it to \`incompatible\` with the reason, on \`develop\` after this pull request merges (the next weekly run rebuilds this branch).
 
 ## Removed
 
