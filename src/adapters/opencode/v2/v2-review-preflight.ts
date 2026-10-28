@@ -1,4 +1,5 @@
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
+import { DEFAULT_CONFIG } from "../../../modules/config/services/config.ts";
 import type { ReviewAttempt } from "../../../modules/review/services/review-attempt.ts";
 import type { V2HostApi } from "./host-api.ts";
 
@@ -21,20 +22,39 @@ async function assertNoMcpServers(
     throw new Error("Reviewer isolation location contains MCP servers");
 }
 
+/**
+ * The variant to request: the configured one when the model offers it, none
+ * when it is unset, and none for the built-in default the model lacks. An
+ * explicitly configured variant the model lacks fails closed.
+ */
+export function selectVariant(
+  configured: string,
+  available: readonly string[],
+): string | undefined {
+  if (!configured || available.includes(configured))
+    return configured || undefined;
+  if (configured === DEFAULT_CONFIG.variant) return undefined;
+  const offered = available.length
+    ? `model offers: ${available.join(", ")}`
+    : "model has no variants";
+  throw new Error(
+    `Reviewer variant "${configured}" is unavailable (${offered})`,
+  );
+}
+
 function assertReviewerModel(
   model: CatalogModel | undefined,
   config: ReviewerConfig,
-): void {
+): { variant: string | undefined } {
   if (!model) throw new Error("Reviewer model is unavailable");
-  if (
-    config.variant &&
-    !model.variants?.some((variant) => variant.id === config.variant)
-  ) {
-    throw new Error("Reviewer variant is unavailable");
-  }
+  const variant = selectVariant(
+    config.variant,
+    model.variants?.map((item) => item.id) ?? [],
+  );
   if (config.outputFormat === "json_schema" && !model.capabilities.tools) {
     throw new Error("Reviewer model does not support structured tool output");
   }
+  return { variant };
 }
 
 /** Fail before any session exists unless the location and its model can review. */
@@ -44,12 +64,12 @@ export async function assertReviewerLocation(
   attempt: ReviewAttempt,
   { providerID, modelID }: { providerID: string; modelID: string },
   config: ReviewerConfig,
-): Promise<void> {
+): Promise<{ variant: string | undefined }> {
   await assertNoMcpServers(client, directory, attempt);
   const catalog = await attempt.wait(
     client.model.list({ location: { directory } }, { signal: attempt.signal }),
   );
-  assertReviewerModel(
+  return assertReviewerModel(
     catalog.data.find(
       (item) => item.providerID === providerID && item.id === modelID,
     ),
