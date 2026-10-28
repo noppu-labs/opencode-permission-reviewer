@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The minimum Bun is now 1.3.14 (was 1.3.0), the floor `@opentui/core` 0.7 declares. The TUI
+  dependencies move from `@opentui/core` and `@opentui/solid` 0.5.11 to 0.7.0, which
+  `@opencode/plugin` 2.2.0 pins exactly.
+- Update the `@opencode/client` dependency to 2.2.0, from upstream. OpenCode 2.2.0 joins the
+  real-host matrix as a verified V2 host.
+
+### Security
+
+- `@opentui/solid` 0.7.0 pins `@babel/core` 7.29.7, so consumer installs no longer carry
+  GHSA-4x5r-pxfx-6jf8 (`@babel/core <= 7.29.0`).
+
 ## [3.2.3] - 2026-10-24
 
 ### Changed

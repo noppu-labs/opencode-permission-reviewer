@@ -487,12 +487,9 @@ describe("npm install dedupe shape", () => {
     }
 
     // @babel/core reaches the consumer tree through @opentui/solid, which
-    // pins it EXACTLY (7.28.0 at every published 0.5.x). GHSA-4x5r-pxfx-6jf8
-    // (arbitrary file read via a crafted sourceMappingURL comment) affects
-    // <= 7.29.0. The exposure is residual and DOCUMENTED, not fixed: in this
-    // package babel only compiles the TUI sources we ship, never
-    // attacker-influenced input. When @opentui/solid publishes a fixed pin,
-    // this assertion forces the conscious version bump and doc update.
+    // pins it EXACTLY. 0.5.x pinned 7.28.0, inside GHSA-4x5r-pxfx-6jf8
+    // (<= 7.29.0); 0.7.0 pins the fixed 7.29.7. Keeping the assertion makes a
+    // regression to a vulnerable pin a visible failure.
     const babelDir = existsSync(
       join(installDir, "node_modules", "@babel", "core"),
     )
@@ -511,7 +508,7 @@ describe("npm install dedupe shape", () => {
     ) as {
       version: string;
     };
-    expect(babelPkg.version).toBe("7.28.0");
+    expect(babelPkg.version).toBe("7.29.7");
 
     // The build toolchain must not follow the tarball: esbuild (and the
     // advisory it carries) is dev-only by design.
@@ -541,7 +538,7 @@ describe("npm install dedupe shape", () => {
     expect(unexpected).toEqual([]);
 
     // seroval reaches the consumer tree through solid-js, which
-    // @opentui/solid peer-pins EXACTLY (1.9.12 at every published 0.5.x).
+    // @opentui/solid peer-pins EXACTLY (1.9.12 through 0.7.0).
     // GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (seroval fromJSON
     // deserialization) are residual and DOCUMENTED, not fixed: seroval is only
     // imported by the SSR renderer solid-js/web, which neither our TUI nor
