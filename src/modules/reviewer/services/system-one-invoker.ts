@@ -4,7 +4,7 @@
 import { TypeSafeClient } from "@typesafe-ai/sdk";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { redactSecrets } from "../../../utils/redact.ts";
-import { splitModel } from "../../config/services/reviewer-model.ts";
+import { systemOneProviderFor } from "../../config/services/reviewer-model.ts";
 import type { ReviewEnvelope } from "../../context/models/review-envelope.ts";
 import { buildEvidenceResult } from "../../context/services/prompt/context.ts";
 import {
@@ -52,25 +52,22 @@ export function createSystemOneInvoker(
   config: ReviewerConfig,
   fetchImpl?: TypeSafeClient["fetch"],
 ): SystemOneInvoke {
-  const { providerID, modelID } = splitModel(config.model);
-  const keyName =
-    providerID === "opencode"
-      ? "OPENCODE_API_KEY"
-      : providerID === "commandcode"
-        ? "CMD_API_KEY"
-        : "TYPESAFE_API_KEY";
-  const apiKey = process.env[keyName]?.trim();
+  const resolved = systemOneProviderFor(config.model);
+  if (!resolved)
+    throw new Error(`Unsupported System One reviewer model ${config.model}`);
+  const { provider, modelID } = resolved;
+  const incompatible = provider.incompatibleReason?.(modelID);
+  if (incompatible) throw new Error(incompatible);
+  const apiKey = process.env[provider.keyEnv]?.trim();
   if (!apiKey)
     throw new Error(
-      `Missing ${keyName} for System One reviewer ${config.model}`,
+      `Missing ${provider.keyEnv} for System One reviewer ${config.model}`,
     );
+  if (provider.keyShape && !provider.keyShape.pattern.test(apiKey))
+    throw new Error(provider.keyShape.message);
   const client = new TypeSafeClient({
     apiKey,
-    ...(providerID === "opencode"
-      ? { baseURL: "https://opencode.ai/zen" }
-      : providerID === "commandcode"
-        ? { baseURL: "https://api.commandcode.ai/provider" }
-        : {}),
+    ...(provider.baseURL ? { baseURL: provider.baseURL } : {}),
     defaultModel: modelID,
     logLevel: "off",
     timeout: config.timeoutMs,

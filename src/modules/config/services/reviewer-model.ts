@@ -4,6 +4,10 @@ import type {
 } from "../../../kernel/reviewer-config.ts";
 import { nonEmptyStringOr } from "../models/config-fields.ts";
 import { boundedInteger } from "../models/config-knobs.ts";
+import {
+  SYSTEM_ONE_PROVIDERS,
+  type SystemOneProvider,
+} from "../models/system-one-providers.ts";
 
 export function splitModel(model: string): {
   providerID: string;
@@ -21,20 +25,26 @@ export function splitModel(model: string): {
   };
 }
 
-export function isSystemOneReviewerModel(model: string): boolean {
+export function systemOneProviderFor(
+  model: string,
+):
+  | { provider: SystemOneProvider; providerID: string; modelID: string }
+  | undefined {
   let parsed: { providerID: string; modelID: string };
   try {
     parsed = splitModel(model);
   } catch {
-    return false;
+    return;
   }
-  // Jev uses the typed System One API rather than a chat-session transport.
-  return (
-    ((parsed.providerID === "opencode" ||
-      parsed.providerID === "typesafe-ai") &&
-      /^jev(?:-|$)/.test(parsed.modelID)) ||
-    (parsed.providerID === "commandcode" && parsed.modelID === "typesafe/jev")
-  );
+  if (!Object.hasOwn(SYSTEM_ONE_PROVIDERS, parsed.providerID)) return;
+  const provider = SYSTEM_ONE_PROVIDERS[parsed.providerID];
+  if (!provider?.accepts(parsed.modelID)) return;
+  return { provider, ...parsed };
+}
+
+export function isSystemOneReviewerModel(model: string): boolean {
+  // System One models use the typed System One API rather than a chat-session transport.
+  return systemOneProviderFor(model) !== undefined;
 }
 
 export function isProviderModelId(value: unknown): value is string {
