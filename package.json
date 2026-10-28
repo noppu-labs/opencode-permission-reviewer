@@ -1,6 +1,6 @@
 {
   "name": "@noppu-labs/opencode-permission-reviewer",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "description": "Policy-aware AI permission reviewer for OpenCode V1 and V2: auto-approves routine agent tool calls, denies risky ones with feedback, and escalates the rest to you",
   "type": "module",
   "main": "./dist/index.js",
