@@ -47,6 +47,28 @@ const STATE = {
   untrustedEvidence: "evidence",
 };
 
+interface ProviderRow {
+  model: string;
+  keyEnv: string;
+  key: string;
+  url: string;
+  returned: string;
+  foreignReturned: string;
+}
+
+const openRouterRow = (
+  model: string,
+  returned: string,
+  foreignReturned: string,
+): ProviderRow => ({
+  model,
+  keyEnv: "OPENROUTER_API_KEY",
+  key: OPENROUTER_KEY,
+  url: "https://openrouter.ai/api/v1/systemone",
+  returned,
+  foreignReturned,
+});
+
 describe("System One providers", () => {
   test.each([
     {
@@ -105,54 +127,36 @@ describe("System One providers", () => {
       returned: "decision-models/baseten-mammoth-27b-latest",
       foreignReturned: "jev-1.14",
     },
-    {
-      model: "openrouter/typesafe/jev-1.14",
-      keyEnv: "OPENROUTER_API_KEY",
-      key: OPENROUTER_KEY,
-      url: "https://openrouter.ai/api/v1/systemone",
-      returned: "typesafe/jev-1.14-20261014",
-      foreignReturned: "typesafe/jev-1.13-20260917",
-    },
-    {
-      model: "openrouter/~typesafe/jev-latest",
-      keyEnv: "OPENROUTER_API_KEY",
-      key: OPENROUTER_KEY,
-      url: "https://openrouter.ai/api/v1/systemone",
-      returned: "typesafe/jev-1.14-20261014",
-      foreignReturned: "liquid/d1-20260930",
-    },
-    {
-      model: "openrouter/liquid/d1-ultra",
-      keyEnv: "OPENROUTER_API_KEY",
-      key: OPENROUTER_KEY,
-      url: "https://openrouter.ai/api/v1/systemone",
-      returned: "liquid/d1-ultra-20261015",
-      foreignReturned: "liquid/d1-ultra-2026101",
-    },
-    {
-      model: "openrouter/perplexity/pplx-decider-v1.2",
-      keyEnv: "OPENROUTER_API_KEY",
-      key: OPENROUTER_KEY,
-      url: "https://openrouter.ai/api/v1/systemone",
-      returned: "perplexity/pplx-decider-v1.2-20261001",
-      foreignReturned: "perplexity/pplx-decider-flash-v1.2-20261001",
-    },
-    {
-      model: "openrouter/cloudflare/clef",
-      keyEnv: "OPENROUTER_API_KEY",
-      key: OPENROUTER_KEY,
-      url: "https://openrouter.ai/api/v1/systemone",
-      returned: "cloudflare/clef",
-      foreignReturned: "cloudflare/clef-flash",
-    },
-    {
-      model: "openrouter/cloudflare/clef:nitro",
-      keyEnv: "OPENROUTER_API_KEY",
-      key: OPENROUTER_KEY,
-      url: "https://openrouter.ai/api/v1/systemone",
-      returned: "cloudflare/clef-20261009",
-      foreignReturned: "cloudflare/clef-flash-20261009",
-    },
+    openRouterRow(
+      "openrouter/typesafe/jev-1.14",
+      "typesafe/jev-1.14-20261014",
+      "typesafe/jev-1.13-20260917",
+    ),
+    openRouterRow(
+      "openrouter/~typesafe/jev-latest",
+      "typesafe/jev-1.14-20261014",
+      "liquid/d1-20260930",
+    ),
+    openRouterRow(
+      "openrouter/liquid/d1-ultra",
+      "liquid/d1-ultra-20261015",
+      "liquid/d1-ultra-2026101",
+    ),
+    openRouterRow(
+      "openrouter/perplexity/pplx-decider-v1.2",
+      "perplexity/pplx-decider-v1.2-20261001",
+      "perplexity/pplx-decider-flash-v1.2-20261001",
+    ),
+    openRouterRow(
+      "openrouter/cloudflare/clef",
+      "cloudflare/clef",
+      "cloudflare/clef-flash",
+    ),
+    openRouterRow(
+      "openrouter/cloudflare/clef:nitro",
+      "cloudflare/clef-20261009",
+      "cloudflare/clef-flash-20261009",
+    ),
   ])(
     "routes $model",
     async ({ model, keyEnv, key, url, returned, foreignReturned }) => {

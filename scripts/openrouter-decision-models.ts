@@ -22,6 +22,10 @@ import {
   renderRow,
 } from "./openrouter-decision-models-format";
 
+/** Locale-independent order, so every machine writes the same module. */
+const byCodeUnit = (a: string, b: string): number =>
+  a < b ? -1 : a > b ? 1 : 0;
+
 const MODELS_URL = "https://openrouter.ai/api/v1/models?output_modalities=all";
 const MODULE_PATH = join(
   import.meta.dir,
@@ -60,7 +64,7 @@ export function decisionModelIds(response: unknown): string[] {
   if (ids.length === 0) {
     throw new Error("OpenRouter response lists no decision models");
   }
-  return ids.sort();
+  return ids.sort(byCodeUnit);
 }
 
 export function updateDecisionModels(
@@ -70,7 +74,7 @@ export function updateDecisionModels(
   const wanted = new Set(ids);
   const models: Record<string, { readonly benchmarked: boolean }> = {};
   const added: string[] = [];
-  for (const id of [...wanted].sort()) {
+  for (const id of [...wanted].sort(byCodeUnit)) {
     if (id in current.incompatible) continue;
     const existing = current.models[id];
     if (existing === undefined) added.push(id);
@@ -78,7 +82,7 @@ export function updateDecisionModels(
   }
   const removed = Object.keys(current.models)
     .filter((id) => !wanted.has(id) || id in current.incompatible)
-    .sort();
+    .sort(byCodeUnit);
   return {
     next: { models, incompatible: current.incompatible },
     added,
@@ -91,13 +95,13 @@ export function renderDecisionModelsModule(
   list: OpenRouterDecisionModels,
 ): string {
   const models = Object.keys(list.models)
-    .sort()
+    .sort(byCodeUnit)
     .map((id) => {
       const flag = `benchmarked: ${list.models[id]?.benchmarked === true}`;
       return renderRow(id, `{ ${flag} }`, ` {\n      ${flag},\n    },`);
     });
   const reasons = Object.keys(list.incompatible)
-    .sort()
+    .sort(byCodeUnit)
     .map((id) => {
       const why = quote(list.incompatible[id] ?? "");
       return renderRow(id, why, `\n      ${why},`);
