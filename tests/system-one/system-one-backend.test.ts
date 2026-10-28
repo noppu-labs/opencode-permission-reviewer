@@ -757,7 +757,7 @@ describe("reasoning reviewer results after a hand-off", () => {
     expect(approved).toMatchObject({
       kind: "escalate",
       reason:
-        "Jev rated this request critical risk; a reasoning approval needs manual review.",
+        "System One rated this request critical risk; a reasoning approval needs manual review.",
       resolution: "reasoning-escalated",
       reviewerEscalatedFrom: { trigger: "jev-uncertain-deny" },
     });

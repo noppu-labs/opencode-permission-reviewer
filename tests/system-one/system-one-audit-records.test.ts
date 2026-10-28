@@ -138,7 +138,7 @@ describe("System One scores in V1 audit records", () => {
     const harness = runtime(new MockClient(), {
       model: "opencode/jev-1.13-free",
       configWarnings: [
-        "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final",
+        "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final",
       ],
     });
     await withJevEndpoint(
@@ -150,7 +150,7 @@ describe("System One scores in V1 audit records", () => {
       escalationDisposition: "manual",
       resolution: "reviewer",
       configWarnings: [
-        "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final",
+        "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final",
       ],
     });
   });

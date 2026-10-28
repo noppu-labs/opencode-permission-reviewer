@@ -13,18 +13,18 @@ const AFTER: Record<
   Exclude<HandoffTrigger, "jev-failure" | "jev-uncertain-deny">,
   string
 > = {
-  "jev-escalate": "after Jev's escalation",
-  "jev-uncertain-allow": "after Jev's uncertain approval",
-  "jev-gate": "after a safety gate stopped Jev's approval",
-  "jev-invalid": "after Jev's invalid response",
+  "jev-escalate": "after System One's escalation",
+  "jev-uncertain-allow": "after System One's uncertain approval",
+  "jev-gate": "after a safety gate stopped System One's approval",
+  "jev-invalid": "after System One's invalid response",
 };
 
 const CAUSE: Record<Exclude<HandoffTrigger, "jev-failure">, string> = {
-  "jev-escalate": "Jev escalated",
-  "jev-uncertain-allow": "Jev's approval was uncertain",
-  "jev-gate": "a safety gate stopped Jev's approval",
-  "jev-invalid": "Jev's response was invalid",
-  "jev-uncertain-deny": "Jev's denial was uncertain",
+  "jev-escalate": "System One escalated",
+  "jev-uncertain-allow": "System One's approval was uncertain",
+  "jev-gate": "a safety gate stopped System One's approval",
+  "jev-invalid": "System One's response was invalid",
+  "jev-uncertain-deny": "System One's denial was uncertain",
 };
 
 /** Last path segment of a provider model id: "omniroute/auto/gpt-6-luna" -> "gpt-6-luna". */
@@ -42,16 +42,16 @@ export function modelLabel(model: string): string {
 }
 
 const jevFailed = (kind: string | undefined): string =>
-  kind === undefined ? "Jev failed" : `Jev failed (${kind})`;
+  kind === undefined ? "System One failed" : `System One failed (${kind})`;
 
 /** A "denied" phase with `escalationDisposition: "deny"` is a fail-closed
  *  escalation, not the reasoning reviewer's own block, so it does not confirm
  *  Jev's denial. */
 function denialVerdict(status: PhraseSource): string {
-  if (status.phase === "approved") return "overturned Jev's denial";
+  if (status.phase === "approved") return "overturned System One's denial";
   if (status.phase === "denied" && status.escalationDisposition !== "deny")
-    return "confirmed Jev's denial";
-  return "after Jev's uncertain denial";
+    return "confirmed System One's denial";
+  return "after System One's uncertain denial";
 }
 
 /** Undefined on `budget-exhausted` (the reasoning reviewer never ran) and on
@@ -91,7 +91,7 @@ export function attributionText(status: ReviewUiStatus): string | undefined {
 export function handoffCause(handoff: HandoffInfo): string {
   if (handoff.trigger !== "jev-failure") return CAUSE[handoff.trigger];
   return handoff.failureKind === "timeout"
-    ? "Jev timed out"
+    ? "System One timed out"
     : jevFailed(handoff.failureKind);
 }
 

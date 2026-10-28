@@ -9,13 +9,13 @@ import {
 import { config } from "./helpers.ts";
 
 const NO_REVIEWER =
-  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you';
 const NOT_JEV =
-  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model';
 const DENIAL_NO_REVIEWER =
-  "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final";
+  "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final";
 const DENIAL_NOT_JEV =
-  "systemOneDenialReview is inactive: the reviewer model is not Jev";
+  "systemOneDenialReview is inactive: the reviewer model is not a System One model";
 const INVALID = 'systemOneDenialReview "yes" is not a boolean; using false';
 const DEGRADED = "global config escalationReviewer is invalid and was ignored";
 const LUNA = "openai/gpt-6-luna";
@@ -31,16 +31,22 @@ describe("sidebar line", () => {
       [NO_REVIEWER],
       "⚠ reviewer: reasoning-first inactive (no escalationReviewer)",
     ],
-    [[NOT_JEV], "⚠ reviewer: reasoning-first inactive (model is not Jev)"],
+    [
+      [NOT_JEV],
+      "⚠ reviewer: reasoning-first inactive (model is not System One)",
+    ],
     [
       [DENIAL_NO_REVIEWER],
       "⚠ reviewer: denial review inactive (no escalationReviewer)",
     ],
-    [[DENIAL_NOT_JEV], "⚠ reviewer: denial review inactive (model is not Jev)"],
+    [
+      [DENIAL_NOT_JEV],
+      "⚠ reviewer: denial review inactive (model is not System One)",
+    ],
     [[INVALID], `⚠ reviewer: ${INVALID}`],
     [
       [NOT_JEV, DENIAL_NOT_JEV],
-      "⚠ reviewer: 2 config warnings · reasoning-first inactive (model is not Jev)",
+      "⚠ reviewer: 2 config warnings · reasoning-first inactive (model is not System One)",
     ],
   ])("shows %p as %p", (warnings, text) => {
     expect(sidebarLine(warnings, [])).toEqual({ text, tone: "warning" });
@@ -68,6 +74,24 @@ describe("sidebar line", () => {
         expect(sidebarLine([warning], [])?.text).not.toContain(warning);
     },
   );
+
+  test("every routing warning has a SHORT_WARNINGS entry, not the raw fallback", () => {
+    const emitted = ["openai/gpt-6-luna", "opencode/jev-1.13-free"].flatMap(
+      (model) =>
+        systemOneRoutingWarnings(
+          config({
+            model,
+            systemOneEscalation: "reasoning-first",
+            systemOneDenialReview: true,
+          }),
+        ),
+    );
+    expect(emitted).toHaveLength(4);
+    for (const warning of emitted)
+      expect(sidebarLine([warning], [])?.text).not.toBe(
+        `⚠ reviewer: ${warning}`,
+      );
+  });
 
   test("a healthy config shows no line", () => {
     expect(sidebarLine([], [])).toBeUndefined();
@@ -149,7 +173,7 @@ describe("config notices", () => {
         throw new Error("no status method");
       }, live.signal),
     ).toBe(false);
-    expect(notices.sidebar()?.text).toContain("model is not Jev");
+    expect(notices.sidebar()?.text).toContain("model is not System One");
     live.abort();
     expect(
       await notices.refresh(async () => ({ configWarnings: [] }), live.signal),

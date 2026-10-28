@@ -13,7 +13,7 @@ const FALLBACK =
 const JEV = "opencode/jev-1.13-free";
 const LUNA = "omniroute/auto/gpt-6-luna";
 const BUDGET_REASON =
-  "No review time left for the reasoning reviewer after Jev escalated: 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
+  "No review time left for the reasoning reviewer after System One escalated: 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
 
 function manual(extra: Partial<ReviewUiStatus>): ReviewUiStatus {
   return {
@@ -40,13 +40,13 @@ describe("manual-review toast", () => {
       variant: "warning",
       title: "Manual review required",
       message:
-        "gpt-6-luna reviewed this after Jev; it needs your approval: the force push targets main.",
+        "gpt-6-luna reviewed this after System One; it needs your approval: the force push targets main.",
     });
     expect(
       manualToast(manual({ resolution: "reasoning-escalated" }), FALLBACK)
         .message,
     ).toBe(
-      `gpt-6-luna reviewed this after Jev; it needs your approval: ${FALLBACK}`,
+      `gpt-6-luna reviewed this after System One; it needs your approval: ${FALLBACK}`,
     );
   });
 
@@ -84,7 +84,8 @@ describe("manual-review toast", () => {
     ).toEqual({
       variant: "warning",
       title: "Manual review required",
-      message: "No review time left for gpt-6-luna after Jev (Jev timed out).",
+      message:
+        "No review time left for gpt-6-luna after System One (System One timed out).",
     });
     expect(
       manualToast(
@@ -109,10 +110,10 @@ describe("manual-review toast", () => {
     expect(manualToast(status, FALLBACK)).toEqual({
       variant: "warning",
       title: "Manual review required",
-      message: `No review time left for the reasoning reviewer after Jev (Jev escalated). ${rest}`,
+      message: `No review time left for the reasoning reviewer after System One (System One escalated). ${rest}`,
     });
     expect(manualToast(status, FALLBACK, LUNA).message).toBe(
-      `No review time left for gpt-6-luna after Jev (Jev escalated). ${rest}`,
+      `No review time left for gpt-6-luna after System One (System One escalated). ${rest}`,
     );
   });
 
@@ -124,7 +125,7 @@ describe("manual-review toast", () => {
     });
     for (const empty of ["", " / "])
       expect(manualToast(status, FALLBACK, empty).message).toStartWith(
-        "No review time left for the reasoning reviewer after Jev (Jev escalated).",
+        "No review time left for the reasoning reviewer after System One (System One escalated).",
       );
   });
 
@@ -134,7 +135,7 @@ describe("manual-review toast", () => {
       manualToast(manual({ handoff, reason: "why", ...extra }), FALLBACK)
         .message;
     expect(toast({ resolution: "reasoning-escalated" })).toStartWith(
-      "/// reviewed this after Jev;",
+      "/// reviewed this after System One;",
     );
     expect(toast({ resolution: "reasoning-unavailable" })).toStartWith(
       "/// failed.",
@@ -146,7 +147,7 @@ describe("manual-review toast", () => {
         reason: BUDGET_REASON,
       }),
     ).toStartWith(
-      "No review time left for the reasoning reviewer after Jev (Jev escalated).",
+      "No review time left for the reasoning reviewer after System One (System One escalated).",
     );
   });
 
@@ -163,7 +164,7 @@ describe("manual-review toast", () => {
         FALLBACK,
       ).message,
     ).toBe(
-      "No review time left for gpt-6-luna after Jev (Jev escalated). 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.",
+      "No review time left for gpt-6-luna after System One (System One escalated). 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.",
     );
   });
 
@@ -200,7 +201,7 @@ describe("manual-review toast", () => {
         LUNA,
       ).message;
       expect(message).toStartWith(
-        "No review time left for gpt-6-luna after Jev (",
+        "No review time left for gpt-6-luna after System One (",
       );
       expect(message).toEndWith(
         "14s of the review budget remain and a hand-off needs 15s. Jev's own reason: x.",
@@ -222,7 +223,8 @@ describe("manual-review toast", () => {
     ).toEqual({
       variant: "warning",
       title: "Manual review required",
-      message: "No review time left for the reasoning reviewer after Jev.",
+      message:
+        "No review time left for the reasoning reviewer after System One.",
     });
   });
 

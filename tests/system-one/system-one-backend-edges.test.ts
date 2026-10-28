@@ -290,7 +290,7 @@ describe("hand-off budget and attempt state", () => {
       attemptWithRemaining(HANDOFF_BUDGET_FLOOR_MS - 1),
     );
     expect(result.reason).toBe(
-      "No review time left for the reasoning reviewer after Jev escalated: 14s of the review budget remain and a hand-off needs 15s. System One explicitly requested a reasoning or human review.",
+      "No review time left for the reasoning reviewer after System One escalated: 14s of the review budget remain and a hand-off needs 15s. System One explicitly requested a reasoning or human review.",
     );
   });
 

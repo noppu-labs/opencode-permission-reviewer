@@ -34,7 +34,7 @@ function fullStatus(): Record<string, unknown> {
       resolution: "reasoning-escalated",
       decidedBy: "openai/gpt-6-luna",
       configWarnings: [
-        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+        "systemOneDenialReview is inactive: the reviewer model is not a System One model",
       ],
       configDegraded: ["global config file is malformed and was ignored"],
       actionSegments: [

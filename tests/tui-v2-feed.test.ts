@@ -171,7 +171,7 @@ describe("V2 TUI reviewer feed", () => {
         variant: "warning",
         title: "Manual review required",
         message:
-          "gpt-6-luna reviewed this after Jev; it needs your approval: Both unsure.",
+          "gpt-6-luna reviewed this after System One; it needs your approval: Both unsure.",
       },
     ]);
   });
@@ -240,7 +240,7 @@ describe("V2 TUI reviewer feed", () => {
   }, 10_000);
 
   const INERT =
-    'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+    'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you';
 
   test("reads config warnings from the status RPC and keeps a sidebar line", async () => {
     const running = await start(
@@ -334,7 +334,7 @@ describe("V2 TUI reviewer feed", () => {
   });
 
   const BUDGET_REASON =
-    "No review time left for the reasoning reviewer after Jev escalated: 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
+    "No review time left for the reasoning reviewer after System One escalated: 4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
   const BUDGET_REST =
     "4s of the review budget remain and a hand-off needs 15s. Jev was unsure.";
 
@@ -372,13 +372,13 @@ describe("V2 TUI reviewer feed", () => {
         }),
       }),
     ).toBe(
-      `No review time left for gpt-6-luna after Jev (Jev escalated). ${BUDGET_REST}`,
+      `No review time left for gpt-6-luna after System One (System One escalated). ${BUDGET_REST}`,
     );
   });
 
   test("without a model from the status RPC the budget toast keeps the generic name", async () => {
     expect(await budgetToastMessage({})).toBe(
-      `No review time left for the reasoning reviewer after Jev (Jev escalated). ${BUDGET_REST}`,
+      `No review time left for the reasoning reviewer after System One (System One escalated). ${BUDGET_REST}`,
     );
   });
 
@@ -409,14 +409,16 @@ describe("V2 TUI reviewer feed", () => {
     await running.sees("Reviewing this permission");
     push(latest(state), budget(DIRECTORY));
     await running.until(() => state.toasts.length === 1, "first toast");
-    expect(state.toasts[0]?.message).toContain("for gpt-6-luna after Jev");
+    expect(state.toasts[0]?.message).toContain(
+      "for gpt-6-luna after System One",
+    );
     moveTo(state, SECOND);
     await running.until(() => state.snapshots.length === 2, "second snapshot");
     await running.sees("Reviewing this permission");
     push(latest(state), budget(SECOND));
     await running.until(() => state.toasts.length === 2, "second toast");
     expect(state.toasts[1]?.message).toBe(
-      `No review time left for the reasoning reviewer after Jev (Jev escalated). ${BUDGET_REST}`,
+      `No review time left for the reasoning reviewer after System One (System One escalated). ${BUDGET_REST}`,
     );
   });
 });

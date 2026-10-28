@@ -56,7 +56,7 @@ export const PINNED_BLOBS = {
   "src/modules/policy/config-rule-condition.ts":
     "715b0c26ea736ec7c3a2c49196ec36e9d22ec51f",
   "src/modules/config/services/system-one-routing.ts":
-    "4ceecf4292d4f6ead9ede8864d76704763cec4ff",
+    "0f91ec95d5da63d0ffdcbe7e1b07f29d1a61194c",
   "src/modules/config/services/reviewer-model.ts":
     "97a351fc30b8dc0c2edac7ffd9738e18634468b0",
   "src/modules/config/models/system-one-providers.ts":

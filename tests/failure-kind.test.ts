@@ -25,7 +25,7 @@ describe("failure kind", () => {
     ],
     ["reasoning reviewer failed (UnknownError): boom", "unknown"],
     ["review failed: unknown error", undefined],
-    ["Jev escalated the request.", undefined],
+    ["System One escalated the request.", undefined],
     ["", undefined],
   ])("reads %p as %p", (reason, kind) => {
     expect(failureKind(reason)).toBe(kind);
