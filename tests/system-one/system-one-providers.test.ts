@@ -130,6 +130,24 @@ describe("System One providers", () => {
       expect(isSystemOneReviewerModel(`baseten/${modelID}`)).toBe(true);
   });
 
+  test("rejects another model's answer from the same provider", () => {
+    for (const [model, returned] of [
+      ["liquid-ai/d1", "d1-ultra"],
+      ["liquid-ai/d1-ultra", "d1"],
+      [
+        "baseten/decision-models/baseten-elephant-9b-latest",
+        "decision-models/baseten-mammoth-27b-latest",
+      ],
+      [
+        "baseten/decision-models/baseten-mammoth-27b-latest",
+        "decision-models/baseten-elephant-9b-latest",
+      ],
+    ] as const)
+      expect(
+        parseSystemOneReview(withModel(returned), resolveConfig({ model })),
+      ).toBeUndefined();
+  });
+
   test("rejects unknown models on the new providers", () => {
     for (const model of [
       "liquid-ai/d2",
@@ -143,17 +161,24 @@ describe("System One providers", () => {
   test("never sends a Liquid key with the wrong shape", async () => {
     await withEnv({ LIQUID_API_KEY: LIQUID_KEY_SHORT }, async () => {
       const calls: string[] = [];
-      expect(() =>
+      const create = (): unknown =>
         createSystemOneInvoker(
           resolveConfig({ model: "liquid-ai/d1" }),
           async (input) => {
             calls.push(String(input));
             return Response.json(withModel("d1"));
           },
-        ),
-      ).toThrow(
+        );
+      expect(create).toThrow(
         'LIQUID_API_KEY is not a Liquid AI key (expected the "liquid_" prefix)',
       );
+      let message = "";
+      try {
+        create();
+      } catch (error) {
+        message = String(error);
+      }
+      expect(message).not.toContain(LIQUID_KEY_SHORT);
       expect(calls).toHaveLength(0);
     });
   });

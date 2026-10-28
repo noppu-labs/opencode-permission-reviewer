@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { validateModel } from "../lib/model-validation.mjs";
 import { sha256 } from "../lib/util.mjs";
 import { adapter, bashInput, core, textModel } from "./plugin-fixtures.mjs";
 
@@ -41,7 +43,10 @@ test("the case config overrides defaults and the model picks model, variant and 
   assert.equal(base.retainReviewSessions, false);
   const jev = { transport: "system-one", model: "typesafe/jev" };
   assert.equal((await cfg(jev)).model, "commandcode/typesafe/jev");
-  assert.equal((await cfg({ ...jev, model: "jev-1" })).model, "jev-1");
+  assert.equal(
+    (await cfg({ ...jev, model: "jev-1" })).model,
+    "typesafe-ai/jev-1",
+  );
   assert.equal((await cfg({ model: "typesafe/jev" })).model, "typesafe/jev");
   assert.equal((await cfg({ model: "m", variant: "low" })).variant, "low");
   assert.equal((await cfg(textModel)).outputFormat, "text");
@@ -148,4 +153,56 @@ test("the adapter's parsers are the core's decision and System One parsers", asy
     review.parseSystemOneReview(answer, config),
   );
   assert.deepEqual(adapter.promptVersion, policy.REVIEWER_PROMPT_VERSION);
+});
+
+const AUTHORIZED = new Set(["material_authorization", "within_intent_scope"]);
+/** A confident allow answer to every System One question. */
+const allowAnswers = () =>
+  Object.fromEntries(
+    Object.entries(questions.SYSTEM_ONE_QUESTIONS).map(([key, question]) => {
+      if (question.type === "noul")
+        return [key, { type: "noul", noul: AUTHORIZED.has(key) ? 1 : 0 }];
+      const [first, ...rest] = Object.keys(question.criteria);
+      return [
+        key,
+        {
+          type: "choice",
+          choice: first,
+          confidence: 1,
+          probabilities: Object.fromEntries([
+            [first, 1],
+            ...rest.map((other) => [other, 0]),
+          ]),
+        },
+      ];
+    }),
+  );
+
+test("a Jev answer parses under each example System One profile", async () => {
+  for (const [file, returned, expected] of [
+    [
+      "models.system-one.example.json",
+      "jev-1.13-free",
+      "opencode/jev-1.13-free",
+    ],
+    [
+      "models.system-one-commandcode.example.json",
+      "typesafe/jev",
+      "commandcode/typesafe/jev",
+    ],
+  ]) {
+    const { models } = JSON.parse(
+      await readFile(new URL(`../examples/${file}`, import.meta.url), "utf8"),
+    );
+    const { config } = await adapter.prepare(
+      bashInput(),
+      validateModel(models[0]),
+    );
+    assert.equal(config.model, expected);
+    const parsed = adapter.parseSystemOne(
+      { model: returned, answers: allowAnswers() },
+      config,
+    );
+    assert.equal(parsed?.decision.outcome, "allow", file);
+  }
 });
