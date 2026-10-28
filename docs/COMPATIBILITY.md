@@ -11,7 +11,7 @@ and fixes for common problems.
 | OpenCode V2           | `>=2.0.22 <3`      | Compatibility layer; verified with 2.0.26                         |
 | `@opencode-ai/plugin` | `>=1.18.29 <2`     | Optional V1 peer dependency                                       |
 | `@opencode/plugin`    | `>=2.0.22 <3`      | Optional V2 peer dependency                                       |
-| Bun                   | `>=1.3.0`          | Declared in `engines.bun`; CI runs 1.3.0 and 1.3.5                |
+| Bun                   | `>=1.3.14`         | Declared in `engines.bun` (OpenTUI 0.7 floor); CI runs 1.3.14     |
 | TUI overlay           | OpenCode V1 and V2 | Separate host adapters, shared raw TSX presentation               |
 | OS                    | Linux, macOS arm64 | CI on Linux; macOS checked on real hosts locally; others untested |
 

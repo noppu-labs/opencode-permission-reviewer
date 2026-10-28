@@ -6,7 +6,7 @@ most of the rest supports OpenCode V1 and V2 hosts, the TUI overlay, and the CLI
 
 ## Prerequisites
 
-- [Bun](https://bun.sh) >= 1.3.0
+- [Bun](https://bun.sh) >= 1.3.14
 - [uv](https://docs.astral.sh/uv/). It installs the Python tooling that runs the pre-commit hooks
   and `pytest` for the real-host compatibility matrix in `tests/compatibility`.
 - `git`

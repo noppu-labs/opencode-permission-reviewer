@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The minimum Bun is now 1.3.14 (was 1.3.0), the floor `@opentui/core` 0.7 declares. The TUI
+  dependencies move from `@opentui/core` and `@opentui/solid` 0.5.11 to 0.7.0, matching the
+  `>=0.6.8` peer range of `@opencode/plugin` 2.1.4.
+
+### Security
+
+- `@opentui/solid` 0.7.0 pins `@babel/core` 7.29.7, so consumer installs no longer carry
+  GHSA-4x5r-pxfx-6jf8 (`@babel/core <= 7.29.0`).
+
 ## [3.2.3] - 2026-10-24
 
 ### Changed
