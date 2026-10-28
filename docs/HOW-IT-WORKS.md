@@ -32,13 +32,13 @@ bash · $ find . -name '*.ts' -not -path './node_modules/*' | ⋯ 3 more ⋯ tai
 bash · $ cat <<'EOF' > scripts/check.sh ⋯ 3-line heredoc ⋯ && bash scripts/check.sh
 ```
 
-When Jev hands a request to the reasoning reviewer, the strip switches to that reviewer and says
-why, for example `gpt-6-luna after Jev's escalation · medium`; the V1 overlay shows the same reason
+When System One hands a request to the reasoning reviewer, the strip switches to that reviewer and says
+why, for example `gpt-6-luna after System One's escalation · medium`; the V1 overlay shows the same reason
 on its model line. The elapsed time keeps counting from the start of the review.
 
 Once the review resolves, both hosts show a compact status strip: one line for the result and a
 second that names who decided ahead of the rationale, for example
-`gpt-6-luna after Jev failed (timeout) — …` or `gpt-6-luna overturned Jev's denial — …`. A review a
+`gpt-6-luna after System One failed (timeout) — …` or `gpt-6-luna overturned System One's denial — …`. A review a
 model decided without a hand-off names that model, shortened to its last path segment; a result no
 model decided shows the reason alone. The action on the first line is shortened the same way; the
 rationale line is shortened to fit. The review keymap is released immediately, and the result stays
@@ -120,12 +120,12 @@ project. As a result, the host cannot prepend repository instructions, and a wil
 denies every tool, including MCP tools, except the reviewer's own structured-output result tool in
 `json_schema` mode. If the host refuses isolation, the review fails safe.
 
-Jev receives trusted policy and untrusted evidence as typed System One state plus fixed questions.
+System One receives trusted policy and untrusted evidence as typed System One state plus fixed questions.
 Its response is reconciled in code. Valid difficult decisions can be delegated to the optional
 reasoning reviewer; in the default mode provider failures never are. With
-`systemOneEscalation: "reasoning-first"`, every Jev escalation, invalid answer, and failure goes to
+`systemOneEscalation: "reasoning-first"`, every System One escalation, invalid answer, and failure goes to
 the reasoning reviewer before it reaches you (unless less than 15 seconds of the review budget
-remain), and `systemOneDenialReview` lets that reviewer re-examine an uncertain Jev denial. A review
+remain), and `systemOneDenialReview` lets that reviewer re-examine an uncertain System One denial. A review
 hands off at most once.
 [Reviewer models](REVIEWER-MODELS.md#how-jev-decisions-are-handled) covers both backends and the
 routing.

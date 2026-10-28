@@ -80,7 +80,7 @@ function published(
   return decoded;
 }
 
-/** A status credited to Jev's run: while Jev reviews, after Jev decided alone, or a manual outcome with no hand-off. */
+/** A status credited to System One's run: while System One reviews, after System One decided alone, or a manual outcome with no hand-off. */
 export function jevStatus(sample: Sample): ReviewUiStatus {
   return published(sample, JEV, "system-one");
 }

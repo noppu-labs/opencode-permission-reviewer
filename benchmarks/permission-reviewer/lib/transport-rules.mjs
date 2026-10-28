@@ -7,7 +7,7 @@ function systemOneRules(model, url) {
   assert(url.protocol === "https:", "System One endpoint must use HTTPS.");
   assert(
     /^jev(?:-|$)/.test(model.model) || model.model === "typesafe/jev",
-    "System One transport requires a Jev model ID.",
+    "System One transport requires a System One model ID.",
   );
   assert(
     model.format === "system_one",

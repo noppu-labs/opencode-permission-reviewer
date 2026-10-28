@@ -17,7 +17,7 @@ function reasoningTimeout(): string {
 }
 
 /** The reason of `budgetExhaustedResult` (src/modules/reviewer/services/system-one-budget.ts)
- *  after Jev escalated with 9s of the budget left. */
+ *  after System One escalated with 9s of the budget left. */
 function budgetReason(): string {
   const own = {
     result: {
@@ -82,7 +82,8 @@ export function manualSamples(): Array<[string, ReviewUiStatus]> {
       jevStatus({
         command: PUSH,
         phase: "manual",
-        reason: "Jev could not tell whether the user wanted a force-push.",
+        reason:
+          "System One could not tell whether the user wanted a force-push.",
         extra: {
           resolution: "reviewer",
           escalationDisposition: "manual",

@@ -36,7 +36,7 @@ test("provider params cannot override instruction or tool boundary", () => {
       /Reserved/,
     );
 });
-test("System One profile requires a Jev model and no chat-only options", () => {
+test("System One profile requires a System One model and no chat-only options", () => {
   const systemOne = {
     id: "jev-private",
     model: "jev-1.13",
@@ -52,7 +52,7 @@ test("System One profile requires a Jev model and no chat-only options", () => {
   );
   assert.throws(
     () => validateModel({ ...systemOne, model: "other-model" }),
-    /Jev/,
+    /System One model/,
   );
   assert.throws(
     () => validateModel({ ...systemOne, format: "text" }),

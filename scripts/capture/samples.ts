@@ -39,7 +39,7 @@ const confirmedDenial = (): ReviewUiStatus =>
     reason: "Pipes a remote script into a shell.",
   });
 
-/** Jev reviewing, the hand-off strip, and the V1 overlay after a Jev failure. */
+/** System One reviewing, the hand-off strip, and the V1 overlay after a System One failure. */
 export function progressSamples(): {
   jev: ReviewUiStatus;
   handoff: ReviewUiStatus;
@@ -64,10 +64,10 @@ export function attributionSamples(): ReviewUiStatus[] {
   return [jevAlone(), afterEscalation(), confirmedDenial()];
 }
 
-/** Jev alone, each hand-off trigger (two strips for jev-uncertain-deny), and a fail-closed block. */
+/** System One alone, each hand-off trigger (two strips for jev-uncertain-deny), and a fail-closed block. */
 export function resultSamples(): LabelledStatus[] {
   return [
-    { caption: "no hand-off: Jev decided", status: jevAlone() },
+    { caption: "no hand-off: System One decided", status: jevAlone() },
     { caption: "jev-escalate", status: afterEscalation() },
     {
       caption: "jev-uncertain-allow",
@@ -129,7 +129,7 @@ export function resultSamples(): LabelledStatus[] {
   ];
 }
 
-/** The long command while Jev reviews and once it is blocked. */
+/** The long command while System One reviews and once it is blocked. */
 export function longCommandSamples(): {
   progress: ReviewUiStatus;
   result: ReviewUiStatus;
