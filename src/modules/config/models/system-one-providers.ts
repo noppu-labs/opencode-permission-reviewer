@@ -30,10 +30,11 @@ const returnsJev = (_modelID: string, returned: string): boolean =>
 const sameModel = (modelID: string, returned: string): boolean =>
   returned === modelID;
 
-// New Jev and d1 releases count before the weekly list picks them up.
+// New Jev and d1 releases count before the weekly list picks them up. A `~`
+// goes only with a `-latest` alias, the only form acceptsResponse can answer.
 const OPENROUTER_FAMILIES: readonly RegExp[] = [
-  /^~?typesafe\/jev-(?:\d|latest)/,
-  /^~?liquid\/d1(?:$|[-.:])/,
+  /^(?:typesafe\/jev-\d[a-z0-9.-]*(?<!-latest)|~typesafe\/jev-latest)$/,
+  /^(?:liquid\/d1(?:[-.][a-z0-9.-]*)?(?<!-latest)|~liquid\/d1(?:[-.][a-z0-9.-]*)?-latest)$/,
 ];
 const OPENROUTER_ROUTING_SUFFIX = /:[a-z0-9-]+$/;
 const OPENROUTER_ALIAS = /^~(.+)-latest$/;
@@ -44,15 +45,26 @@ const escapeRegExp = (value: string): string =>
 const OPENROUTER_INCOMPATIBLE: Readonly<Record<string, string>> =
   OPENROUTER_DECISION_MODELS.incompatible;
 
-const openRouterIncompatibleReason = (modelID: string): string | undefined =>
-  Object.hasOwn(OPENROUTER_INCOMPATIBLE, modelID)
-    ? OPENROUTER_INCOMPATIBLE[modelID]
-    : undefined;
+// The exact id first, so an id listed with its own tag keeps its entry.
+const withoutRoutingSuffix = (modelID: string): readonly string[] => {
+  const stripped = modelID.replace(OPENROUTER_ROUTING_SUFFIX, "");
+  return stripped === modelID ? [modelID] : [modelID, stripped];
+};
+
+const openRouterIncompatibleReason = (modelID: string): string | undefined => {
+  for (const id of withoutRoutingSuffix(modelID))
+    if (Object.hasOwn(OPENROUTER_INCOMPATIBLE, id))
+      return OPENROUTER_INCOMPATIBLE[id];
+  return;
+};
 
 const openRouterAccepts = (modelID: string): boolean =>
-  Object.hasOwn(OPENROUTER_DECISION_MODELS.models, modelID) ||
   openRouterIncompatibleReason(modelID) !== undefined ||
-  OPENROUTER_FAMILIES.some((family) => family.test(modelID));
+  withoutRoutingSuffix(modelID).some(
+    (id) =>
+      Object.hasOwn(OPENROUTER_DECISION_MODELS.models, id) ||
+      OPENROUTER_FAMILIES.some((family) => family.test(id)),
+  );
 
 // OpenRouter answers with the dated canonical slug, and an alias with the
 // slug of whichever release it points at.

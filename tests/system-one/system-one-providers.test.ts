@@ -12,6 +12,8 @@ import {
   LIQUID_KEY_SHORT,
   OPENAI_KEY,
   OPENROUTER_KEY,
+  OPENROUTER_KEY_SHORT,
+  OPENROUTER_KEY_UPPERCASE,
 } from "../fixtures/synthetic-secrets.ts";
 import { response } from "./system-one-fixtures.ts";
 
@@ -143,6 +145,14 @@ describe("System One providers", () => {
       returned: "cloudflare/clef",
       foreignReturned: "cloudflare/clef-flash",
     },
+    {
+      model: "openrouter/cloudflare/clef:nitro",
+      keyEnv: "OPENROUTER_API_KEY",
+      key: OPENROUTER_KEY,
+      url: "https://openrouter.ai/api/v1/systemone",
+      returned: "cloudflare/clef-20261009",
+      foreignReturned: "cloudflare/clef-flash-20261009",
+    },
   ])(
     "routes $model",
     async ({ model, keyEnv, key, url, returned, foreignReturned }) => {
@@ -266,6 +276,38 @@ describe("OpenRouter System One provider", () => {
     expect(isSystemOneReviewerModel("openrouter/liquid/d10")).toBe(false);
   });
 
+  test("a family id counts only in a form the response check can answer", () => {
+    for (const model of [
+      "openrouter/typesafe/jev-1.15:free",
+      "openrouter/~typesafe/jev-latest:nitro",
+      "openrouter/liquid/d1",
+      "openrouter/liquid/d1-mini:free",
+      "openrouter/~liquid/d1.2-latest",
+    ])
+      expect(isSystemOneReviewerModel(model)).toBe(true);
+    for (const model of [
+      "openrouter/~typesafe/jev-1.14",
+      "openrouter/typesafe/jev-latest",
+      "openrouter/typesafe/jev-1.14-latest",
+      "openrouter/~liquid/d1",
+      "openrouter/liquid/d1-latest",
+      "openrouter/~liquid/d10-latest",
+    ])
+      expect(isSystemOneReviewerModel(model)).toBe(false);
+  });
+
+  test("an id listed with its own tag keeps its entry", () => {
+    expect(openrouter?.incompatibleReason?.("respan/span-01-lite:free")).toBe(
+      "requires a different state shape",
+    );
+    expect(openrouter?.incompatibleReason?.("respan/span-01:free")).toBe(
+      "requires a different state shape",
+    );
+    expect(openrouter?.incompatibleReason?.("cloudflare/clef:nitro")).toBe(
+      undefined,
+    );
+  });
+
   test("routing suffixes are stripped for the response check", () => {
     expect(
       openrouter?.acceptsResponse("liquid/d1:free", "liquid/d1-20260930"),
@@ -296,29 +338,31 @@ describe("OpenRouter System One provider", () => {
     ).toBe(false);
   });
 
-  test("incompatible models never reach the network", async () => {
+  test.each([
+    "openrouter/scaledown/classify-1",
+    "openrouter/scaledown/classify-1:nitro",
+  ])("incompatible model %s never reaches the network", async (model) => {
     await withEnv({ OPENROUTER_API_KEY: OPENROUTER_KEY }, async () => {
       const calls: string[] = [];
-      expect(isSystemOneReviewerModel("openrouter/scaledown/classify-1")).toBe(
-        true,
-      );
+      expect(isSystemOneReviewerModel(model)).toBe(true);
       expect(() =>
-        createSystemOneInvoker(
-          resolveConfig({ model: "openrouter/scaledown/classify-1" }),
-          async (input) => {
-            calls.push(String(input));
-            return Response.json(withModel("scaledown/classify-1"));
-          },
-        ),
+        createSystemOneInvoker(resolveConfig({ model }), async (input) => {
+          calls.push(String(input));
+          return Response.json(withModel("scaledown/classify-1"));
+        }),
       ).toThrow(
-        "openrouter/scaledown/classify-1 is known to reject the reviewer's request (accepts only plain-string instructions and criteria)",
+        `${model} is known to reject the reviewer's request (accepts only plain-string instructions and criteria)`,
       );
       expect(calls).toHaveLength(0);
     });
   });
 
-  test("a non-OpenRouter key is never sent", async () => {
-    await withEnv({ OPENROUTER_API_KEY: OPENAI_KEY }, async () => {
+  test.each([
+    ["an OpenAI key", OPENAI_KEY],
+    ["uppercase hex", OPENROUTER_KEY_UPPERCASE],
+    ["63 hex characters", OPENROUTER_KEY_SHORT],
+  ])("a malformed key (%s) is never sent", async (_label, key) => {
+    await withEnv({ OPENROUTER_API_KEY: key }, async () => {
       const calls: string[] = [];
       const create = (): unknown =>
         createSystemOneInvoker(
@@ -337,7 +381,7 @@ describe("OpenRouter System One provider", () => {
       } catch (error) {
         message = String(error);
       }
-      expect(message).not.toContain(OPENAI_KEY);
+      expect(message).not.toContain(key);
       expect(calls).toHaveLength(0);
     });
   });
