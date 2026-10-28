@@ -15,6 +15,10 @@ control. It then allows the action, denies it with a reason the agent can act on
 it to you. Routine actions stop waiting for a keystroke, and risky ones are still blocked or
 brought to you.
 
+You can use any LLM or [System One model](docs/REVIEWER-MODELS.md#system-one-reviewers) as the
+reviewer, or even a combination of both, with System One handing its hard calls to an LLM
+([Reviewer models](docs/REVIEWER-MODELS.md#system-one-with-selective-reasoning-escalation)).
+
 ## What it does
 
 - Leaves your existing policy alone: `allow` rules continue and `deny` rules stay blocked
@@ -52,23 +56,30 @@ brought to you.
 
 ## Install
 
-OpenCode V2 installs the package and registers it in one step:
+### OpenCode V2
 
 ```bash
 opencode plugin add @noppu-labs/opencode-permission-reviewer
 ```
 
-On OpenCode V1, `opencode plugin` registers the server plugin but not the TUI overlay, so use
-the package's own CLI instead. `--host auto` detects V1 or V2, `--tui` also registers the
-overlay (V1 `tui.json` or V2 global `cli.json`), and `--npm` writes the package name instead of
-a path. It never overwrites an existing entry.
+### OpenCode V1
 
 ```bash
 bunx @noppu-labs/opencode-permission-reviewer init --host auto --npm --tui --yes
 ```
 
-To run from a checkout instead, clone the repository, run `bun install && bun run build`, and
-register the checkout's absolute path.
+> On OpenCode V1, `opencode plugin` registers the server plugin but not the TUI overlay, so use
+> the package's own CLI instead. `--host auto` detects V1 or V2, `--tui` also registers the
+> overlay, and `--npm` writes the package name instead of a path. It never overwrites an
+> existing entry.
+
+### From a fork or local clone
+
+```bash
+bun install && bun run build
+```
+
+Then register the checkout's absolute path.
 
 ## Configure
 
