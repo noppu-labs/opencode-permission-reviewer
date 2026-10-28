@@ -38,7 +38,7 @@ function serverText(texts: readonly string[], index: number): string {
   return text;
 }
 
-/** The server's warnings for Jev with both settings on and no escalationReviewer. */
+/** The server's warnings for System One with both settings on and no escalationReviewer. */
 const WARNINGS = systemOneRoutingWarnings(
   resolveConfig({
     model: JEV,

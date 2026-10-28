@@ -1,5 +1,8 @@
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
-import { isSystemOneReviewerModel } from "./reviewer-model.ts";
+import {
+  isSystemOneReviewerModel,
+  systemOneProviderFor,
+} from "./reviewer-model.ts";
 
 /** The least review time a hand-off needs; with less the request escalates. */
 export const HANDOFF_BUDGET_FLOOR_MS = 15_000;
@@ -38,15 +41,15 @@ export function systemOneRoutingWarnings(config: ReviewerConfig): string[] {
   if (config.systemOneEscalation === "reasoning-first") {
     warnings.push(
       cause === "not-jev"
-        ? 'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev'
-        : 'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you',
+        ? 'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model'
+        : 'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you',
     );
   }
   if (config.systemOneDenialReview) {
     warnings.push(
       cause === "not-jev"
-        ? "systemOneDenialReview is inactive: the reviewer model is not Jev"
-        : "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final",
+        ? "systemOneDenialReview is inactive: the reviewer model is not a System One model"
+        : "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final",
     );
   }
   return warnings;
@@ -61,6 +64,13 @@ function budgetFloorWarnings(config: ReviewerConfig): string[] {
   return [
     `reviewBudgetMs ${budget} leaves less than ${HANDOFF_BUDGET_FLOOR_MS} ms after timeoutMs; hand-offs to the reasoning reviewer will escalate to you instead`,
   ];
+}
+
+/** System One is never the escalation reviewer, so only `model` is checked. */
+export function systemOneModelWarnings(config: ReviewerConfig): string[] {
+  const target = systemOneProviderFor(config.model);
+  const warning = target?.provider.configWarning?.(target.modelID);
+  return warning === undefined ? [] : [warning];
 }
 
 const PREVIEW_CHARS = 80;
@@ -102,6 +112,7 @@ export function withSystemOneRoutingWarnings(
   const warnings = [
     ...invalidValueWarnings(config, source),
     ...systemOneRoutingWarnings(config),
+    ...systemOneModelWarnings(config),
     ...budgetFloorWarnings(config),
   ];
   return warnings.length === 0

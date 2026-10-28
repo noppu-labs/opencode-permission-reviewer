@@ -316,7 +316,7 @@ describe("audit report output", () => {
 });
 
 const NOT_JEV =
-  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model';
 const DEGRADED =
   'global config escalationMode "DENY" is invalid and was ignored';
 

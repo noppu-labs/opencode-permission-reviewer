@@ -1,6 +1,6 @@
 {
   "name": "@noppu-labs/opencode-permission-reviewer",
-  "version": "3.2.3",
+  "version": "3.3.0",
   "description": "Policy-aware AI permission reviewer for OpenCode V1 and V2: auto-approves routine agent tool calls, denies risky ones with feedback, and escalates the rest to you",
   "type": "module",
   "main": "./dist/index.js",
@@ -85,7 +85,7 @@
     "bun"
   ],
   "engines": {
-    "bun": ">=1.3.0",
+    "bun": ">=1.3.14",
     "opencode": ">=1.18.29 <2 || >=2.0.22 <3"
   },
   "peerDependencies": {
@@ -101,21 +101,22 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.15",
+    "@biomejs/biome": "2.6.3",
     "@opencode-ai/plugin": "1.19.4",
     "@opencode-ai/sdk": "1.19.4",
-    "@opencode/plugin": "2.1.2",
+    "@opencode/plugin": "2.2.0",
     "@types/bun": "^1.3.0",
     "@types/semver": "7.8.0",
     "fta-cli": "3.1.0",
-    "knip": "6.41.0",
-    "tsdown": "0.23.1",
+    "knip": "6.43.0",
+    "tsdown": "0.23.3",
     "typescript": "7.0.2"
   },
   "overrides": {
     "@babel/core": "7.29.7",
     "ip-address": "10.7.4",
-    "toml": "5.0.1"
+    "toml": "5.0.1",
+    "zod": "4.6.7"
   },
   "scripts": {
     "lint": "biome check --error-on-warnings .",
@@ -135,11 +136,11 @@
   },
   "dependencies": {
     "@typesafe-ai/sdk": "0.6.0",
-    "@opencode/client": "2.1.2",
+    "@opencode/client": "2.2.0",
     "jsonc-parser": "3.3.1",
     "semver": "7.8.5",
-    "@opentui/core": "0.5.11",
-    "@opentui/solid": "0.5.11",
+    "@opentui/core": "0.7.0",
+    "@opentui/solid": "0.7.0",
     "solid-js": "1.9.12",
     "zod": "4.6.7"
   }

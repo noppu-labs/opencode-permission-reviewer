@@ -25,7 +25,8 @@
     "integrities": {
       "2.0.22": "sha512-BJzGgplZ3owjPh4Cq5vbe7zMSgYXugOMJmrdlRriUl/9/rKitvK/F+ruk5JJOlIe4fw0bQ+UBAvN8+XGbUqTPw==",
       "2.0.26": "sha512-d1UjPf053y2KR1sQx9+7M8tMRkYD3qjAt9VTfBjZwHLWBzbvwI1+cP8+HTSWSi4Z1WQFnS3vaktKgnDPFkj5IQ==",
-      "2.1.2": "sha512-9mBVQTO3WkKzP300NtHuhmXkHTfR2JwFB0AKRGRw4Lt3SNEwo5V4pzXXrwlpRAHoQmINLPuFPGOmn1kxYZdmMQ=="
+      "2.1.2": "sha512-9mBVQTO3WkKzP300NtHuhmXkHTfR2JwFB0AKRGRw4Lt3SNEwo5V4pzXXrwlpRAHoQmINLPuFPGOmn1kxYZdmMQ==",
+      "2.2.0": "sha512-05wLSq/M/vqw32uZnrNUGnhSpcpXlF+4OfvKzGghtbPYyF7kB82qfIRSIZQk3vFBIH32HWu8UQCai38b7J36kw=="
     },
     "optionalIntegrities": {},
     "sdk": {

@@ -6,6 +6,7 @@ import type {
 } from "../../../kernel/review-result.ts";
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
 import { isRecord } from "../../../utils/is-record.ts";
+import { systemOneProviderFor } from "../../config/services/reviewer-model.ts";
 import { enforceDecision } from "../../decision/decision-gates.ts";
 import { type ParsedAnswers, parseAnswers } from "./system-one-answers.ts";
 import { exactKeys } from "./system-one-choices.ts";
@@ -64,13 +65,9 @@ function responseAnswers(
 ): { model: string; answers: Record<string, unknown> } | undefined {
   if (!isRecord(response)) return;
   const raw = response;
-  if (
-    typeof raw.model !== "string" ||
-    (config.model === "commandcode/typesafe/jev"
-      ? raw.model !== "typesafe/jev"
-      : !/^jev(?:-|$)/.test(raw.model))
-  )
-    return;
+  if (typeof raw.model !== "string") return;
+  const resolved = systemOneProviderFor(config.model);
+  if (!resolved?.provider.acceptsResponse(resolved.modelID, raw.model)) return;
   if (!isRecord(raw.answers)) return;
   const answers = raw.answers;
   if (!exactKeys(answers, Object.keys(SYSTEM_ONE_QUESTIONS))) return;

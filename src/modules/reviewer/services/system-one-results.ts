@@ -107,7 +107,7 @@ export function finalJevResult(
 /** The reason a reasoning approval stays an escalation when Jev rated the
  *  request critical risk. */
 const JEV_CRITICAL_REASON =
-  "Jev rated this request critical risk; a reasoning approval needs manual review.";
+  "System One rated this request critical risk; a reasoning approval needs manual review.";
 
 const INSUFFICIENT_EVIDENCE_REASON =
   "The reasoning reviewer did not find sufficient evidence to override the System One escalation.";

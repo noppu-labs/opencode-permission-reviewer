@@ -15,7 +15,7 @@ const REASONING = {
   timeoutMs: 120_000,
 } as const;
 const INERT =
-  "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final";
+  "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final";
 
 function emitted(): {
   statuses: ReviewUiStatus[];
@@ -44,7 +44,7 @@ test("the hand-off status keeps the first start time and names the reasoning rev
       reviewerModel: LUNA,
       reviewerEscalatedFrom: {
         model: JEV,
-        reason: "Jev escalated.",
+        reason: "System One escalated.",
         trigger: "jev-escalate",
       },
     },
@@ -84,7 +84,7 @@ test("a manual result carries its resolution and a fail-closed block its disposi
       resolution: "reasoning-escalated",
       reviewerEscalatedFrom: {
         model: JEV,
-        reason: "Jev escalated.",
+        reason: "System One escalated.",
         trigger: "jev-escalate",
       },
     },

@@ -8,12 +8,12 @@ import { applyEscalationDisposition } from "../../decision/escalation.ts";
 import type { JevResult } from "./system-one-results.ts";
 
 const TRIGGER_CAUSE: Record<HandoffTrigger, string> = {
-  "jev-escalate": "Jev escalated",
-  "jev-uncertain-allow": "Jev's approval was uncertain",
-  "jev-gate": "a safety gate stopped Jev's approval",
-  "jev-invalid": "Jev's response was invalid",
-  "jev-failure": "Jev failed",
-  "jev-uncertain-deny": "Jev's denial was uncertain",
+  "jev-escalate": "System One escalated",
+  "jev-uncertain-allow": "System One's approval was uncertain",
+  "jev-gate": "a safety gate stopped System One's approval",
+  "jev-invalid": "System One's response was invalid",
+  "jev-failure": "System One failed",
+  "jev-uncertain-deny": "System One's denial was uncertain",
 };
 
 /** The escalation when a hand-off is due but the attempt has too little time

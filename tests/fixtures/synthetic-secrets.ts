@@ -9,6 +9,11 @@ export const GITHUB_FINE_GRAINED_PAT =
   "github_" + "pat_synthetictoken1234567890abcdef";
 export const OPENAI_PROJECT_KEY = "sk-" + "proj-synthetictoken1234567890abcdef";
 export const OPENAI_KEY = "sk-" + "synthetictoken1234567890ABCDEF1234567890";
+export const OPENROUTER_KEY = "sk-" + "or-v1-" + "0123456789abcdef".repeat(4);
+export const OPENROUTER_KEY_UPPERCASE =
+  "sk-" + "or-v1-" + "0123456789ABCDEF".repeat(4);
+export const OPENROUTER_KEY_SHORT =
+  "sk-" + "or-v1-" + "0123456789abcdef".repeat(4).slice(1);
 export const ANTHROPIC_KEY = "sk-" + "ant-synthetictoken1234567890ABCDEF";
 export const JWT_TOKEN =
   "ey" + "JhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.signatureabcdefg";
@@ -33,3 +38,5 @@ export const HEADER_VALUE_OPAQUE = "syntheticapikey1234567890abcd";
 export const PGPASSWORD_ASSIGNMENT = "PGPASSWORD=postgrespass123";
 export const SKSYNTHETIC_KEY = "sksynthetic1234567890abcdef";
 export const SKSYNTHETIC_KEY_LONG = "sksynthetic1234567890abcdef1234567890";
+export const LIQUID_KEY = "liquid_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6";
+export const LIQUID_KEY_SHORT = "liquid_" + "short123";

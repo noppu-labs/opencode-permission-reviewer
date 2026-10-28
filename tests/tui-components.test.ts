@@ -128,7 +128,7 @@ describe("review result strip", () => {
     );
     expect(shown).toEqual([
       "✓ Review approved · bash · $ printf safe",
-      "gpt-6-luna after Jev's escalation — Requested push.",
+      "gpt-6-luna after System One's escalation — Requested push.",
     ]);
   });
 });
@@ -178,7 +178,7 @@ describe("review progress strip", () => {
       }),
     );
     expect(shown[0]).toStartWith(
-      "◐ Reviewing this permission · gpt-6-luna after Jev's escalation · medium",
+      "◐ Reviewing this permission · gpt-6-luna after System One's escalation · medium",
     );
   });
 });
@@ -225,7 +225,7 @@ describe("review overlay", () => {
       }),
     );
     expect(shown[5]).toMatch(
-      /^│ {4}gpt-6-luna · reasoning medium · after Jev failed \(timeout\) +No action needed$/,
+      /^│ {4}gpt-6-luna · reasoning medium · after System One failed \(timeout\) +No action needed$/,
     );
   });
 });

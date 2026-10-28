@@ -21,6 +21,10 @@
 
 const REDACT = (type: string): string => `[REDACTED:${type}]`;
 
+const OPENCODE_SESSION_KEY = /^(?:session[_-]?id|session|sid)$/i;
+const OPENCODE_SESSION_ID =
+  /^ses_[0-9a-f]{12}[A-Za-z0-9]{14}(?:[A-Za-z0-9]{6})?$/;
+
 // Order matters: run specific token formats first, then URL userinfo, then
 // auth headers, then generic credential assignments. Each value-level rule
 // carries a `(?!\[REDACTED)` guard so a second pass is a no-op.
@@ -56,6 +60,8 @@ const RULES: ReadonlyArray<{
     re: /\bgithub_pat_[A-Za-z0-9_]{22,251}\b/g,
     replace: () => REDACT("github"),
   },
+  // OpenRouter.
+  { re: /\bsk-or-v1-[0-9a-f]{64}\b/g, replace: () => REDACT("openrouter") },
   // OpenAI: project keys and long bare `sk-…` keys (excludes Anthropic).
   { re: /\bsk-proj-[A-Za-z0-9_-]{20,}\b/g, replace: () => REDACT("openai") },
   { re: /\bsk-(?!ant-)[A-Za-z0-9]{30,}\b/g, replace: () => REDACT("openai") },
@@ -77,6 +83,8 @@ const RULES: ReadonlyArray<{
     re: /\b\d{8,12}:AA[A-Za-z0-9_-]{30,}\b/g,
     replace: () => REDACT("telegram"),
   },
+  // Liquid AI keys; shorter liquid_ names are template identifiers.
+  { re: /\bliquid_[A-Za-z0-9]{32,}\b/g, replace: () => REDACT("liquid") },
   // JWT (three base64url segments).
   {
     re: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,
@@ -122,11 +130,15 @@ const RULES: ReadonlyArray<{
   },
   // Then lowercase credential keywords as standalone-ish keys (also catches the
   // bare forms private_key / passphrase / credential that the compound rule
-  // above misses because it requires a leading identifier).
+  // above misses because it requires a leading identifier). An OpenCode session
+  // ID under a session key is kept: the reviewer needs it for intent and lineage.
   {
     re: /(^|_|[^A-Za-z0-9_])(api[_-]?key|access[_-]?token|secret[_-]?key|client[_-]?secret|secret|password|passwd|token|cookie|csrf[_-]?token|session[_-]?id|sessionid|session|sid|private[_-]?key|passphrase|credentials?)(["']?\s*[:=]\s*["']?)(?!\[REDACTED)([^$`{}()\s"'#[\]]{8,})/gi,
-    replace: (_m: string, g: string[]) =>
-      `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
+    replace: (m: string, g: string[]) =>
+      OPENCODE_SESSION_KEY.test(g[1] ?? "") &&
+      OPENCODE_SESSION_ID.test(g[3] ?? "")
+        ? m
+        : `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
   },
 ];
 

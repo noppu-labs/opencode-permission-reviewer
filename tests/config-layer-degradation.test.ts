@@ -110,7 +110,7 @@ describe("config warnings reach stderr without degrading", () => {
   const INVALID_DENIAL =
     'systemOneDenialReview "yes" is not a boolean; using false';
   const NOT_JEV =
-    'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+    'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model';
 
   test("an invalid global routing value falls back and warns", () => {
     const { config, warnings } = loadLayers({

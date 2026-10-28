@@ -64,7 +64,7 @@ describe("TUI status protocol", () => {
       resolution: "reasoning-unavailable",
       decidedBy: "openai/gpt-6-luna",
       configWarnings: [
-        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+        "systemOneDenialReview is inactive: the reviewer model is not a System One model",
       ],
       configDegraded: ["global config file is malformed and was ignored"],
     });

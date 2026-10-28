@@ -17,7 +17,7 @@ import {
 } from "./system-one-fixtures.ts";
 
 const CRITICAL_REASON =
-  "Jev rated this request critical risk; a reasoning approval needs manual review.";
+  "System One rated this request critical risk; a reasoning approval needs manual review.";
 
 const CRITICAL_UNCERTAIN_DENY: JevScript = {
   ...JEV_ANSWERS.uncertainDeny,

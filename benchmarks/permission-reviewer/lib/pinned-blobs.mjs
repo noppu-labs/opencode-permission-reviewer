@@ -56,9 +56,11 @@ export const PINNED_BLOBS = {
   "src/modules/policy/config-rule-condition.ts":
     "715b0c26ea736ec7c3a2c49196ec36e9d22ec51f",
   "src/modules/config/services/system-one-routing.ts":
-    "4ceecf4292d4f6ead9ede8864d76704763cec4ff",
+    "7f7e53b95b7efa249606ab59fcbd898e5345db03",
   "src/modules/config/services/reviewer-model.ts":
-    "b662c31acc12c8b13db9015124f17cbc2b9faabe",
+    "ffd63e49a0e4f71d395ed7beb9bd9c5af8a1bd66",
+  "src/modules/config/models/system-one-providers.ts":
+    "53239d13a7275bc6db11c6b2214e9ed371a6fd8c",
   "src/modules/decision/decision.ts":
     "5be4072b5621cefb276291d866089364df31cdc7",
   "src/utils/is-record.ts": "e659b433eacbe23c2a76e43b22c02be146df74ba",
@@ -120,7 +122,7 @@ export const PINNED_BLOBS = {
     "30c8898cdc53a467422f0e0341a466ffff6246a5",
   "src/modules/analysis/walk/gnu-long-option-tables.ts":
     "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
-  "src/utils/redact.ts": "145a65e8ef1b9d1f5eb84256ddeb77565df31fbf",
+  "src/utils/redact.ts": "46b9d6ed1c42f8ea0b99e94d5f75a557481d3588",
   "src/modules/analysis/capability/command-parser.ts":
     "e393f9d546c14794285d8aa83d5776c2c1731903",
   "src/modules/analysis/capability/bash-analyzer.ts":
@@ -195,7 +197,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
     "7f28c2b734ca0a6565701f844311df6a716246b2",
   "src/modules/reviewer/services/review.ts":
-    "2c8a43ab5443837a0a91945de32a1552559f9374",
+    "316960099fd891d871582b05013366cfac41d4fb",
   "src/modules/reviewer/services/system-one-questions.ts":
     "5008341e04e7fc87061e82001cfc43b91fd06846",
   "src/modules/reviewer/services/system-one-answers.ts":

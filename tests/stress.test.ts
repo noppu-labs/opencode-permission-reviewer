@@ -25,6 +25,10 @@ import { decision, defined, MockClient, request, runtime } from "./helpers.ts";
 
 const execFileAsync = promisify(execFile);
 
+// Catches superlinear blowups, not small slowdowns: linear runs take about
+// 200 ms locally and up to about 1.2 s on shared CI runners.
+const LINEAR_TIME_LIMIT_MS = 2_000;
+
 function repeated(unit: string[], count: number): string[] {
   return Array.from({ length: Math.floor(count) }, () => unit).flat();
 }
@@ -159,7 +163,7 @@ function parsesRepeatedInLinearTime(
   const command = unit.repeat(Math.floor(size / unit.length));
   const started = Date.now();
   parseCommand(command);
-  expect(Date.now() - started).toBeLessThan(1_000);
+  expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
 }
 
 function mutateDecision(base: Record<string, unknown>, item: number): void {
@@ -312,7 +316,7 @@ describe("stress and adversarial robustness", () => {
     (_, command) => {
       const started = Date.now();
       legacySanitizedCommand(command);
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -392,7 +396,7 @@ describe("stress and adversarial robustness", () => {
     (_, command) => {
       const started = Date.now();
       emergencyBrakeReason(request({ metadata: { command } }));
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -403,7 +407,7 @@ describe("stress and adversarial robustness", () => {
     const command = "'a'>&".repeat(209_712);
     const started = Date.now();
     lexSegments(command);
-    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
   }, 60_000);
 
   test("lexes double parentheses holding heredocs well past the input cap in linear time", () => {
@@ -412,7 +416,7 @@ describe("stress and adversarial robustness", () => {
     const command = unit.repeat(Math.floor((8 * 131_072) / unit.length));
     const started = Date.now();
     lexSegments(command);
-    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
   }, 60_000);
 
   test.each([
@@ -424,7 +428,7 @@ describe("stress and adversarial robustness", () => {
       const command = nestedArithmeticBodies(size);
       const started = Date.now();
       parseCommand(command);
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -438,7 +442,7 @@ describe("stress and adversarial robustness", () => {
       const command = quotedArithmeticBodies(size);
       const started = Date.now();
       parseCommand(command);
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -522,7 +526,7 @@ describe("stress and adversarial robustness", () => {
     (_, tokens) => {
       const started = Date.now();
       parseSsh(tokens, 0);
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -543,7 +547,7 @@ describe("stress and adversarial robustness", () => {
     (_, command) => {
       const started = Date.now();
       parseCommand(command);
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -558,7 +562,7 @@ describe("stress and adversarial robustness", () => {
         directory: "/tmp",
         worktree: "/tmp",
       });
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -584,7 +588,7 @@ describe("stress and adversarial robustness", () => {
     (_, command) => {
       const started = Date.now();
       analyzeCapability(parseCommand(command), "/tmp", "/tmp");
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
     60_000,
   );
@@ -600,7 +604,7 @@ describe("stress and adversarial robustness", () => {
       request({ patterns: [command], metadata: { command } }),
     );
     const parsed = parseCommand(command);
-    expect(Date.now() - started).toBeLessThan(1_000);
+    expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     expect(parsed.analysisTruncated).toBe(false);
   });
 
@@ -612,7 +616,7 @@ describe("stress and adversarial robustness", () => {
     (_, command) => {
       const started = Date.now();
       analyzeCapability(parseCommand(command), "/tmp", "/tmp");
-      expect(Date.now() - started).toBeLessThan(1_000);
+      expect(Date.now() - started).toBeLessThan(LINEAR_TIME_LIMIT_MS);
     },
   );
 

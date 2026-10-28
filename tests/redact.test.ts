@@ -21,10 +21,12 @@ import {
   GITHUB_USER_TOKEN,
   HEADER_VALUE_OPAQUE,
   JWT_TOKEN,
+  LIQUID_KEY,
   OPAQUE_ABCDEFGH,
   OPAQUE_ABCDEFGHIJ,
   OPENAI_KEY,
   OPENAI_PROJECT_KEY,
+  OPENROUTER_KEY,
   PGPASSWORD_ASSIGNMENT,
   POSTGRES_URL_WITH_PASSWORD,
   SKSYNTHETIC_KEY,
@@ -70,6 +72,22 @@ describe("redactSecrets — credential formats", () => {
     const out = redactSecrets(input);
     expect(out).not.toContain(secret);
     expect(out).toMatch(/\[REDACTED:[a-z]+\]/);
+  });
+
+  test("redacts OpenRouter keys under their own label", () => {
+    const assigned = redactSecrets(
+      `export OPENROUTER_API_KEY=${OPENROUTER_KEY}`,
+    );
+    expect(assigned).not.toContain(OPENROUTER_KEY);
+    const bare = redactSecrets(`Bearer-less ${OPENROUTER_KEY} pasted`);
+    expect(bare).not.toContain(OPENROUTER_KEY);
+    expect(bare).toContain("[REDACTED:openrouter]");
+  });
+
+  test("keeps the OpenAI and Anthropic labels for other sk- keys", () => {
+    expect(redactSecrets(OPENAI_KEY)).toBe("[REDACTED:openai]");
+    expect(redactSecrets(OPENAI_PROJECT_KEY)).toBe("[REDACTED:openai]");
+    expect(redactSecrets(ANTHROPIC_KEY)).toBe("[REDACTED:anthropic]");
   });
 
   test("redacts Stripe-style live secret keys", () => {
@@ -256,6 +274,13 @@ describe("redactSecrets — credential formats", () => {
     expect(redactSecrets(TELEGRAM)).toContain("[REDACTED:telegram]");
   });
 
+  test("redacts Liquid AI keys but not liquid_ identifiers", () => {
+    const out = redactSecrets(`key ${LIQUID_KEY}`);
+    expect(out).toContain("[REDACTED:liquid]");
+    expect(out).not.toContain(LIQUID_KEY);
+    expect(redactSecrets("liquid_template_name")).toBe("liquid_template_name");
+  });
+
   test("redacts bare session/cookie assignments", () => {
     expect(redactSecrets(`session=${OPAQUE_ABCDEFGH}`)).not.toContain(
       "abcdefgh",
@@ -323,6 +348,26 @@ describe("redactSecrets — does not overreach", () => {
     "git@github.com:org/repo.git",
   ])("leaves %s untouched", (input) => {
     expect(redactSecrets(input)).toBe(input);
+  });
+
+  test("keeps OpenCode session IDs but not lookalike secrets", () => {
+    const id = "ses_" + "0a1b2c3d4e5f" + "AbCdEfGhIjKlMn";
+    const longId = `${id}OpQrSt`;
+    for (const text of [
+      `INTENT actor=user session=${id} message=msg_01`,
+      `{"sessionID": "${longId}"}`,
+      `sid=${id}`,
+    ])
+      expect(redactSecrets(text)).toBe(text);
+    expect(redactSecrets(`session=${id}x`)).toContain("[REDACTED:credential]");
+    expect(redactSecrets(`session=${id}/secretvalue`)).not.toContain(
+      "secretvalue",
+    );
+    expect(redactSecrets(`session=ses_${"Z".repeat(26)}`)).toContain(
+      "[REDACTED:credential]",
+    );
+    expect(redactSecrets(`password=${id}`)).not.toContain(id);
+    expect(redactSecrets(`token=${id}`)).not.toContain(id);
   });
 });
 

@@ -7,6 +7,7 @@ import {
   HANDOFF_BUDGET_FLOOR_MS,
   resolveSystemOneRouting,
   type SystemOneRouting,
+  systemOneModelWarnings,
   systemOneRoutingWarnings,
 } from "../src/modules/config/services/system-one-routing.ts";
 
@@ -18,13 +19,13 @@ const BOTH_ON = {
 };
 
 const ESCALATION_NO_REVIEWER =
-  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you';
 const ESCALATION_NOT_JEV =
-  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model';
 const DENIAL_NO_REVIEWER =
-  "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final";
+  "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final";
 const DENIAL_NOT_JEV =
-  "systemOneDenialReview is inactive: the reviewer model is not Jev";
+  "systemOneDenialReview is inactive: the reviewer model is not a System One model";
 
 describe("invalid System One routing values", () => {
   test("the defaults carry no warnings", () => {
@@ -235,5 +236,70 @@ describe("hand-off budget floor warning", () => {
         resolveConfig({ ...layer, reviewBudgetMs: 20_000 }),
       ),
     ).toEqual(resolveSystemOneRouting(resolveConfig(layer)));
+  });
+});
+
+describe("System One model warnings", () => {
+  const unbenchmarked = (id: string): string =>
+    `openrouter/${id} has not been benchmarked as a reviewer; see REVIEWER-MODELS.md`;
+  const incompatible = (id: string, reason: string): string =>
+    `openrouter/${id} is known to reject the reviewer's request (${reason}); every review will fail`;
+
+  test.each([
+    ["openrouter/typesafe/jev-1.14", []],
+    ["openrouter/typesafe/jev-1.14:nitro", []],
+    ["openrouter/cloudflare/clef", [unbenchmarked("cloudflare/clef")]],
+    [
+      "openrouter/cloudflare/clef:nitro",
+      [unbenchmarked("cloudflare/clef:nitro")],
+    ],
+    ["openrouter/typesafe/jev-1.15", [unbenchmarked("typesafe/jev-1.15")]],
+    [
+      "openrouter/typesafe/jev-1.15:nitro",
+      [unbenchmarked("typesafe/jev-1.15:nitro")],
+    ],
+    [
+      "openrouter/respan/span-01",
+      [incompatible("respan/span-01", "requires a different state shape")],
+    ],
+    [
+      "openrouter/respan/span-01:nitro",
+      [
+        incompatible(
+          "respan/span-01:nitro",
+          "requires a different state shape",
+        ),
+      ],
+    ],
+    [
+      "openrouter/respan/span-01-lite:free",
+      [
+        incompatible(
+          "respan/span-01-lite:free",
+          "requires a different state shape",
+        ),
+      ],
+    ],
+    ["liquid-ai/d1", []],
+    ["openrouter/anthropic/claude-sonnet-5", []],
+  ])("%s model warnings", (model, expected) => {
+    expect(resolveConfig({ model }).configWarnings ?? []).toEqual(expected);
+    expect(systemOneModelWarnings(resolveConfig({ model }))).toEqual(expected);
+  });
+
+  test("follows the invalid-value and routing warnings and precedes the budget floor", () => {
+    expect(
+      resolveConfig({
+        model: "openrouter/cloudflare/clef",
+        escalationReviewer: REVIEWER,
+        systemOneEscalation: "on",
+        timeoutMs: 10_000,
+        reviewBudgetMs: 20_000,
+      }).configWarnings,
+    ).toEqual([
+      'systemOneEscalation "on" is not "standard" or "reasoning-first"; using "standard"',
+      unbenchmarked("cloudflare/clef"),
+      "reviewBudgetMs 20000 leaves less than 15000 ms after timeoutMs; hand-offs to the reasoning reviewer will escalate to you instead",
+    ]);
   });
 });

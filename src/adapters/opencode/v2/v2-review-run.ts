@@ -38,7 +38,7 @@ export async function runV2Review(
   let createIssued = false;
   try {
     const { directory } = await attempt.wait(run.location(client));
-    await assertReviewerLocation(
+    const { variant } = await assertReviewerLocation(
       client,
       directory,
       attempt,
@@ -50,8 +50,14 @@ export async function runV2Review(
     createIssued = true;
     await createReviewSession(
       client,
-      { id, directory, providerID, modelID, structured: pending.structured },
-      config,
+      {
+        id,
+        directory,
+        providerID,
+        modelID,
+        structured: pending.structured,
+        variant,
+      },
       attempt,
     );
     return await promptUntilDecided(client, id, pending, config);

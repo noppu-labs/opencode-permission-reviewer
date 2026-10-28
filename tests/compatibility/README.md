@@ -12,6 +12,7 @@ export OPENCODE_V1_1_18_35=/absolute/path/to/opencode-1.18.35
 export OPENCODE_V2_2_0_22=/absolute/path/to/opencode-2.0.22
 export OPENCODE_V2_2_0_26=/absolute/path/to/opencode-2.0.26
 export OPENCODE_V2_2_1_2=/absolute/path/to/opencode-2.1.2
+export OPENCODE_V2_2_2_0=/absolute/path/to/opencode-2.2.0
 uv run pytest tests/compatibility -q
 ```
 

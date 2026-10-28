@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-28
+
+### Added
+
+- Liquid AI (`liquid-ai/d1`, `liquid-ai/d1-ultra`) and Baseten
+  (`baseten/decision-models/baseten-mammoth-27b-latest`,
+  `baseten/decision-models/baseten-elephant-9b-latest`) System One reviewers, selected from one
+  provider table. Keys come from `LIQUID_API_KEY` and `BASETEN_API_KEY`. A key that is not shaped
+  like a Liquid AI key is never sent, and Liquid keys are redacted from reviewer evidence
+  ([Reviewer models](docs/REVIEWER-MODELS.md#system-one-reviewers); ported from upstream 2.5.0).
+- OpenRouter System One reviewers (`openrouter/<model>`, for example `openrouter/typesafe/jev-1.14`),
+  keyed by `OPENROUTER_API_KEY`. Listed models, routing suffixes such as `:free` and `:nitro`, and
+  new `typesafe/jev-<n>` and `liquid/d1…` releases are accepted. Unbenchmarked models raise a
+  config notice, and known-incompatible ones say every review will fail
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
+- A weekly `openrouter-models` workflow that refreshes the list of OpenRouter decision models and
+  opens a pull request against `develop`.
+- Redaction of OpenRouter keys (`sk-or-v1-…`) in reviewer evidence.
+
+### Changed
+
+- User-facing text says "System One" instead of "Jev" when it describes the mechanism: attribution
+  lines, toasts, config warnings and the docs. "Jev" now names only the Jev model itself.
+- The minimum Bun is now 1.3.14 (was 1.3.0), the floor `@opentui/core` 0.7 declares. The TUI
+  dependencies move from `@opentui/core` and `@opentui/solid` 0.5.11 to 0.7.0, which
+  `@opencode/plugin` 2.2.0 pins exactly.
+- Update the `@opencode/client` dependency to 2.2.0, from upstream. OpenCode 2.2.0 joins the
+  real-host matrix as a verified V2 host.
+- Development tooling updates (Biome 2.6, knip, tsdown, `@types/bun`) with no behaviour change.
+  The development tree also clears new `zod` and `undici` advisories.
+
+### Fixed
+
+- On OpenCode V2, a reviewer model that lacks the default `medium` variant now runs with its own
+  default variant instead of escalating every request, including when `medium` is set explicitly.
+  Any other variant the model lacks still fails closed, and the error lists the variants the model
+  offers (ported from upstream 2.5.0).
+- OpenCode session IDs (`ses_…`) under a session key are kept in reviewer evidence instead of being
+  redacted as credentials. Lookalike values, and session IDs under other keys, are still redacted
+  (ported from upstream 2.5.0).
+- Package-script evidence now starts from the shell tool's `workdir`, so `bun run x` in a
+  workspace package reports that package's script, not the root one. A workdir that is invalid or
+  does not exist is reported as unresolved, and the read roots do not widen (ported from upstream
+  2.5.0).
+
+### Security
+
+- `@opentui/solid` 0.7.0 pins `@babel/core` 7.29.7, so consumer installs no longer carry
+  GHSA-4x5r-pxfx-6jf8 (`@babel/core <= 7.29.0`).
+
 ## [3.2.3] - 2026-10-24
 
 ### Changed
@@ -380,7 +430,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Jev as a reviewer model choice through OpenCode Zen, TypeSafe AI, or the
   Command Code Provider API. Use Jev alone, or configure a second LLM such as
   Luna for difficult decisions. See the [Jev setup
-  guide](./docs/REVIEWER-MODELS.md#jev-system-one-reviewer).
+  guide](./docs/REVIEWER-MODELS.md#system-one-reviewers).
 
 ### Changed
 

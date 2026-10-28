@@ -148,7 +148,7 @@ test.each([
     name: "a variantless model",
     stub: "model.list",
     value: (): unknown => model({ capabilities: { tools: true } }),
-    reason: "Reviewer variant is unavailable",
+    reason: 'Reviewer variant "max" is unavailable (model has no variants)',
   },
   {
     name: "a toolless model",
