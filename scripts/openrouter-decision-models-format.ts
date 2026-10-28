@@ -35,7 +35,6 @@ export function formatWithBiome(text: string, path: string): string {
   return formatted;
 }
 
-/** Refuse a run that would delete over half of the listed models. */
 export function assertNoMassRemoval(
   listed: number,
   removed: readonly string[],

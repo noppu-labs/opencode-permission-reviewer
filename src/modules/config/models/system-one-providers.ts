@@ -47,7 +47,7 @@ const escapeRegExp = (value: string): string =>
 
 const OPENROUTER_MODELS: OpenRouterDecisionModels["models"] =
   OPENROUTER_DECISION_MODELS.models;
-const OPENROUTER_INCOMPATIBLE: Readonly<Record<string, string>> =
+const OPENROUTER_INCOMPATIBLE: OpenRouterDecisionModels["incompatible"] =
   OPENROUTER_DECISION_MODELS.incompatible;
 
 // The exact id first, so an id listed with its own tag keeps its entry.

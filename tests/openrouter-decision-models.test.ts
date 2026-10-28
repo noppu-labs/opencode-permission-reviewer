@@ -140,3 +140,12 @@ test("OPENROUTER_MODELS_ALLOW_DROP lets a mass removal through", () =>
   expect(() =>
     assertNoMassRemoval(4, ["a", "b", "c", "d"], true),
   ).not.toThrow());
+
+test("prototype property names are ordinary ids", () => {
+  const { next, added } = updateDecisionModels(
+    { models: { "a/b": { benchmarked: true } }, incompatible: {} },
+    ["a/b", "constructor", "toString"],
+  );
+  expect(Object.keys(next.models)).toEqual(["a/b", "constructor", "toString"]);
+  expect(added).toEqual(["constructor", "toString"]);
+});

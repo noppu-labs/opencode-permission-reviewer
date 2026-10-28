@@ -60,7 +60,7 @@ const RULES: ReadonlyArray<{
     re: /\bgithub_pat_[A-Za-z0-9_]{22,251}\b/g,
     replace: () => REDACT("github"),
   },
-  // OpenRouter: must precede the OpenAI `sk-` rules.
+  // OpenRouter.
   { re: /\bsk-or-v1-[0-9a-f]{64}\b/g, replace: () => REDACT("openrouter") },
   // OpenAI: project keys and long bare `sk-…` keys (excludes Anthropic).
   { re: /\bsk-proj-[A-Za-z0-9_-]{20,}\b/g, replace: () => REDACT("openai") },
