@@ -53,6 +53,12 @@ updates:
       - dependency-name: "@opentui/core"
       - dependency-name: "@opentui/solid"
       - dependency-name: solid-js
+      # 0.7.0 buffers responses by locking the original body with getReader(),
+      # which Bun treats as consuming it, so every System One call fails with
+      # "Body already used". Later releases still get proposed and tested.
+      - dependency-name: "@typesafe-ai/sdk"
+        versions:
+          - "0.7.0"
     commit-message:
       prefix: chore
       include: scope
