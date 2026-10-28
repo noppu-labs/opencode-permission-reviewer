@@ -47,8 +47,8 @@ max-module-lines = 600
 # by name are declared here rather than whitelisted per line.
 [tool.vulture]
 paths = ["tests/compatibility", "benchmarks/permission-reviewer/scripts"]
-# pytest finds fixtures by name; nothing calls them.
-ignore_decorators = ["@pytest.fixture"]
+# pytest finds fixtures and hooks by name; nothing calls them.
+ignore_decorators = ["@pytest.fixture", "@pytest.hookimpl"]
 # BaseHTTPRequestHandler calls these by name (tests/compatibility/conftest.py).
 ignore_names = ["do_POST", "log_message"]
 

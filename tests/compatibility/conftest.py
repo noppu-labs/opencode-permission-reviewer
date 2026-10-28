@@ -59,12 +59,23 @@ def _local_plugins_active(result: Any) -> bool:
     return bool(local) and all(plugin.get("state", {}).get("status") == "active" for plugin in local)
 
 
+@pytest.hookimpl(wrapper=True)
+def pytest_runtest_makereport(item, call):
+    report = yield
+    setattr(item, f"report_{report.when}", report)
+    return report
+
+
 @pytest.fixture
-def launch_host(tmp_path):
+def launch_host(request, tmp_path):
     processes: list[tuple[subprocess.Popen[bytes], IO[str]]] = []
     yield functools.partial(_launch, tmp_path, processes)
+    failed = getattr(request.node, "report_call", None) is None or request.node.report_call.failed
     for process, log in reversed(processes):
         stop_process(process)
+        if failed:
+            log.seek(0)
+            print(f"--- {log.name} (last 200 lines) ---\n" + "".join(log.readlines()[-200:]))
         log.close()
 
 
