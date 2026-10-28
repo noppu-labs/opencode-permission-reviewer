@@ -327,7 +327,7 @@ describe("redactSecrets — does not overreach", () => {
 
   test("keeps OpenCode session IDs but not lookalike secrets", () => {
     const id = "ses_" + "0a1b2c3d4e5f" + "AbCdEfGhIjKlMn";
-    const longId = id + "OpQrSt";
+    const longId = `${id}OpQrSt`;
     for (const text of [
       `INTENT actor=user session=${id} message=msg_01`,
       `{"sessionID": "${longId}"}`,

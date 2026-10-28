@@ -23,9 +23,9 @@ async function assertNoMcpServers(
 }
 
 /**
- * The variant to request: the configured one when the model offers it, none
- * when it is unset, and none for the built-in default the model lacks. An
- * explicitly configured variant the model lacks fails closed.
+ * A missing `medium` falls back to the model's own default even when it was set
+ * explicitly, because the resolved config cannot tell it apart from the built-in
+ * default. Any other missing variant fails closed.
  */
 export function selectVariant(
   configured: string,

@@ -10,15 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - On OpenCode V2, a reviewer model that lacks the default `medium` variant now runs with its own
-  default variant instead of escalating every request. A variant you set explicitly still fails
-  closed when the model lacks it, and the error lists the variants the model offers (ported from
-  upstream 2.5.0).
+  default variant instead of escalating every request, including when `medium` is set explicitly.
+  Any other variant the model lacks still fails closed, and the error lists the variants the model
+  offers (ported from upstream 2.5.0).
 - OpenCode session IDs (`ses_…`) under a session key are kept in reviewer evidence instead of being
   redacted as credentials. Lookalike values, and session IDs under other keys, are still redacted
   (ported from upstream 2.5.0).
 - Package-script evidence now starts from the shell tool's `workdir`, so `bun run x` in a
   workspace package reports that package's script, not the root one. A workdir that is invalid or
-  missing is reported as unresolved, and the read roots do not widen (ported from upstream 2.5.0).
+  does not exist is reported as unresolved, and the read roots do not widen (ported from upstream
+  2.5.0).
 
 ## [3.3.0] - 2026-10-28
 

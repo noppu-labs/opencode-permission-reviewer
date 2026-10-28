@@ -120,7 +120,7 @@ export const PINNED_BLOBS = {
     "30c8898cdc53a467422f0e0341a466ffff6246a5",
   "src/modules/analysis/walk/gnu-long-option-tables.ts":
     "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
-  "src/utils/redact.ts": "4ad97e5aab58f9c7495ecd28b5266941daa4c694",
+  "src/utils/redact.ts": "f040ca8dbe7a1a1434a6eceff02f2c4df1101404",
   "src/modules/analysis/capability/command-parser.ts":
     "e393f9d546c14794285d8aa83d5776c2c1731903",
   "src/modules/analysis/capability/bash-analyzer.ts":

@@ -1,6 +1,7 @@
 import { realpath, stat } from "node:fs/promises";
 import { resolve } from "node:path";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
+import { isRecord } from "../../../utils/is-record.ts";
 import { shellCommandSegmentsWithDirectory } from "../../analysis/walk/working-directory-segments.ts";
 import { sourceCommand } from "../providers/source-command.ts";
 import { scriptCalls } from "./package-script-calls.ts";
@@ -60,20 +61,17 @@ function boundedText(records: ScriptRecord[], maxChars: number): string {
 }
 
 /**
- * The directory the host runs the shell command in. A relative workdir resolves
- * against the session directory and is followed to its real path, because
- * package managers search parent manifests physically. A workdir that is not an
- * existing directory is undefined, so another directory's manifest is never
- * reported as the target.
+ * Followed to its real path because package managers search parent manifests
+ * physically. Undefined unless it is an existing directory, so another
+ * directory's manifest is never reported as the target.
  */
 async function shellWorkdir(
   request: PermissionRequest,
   directory: string,
 ): Promise<string | undefined> {
   const input = request.metadata.toolInput;
-  if (typeof input !== "object" || input === null || Array.isArray(input))
-    return directory;
-  const workdir = (input as Record<string, unknown>).workdir;
+  if (!isRecord(input)) return directory;
+  const workdir = input.workdir;
   if (
     workdir === undefined ||
     (typeof workdir === "string" && workdir.trim() === "")

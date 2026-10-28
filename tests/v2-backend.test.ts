@@ -624,6 +624,7 @@ test("an available variant is sent as configured", () =>
 
 test("selectVariant names the offered variants", () => {
   expect(selectVariant("", ["max"])).toBeUndefined();
+  expect(selectVariant(DEFAULT_CONFIG.variant, ["low", "max"])).toBeUndefined();
   expect(() => selectVariant("high", ["low", "max"])).toThrow(
     'Reviewer variant "high" is unavailable (model offers: low, max)',
   );
