@@ -9,10 +9,12 @@ import {
   type SystemOneProvider,
 } from "../models/system-one-providers.ts";
 
-export function splitModel(model: string): {
-  providerID: string;
-  modelID: string;
-} {
+export interface ModelRef {
+  readonly providerID: string;
+  readonly modelID: string;
+}
+
+export function splitModel(model: string): ModelRef {
   const slash = model.indexOf("/");
   if (slash <= 0 || slash === model.length - 1) {
     throw new Error(
@@ -27,10 +29,8 @@ export function splitModel(model: string): {
 
 export function systemOneProviderFor(
   model: string,
-):
-  | { provider: SystemOneProvider; providerID: string; modelID: string }
-  | undefined {
-  let parsed: { providerID: string; modelID: string };
+): (ModelRef & { readonly provider: SystemOneProvider }) | undefined {
+  let parsed: ModelRef;
   try {
     parsed = splitModel(model);
   } catch {

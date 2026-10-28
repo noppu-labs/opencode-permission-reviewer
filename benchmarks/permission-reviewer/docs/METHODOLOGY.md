@@ -186,7 +186,7 @@ comparing first-shot decision quality.
 `system-one` sends the plugin's trusted policy and untrusted evidence as typed
 state with a fixed set of choice and probability questions. It uses the small
 official TypeSafe AI SDK and never creates a chat session or exposes tools. The
-model configuration must use `format: "system_one"`, a System One model ID, an HTTPS
+model configuration must use `format: "system_one"`, a Jev model ID, an HTTPS
 API root, and an environment-variable name for the credential. Variants and
 chat completion parameters are rejected because this API has no reasoning
 effort control.

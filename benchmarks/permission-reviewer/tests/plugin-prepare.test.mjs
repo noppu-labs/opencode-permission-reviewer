@@ -206,3 +206,54 @@ test("a Jev answer parses under each example System One profile", async () => {
     assert.equal(parsed?.decision.outcome, "allow", file);
   }
 });
+
+test("a Jev answer parses for an endpoint outside the provider table", async () => {
+  for (const [model, endpoint, apiKeyEnv, returned, expected] of [
+    [
+      "jev-1.13",
+      "https://opencode.ai/zen/v1",
+      "OPENCODE_API_KEY",
+      "jev-1.13",
+      "opencode/jev-1.13",
+    ],
+    [
+      "jev-1.13",
+      "https://proxy.example.com",
+      "TYPESAFE_API_KEY",
+      "jev-1.13",
+      "typesafe-ai/jev-1.13",
+    ],
+    [
+      "jev-1.13",
+      "https://proxy.example.com",
+      "UNLISTED_KEY",
+      "jev-1.13",
+      "typesafe-ai/jev-1.13",
+    ],
+    [
+      "typesafe/jev",
+      "https://proxy.example.com",
+      "CMD_API_KEY",
+      "typesafe/jev",
+      "commandcode/typesafe/jev",
+    ],
+  ]) {
+    const { config } = await adapter.prepare(
+      bashInput(),
+      validateModel({
+        id: "profile",
+        model,
+        endpoint,
+        apiKeyEnv,
+        transport: "system-one",
+        format: "system_one",
+      }),
+    );
+    assert.equal(config.model, expected, endpoint);
+    const parsed = adapter.parseSystemOne(
+      { model: returned, answers: allowAnswers() },
+      config,
+    );
+    assert.equal(parsed?.decision.outcome, "allow", `${endpoint} ${apiKeyEnv}`);
+  }
+});
