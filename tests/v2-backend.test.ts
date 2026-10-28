@@ -5,8 +5,10 @@ import { pathToFileURL } from "node:url";
 import type { McpListOutput, OpenCodeClient } from "@opencode/client";
 import type { Plugin } from "@opencode/plugin";
 import { V2ReviewerBackend } from "../src/adapters/opencode/v2/reviewer-backend.ts";
+import { selectVariant } from "../src/adapters/opencode/v2/v2-review-preflight.ts";
 import type { ReviewExecutionResult } from "../src/kernel/review-result.ts";
 import type { ReviewerConfig } from "../src/kernel/reviewer-config.ts";
+import { DEFAULT_CONFIG } from "../src/modules/config/services/config.ts";
 import type { ReviewEnvelope } from "../src/modules/context/models/review-envelope.ts";
 import { ReviewAttempt } from "../src/modules/review/services/review-attempt.ts";
 import { config, decision, request } from "./helpers.ts";
@@ -39,6 +41,7 @@ interface V2Fixture {
     removed: boolean;
     messagesBySession: Map<string, string>;
     prompts: number;
+    requestedVariant: string | undefined;
     mcpLists: number;
     mcpTransforms: number;
     disposed: number;
@@ -96,6 +99,7 @@ type FixtureOptions = {
   missingModel?: boolean;
   noTools?: boolean;
   variant?: string;
+  modelVariants?: string[];
   retain?: boolean;
   wrongLocation?: boolean;
   activationFailed?: boolean;
@@ -118,6 +122,7 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
   const messagesBySession = new Map<string, string>();
   const attempts: ReviewAttempt[] = [];
   let prompts = 0;
+  let requestedVariant: string | undefined;
   let mcpLists = 0;
   const mcpTransforms: Array<(editor: McpEditor) => void> = [];
   let disposed = 0;
@@ -207,7 +212,9 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
                 providerID: "fixture",
                 id: "reviewer",
                 capabilities: { tools: !options.noTools },
-                variants: [{ id: "max" }],
+                variants: (options.modelVariants ?? ["max"]).map((id) => ({
+                  id,
+                })),
               },
             ],
       }),
@@ -246,8 +253,10 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
       create: async (input: {
         id: string;
         location: { directory: string };
+        model: { variant?: string };
         permissions: unknown[];
       }) => {
+        requestedVariant = input.model.variant;
         sessionID = input.id;
         sessionIDs.push(sessionID);
         expect(input.permissions[0]).toEqual({
@@ -368,6 +377,7 @@ function fixture(options: FixtureOptions = {}): V2Fixture {
       removed: removed.has(sessionID),
       messagesBySession,
       prompts,
+      requestedVariant,
       mcpLists,
       mcpTransforms: mcpTransforms.length,
       disposed,
@@ -593,3 +603,32 @@ test("an inert bootstrap reload keeps stripping MCP after the backend releases i
     expect(harness.state().mcpTransforms).toBe(1);
     expect(await harness.mcp()).toEqual([]);
   }));
+
+test("the default variant falls back to the model default when the model lacks it", async () => {
+  for (const modelVariants of [[], ["low", "high"]])
+    await withFixture(
+      { variant: DEFAULT_CONFIG.variant, modelVariants },
+      async (harness) => {
+        expect((await harness.run()).kind).toBe("allow");
+        expect(harness.state().prompts).toBe(1);
+        expect(harness.state().requestedVariant).toBeUndefined();
+      },
+    );
+});
+
+test("an available variant is sent as configured", () =>
+  withFixture({ variant: "max" }, async (harness) => {
+    expect((await harness.run()).kind).toBe("allow");
+    expect(harness.state().requestedVariant).toBe("max");
+  }));
+
+test("selectVariant names the offered variants", () => {
+  expect(selectVariant("", ["max"])).toBeUndefined();
+  expect(selectVariant(DEFAULT_CONFIG.variant, ["low", "max"])).toBeUndefined();
+  expect(() => selectVariant("high", ["low", "max"])).toThrow(
+    'Reviewer variant "high" is unavailable (model offers: low, max)',
+  );
+  expect(() => selectVariant("high", [])).toThrow(
+    'Reviewer variant "high" is unavailable (model has no variants)',
+  );
+});

@@ -21,6 +21,10 @@
 
 const REDACT = (type: string): string => `[REDACTED:${type}]`;
 
+const OPENCODE_SESSION_KEY = /^(?:session[_-]?id|session|sid)$/i;
+const OPENCODE_SESSION_ID =
+  /^ses_[0-9a-f]{12}[A-Za-z0-9]{14}(?:[A-Za-z0-9]{6})?$/;
+
 // Order matters: run specific token formats first, then URL userinfo, then
 // auth headers, then generic credential assignments. Each value-level rule
 // carries a `(?!\[REDACTED)` guard so a second pass is a no-op.
@@ -122,11 +126,15 @@ const RULES: ReadonlyArray<{
   },
   // Then lowercase credential keywords as standalone-ish keys (also catches the
   // bare forms private_key / passphrase / credential that the compound rule
-  // above misses because it requires a leading identifier).
+  // above misses because it requires a leading identifier). An OpenCode session
+  // ID under a session key is kept: the reviewer needs it for intent and lineage.
   {
     re: /(^|_|[^A-Za-z0-9_])(api[_-]?key|access[_-]?token|secret[_-]?key|client[_-]?secret|secret|password|passwd|token|cookie|csrf[_-]?token|session[_-]?id|sessionid|session|sid|private[_-]?key|passphrase|credentials?)(["']?\s*[:=]\s*["']?)(?!\[REDACTED)([^$`{}()\s"'#[\]]{8,})/gi,
-    replace: (_m: string, g: string[]) =>
-      `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
+    replace: (m: string, g: string[]) =>
+      OPENCODE_SESSION_KEY.test(g[1] ?? "") &&
+      OPENCODE_SESSION_ID.test(g[3] ?? "")
+        ? m
+        : `${g[0] ?? ""}${g[1] ?? ""}${g[2] ?? ""}${REDACT("credential")}`,
   },
 ];
 

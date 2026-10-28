@@ -14,13 +14,20 @@ interface ReviewSessionRequest {
   providerID: string;
   modelID: string;
   structured: boolean;
+  variant: string | undefined;
 }
 
 /** Create the review session denying every tool but the decision tool. */
 export async function createReviewSession(
   client: V2HostApi,
-  { id, directory, providerID, modelID, structured }: ReviewSessionRequest,
-  config: ReviewerConfig,
+  {
+    id,
+    directory,
+    providerID,
+    modelID,
+    structured,
+    variant,
+  }: ReviewSessionRequest,
   attempt: ReviewAttempt,
 ): Promise<void> {
   const created = await attempt.wait(
@@ -32,7 +39,7 @@ export async function createReviewSession(
         model: {
           id: modelID,
           providerID,
-          ...(config.variant ? { variant: config.variant } : {}),
+          ...(variant ? { variant } : {}),
         },
         permissions: [
           { action: "*", resource: "*", effect: "deny" },
