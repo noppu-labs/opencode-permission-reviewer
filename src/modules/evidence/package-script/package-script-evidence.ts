@@ -1,3 +1,5 @@
+import { realpath, stat } from "node:fs/promises";
+import { resolve } from "node:path";
 import type { PermissionRequest } from "../../../kernel/permission-request.ts";
 import { shellCommandSegmentsWithDirectory } from "../../analysis/walk/working-directory-segments.ts";
 import { sourceCommand } from "../providers/source-command.ts";
@@ -57,6 +59,37 @@ function boundedText(records: ScriptRecord[], maxChars: number): string {
   return `PACKAGE_SCRIPT_ANALYSIS\n${text}`;
 }
 
+/**
+ * The directory the host runs the shell command in. A relative workdir resolves
+ * against the session directory and is followed to its real path, because
+ * package managers search parent manifests physically. A workdir that is not an
+ * existing directory is undefined, so another directory's manifest is never
+ * reported as the target.
+ */
+async function shellWorkdir(
+  request: PermissionRequest,
+  directory: string,
+): Promise<string | undefined> {
+  const input = request.metadata.toolInput;
+  if (typeof input !== "object" || input === null || Array.isArray(input))
+    return directory;
+  const workdir = (input as Record<string, unknown>).workdir;
+  if (
+    workdir === undefined ||
+    (typeof workdir === "string" && workdir.trim() === "")
+  )
+    return directory;
+  if (typeof workdir !== "string" || workdir.includes("\0")) return undefined;
+  const resolved = resolve(directory, workdir);
+  if (resolved === resolve(directory)) return directory;
+  try {
+    const real = await realpath(resolved);
+    return (await stat(real)).isDirectory() ? real : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Read manifest definitions and literal local calls; never execute package code. */
 export async function enrichPackageScriptEvidence(
   request: PermissionRequest,
@@ -65,6 +98,8 @@ export async function enrichPackageScriptEvidence(
   maxChars: number,
 ): Promise<{ text: string }> {
   if (request.permission !== "bash") return { text: "" };
+  // The workdir only selects the starting manifest; reads stay within the approved roots.
+  const workdir = await shellWorkdir(request, directory);
   const expansion = new ScriptExpansion(request, {
     directory,
     worktree,
@@ -72,11 +107,15 @@ export async function enrichPackageScriptEvidence(
   });
   for (const segment of shellCommandSegmentsWithDirectory(
     sourceCommand(request),
-    directory,
+    workdir ?? directory,
   )) {
     for (const call of scriptCalls(segment.tokens)) {
       // biome-ignore lint/performance/noAwaitInLoops: expands top-level script calls in command order into the shared records list and MAX_SCRIPT_RECORDS budget; overlapping visits would reorder records and race the budget check
-      await expansion.visit(call, segment.directory, 0);
+      await expansion.visit(
+        call,
+        workdir === undefined ? undefined : segment.directory,
+        0,
+      );
     }
   }
   return { text: boundedText(expansion.records, maxChars) };
