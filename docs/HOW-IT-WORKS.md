@@ -127,7 +127,7 @@ reasoning reviewer; in the default mode provider failures never are. With
 the reasoning reviewer before it reaches you (unless less than 15 seconds of the review budget
 remain), and `systemOneDenialReview` lets that reviewer re-examine an uncertain System One denial. A review
 hands off at most once.
-[Reviewer models](REVIEWER-MODELS.md#how-jev-decisions-are-handled) covers both backends and the
+[Reviewer models](REVIEWER-MODELS.md#how-system-one-decisions-are-handled) covers both backends and the
 routing.
 
 ### 5. Enforcement

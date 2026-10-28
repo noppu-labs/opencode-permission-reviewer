@@ -87,7 +87,7 @@ export function attributionText(status: ReviewUiStatus): string | undefined {
   return model === "" ? undefined : model;
 }
 
-/** Why Jev handed off, for the budget toast ("Jev timed out"). */
+/** Why System One handed off, for the budget toast ("System One timed out"). */
 export function handoffCause(handoff: HandoffInfo): string {
   if (handoff.trigger !== "jev-failure") return CAUSE[handoff.trigger];
   return handoff.failureKind === "timeout"
