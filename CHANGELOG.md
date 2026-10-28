@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-28
+
 ### Changed
 
 - The minimum Bun is now 1.3.14 (was 1.3.0), the floor `@opentui/core` 0.7 declares. The TUI
@@ -14,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@opencode/plugin` 2.2.0 pins exactly.
 - Update the `@opencode/client` dependency to 2.2.0, from upstream. OpenCode 2.2.0 joins the
   real-host matrix as a verified V2 host.
+- Development tooling updates (Biome 2.6, knip, tsdown, `@types/bun`) with no behaviour change.
+  The development tree also clears new `zod` and `undici` advisories.
 
 ### Security
 
