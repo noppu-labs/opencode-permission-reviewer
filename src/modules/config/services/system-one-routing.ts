@@ -1,5 +1,8 @@
 import type { ReviewerConfig } from "../../../kernel/reviewer-config.ts";
-import { isSystemOneReviewerModel } from "./reviewer-model.ts";
+import {
+  isSystemOneReviewerModel,
+  systemOneProviderFor,
+} from "./reviewer-model.ts";
 
 /** The least review time a hand-off needs; with less the request escalates. */
 export const HANDOFF_BUDGET_FLOOR_MS = 15_000;
@@ -63,6 +66,13 @@ function budgetFloorWarnings(config: ReviewerConfig): string[] {
   ];
 }
 
+/** System One is never the escalation reviewer, so only `model` is checked. */
+export function systemOneModelWarnings(config: ReviewerConfig): string[] {
+  const target = systemOneProviderFor(config.model);
+  const warning = target?.provider.configWarning?.(target.modelID);
+  return warning === undefined ? [] : [warning];
+}
+
 const PREVIEW_CHARS = 80;
 
 /** A warning names the value; it does not reproduce it. */
@@ -102,6 +112,7 @@ export function withSystemOneRoutingWarnings(
   const warnings = [
     ...invalidValueWarnings(config, source),
     ...systemOneRoutingWarnings(config),
+    ...systemOneModelWarnings(config),
     ...budgetFloorWarnings(config),
   ];
   return warnings.length === 0

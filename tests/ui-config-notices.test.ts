@@ -45,6 +45,18 @@ describe("sidebar line", () => {
     ],
     [[INVALID], `⚠ reviewer: ${INVALID}`],
     [
+      [
+        "openrouter/cloudflare/clef has not been benchmarked as a reviewer; see REVIEWER-MODELS.md",
+      ],
+      "⚠ reviewer: clef not benchmarked",
+    ],
+    [
+      [
+        "openrouter/respan/span-01 is known to reject the reviewer's request (requires a different state shape); every review will fail",
+      ],
+      "⚠ reviewer: span-01 is incompatible",
+    ],
+    [
       [NOT_JEV, DENIAL_NOT_JEV],
       "⚠ reviewer: 2 config warnings · reasoning-first inactive (model is not System One)",
     ],

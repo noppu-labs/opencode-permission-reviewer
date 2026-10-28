@@ -2,6 +2,7 @@
 // TUI session, and a one-line sidebar summary while any remain. The same
 // `status` read also names the server's reasoning reviewer.
 import { asObjectLike } from "../utils/is-record.ts";
+import { modelLabel } from "./attribution.ts";
 
 interface NoticeLists {
   configWarnings?: readonly string[] | undefined;
@@ -30,6 +31,21 @@ const SHORT_WARNINGS: Readonly<Record<string, string>> = {
     "denial review inactive (no escalationReviewer)",
   "systemOneDenialReview is inactive: the reviewer model is not a System One model":
     "denial review inactive (model is not System One)",
+};
+
+const UNBENCHMARKED = /^(\S+) has not been benchmarked as a reviewer/;
+const INCOMPATIBLE = /^(\S+) is known to reject the reviewer's request/;
+
+const shortWarning = (warning: string): string => {
+  const known = SHORT_WARNINGS[warning];
+  if (known !== undefined) return known;
+  const unbenchmarked = UNBENCHMARKED.exec(warning)?.[1];
+  if (unbenchmarked !== undefined)
+    return `${modelLabel(unbenchmarked)} not benchmarked`;
+  const incompatible = INCOMPATIBLE.exec(warning)?.[1];
+  if (incompatible !== undefined)
+    return `${modelLabel(incompatible)} is incompatible`;
+  return warning;
 };
 
 const strings = (value: unknown): string[] =>
@@ -65,7 +81,7 @@ export function sidebarLine(
 ): SidebarLine | undefined {
   const items = [
     ...degraded.map((reason) => `auto-approval disabled (${reason})`),
-    ...warnings.map((warning) => SHORT_WARNINGS[warning] ?? warning),
+    ...warnings.map(shortWarning),
   ];
   const first = items[0];
   if (first === undefined) return;

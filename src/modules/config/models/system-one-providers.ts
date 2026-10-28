@@ -1,5 +1,9 @@
 // The providers that serve System One decision models: which model IDs each
 // accepts, where its endpoint lives and which key it reads.
+import {
+  OPENROUTER_DECISION_MODELS,
+  type OpenRouterDecisionModels,
+} from "./openrouter-decision-models.ts";
 
 export interface SystemOneProvider {
   readonly keyEnv: string;
@@ -28,6 +32,72 @@ const returnsJev = (_modelID: string, returned: string): boolean =>
   isJev(returned);
 const sameModel = (modelID: string, returned: string): boolean =>
   returned === modelID;
+
+// New Jev and d1 releases count before the weekly list picks them up. A `~`
+// goes only with a `-latest` alias, the only form acceptsResponse can answer.
+const OPENROUTER_FAMILIES: readonly RegExp[] = [
+  /^(?:typesafe\/jev-\d[a-z0-9.-]*(?<!-latest)|~typesafe\/jev-latest)$/,
+  /^(?:liquid\/d1(?:[-.][a-z0-9.-]*)?(?<!-latest)|~liquid\/d1(?:[-.][a-z0-9.-]*)?-latest)$/,
+];
+const OPENROUTER_ROUTING_SUFFIX = /:[a-z0-9-]+$/;
+const OPENROUTER_ALIAS = /^~(.+)-latest$/;
+
+const escapeRegExp = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const OPENROUTER_MODELS: OpenRouterDecisionModels["models"] =
+  OPENROUTER_DECISION_MODELS.models;
+const OPENROUTER_INCOMPATIBLE: OpenRouterDecisionModels["incompatible"] =
+  OPENROUTER_DECISION_MODELS.incompatible;
+
+// The exact id first, so an id listed with its own tag keeps its entry.
+const withoutRoutingSuffix = (modelID: string): readonly string[] => {
+  const stripped = modelID.replace(OPENROUTER_ROUTING_SUFFIX, "");
+  return stripped === modelID ? [modelID] : [modelID, stripped];
+};
+
+const openRouterIncompatibleReason = (modelID: string): string | undefined => {
+  for (const id of withoutRoutingSuffix(modelID))
+    if (Object.hasOwn(OPENROUTER_INCOMPATIBLE, id))
+      return OPENROUTER_INCOMPATIBLE[id];
+  return;
+};
+
+const openRouterConfigWarning = (modelID: string): string | undefined => {
+  const reason = openRouterIncompatibleReason(modelID);
+  if (reason !== undefined)
+    return `openrouter/${modelID} is known to reject the reviewer's request (${reason}); every review will fail`;
+  const listed = withoutRoutingSuffix(modelID).find((id) =>
+    Object.hasOwn(OPENROUTER_MODELS, id),
+  );
+  if (listed !== undefined && OPENROUTER_MODELS[listed]?.benchmarked === true)
+    return;
+  return `openrouter/${modelID} has not been benchmarked as a reviewer; see REVIEWER-MODELS.md`;
+};
+
+const openRouterAccepts = (modelID: string): boolean =>
+  openRouterIncompatibleReason(modelID) !== undefined ||
+  withoutRoutingSuffix(modelID).some(
+    (id) =>
+      Object.hasOwn(OPENROUTER_DECISION_MODELS.models, id) ||
+      OPENROUTER_FAMILIES.some((family) => family.test(id)),
+  );
+
+// OpenRouter answers with the dated canonical slug, and an alias with the
+// slug of whichever release it points at.
+const openRouterAcceptsResponse = (
+  modelID: string,
+  returned: string,
+): boolean => {
+  const base = modelID.replace(OPENROUTER_ROUTING_SUFFIX, "");
+  const alias = OPENROUTER_ALIAS.exec(base)?.[1];
+  if (alias !== undefined)
+    return new RegExp(`^${escapeRegExp(alias)}(?:$|[-.])`).test(returned);
+  return (
+    returned === base ||
+    new RegExp(`^${escapeRegExp(base)}-\\d{8}$`).test(returned)
+  );
+};
 
 export const SYSTEM_ONE_PROVIDERS: Readonly<Record<string, SystemOneProvider>> =
   {
@@ -67,5 +137,18 @@ export const SYSTEM_ONE_PROVIDERS: Readonly<Record<string, SystemOneProvider>> =
       accepts: (modelID: string): boolean =>
         BASETEN_DECISION_MODELS.has(modelID),
       acceptsResponse: sameModel,
+    },
+    openrouter: {
+      keyEnv: "OPENROUTER_API_KEY",
+      baseURL: "https://openrouter.ai/api",
+      keyShape: {
+        pattern: /^sk-or-v1-[0-9a-f]{64}$/,
+        message:
+          'OPENROUTER_API_KEY is not an OpenRouter key (expected the "sk-or-v1-" prefix)',
+      },
+      accepts: openRouterAccepts,
+      acceptsResponse: openRouterAcceptsResponse,
+      incompatibleReason: openRouterIncompatibleReason,
+      configWarning: openRouterConfigWarning,
     },
   };

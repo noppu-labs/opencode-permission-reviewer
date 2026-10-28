@@ -56,8 +56,11 @@ export function createSystemOneInvoker(
   if (!resolved)
     throw new Error(`Unsupported System One reviewer model ${config.model}`);
   const { provider, modelID } = resolved;
-  const incompatible = provider.incompatibleReason?.(modelID);
-  if (incompatible) throw new Error(incompatible);
+  const reason = provider.incompatibleReason?.(modelID);
+  if (reason)
+    throw new Error(
+      `${config.model} is known to reject the reviewer's request (${reason})`,
+    );
   const apiKey = process.env[provider.keyEnv]?.trim();
   if (!apiKey)
     throw new Error(

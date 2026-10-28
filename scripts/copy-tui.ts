@@ -42,6 +42,7 @@ const paths = [
   "modules/config/models/config-policy-rules.ts",
   "modules/config/models/config-risk-policy.ts",
   "modules/config/models/system-one-providers.ts",
+  "modules/config/models/openrouter-decision-models.ts",
   "modules/policy/config-rule-condition.ts",
   "modules/config/services/reviewer-model.ts",
   "modules/config/services/system-one-routing.ts",

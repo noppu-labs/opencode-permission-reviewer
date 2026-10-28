@@ -8,7 +8,7 @@ layering, see [Configuration](CONFIGURATION.md).
 
 By default the reviewer is a normal OpenCode model invocation with every operational tool denied
 at the session-permission level, so it can be any model from any provider you have configured.
-System One models (Jev, Liquid AI d1 and Baseten decision models) automatically use the typed
+System One models (Jev, Liquid AI d1, Baseten and OpenRouter decision models) automatically use the typed
 System One API instead.
 
 The model options are:
@@ -33,7 +33,7 @@ more or take longer without always improving the result.
 
 System One reviewers are decision models that answer a fixed set of typed questions instead of
 running a chat session. The plugin supports Jev, Liquid AI's d1 models and Baseten's decision
-models.
+models, plus the decision models on OpenRouter.
 
 Set `model` in the trusted global `~/.config/opencode/permission-reviewer.jsonc`, and put the
 matching key in the OpenCode server process environment before you start OpenCode. The System One
@@ -49,6 +49,7 @@ The supported routes are:
 | `commandcode/typesafe/jev`                                                                                     | `CMD_API_KEY`                 | [Command Code Provider API](https://commandcode.ai/docs/provider#decision-models-typesafejev) |
 | `liquid-ai/d1` (or `liquid-ai/d1-ultra`)                                                                       | `LIQUID_API_KEY`              | [Liquid AI](https://docs.liquid.ai/lfm/models/d1)                                             |
 | `baseten/decision-models/baseten-mammoth-27b-latest` (or `baseten/decision-models/baseten-elephant-9b-latest`) | `BASETEN_API_KEY`             | [Baseten](https://docs.baseten.co/inference/model-apis/decision-models)                       |
+| `openrouter/typesafe/jev-1.14` (see [OpenRouter](#openrouter))                                                 | `OPENROUTER_API_KEY`          | [OpenRouter](https://openrouter.ai/docs)                                                      |
 
 Command Code requires an API-enabled plan such as GOAT, Pro, Max, Team, or Provider. The Go plan
 has no Provider API access. Put a Command Code API key from Studio in `CMD_API_KEY`. Jev is a
@@ -76,6 +77,37 @@ may differ.
 - Jev 1.14 gained the most from an `escalationReviewer`.
 
 All of them use the same typed questions and the same thresholds as Jev.
+
+### OpenRouter
+
+OpenRouter serves many System One decision models behind one key. Put the key in
+`OPENROUTER_API_KEY` in the OpenCode server environment; it starts with `sk-or-v1-`, and the
+plugin never sends a key that is not shaped like one. Prefix the OpenRouter model ID with
+`openrouter/`:
+
+```jsonc
+// ~/.config/opencode/permission-reviewer.jsonc
+{
+  "model": "openrouter/typesafe/jev-1.14",
+}
+```
+
+Four OpenRouter models are benchmarked today: `typesafe/jev-1.13`, `typesafe/jev-1.14`,
+`liquid/d1` and `liquid/d1-ultra`. "Benchmarked" means upstream or this project measured the
+model as a reviewer. It does not mean recommended; read [Choosing a decision
+model](#choosing-a-decision-model) for how the results differ. For Baseten, use the direct
+`baseten/` provider above, since Baseten is no longer on OpenRouter.
+
+Any other OpenRouter decision model works at your discretion. The plugin accepts it and shows a
+config notice that the model has not been benchmarked as a reviewer.
+
+- Routing suffixes such as `:free` and `:nitro` work on listed models, for example
+  `openrouter/typesafe/jev-1.14:nitro`.
+- New models reach the list through a weekly pull request and arrive as unbenchmarked. Releases of
+  the `typesafe/jev-<n>` and `liquid/d1…` families work before that pull request lands.
+- Three models are known to be incompatible with the reviewer's request: `respan/span-01`,
+  `respan/span-01-lite` and `scaledown/classify-1`. Every review with them fails, and the
+  config notice says so.
 
 ### System One only
 

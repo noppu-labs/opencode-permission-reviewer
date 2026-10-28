@@ -1,0 +1,81 @@
+{
+  "data": [
+    {
+      "id": "typesafe/jev-1.14",
+      "name": "TypeSafe: Jev 1.14",
+      "architecture": {
+        "modality": "text+image->decisions",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["decisions"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      }
+    },
+    {
+      "id": "~typesafe/jev-latest",
+      "name": "TypeSafe: Jev Latest",
+      "architecture": {
+        "modality": "text+image->decisions",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["decisions"],
+        "tokenizer": "Router",
+        "instruct_type": null
+      }
+    },
+    {
+      "id": "respan/span-01-lite:free",
+      "name": "Respan: Span-01 Lite (free)",
+      "architecture": {
+        "modality": "text->decisions",
+        "input_modalities": ["text"],
+        "output_modalities": ["decisions"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      }
+    },
+    {
+      "id": "cloudflare/clef",
+      "name": "Cloudflare: Clef",
+      "architecture": {
+        "modality": "text+image->decisions",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["decisions"],
+        "tokenizer": "Qwen",
+        "instruct_type": null
+      }
+    },
+    {
+      "id": "amazon/titan-embed-image-v1",
+      "name": "Amazon: Titan Multimodal Embeddings G1",
+      "architecture": {
+        "modality": "text+image->embeddings",
+        "input_modalities": ["text", "image"],
+        "output_modalities": ["embeddings"],
+        "tokenizer": "Other",
+        "instruct_type": null
+      }
+    },
+    {
+      "id": "openai/gpt-6.1-terra-pro",
+      "name": "OpenAI: GPT-6.1 Terra Pro",
+      "architecture": {
+        "modality": "text+image+file->text",
+        "input_modalities": ["file", "image", "text"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      }
+    },
+    {
+      "id": "openai/gpt-6.1-terra-pro:batch",
+      "name": "OpenAI: GPT-6.1 Terra Pro (batch)",
+      "architecture": {
+        "modality": "text+image+file->text",
+        "input_modalities": ["file", "image", "text"],
+        "output_modalities": ["text"],
+        "tokenizer": "GPT",
+        "instruct_type": null
+      }
+    }
+  ]
+}

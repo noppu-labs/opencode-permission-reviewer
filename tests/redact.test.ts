@@ -26,6 +26,7 @@ import {
   OPAQUE_ABCDEFGHIJ,
   OPENAI_KEY,
   OPENAI_PROJECT_KEY,
+  OPENROUTER_KEY,
   PGPASSWORD_ASSIGNMENT,
   POSTGRES_URL_WITH_PASSWORD,
   SKSYNTHETIC_KEY,
@@ -71,6 +72,22 @@ describe("redactSecrets — credential formats", () => {
     const out = redactSecrets(input);
     expect(out).not.toContain(secret);
     expect(out).toMatch(/\[REDACTED:[a-z]+\]/);
+  });
+
+  test("redacts OpenRouter keys under their own label", () => {
+    const assigned = redactSecrets(
+      `export OPENROUTER_API_KEY=${OPENROUTER_KEY}`,
+    );
+    expect(assigned).not.toContain(OPENROUTER_KEY);
+    const bare = redactSecrets(`Bearer-less ${OPENROUTER_KEY} pasted`);
+    expect(bare).not.toContain(OPENROUTER_KEY);
+    expect(bare).toContain("[REDACTED:openrouter]");
+  });
+
+  test("keeps the OpenAI and Anthropic labels for other sk- keys", () => {
+    expect(redactSecrets(OPENAI_KEY)).toBe("[REDACTED:openai]");
+    expect(redactSecrets(OPENAI_PROJECT_KEY)).toBe("[REDACTED:openai]");
+    expect(redactSecrets(ANTHROPIC_KEY)).toBe("[REDACTED:anthropic]");
   });
 
   test("redacts Stripe-style live secret keys", () => {

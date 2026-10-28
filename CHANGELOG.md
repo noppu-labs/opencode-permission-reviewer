@@ -15,6 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   provider table. Keys come from `LIQUID_API_KEY` and `BASETEN_API_KEY`. A key that is not shaped
   like a Liquid AI key is never sent, and Liquid keys are redacted from reviewer evidence
   ([Reviewer models](docs/REVIEWER-MODELS.md#system-one-reviewers); ported from upstream 2.5.0).
+- OpenRouter System One reviewers (`openrouter/<model>`, for example `openrouter/typesafe/jev-1.14`),
+  keyed by `OPENROUTER_API_KEY`. Listed models, routing suffixes such as `:free` and `:nitro`, and
+  new `typesafe/jev-<n>` and `liquid/d1…` releases are accepted. Unbenchmarked models raise a
+  config notice, and known-incompatible ones say every review will fail
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
+- A weekly `openrouter-models` workflow that refreshes the list of OpenRouter decision models and
+  opens a pull request against `develop`.
+- Redaction of OpenRouter keys (`sk-or-v1-…`) in reviewer evidence.
 
 ### Changed
 

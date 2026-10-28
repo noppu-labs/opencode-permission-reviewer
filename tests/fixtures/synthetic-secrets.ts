@@ -9,6 +9,11 @@ export const GITHUB_FINE_GRAINED_PAT =
   "github_" + "pat_synthetictoken1234567890abcdef";
 export const OPENAI_PROJECT_KEY = "sk-" + "proj-synthetictoken1234567890abcdef";
 export const OPENAI_KEY = "sk-" + "synthetictoken1234567890ABCDEF1234567890";
+export const OPENROUTER_KEY = "sk-" + "or-v1-" + "0123456789abcdef".repeat(4);
+export const OPENROUTER_KEY_UPPERCASE =
+  "sk-" + "or-v1-" + "0123456789ABCDEF".repeat(4);
+export const OPENROUTER_KEY_SHORT =
+  "sk-" + "or-v1-" + "0123456789abcdef".repeat(4).slice(1);
 export const ANTHROPIC_KEY = "sk-" + "ant-synthetictoken1234567890ABCDEF";
 export const JWT_TOKEN =
   "ey" + "JhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4In0.signatureabcdefg";

@@ -41,7 +41,8 @@ brought to you.
 - `git` on `PATH`, used only for read-only Git enrichment. Without it, the reviewer gets no Git
   snapshot.
 - A reviewer model: either a model configured in OpenCode that follows JSON schemas reliably, or
-  a System One API key in the OpenCode server's environment. See
+  a System One API key in the OpenCode server's environment (including an OpenRouter key for the
+  decision models it serves). See
   [Reviewer models](docs/REVIEWER-MODELS.md).
 - At least one action in your OpenCode permission policy that resolves to `ask`. On V2, an action
   that matches no rule is `ask` by default. If everything is already `allow` or `deny`, the plugin
