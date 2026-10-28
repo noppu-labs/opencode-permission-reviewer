@@ -16,7 +16,7 @@ and fixes for common problems.
 | OS                    | Linux, macOS arm64 | CI on Linux; macOS checked on real hosts locally; others untested |
 
 The real-host matrix in CI runs V1 1.18.29 through 1.18.32 and 1.18.35, and V2 2.0.22,
-2.0.26, and 2.1.2. The pinned versions and their package integrities are in
+2.0.26, 2.1.2 and 2.2.0. The pinned versions and their package integrities are in
 [`tests/compatibility/host-contracts.json`](../tests/compatibility/host-contracts.json).
 
 Run `opencode-permission-reviewer doctor` to compare the installed versions against these
