@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-28
+
 ### Added
 
 - Liquid AI (`liquid-ai/d1`, `liquid-ai/d1-ultra`) and Baseten
@@ -28,6 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - User-facing text says "System One" instead of "Jev" when it describes the mechanism: attribution
   lines, toasts, config warnings and the docs. "Jev" now names only the Jev model itself.
+- The minimum Bun is now 1.3.14 (was 1.3.0), the floor `@opentui/core` 0.7 declares. The TUI
+  dependencies move from `@opentui/core` and `@opentui/solid` 0.5.11 to 0.7.0, which
+  `@opencode/plugin` 2.2.0 pins exactly.
+- Update the `@opencode/client` dependency to 2.2.0, from upstream. OpenCode 2.2.0 joins the
+  real-host matrix as a verified V2 host.
+- Development tooling updates (Biome 2.6, knip, tsdown, `@types/bun`) with no behaviour change.
+  The development tree also clears new `zod` and `undici` advisories.
 
 ### Fixed
 
@@ -42,18 +51,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   workspace package reports that package's script, not the root one. A workdir that is invalid or
   does not exist is reported as unresolved, and the read roots do not widen (ported from upstream
   2.5.0).
-
-## [3.3.0] - 2026-10-28
-
-### Changed
-
-- The minimum Bun is now 1.3.14 (was 1.3.0), the floor `@opentui/core` 0.7 declares. The TUI
-  dependencies move from `@opentui/core` and `@opentui/solid` 0.5.11 to 0.7.0, which
-  `@opencode/plugin` 2.2.0 pins exactly.
-- Update the `@opencode/client` dependency to 2.2.0, from upstream. OpenCode 2.2.0 joins the
-  real-host matrix as a verified V2 host.
-- Development tooling updates (Biome 2.6, knip, tsdown, `@types/bun`) with no behaviour change.
-  The development tree also clears new `zod` and `undici` advisories.
 
 ### Security
 
