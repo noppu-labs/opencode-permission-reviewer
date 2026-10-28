@@ -97,26 +97,19 @@ export async function start(state: Host): Promise<Running> {
   });
   cleanups.push(() => view.renderer.destroy());
   const frame = (): string => view.captureCharFrame();
-  // OpenTUI refuses to capture a frame while that renderer is still drawing,
-  // so each wait flushes the view it reads.
-  const waitOn =
-    (target: typeof view) =>
-    async (
-      check: () => boolean,
-      label: string,
-      timeout = 3_000,
-    ): Promise<void> => {
-      const deadline = Date.now() + timeout;
-      while (Date.now() < deadline) {
-        await target.flush();
-        if (check()) return;
-        await Bun.sleep(10);
-      }
-      throw new Error(
-        `timed out waiting for ${label}:\n${target.captureCharFrame()}`,
-      );
-    };
-  const until = waitOn(view);
+  const until = async (
+    check: () => boolean,
+    label: string,
+    timeout = 3_000,
+  ): Promise<void> => {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
+      await view.flush();
+      if (check()) return;
+      await Bun.sleep(10);
+    }
+    throw new Error(`timed out waiting for ${label}:\n${frame()}`);
+  };
   const sees = (text: string, present = true): Promise<void> =>
     until(() => frame().includes(text) === present, text);
   const reconnect = async (): Promise<void> => {
@@ -144,11 +137,10 @@ export async function start(state: Host): Promise<Running> {
     });
     cleanups.push(() => mounted.renderer.destroy());
     const sidebarText = (): string => mounted.captureCharFrame();
-    const sidebarUntil = waitOn(mounted);
     return {
       frame: sidebarText,
       sees: (text: string, present = true): Promise<void> =>
-        sidebarUntil(() => sidebarText().includes(text) === present, text),
+        until(() => sidebarText().includes(text) === present, text),
     };
   };
   return {

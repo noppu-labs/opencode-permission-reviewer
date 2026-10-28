@@ -37,8 +37,8 @@ actually gets:
 
 - the platform-specific packages under `@opentui` (rendering only)
 - the optional `@msgpackr-extract` accelerators
-- the exact `@babel/core` version `@opentui/solid` pins (7.29.7, past GHSA-4x5r-pxfx-6jf8), and the
-  exact `solid-js` version described in [Known residual exposure](#known-residual-exposure)
+- the exact `@babel/core` and `solid-js` versions described in
+  [Known residual exposure](#known-residual-exposure)
 - an `npm audit` gate that fails on any high or critical advisory other than the documented
   `seroval` residuals
 
@@ -50,7 +50,16 @@ are tests against the installed tree itself.
 
 These advisories remain unfixed in the consumer install tree.
 
-`@opentui/solid` peer-pins `solid-js@1.9.12` exactly. Its `seroval` dependency carries
+`@opentui/solid` pins `@babel/core@7.28.0` exactly (every published 0.5.x does), and
+GHSA-4x5r-pxfx-6jf8 (arbitrary file read via a crafted `sourceMappingURL` comment, low severity)
+affects `@babel/core <= 7.29.0`. This package uses that Babel only to compile its own shipped TUI
+sources, never repository- or attacker-influenced input, so the advisory's conditions are not met.
+The copy is still reachable in the consumer tree, so the consumer surveillance test pins the
+installed version. Moving off 7.28.0 needs an `@opentui/solid` release with a fixed pin or
+dropping the exact-pin constraint, and this note changes with it. The development tree overrides
+Babel to 7.29.7, which npm does not apply to consumers.
+
+`@opentui/solid` also peer-pins `solid-js@1.9.12` exactly. Its `seroval` dependency carries
 GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (unsafe `fromJSON` deserialization, fixed in
 `solid-js` 1.9.16). Only the SSR renderer `solid-js/web` imports `seroval`, and neither this
 package nor OpenTUI loads it, so the vulnerable code is unreachable at runtime. The consumer
