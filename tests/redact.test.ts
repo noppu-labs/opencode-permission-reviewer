@@ -324,6 +324,26 @@ describe("redactSecrets — does not overreach", () => {
   ])("leaves %s untouched", (input) => {
     expect(redactSecrets(input)).toBe(input);
   });
+
+  test("keeps OpenCode session IDs but not lookalike secrets", () => {
+    const id = "ses_" + "0a1b2c3d4e5f" + "AbCdEfGhIjKlMn";
+    const longId = id + "OpQrSt";
+    for (const text of [
+      `INTENT actor=user session=${id} message=msg_01`,
+      `{"sessionID": "${longId}"}`,
+      `sid=${id}`,
+    ])
+      expect(redactSecrets(text)).toBe(text);
+    expect(redactSecrets(`session=${id}x`)).toContain("[REDACTED:credential]");
+    expect(redactSecrets(`session=${id}/secretvalue`)).not.toContain(
+      "secretvalue",
+    );
+    expect(redactSecrets(`session=ses_${"Z".repeat(26)}`)).toContain(
+      "[REDACTED:credential]",
+    );
+    expect(redactSecrets(`password=${id}`)).not.toContain(id);
+    expect(redactSecrets(`token=${id}`)).not.toContain(id);
+  });
 });
 
 describe("redactSecrets — robustness", () => {
