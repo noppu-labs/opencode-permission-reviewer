@@ -5,7 +5,7 @@ import { phases } from "./runtime-fixtures.ts";
 const JEV = "opencode/jev-1.13-free";
 const LUNA = "openai/gpt-6-luna";
 const INERT =
-  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model';
 const DEGRADED = "global config file is malformed and was ignored";
 
 let savedKey: string | undefined;

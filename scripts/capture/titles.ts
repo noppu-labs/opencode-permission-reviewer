@@ -3,13 +3,13 @@ import type { ScreenName } from "./screens.ts";
 /** One sentence per screen image; Biome's SVG accessibility rule needs a title and readers get the gist. */
 export const SCREEN_TITLES: Record<ScreenName, string> = {
   "handoff-progress":
-    "Two progress strips for a git push: Jev (jev-1.13.0) reviewing at 2.1s, then gpt-6-luna reviewing after Jev's escalation at 7.3s.",
+    "Two progress strips for a git push: System One (jev-1.13.0) reviewing at 2.1s, then gpt-6-luna reviewing after System One's escalation at 7.3s.",
   "result-attribution":
-    "Three result strips: an approval by Jev, an approval by gpt-6-luna after Jev's escalation, and a block by gpt-6-luna confirming Jev's denial.",
+    "Three result strips: an approval by System One, an approval by gpt-6-luna after System One's escalation, and a block by gpt-6-luna confirming System One's denial.",
   "v1-overlay-handoff":
-    "The V1 overlay while gpt-6-luna reviews a git push after Jev failed with a timeout, 31.4s in.",
+    "The V1 overlay while gpt-6-luna reviews a git push after System One failed with a timeout, 31.4s in.",
   "result-triggers":
-    "Nine result strips showing who decided and why: Jev alone, or gpt-6-luna after each kind of hand-off, including a fail-closed block.",
+    "Nine result strips showing who decided and why: System One alone, or gpt-6-luna after each kind of hand-off, including a fail-closed block.",
   "long-command-before":
     "Version 3.0.0 with a long command: the progress strip, result strip and V1 overlay show the start of the heredoc and cut the command before its final commands.",
   "long-command-after":

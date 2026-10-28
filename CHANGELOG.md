@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Liquid AI (`liquid-ai/d1`, `liquid-ai/d1-ultra`) and Baseten
+  (`baseten/decision-models/baseten-mammoth-27b-latest`,
+  `baseten/decision-models/baseten-elephant-9b-latest`) System One reviewers, selected from one
+  provider table. Keys come from `LIQUID_API_KEY` and `BASETEN_API_KEY`. A key that is not shaped
+  like a Liquid AI key is never sent, and Liquid keys are redacted from reviewer evidence
+  ([Reviewer models](docs/REVIEWER-MODELS.md#system-one-reviewers); ported from upstream 2.5.0).
+
+### Changed
+
+- User-facing text says "System One" instead of "Jev" when it describes the mechanism: attribution
+  lines, toasts, config warnings and the docs. "Jev" now names only the Jev model itself.
+
 ### Fixed
 
 - On OpenCode V2, a reviewer model that lacks the default `medium` variant now runs with its own
@@ -411,7 +425,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Jev as a reviewer model choice through OpenCode Zen, TypeSafe AI, or the
   Command Code Provider API. Use Jev alone, or configure a second LLM such as
   Luna for difficult decisions. See the [Jev setup
-  guide](./docs/REVIEWER-MODELS.md#jev-system-one-reviewer).
+  guide](./docs/REVIEWER-MODELS.md#system-one-reviewers).
 
 ### Changed
 

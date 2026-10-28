@@ -33,3 +33,5 @@ export const HEADER_VALUE_OPAQUE = "syntheticapikey1234567890abcd";
 export const PGPASSWORD_ASSIGNMENT = "PGPASSWORD=postgrespass123";
 export const SKSYNTHETIC_KEY = "sksynthetic1234567890abcdef";
 export const SKSYNTHETIC_KEY_LONG = "sksynthetic1234567890abcdef1234567890";
+export const LIQUID_KEY = "liquid_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6";
+export const LIQUID_KEY_SHORT = "liquid_" + "short123";

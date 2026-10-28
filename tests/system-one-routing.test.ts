@@ -18,13 +18,13 @@ const BOTH_ON = {
 };
 
 const ESCALATION_NO_REVIEWER =
-  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you';
 const ESCALATION_NOT_JEV =
-  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev';
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model';
 const DENIAL_NO_REVIEWER =
-  "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final";
+  "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final";
 const DENIAL_NOT_JEV =
-  "systemOneDenialReview is inactive: the reviewer model is not Jev";
+  "systemOneDenialReview is inactive: the reviewer model is not a System One model";
 
 describe("invalid System One routing values", () => {
   test("the defaults carry no warnings", () => {

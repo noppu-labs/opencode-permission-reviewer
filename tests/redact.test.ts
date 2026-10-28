@@ -21,6 +21,7 @@ import {
   GITHUB_USER_TOKEN,
   HEADER_VALUE_OPAQUE,
   JWT_TOKEN,
+  LIQUID_KEY,
   OPAQUE_ABCDEFGH,
   OPAQUE_ABCDEFGHIJ,
   OPENAI_KEY,
@@ -254,6 +255,13 @@ describe("redactSecrets — credential formats", () => {
     expect(redactSecrets(GLPAT)).toContain("[REDACTED:gitlab]");
     expect(redactSecrets(NVAPI)).toContain("[REDACTED:nvidia]");
     expect(redactSecrets(TELEGRAM)).toContain("[REDACTED:telegram]");
+  });
+
+  test("redacts Liquid AI keys but not liquid_ identifiers", () => {
+    const out = redactSecrets(`key ${LIQUID_KEY}`);
+    expect(out).toContain("[REDACTED:liquid]");
+    expect(out).not.toContain(LIQUID_KEY);
+    expect(redactSecrets("liquid_template_name")).toBe("liquid_template_name");
   });
 
   test("redacts bare session/cookie assignments", () => {

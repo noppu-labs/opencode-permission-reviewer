@@ -22,14 +22,14 @@ export interface SidebarLine {
 /** Keyed by the exact text `systemOneRoutingWarnings` emits; a reworded
  *  warning falls back to its full text. */
 const SHORT_WARNINGS: Readonly<Record<string, string>> = {
-  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you':
+  'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you':
     "reasoning-first inactive (no escalationReviewer)",
-  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev':
-    "reasoning-first inactive (model is not Jev)",
-  "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final":
+  'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model':
+    "reasoning-first inactive (model is not System One)",
+  "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final":
     "denial review inactive (no escalationReviewer)",
-  "systemOneDenialReview is inactive: the reviewer model is not Jev":
-    "denial review inactive (model is not Jev)",
+  "systemOneDenialReview is inactive: the reviewer model is not a System One model":
+    "denial review inactive (model is not System One)",
 };
 
 const strings = (value: unknown): string[] =>

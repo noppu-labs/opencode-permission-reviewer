@@ -54,14 +54,14 @@ function noTimeLeft(
   const parts = reason === undefined ? null : BUDGET_REASON.exec(reason);
   if (handoff !== undefined)
     return withReason(
-      `${NO_TIME_LEAD} ${shortModelName(handoff.to) || GENERIC_REVIEWER} after Jev (${handoffCause(handoff)}).`,
+      `${NO_TIME_LEAD} ${shortModelName(handoff.to) || GENERIC_REVIEWER} after System One (${handoffCause(handoff)}).`,
       parts === null ? reason : parts[2],
     );
   if (reason === undefined)
-    return `${NO_TIME_LEAD} ${GENERIC_REVIEWER} after Jev.`;
+    return `${NO_TIME_LEAD} ${GENERIC_REVIEWER} after System One.`;
   if (parts === null) return reason;
   const name = shortModelName(reviewer ?? "") || GENERIC_REVIEWER;
-  return `${NO_TIME_LEAD} ${name} after Jev (${parts[1]}). ${parts[2]}`;
+  return `${NO_TIME_LEAD} ${name} after System One (${parts[1]}). ${parts[2]}`;
 }
 
 /** `fallback` stands in for a missing reason on a `reasoning-escalated` or
@@ -75,7 +75,7 @@ export function manualToast(
   switch (status.resolution) {
     case "reasoning-escalated":
       return warning(
-        `${reasoningModel(status)} reviewed this after Jev; it needs your approval: ${status.reason ?? fallback}`,
+        `${reasoningModel(status)} reviewed this after System One; it needs your approval: ${status.reason ?? fallback}`,
       );
     case "reasoning-unavailable":
       return unavailable(status);

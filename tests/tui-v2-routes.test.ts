@@ -177,7 +177,7 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
 
   test("re-reads config warnings for a new directory without repeating a toast", async () => {
     const warning =
-      "systemOneDenialReview is inactive: the reviewer model is not Jev";
+      "systemOneDenialReview is inactive: the reviewer model is not a System One model";
     const state = host({
       // Both directories report the same warning: the second must not toast again.
       status: () => ({ configWarnings: [warning] }),
@@ -197,13 +197,13 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
     expect(state.statusCalls).toEqual([DIRECTORY, SECOND]);
     expect(state.toasts).toHaveLength(1);
     expect(await running.sidebarFrame()).toContain(
-      "denial review inactive (model is not Jev)",
+      "denial review inactive (model is not System One)",
     );
   });
 
   test("a new directory drops the old directory's notices even when its status call fails", async () => {
     const warning =
-      "systemOneDenialReview is inactive: the reviewer model is not Jev";
+      "systemOneDenialReview is inactive: the reviewer model is not a System One model";
     const state = host({
       status: (directory: string): unknown =>
         directory === DIRECTORY
@@ -248,7 +248,7 @@ describe("V2 TUI reviewer feed routing and lifecycle", () => {
     );
     stale.resolve({
       configWarnings: [
-        "systemOneDenialReview is inactive: the reviewer model is not Jev",
+        "systemOneDenialReview is inactive: the reviewer model is not a System One model",
       ],
       configDegraded: ["fs broken"],
     });

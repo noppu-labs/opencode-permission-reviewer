@@ -30,7 +30,7 @@ const REASONING: ReasoningHandoff = {
   jevCritical: false,
   escalatedFrom: {
     model: JEV,
-    reason: "Jev escalated.",
+    reason: "System One escalated.",
     trigger: "jev-escalate",
   },
 };

@@ -64,11 +64,11 @@ const overlay = (
 function handoffProgress(): Promise<string[]> {
   const samples = progressSamples();
   return renderSections([
-    progress(samples.jev, 0, "while Jev reviews"),
+    progress(samples.jev, 0, "while System One reviews"),
     progress(
       samples.handoff,
       1,
-      "after Jev hands the request to the reasoning reviewer",
+      "after System One hands the request to the reasoning reviewer",
     ),
   ]);
 }

@@ -186,7 +186,7 @@ describe("audit writer", () => {
       record({
         reviewerEscalatedFrom: {
           model: "opencode/jev-1.13-free",
-          reason: "Jev failed.",
+          reason: "System One failed.",
           trigger: "jev-failure",
         },
         resolution: "reasoning-unavailable",

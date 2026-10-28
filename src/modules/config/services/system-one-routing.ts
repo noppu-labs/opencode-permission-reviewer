@@ -38,15 +38,15 @@ export function systemOneRoutingWarnings(config: ReviewerConfig): string[] {
   if (config.systemOneEscalation === "reasoning-first") {
     warnings.push(
       cause === "not-jev"
-        ? 'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not Jev'
-        : 'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you',
+        ? 'systemOneEscalation "reasoning-first" is inactive: the reviewer model is not a System One model'
+        : 'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you',
     );
   }
   if (config.systemOneDenialReview) {
     warnings.push(
       cause === "not-jev"
-        ? "systemOneDenialReview is inactive: the reviewer model is not Jev"
-        : "systemOneDenialReview is inactive: no escalationReviewer is configured; Jev denials stay final",
+        ? "systemOneDenialReview is inactive: the reviewer model is not a System One model"
+        : "systemOneDenialReview is inactive: no escalationReviewer is configured; System One denials stay final",
     );
   }
   return warnings;

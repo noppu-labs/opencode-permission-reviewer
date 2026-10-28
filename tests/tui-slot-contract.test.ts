@@ -209,7 +209,7 @@ describe("tui overlay slot contract", () => {
   test("config warnings toast once per session and keep a sidebar line until they clear", async () => {
     const captured = await captureOverlay();
     const warning =
-      'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; Jev escalations still go to you';
+      'systemOneEscalation "reasoning-first" is inactive: no escalationReviewer is configured; System One escalations still go to you';
     expect(factoryAttempt(captured, "sidebar_content").threw).toBe(false);
     fire(
       captured,

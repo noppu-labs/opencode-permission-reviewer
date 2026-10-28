@@ -81,6 +81,8 @@ const RULES: ReadonlyArray<{
     re: /\b\d{8,12}:AA[A-Za-z0-9_-]{30,}\b/g,
     replace: () => REDACT("telegram"),
   },
+  // Liquid AI keys; shorter liquid_ names are template identifiers.
+  { re: /\bliquid_[A-Za-z0-9]{32,}\b/g, replace: () => REDACT("liquid") },
   // JWT (three base64url segments).
   {
     re: /\beyJ[A-Za-z0-9_-]{8,}\.eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\b/g,

@@ -71,50 +71,50 @@ describe("attribution text", () => {
       "escalate",
       "jev-escalate",
       undefined,
-      "gpt-6-luna after Jev's escalation",
-      "gpt-6-luna after Jev's escalation",
+      "gpt-6-luna after System One's escalation",
+      "gpt-6-luna after System One's escalation",
     ],
     [
       "uncertain allow",
       "jev-uncertain-allow",
       undefined,
-      "gpt-6-luna after Jev's uncertain approval",
-      "gpt-6-luna after Jev's uncertain approval",
+      "gpt-6-luna after System One's uncertain approval",
+      "gpt-6-luna after System One's uncertain approval",
     ],
     [
       "gate",
       "jev-gate",
       undefined,
-      "gpt-6-luna after a safety gate stopped Jev's approval",
-      "gpt-6-luna after a safety gate stopped Jev's approval",
+      "gpt-6-luna after a safety gate stopped System One's approval",
+      "gpt-6-luna after a safety gate stopped System One's approval",
     ],
     [
       "invalid",
       "jev-invalid",
       undefined,
-      "gpt-6-luna after Jev's invalid response",
-      "gpt-6-luna after Jev's invalid response",
+      "gpt-6-luna after System One's invalid response",
+      "gpt-6-luna after System One's invalid response",
     ],
     [
       "failure",
       "jev-failure",
       "timeout",
-      "gpt-6-luna after Jev failed (timeout)",
-      "gpt-6-luna after Jev failed (timeout)",
+      "gpt-6-luna after System One failed (timeout)",
+      "gpt-6-luna after System One failed (timeout)",
     ],
     [
       "failure without a kind",
       "jev-failure",
       undefined,
-      "gpt-6-luna after Jev failed",
-      "gpt-6-luna after Jev failed",
+      "gpt-6-luna after System One failed",
+      "gpt-6-luna after System One failed",
     ],
     [
       "uncertain deny",
       "jev-uncertain-deny",
       undefined,
-      "gpt-6-luna overturned Jev's denial",
-      "gpt-6-luna confirmed Jev's denial",
+      "gpt-6-luna overturned System One's denial",
+      "gpt-6-luna confirmed System One's denial",
     ],
   ])(
     "credits %s on approval and on a block",
@@ -158,7 +158,7 @@ describe("attribution text", () => {
           decidedBy: LUNA,
         }),
       ),
-    ).toBe("gpt-6-luna after Jev's escalation");
+    ).toBe("gpt-6-luna after System One's escalation");
   });
 
   test("uncertain-deny fail-closed never claims the denial was confirmed", () => {
@@ -169,12 +169,12 @@ describe("attribution text", () => {
           escalationDisposition: "deny",
         }),
       ),
-    ).toBe("gpt-6-luna after Jev's uncertain denial");
+    ).toBe("gpt-6-luna after System One's uncertain denial");
     expect(
       attributionText(
         status("reviewing", { handoff: handoff("jev-uncertain-deny") }),
       ),
-    ).toBe("gpt-6-luna after Jev's uncertain denial");
+    ).toBe("gpt-6-luna after System One's uncertain denial");
   });
 
   test("a fail-closed result after the reasoning reviewer failed credits no model", () => {
@@ -214,7 +214,7 @@ describe("strip text", () => {
           reason: "Requested push.",
         }),
       ),
-    ).toBe("gpt-6-luna after Jev's escalation — Requested push.");
+    ).toBe("gpt-6-luna after System One's escalation — Requested push.");
     expect(resultDetail(status("unknown", { reason: "No result." }))).toBe(
       "No result.",
     );
@@ -240,7 +240,7 @@ describe("strip text", () => {
   test("the progress label shows the hand-off, else the model's label", () => {
     expect(
       reviewerLabel(status("reviewing", { handoff: handoff("jev-escalate") })),
-    ).toBe("gpt-6-luna after Jev's escalation");
+    ).toBe("gpt-6-luna after System One's escalation");
     expect(reviewerLabel(status("reviewing"))).toBe("gpt-6-luna");
     expect(reviewerLabel(status("reviewing", { model: "///" }))).toBe("///");
     expect(
@@ -249,18 +249,18 @@ describe("strip text", () => {
           handoff: { ...handoff("jev-escalate"), to: "///" },
         }),
       ),
-    ).toBe("/// after Jev's escalation");
+    ).toBe("/// after System One's escalation");
   });
 
   test.each<[HandoffTrigger, string | undefined, string]>([
-    ["jev-escalate", undefined, "Jev escalated"],
-    ["jev-uncertain-allow", undefined, "Jev's approval was uncertain"],
-    ["jev-gate", undefined, "a safety gate stopped Jev's approval"],
-    ["jev-invalid", undefined, "Jev's response was invalid"],
-    ["jev-failure", "timeout", "Jev timed out"],
-    ["jev-failure", "client", "Jev failed (client)"],
-    ["jev-failure", undefined, "Jev failed"],
-    ["jev-uncertain-deny", undefined, "Jev's denial was uncertain"],
+    ["jev-escalate", undefined, "System One escalated"],
+    ["jev-uncertain-allow", undefined, "System One's approval was uncertain"],
+    ["jev-gate", undefined, "a safety gate stopped System One's approval"],
+    ["jev-invalid", undefined, "System One's response was invalid"],
+    ["jev-failure", "timeout", "System One timed out"],
+    ["jev-failure", "client", "System One failed (client)"],
+    ["jev-failure", undefined, "System One failed"],
+    ["jev-uncertain-deny", undefined, "System One's denial was uncertain"],
   ])("names the cause of a %s hand-off", (trigger, kind, cause) => {
     expect(handoffCause(handoff(trigger, kind))).toBe(cause);
   });
