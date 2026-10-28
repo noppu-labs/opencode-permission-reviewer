@@ -1,6 +1,9 @@
 // The providers that serve System One decision models: which model IDs each
 // accepts, where its endpoint lives and which key it reads.
-import { OPENROUTER_DECISION_MODELS } from "./openrouter-decision-models.ts";
+import {
+  OPENROUTER_DECISION_MODELS,
+  type OpenRouterDecisionModels,
+} from "./openrouter-decision-models.ts";
 
 export interface SystemOneProvider {
   readonly keyEnv: string;
@@ -42,6 +45,8 @@ const OPENROUTER_ALIAS = /^~(.+)-latest$/;
 const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
+const OPENROUTER_MODELS: OpenRouterDecisionModels["models"] =
+  OPENROUTER_DECISION_MODELS.models;
 const OPENROUTER_INCOMPATIBLE: Readonly<Record<string, string>> =
   OPENROUTER_DECISION_MODELS.incompatible;
 
@@ -56,6 +61,18 @@ const openRouterIncompatibleReason = (modelID: string): string | undefined => {
     if (Object.hasOwn(OPENROUTER_INCOMPATIBLE, id))
       return OPENROUTER_INCOMPATIBLE[id];
   return;
+};
+
+const openRouterConfigWarning = (modelID: string): string | undefined => {
+  const reason = openRouterIncompatibleReason(modelID);
+  if (reason !== undefined)
+    return `openrouter/${modelID} is known to reject the reviewer's request (${reason}); every review will fail`;
+  const listed = withoutRoutingSuffix(modelID).find((id) =>
+    Object.hasOwn(OPENROUTER_MODELS, id),
+  );
+  if (listed !== undefined && OPENROUTER_MODELS[listed]?.benchmarked === true)
+    return;
+  return `openrouter/${modelID} has not been benchmarked as a reviewer; see REVIEWER-MODELS.md`;
 };
 
 const openRouterAccepts = (modelID: string): boolean =>
@@ -132,5 +149,6 @@ export const SYSTEM_ONE_PROVIDERS: Readonly<Record<string, SystemOneProvider>> =
       accepts: openRouterAccepts,
       acceptsResponse: openRouterAcceptsResponse,
       incompatibleReason: openRouterIncompatibleReason,
+      configWarning: openRouterConfigWarning,
     },
   };
