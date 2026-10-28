@@ -82,7 +82,7 @@ const rejected = [
   ],
   [
     { ...systemOne, model: "typesafe/other" },
-    "System One transport requires a System One model ID.",
+    "System One transport requires a Jev model ID.",
   ],
   [
     { ...systemOne, format: undefined },
