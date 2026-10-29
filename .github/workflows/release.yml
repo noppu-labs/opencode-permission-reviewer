@@ -1,8 +1,9 @@
 name: release
 
-# Three entry points. A push to `main` that changes package.json checks the
-# merge commit (`quality`, `build`), then `tag` creates `v<version>` and
-# dispatches this workflow at it; nothing is published in that run. A pushed
+# Three entry points. Every push to `main` reads the version from package.json
+# and stops there if `v<version>` already exists. Otherwise it checks the
+# commit (`quality`, `build`), then `tag` creates `v<version>` and dispatches
+# this workflow at it; nothing is published in that run. A pushed
 # `v*` tag builds and publishes the package with provenance, then creates
 # checksums, an SBOM, and a GitHub Release. Manual dispatch retries an
 # existing tag without moving it; always dispatch at the tag so provenance
@@ -42,9 +43,6 @@ on:
     branches: [main]
     tags:
       - "v*"
-    # Applies to the branch push only; GitHub does not evaluate paths for tag pushes.
-    paths:
-      - package.json
   workflow_dispatch:
     inputs:
       tag:
@@ -291,7 +289,7 @@ jobs:
               echo "$TAG is already released."
               exit 0
             fi
-            active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml --branch "$TAG" \
+            active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml --branch "$TAG" --event workflow_dispatch \
               --json status --jq '[.[] | select(.status != "completed")] | length')
             if [ "$active" != "0" ]; then
               echo "A release run for $TAG is already in progress."

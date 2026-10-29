@@ -18,11 +18,10 @@ const workflow = Bun.YAML.parse(
 const jobs: Record<string, Job> = workflow.jobs;
 const installs = /\b(bun install|uv sync|pre-commit|npm install|npm ci)\b/;
 
-test("release runs on v* tags and on package.json changes to main", () => {
+test("release runs on v* tags and on every push to main", () => {
   expect(workflow.on.push).toEqual({
     branches: ["main"],
     tags: ["v*"],
-    paths: ["package.json"],
   });
 });
 

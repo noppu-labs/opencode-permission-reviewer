@@ -379,9 +379,9 @@ Releases are tagged by `.github/workflows/release.yml`; nobody runs `git tag` by
 
 1. A `chore/release-X.Y.Z` pull request into `develop` bumps `version` in `package.json` and moves
    the `CHANGELOG.md` `[Unreleased]` notes under `## [X.Y.Z] - <date>`.
-2. The promotion pull request from `develop` into `main` changes `package.json`, so its merge
-   triggers `release.yml`. That run reads the version from the merge commit and stops if
-   `vX.Y.Z` already exists. Otherwise it runs the `quality` and `build` jobs against the merge
+2. Every push to `main` triggers `release.yml`, including the merge of the promotion pull request
+   from `develop`. That run reads the version from the pushed commit and stops after that check
+   if `vX.Y.Z` already exists. Otherwise it runs the `quality` and `build` jobs against the merge
    commit as a pre-check. The `tag` job then creates the annotated tag `vX.Y.Z` on that commit
    and dispatches `release.yml` at the tag. This run publishes nothing.
 3. The dispatched run at the tag is the one that publishes to npm with provenance and creates the
@@ -396,8 +396,8 @@ final release pull request.
 
 ### Retries
 
-- In the run started by the push to `main`, use "Re-run failed jobs". "Re-run all jobs" repeats the
-  pre-check against a commit that is now tagged, and the untagged-commit gate fails.
+- In the run started by the push to `main`, use "Re-run failed jobs". "Re-run all jobs" re-reads
+  the version, sees that the tag already exists, and stops green without dispatching.
 - In the publishing run at the tag, either "Re-run failed jobs" or a new dispatch works:
 
   ```sh
