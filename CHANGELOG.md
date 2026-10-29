@@ -11,7 +11,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- New npm package description, which no longer repeats the upstream project's wording.
+- New npm package description that more accurately represents what the plugin does.
+- Bumped the dev dependencies `@opencode-ai/plugin` and `@opencode-ai/sdk` to 1.19.5, with
+  `bun.lock` synchronized (dependency bumps only; no behavior change). The `@opencode-ai/plugin`
+  peer range is unchanged.
+
+### Security
+
+- GHSA-97r2-qh9m-474h, GHSA-wp97-x4hv-qvhp, GHSA-7rv5-mrxv-xcr9 and GHSA-9wx9-5pv9-3349 in
+  `seroval` are documented as residual exposure, alongside GHSA-p6vx-979v-rg4c and
+  GHSA-jp82-f5mq-hwhp. `seroval` arrives through `solid-js` 1.9.12, which `@opentui/solid` 0.7.0
+  pins exactly. Only the SSR renderer `solid-js/web` imports it, and neither this plugin nor
+  OpenTUI loads that renderer, so the vulnerable code is unreachable at runtime
+  ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure)). The upgrade is tracked in #112.
+- The audit no longer ignores GHSA-ch52-4w7c-c8xp (`http-cache-semantics`), which GitHub
+  withdrew.
 
 ## [3.3.0] - 2026-10-28
 
