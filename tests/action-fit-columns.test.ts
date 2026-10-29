@@ -133,6 +133,25 @@ describe("column fit", () => {
     }
   });
 
+  test("keeps the tail of wide text when a wide character leaves no room for both ends", () => {
+    const action = "日本語".repeat(4);
+    expect(shown(fitAction({ action }, 5))).toBe(" ⋯ 語");
+    expect(shown(fitAction({ action }, 6))).toBe(" ⋯ 語");
+    expect(shown(fitAction({ action }, 7))).toBe("日 ⋯ 語");
+  });
+
+  test("measures keycaps as wide", () => {
+    const status = createServerUiStatus(
+      request({ metadata: { command: `echo ${"1\u20e3".repeat(8)} | sh` } }),
+      "reviewing",
+      { model: "fixture/reviewer", variant: "max", timeoutMs: 10_000 },
+    );
+    for (let columns = 0; columns <= 40; columns += 1)
+      expect(
+        stringWidth(shown(fitAction(status, columns))),
+      ).toBeLessThanOrEqual(columns);
+  });
+
   test("combining marks take no column", () => {
     const action = "e\u0301".repeat(100);
     expect(textColumns(action)).toBe(100);

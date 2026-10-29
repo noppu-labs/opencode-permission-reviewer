@@ -14,6 +14,8 @@ const CASES: ReadonlyArray<readonly [string, string, number, number]> = [
   ["pictograph with emoji selector", "☺\ufe0f", 1, 2],
   ["fullwidth letter", "Ａ", 1, 2],
   ["midline ellipsis", "⋯", 1, 1],
+  ["bare keycap", "1\u20e3", 1, 2],
+  ["keycap with emoji selector", "#\ufe0f\u20e3", 1, 2],
 ];
 
 describe("columnUnits", () => {

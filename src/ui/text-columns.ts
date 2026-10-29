@@ -5,6 +5,7 @@ const SEGMENTER = new Intl.Segmenter(undefined, { granularity: "grapheme" });
 const ZERO_WIDTH = /^[\p{Mn}\p{Me}\p{Cf}]+$/u;
 const EMOJI_PRESENTATION = /\p{Emoji_Presentation}/u;
 const EMOJI_VARIATION = /\p{Extended_Pictographic}\uFE0F/u;
+const KEYCAP = /^[#*0-9]\uFE0F?\u20E3$/u;
 
 function clusterColumns(cluster: string): number {
   if (ZERO_WIDTH.test(cluster)) return 0;
@@ -12,7 +13,8 @@ function clusterColumns(cluster: string): number {
   if (
     isEastAsianWide(first) ||
     EMOJI_PRESENTATION.test(cluster) ||
-    EMOJI_VARIATION.test(cluster)
+    EMOJI_VARIATION.test(cluster) ||
+    KEYCAP.test(cluster)
   ) {
     return 2;
   }

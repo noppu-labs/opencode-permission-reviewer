@@ -23,7 +23,8 @@ export interface ActionFitPart {
 }
 
 const ELLIPSIS = "⋯";
-/** Narrowest width that still shows a character on each side of " ⋯ ". */
+/** Narrowest width that can show a narrow character on each side of " ⋯ ";
+ *  wide characters need 7, and below that the tail is kept. */
 const MIN_ELIDED_COLUMNS = 5;
 
 /** Collapses line breaks and tabs so a value renders on one row. */

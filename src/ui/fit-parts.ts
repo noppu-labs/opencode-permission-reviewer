@@ -1,6 +1,7 @@
 // Measuring, slicing and merging fitted action parts.
 
 import {
+  ELISION,
   elideMiddle,
   keepHead,
   keepTail,
@@ -28,10 +29,18 @@ export const fitHead = (text: string, max: number): string =>
 export const fitTail = (text: string, max: number): string =>
   keepTail(text, max, columnUnits);
 
-export const fitMiddle = (
+/** `elideMiddle` by columns. When a wide character leaves no room for the
+ *  tail, the tail is kept and the head gives way. */
+export function fitMiddle(
   text: string,
   max: number,
-): ReturnType<typeof elideMiddle> => elideMiddle(text, max, columnUnits);
+): ReturnType<typeof elideMiddle> {
+  const parts = elideMiddle(text, max, columnUnits);
+  if (parts === undefined || parts.tail !== "") return parts;
+  const budget = max - textColumns(ELISION);
+  const tail = fitTail(text, budget);
+  return { head: fitHead(text, budget - textColumns(tail)), tail };
+}
 
 export function partsColumns(parts: readonly FitPart[]): number {
   return parts.reduce(
