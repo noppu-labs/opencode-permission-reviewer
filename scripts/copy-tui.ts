@@ -55,6 +55,7 @@ const paths = [
   "modules/config/services/jsonc.ts",
   "utils/descriptor-io.ts",
   "utils/is-record.ts",
+  "utils/text-units.ts",
   "modules/status/models/ui-protocol.ts",
   "modules/status/services/ui-status-extras.ts",
   "modules/status/services/ui-text-elide.ts",

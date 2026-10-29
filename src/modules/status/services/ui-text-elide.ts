@@ -1,6 +1,13 @@
 // Ships to the TUI (the action fit) and runs on the server (the bounded action
 // and segment texts), so it must not import a server-only module.
 
+import {
+  codePointUnits,
+  type TextUnit,
+  type UnitSplitter,
+  unitsColumns,
+} from "../../../utils/text-units.ts";
+
 export const ELISION: string = " ⋯ ";
 export const LINE_BREAK: string = "⏎";
 const ELISION_COLUMNS: number = Array.from(ELISION).length;
@@ -36,46 +43,80 @@ export function renderActionText(value: string): string {
 const wordCut = (kept: number, max: number): boolean =>
   kept > 0 && kept * 2 >= max;
 
-/** The longest prefix of `text` made of whole words within `max` code
- *  points; a hard cut at `max` when those words would use less than half of
- *  it. Always a prefix of `text` (trailing spaces trimmed). */
-export function keepHead(text: string, max: number): string {
-  const chars = Array.from(text);
-  if (chars.length <= max) return text;
-  let end = max;
-  while (end > 0 && chars[end] !== " ") end -= 1;
-  const head = wordCut(end, max)
-    ? chars.slice(0, end)
-    : chars.slice(0, Math.max(0, max));
-  return head.join("").trimEnd();
+const joinUnits = (units: readonly TextUnit[]): string =>
+  units.map((unit) => unit.text).join("");
+
+/** The longest prefix of `text` made of whole words within `max` columns as
+ *  `split` measures them (code points by default); a hard cut at `max` when
+ *  those words would use less than half of it. Always a prefix of `text`
+ *  (trailing spaces trimmed). */
+export function keepHead(
+  text: string,
+  max: number,
+  split: UnitSplitter = codePointUnits,
+): string {
+  const units = split(text);
+  if (unitsColumns(units) <= max) return text;
+  let fit = 0;
+  let used = 0;
+  for (const unit of units) {
+    if (used + unit.columns > max) break;
+    used += unit.columns;
+    fit += 1;
+  }
+  let end = fit;
+  while (end > 0 && units[end]?.text !== " ") {
+    end -= 1;
+    used -= units[end]?.columns ?? 0;
+  }
+  return joinUnits(units.slice(0, wordCut(used, max) ? end : fit)).trimEnd();
 }
 
-/** The longest suffix of `text` made of whole words within `max` code
- *  points; a hard cut at `max` when those words would use less than half of
- *  it. Always a suffix of `text` (leading spaces trimmed). */
-export function keepTail(text: string, max: number): string {
+/** The longest suffix of `text` made of whole words within `max` columns as
+ *  `split` measures them (code points by default); a hard cut at `max` when
+ *  those words would use less than half of it. Always a suffix of `text`
+ *  (leading spaces trimmed). */
+export function keepTail(
+  text: string,
+  max: number,
+  split: UnitSplitter = codePointUnits,
+): string {
   if (max <= 0) return "";
-  const chars = Array.from(text);
-  if (chars.length <= max) return text;
-  let start = chars.length - max;
-  while (start < chars.length && chars[start - 1] !== " ") start += 1;
-  const tail = wordCut(chars.length - start, max)
-    ? chars.slice(start)
-    : chars.slice(chars.length - max);
-  return tail.join("").trimStart();
+  const units = split(text);
+  if (unitsColumns(units) <= max) return text;
+  let fitStart = units.length;
+  let used = 0;
+  while (fitStart > 0) {
+    const columns = units[fitStart - 1]?.columns ?? 0;
+    if (used + columns > max) break;
+    used += columns;
+    fitStart -= 1;
+  }
+  let start = fitStart;
+  while (start < units.length && units[start - 1]?.text !== " ") {
+    used -= units[start]?.columns ?? 0;
+    start += 1;
+  }
+  return joinUnits(
+    units.slice(wordCut(used, max) ? start : fitStart),
+  ).trimStart();
 }
 
-/** `text` split into a head and a tail that fit `max` code points together
- *  with " ⋯ " between them, the head taking at most half; undefined when
- *  `text` already fits. */
+/** `text` split into a head and a tail that fit `max` columns as `split`
+ *  measures them (code points by default) together with " ⋯ " between them,
+ *  the head taking at most half; undefined when `text` already fits. */
 export function elideMiddle(
   text: string,
   max: number,
+  split: UnitSplitter = codePointUnits,
 ): { head: string; tail: string } | undefined {
-  if (Array.from(text).length <= max) return undefined;
+  if (unitsColumns(split(text)) <= max) return undefined;
   const budget = Math.max(0, max - ELISION_COLUMNS);
-  const head = keepHead(text, Math.ceil(budget / 2));
-  return { head, tail: keepTail(text, budget - Array.from(head).length) };
+  const head = keepHead(text, Math.ceil(budget / 2), split);
+  return {
+    head,
+    tail: keepTail(text, budget - unitsColumns(split(head)), split),
+  };
 }
 
 /** `value` on one line with escapes and line-break markers applied and at most
