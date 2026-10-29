@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `bun.lock` synchronized (dependency bumps only; no behavior change). The `@opencode-ai/plugin`
   peer range is unchanged.
 
+### Fixed
+
+- The TUI fits long commands by terminal columns, so CJK text, emoji, flags and accented letters
+  no longer overflow the row or lose the end of the command, and a cut never splits a character
+  ([#45](https://github.com/noppu-labs/opencode-permission-reviewer/issues/45)).
+
 ### Security
 
 - GHSA-97r2-qh9m-474h, GHSA-wp97-x4hv-qvhp, GHSA-7rv5-mrxv-xcr9 and GHSA-9wx9-5pv9-3349 in
