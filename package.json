@@ -1,7 +1,7 @@
 {
   "name": "@noppu-labs/opencode-permission-reviewer",
-  "version": "3.3.0",
-  "description": "Policy-aware AI permission reviewer for OpenCode V1 and V2: auto-approves routine agent tool calls, denies risky ones with feedback, and escalates the rest to you",
+  "version": "3.3.1",
+  "description": "Let OpenCode run unattended, securely: a System One or LLM reviewer answers permission prompts and asks you only when it should.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -108,7 +108,9 @@
     "@types/bun": "^1.3.0",
     "@types/semver": "7.8.0",
     "fta-cli": "3.1.0",
+    "get-east-asian-width": "1.6.0",
     "knip": "6.43.0",
+    "string-width": "7.2.0",
     "tsdown": "0.23.3",
     "typescript": "7.0.2"
   },

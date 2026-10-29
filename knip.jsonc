@@ -9,6 +9,8 @@
     "tui.tsx",
     // Copied raw to dist/tui by scripts/copy-tui.ts and loaded by the host as the TUI plugin.
     "src/tui.tsx",
+    // Run by hand to regenerate src/ui/east-asian-wide.ts.
+    "scripts/generate-east-asian-wide.ts",
     // Live harness, host fixtures and the compatibility matrix, run by hand or from CI.
     "tests/live-*.ts",
     "tests/fixtures/*.ts",
