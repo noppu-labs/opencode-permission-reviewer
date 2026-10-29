@@ -1,0 +1,55 @@
+import { describe, expect, test } from "bun:test";
+import { columnUnits } from "../src/ui/text-columns.ts";
+import { unitsColumns } from "../src/utils/text-units.ts";
+
+const CASES: ReadonlyArray<readonly [string, string, number, number]> = [
+  ["CJK ideographs", "修复", 2, 4],
+  ["emoji presentation", "✅", 1, 2],
+  ["regional indicator flag", "🇯🇵", 1, 2],
+  ["emoji with skin tone", "👍🏽", 1, 2],
+  ["combining accent", "e\u0301", 1, 1],
+  ["lone combining mark", "\u0301", 1, 0],
+  ["ascii", "abc", 3, 3],
+  ["text-presentation pictograph", "☺", 1, 1],
+  ["pictograph with emoji selector", "☺\ufe0f", 1, 2],
+  ["fullwidth letter", "Ａ", 1, 2],
+  ["midline ellipsis", "⋯", 1, 1],
+  ["bare keycap", "1\u20e3", 1, 2],
+  ["keycap with emoji selector", "#\ufe0f\u20e3", 1, 2],
+];
+
+describe("columnUnits", () => {
+  for (const [name, text, count, columns] of CASES) {
+    test(`${name}: ${count} unit(s), ${columns} column(s)`, () => {
+      const units = columnUnits(text);
+      expect(units).toHaveLength(count);
+      expect(unitsColumns(units)).toBe(columns);
+      expect(units.map((unit) => unit.text).join("")).toBe(text);
+    });
+  }
+
+  test("returns no units for empty text", () => {
+    expect(columnUnits("")).toEqual([]);
+  });
+
+  test("splits ASCII and the fit's markers exactly as grapheme segmentation does", () => {
+    const segmenter = new Intl.Segmenter(undefined, {
+      granularity: "grapheme",
+    });
+    const alphabet = [
+      ...Array.from({ length: 0x5f }, (_, i) => String.fromCharCode(0x20 + i)),
+      "⋯",
+      "⏎",
+    ];
+    const text = alphabet.join("").repeat(3);
+    const units = columnUnits(text);
+    expect(units.map((unit) => unit.text)).toEqual(
+      Array.from(segmenter.segment(text), (entry) => entry.segment),
+    );
+    expect(units.every((unit) => unit.columns === 1)).toBe(true);
+  });
+
+  test("leaves a combining mark after a marker to grapheme segmentation", () => {
+    expect(columnUnits("⋯\u0301 a")).toHaveLength(3);
+  });
+});
