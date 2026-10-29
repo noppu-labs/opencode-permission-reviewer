@@ -29,7 +29,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   GHSA-jp82-f5mq-hwhp. `seroval` arrives through `solid-js` 1.9.12, which `@opentui/solid` 0.7.0
   pins exactly. Only the SSR renderer `solid-js/web` imports it, and neither this plugin nor
   OpenTUI loads that renderer, so the vulnerable code is unreachable at runtime
-  ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure)). The upgrade is tracked in #112.
+  ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure)). The upgrade is tracked in
+  [#112](https://github.com/noppu-labs/opencode-permission-reviewer/issues/112).
 - The audit no longer ignores GHSA-ch52-4w7c-c8xp (`http-cache-semantics`), which GitHub
   withdrew.
 
