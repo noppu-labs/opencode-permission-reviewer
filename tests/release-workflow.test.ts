@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test";
 
-type Step = { uses?: string; run?: string };
+type Step = { name?: string; if?: string; uses?: string; run?: string };
 type Job = {
   if?: string;
   needs?: string | string[];
@@ -59,4 +59,21 @@ test("publish never runs on the push to main", () => {
   expect(jobs.publish?.if).toContain(
     "!(github.event_name == 'push' && github.ref_type == 'branch')",
   );
+});
+
+test("quality and build gate the pre-check on a pending version and pick the right tag check", () => {
+  expect(jobs.quality?.if).toContain(
+    "needs.pending.result == 'skipped' || needs.pending.outputs.due == 'true'",
+  );
+  expect(jobs.build?.if).toContain("needs.quality.result == 'success'");
+  for (const job of [jobs.quality, jobs.build]) {
+    const step = (name: string): Step | undefined =>
+      job?.steps.find((candidate) => candidate.name === name);
+    expect(step("Verify tag (pre-install gate)")?.if).toBe(
+      `\${{ !needs.pending.outputs.tag }}`,
+    );
+    expect(step("Verify untagged main commit (pre-install gate)")?.if).toBe(
+      `\${{ needs.pending.outputs.tag }}`,
+    );
+  }
 });
