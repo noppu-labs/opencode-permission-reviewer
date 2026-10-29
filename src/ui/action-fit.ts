@@ -4,14 +4,12 @@ import type {
   ActionSegment,
   ReviewUiStatus,
 } from "../modules/status/models/ui-protocol.ts";
-import {
-  ELISION,
-  elideMiddle,
-  keepHead,
-  keepTail,
-} from "../modules/status/services/ui-text-elide.ts";
+import { ELISION } from "../modules/status/services/ui-text-elide.ts";
 import {
   type FitPart,
+  fitHead,
+  fitMiddle,
+  fitTail,
   merged,
   partsColumns,
   shown,
@@ -94,11 +92,11 @@ function cutMarker(hidden: number, columns: number): string {
 }
 
 const headOf = (parts: readonly FitPart[], max: number): FitPart[] =>
-  sliceParts(parts, 0, textColumns(keepHead(shown(parts), max)));
+  sliceParts(parts, 0, textColumns(fitHead(shown(parts), max)));
 
 function tailOf(parts: readonly FitPart[], max: number): FitPart[] {
   const columns = partsColumns(parts);
-  const tail = keepTail(shown(parts), max);
+  const tail = fitTail(shown(parts), max);
   return sliceParts(parts, columns - textColumns(tail), columns);
 }
 
@@ -132,7 +130,7 @@ function firstAndLast(
 }
 
 function headAndTail(action: string, columns: number): ActionFitPart[] {
-  const parts = elideMiddle(singleLine(action), columns);
+  const parts = fitMiddle(singleLine(action), columns);
   if (parts === undefined)
     return merged([{ text: singleLine(action), muted: false }]);
   return merged([

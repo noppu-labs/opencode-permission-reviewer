@@ -1,7 +1,14 @@
 // Measuring, slicing and merging fitted action parts.
 
-import { LINE_BREAK } from "../modules/status/services/ui-text-elide.ts";
+import {
+  elideMiddle,
+  keepHead,
+  keepTail,
+  LINE_BREAK,
+} from "../modules/status/services/ui-text-elide.ts";
+import { unitsColumns } from "../utils/text-units.ts";
 import type { ActionFitPart } from "./action-fit.ts";
+import { columnUnits } from "./text-columns.ts";
 
 /** A part as the fit builds it; `whole` marks one a cut may not split. */
 export interface FitPart extends ActionFitPart {
@@ -10,10 +17,21 @@ export interface FitPart extends ActionFitPart {
 
 const STANDALONE_BREAK = new RegExp(`(?<!\\\\)${LINE_BREAK}`);
 
-/** Columns `text` takes, one per code point. */
+/** Terminal columns `text` takes. */
 export function textColumns(text: string): number {
-  return Array.from(text).length;
+  return unitsColumns(columnUnits(text));
 }
+
+export const fitHead = (text: string, max: number): string =>
+  keepHead(text, max, columnUnits);
+
+export const fitTail = (text: string, max: number): string =>
+  keepTail(text, max, columnUnits);
+
+export const fitMiddle = (
+  text: string,
+  max: number,
+): ReturnType<typeof elideMiddle> => elideMiddle(text, max, columnUnits);
 
 export function partsColumns(parts: readonly FitPart[]): number {
   return parts.reduce(
@@ -53,8 +71,9 @@ export function merged(parts: readonly FitPart[]): ActionFitPart[] {
   return out;
 }
 
-/** The code points `start` to `end` of `parts`. A muted or `whole` part (a
- *  heredoc marker or a separator) is kept whole or dropped, never cut. */
+/** The columns `start` to `end` of `parts`; a wide character crossing either
+ *  edge is dropped. A muted or `whole` part (a heredoc marker or a separator)
+ *  is kept whole or dropped, never cut. */
 export function sliceParts(
   parts: readonly FitPart[],
   start: number,
@@ -63,11 +82,12 @@ export function sliceParts(
   const out: FitPart[] = [];
   let offset = 0;
   for (const part of parts) {
-    const chars = Array.from(part.text);
-    const from = Math.max(start - offset, 0);
-    const to = Math.max(0, Math.min(end - offset, chars.length));
-    offset += chars.length;
-    const text = chars.slice(from, to).join("");
+    let text = "";
+    for (const unit of columnUnits(part.text)) {
+      const unitStart = offset;
+      offset += unit.columns;
+      if (unitStart >= start && offset <= end) text += unit.text;
+    }
     const cut = text.trim() !== part.text.trim();
     if (text === "" || ((part.muted || part.whole === true) && cut)) continue;
     out.push({ ...part, text });

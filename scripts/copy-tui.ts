@@ -23,6 +23,8 @@ const paths = [
   "ui/action-fit.ts",
   "ui/fit-parts.ts",
   "ui/action-spans.tsx",
+  "ui/text-columns.ts",
+  "ui/east-asian-wide.ts",
   "ui/review-overlay.tsx",
   "ui/review-result.tsx",
   "ui/v1-host.ts",

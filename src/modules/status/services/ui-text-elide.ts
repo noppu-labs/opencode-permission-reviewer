@@ -38,7 +38,7 @@ export function renderActionText(value: string): string {
     .trim();
 }
 
-/** Whether whole words of `kept` code points use at least half of `max`, so
+/** Whether whole words of `kept` columns use at least half of `max`, so
  *  the cut may fall between words rather than inside one. */
 const wordCut = (kept: number, max: number): boolean =>
   kept > 0 && kept * 2 >= max;
