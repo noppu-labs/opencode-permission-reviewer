@@ -1,8 +1,13 @@
 name: release
 
-# Pushing a `v*` tag builds and publishes the package with provenance, then
-# creates checksums, an SBOM, and a GitHub Release. Manual dispatch retries an
-# existing tag without moving it.
+# Three entry points. A push to `main` that changes package.json checks the
+# merge commit (`quality`, `build`), then `tag` creates `v<version>` and
+# dispatches this workflow at it; nothing is published in that run. A pushed
+# `v*` tag builds and publishes the package with provenance, then creates
+# checksums, an SBOM, and a GitHub Release. Manual dispatch retries an
+# existing tag without moving it; always dispatch at the tag so provenance
+# records it:
+#   gh workflow run release.yml --ref vX.Y.Z -f tag=vX.Y.Z
 #
 # The workflow is split so the job that installs dependencies and builds
 # never holds write permissions: `build` only reads (and uploads the artifact
@@ -18,14 +23,17 @@ name: release
 #   - Actions → General → "Workflow permissions" allows id-token writes
 #     (required for OIDC publishing and npm --provenance).
 #
-# PENDING ADMINISTRATIVE STEP (not satisfiable by any change to this file):
-#   protect the `v*` tags with a repository ruleset restricting tag
-#   creation/update/deletion to maintainers (Rules → Rulesets → New branch
-#   ruleset applied to `refs/tags/v*`, or:
-#     gh api -X POST /repos/noppu-labs/opencode-permission-reviewer/rulesets -f ...
-#   with restrictions=push for refs/tags/v*). A tag-triggered workflow can
-#   never be its own root of trust: whoever controls the tagged commit
-#   controls these guards, so tag protection must live outside the repo.
+# Administrative prerequisites (outside this repository, see "Releasing" in
+# docs/DEVELOPMENT.md for the commands):
+#   - `main` is protected: a pull request with a required review and the
+#     required `ci` check.
+#   - A tag ruleset on `refs/tags/v*` restricts creation, update, and
+#     deletion, with repository admins and the GitHub Actions app
+#     (integration 15368) as bypass actors. Without the app, the `tag` job
+#     cannot create the tag.
+# A tag-triggered workflow can never be its own root of trust: whoever can
+# merge to `main` or push a `v*` tag controls these guards, so the
+# protection must live outside the repo.
 #
 # Prereleases use next; legacy maintenance uses v1 without moving latest.
 

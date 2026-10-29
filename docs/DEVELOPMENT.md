@@ -372,3 +372,94 @@ To look at one screen in the terminal, run `bun scripts/capture-tui.ts <screen>`
 - `docs/images/` is not in the package `files`, so the images never ship. The README links them by
   absolute `raw.githubusercontent.com` URLs on `main`, because npm does not resolve relative image
   paths.
+
+## Releasing
+
+Releases are tagged by `.github/workflows/release.yml`; nobody runs `git tag` by hand.
+
+1. A `chore/release-X.Y.Z` pull request into `develop` bumps `version` in `package.json` and moves
+   the `CHANGELOG.md` `[Unreleased]` notes under `## [X.Y.Z] - <date>`.
+2. The promotion pull request from `develop` into `main` changes `package.json`, so its merge
+   triggers `release.yml`. That run reads the version from the merge commit and stops if
+   `vX.Y.Z` already exists. Otherwise it runs the `quality` and `build` jobs against the merge
+   commit as a pre-check. The `tag` job then creates the annotated tag `vX.Y.Z` on that commit
+   and dispatches `release.yml` at the tag. This run publishes nothing.
+3. The dispatched run at the tag is the one that publishes to npm with provenance and creates the
+   GitHub Release. Provenance records `refs/tags/vX.Y.Z`.
+
+If the pre-check fails, no tag exists. Fix the problem on `develop` and promote again with the same
+version.
+
+Prereleases use a version like `X.Y.Z-rc.N`. They publish to the npm `next` tag as a GitHub
+prerelease. They are cut from `main` like any release, so `main` carries the rc version until the
+final release pull request.
+
+### Retries
+
+- In the run started by the push to `main`, use "Re-run failed jobs". "Re-run all jobs" repeats the
+  pre-check against a commit that is now tagged, and the untagged-commit gate fails.
+- In the publishing run at the tag, either "Re-run failed jobs" or a new dispatch works:
+
+  ```sh
+  gh workflow run release.yml --ref vX.Y.Z -f tag=vX.Y.Z
+  ```
+
+  Always pass `--ref` at the tag so provenance records the tag.
+- If the `tag` job failed after it created the tag, "Re-run failed jobs" runs it again. When the
+  tag is on the same commit and has no release and no active run, the job dispatches the
+  publishing run again. If the tag is on another commit, the job fails and nothing is dispatched.
+
+If the `tag` job could not create the tag, push it by hand. The tag push starts the publishing run.
+
+```sh
+git tag -s vX.Y.Z <sha> -m vX.Y.Z && git push origin vX.Y.Z
+```
+
+Tags created by the workflow are annotated and unsigned.
+
+### One-time admin setup
+
+The workflow cannot protect itself, so a repository admin configures two rulesets once. The first
+protects `main` with a required review and the required `ci` check:
+
+```sh
+gh api -X POST repos/noppu-labs/opencode-permission-reviewer/rulesets --input - <<'EOF'
+{
+  "name": "main",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
+  "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request" }],
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "pull_request", "parameters": {
+        "required_approving_review_count": 1, "dismiss_stale_reviews_on_push": true,
+        "require_code_owner_review": false, "require_last_push_approval": false,
+        "required_review_thread_resolution": false } },
+    { "type": "required_status_checks", "parameters": {
+        "strict_required_status_checks_policy": false,
+        "required_status_checks": [{ "context": "ci", "integration_id": 15368 }] } }
+  ]
+}
+EOF
+```
+
+The second restricts who can create, move, or delete `v*` tags. The GitHub Actions app
+(integration 15368) must be a bypass actor, or the `tag` job's tag creation is rejected:
+
+```sh
+gh api -X POST repos/noppu-labs/opencode-permission-reviewer/rulesets --input - <<'EOF'
+{
+  "name": "release tags",
+  "target": "tag",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/tags/v*"], "exclude": [] } },
+  "bypass_actors": [
+    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" },
+    { "actor_id": 15368, "actor_type": "Integration", "bypass_mode": "always" }
+  ],
+  "rules": [{ "type": "creation" }, { "type": "update" }, { "type": "deletion" }]
+}
+EOF
+```

@@ -16,7 +16,9 @@ bundles. Install from the npm registry. Building from source is an explicit
 The published tarball has only JavaScript, raw TSX sources, and documentation.
 `tests/package-smoke.test.ts` rejects native addons and shared libraries, `prebuilds/`
 directories, platform packages, and bundled-dependency payloads in the ship set. Every release
-publishes a CycloneDX SBOM of the published artifact and npm provenance for it.
+publishes a CycloneDX SBOM of the published artifact and npm provenance for it. A run on the
+release tag generates the provenance; `release.yml` creates that tag and dispatches the run after
+checking the commit on `main` ([Releasing](DEVELOPMENT.md#releasing)).
 
 Native packages can still reach your install tree through dependencies:
 

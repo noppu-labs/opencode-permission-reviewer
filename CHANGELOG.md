@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Releases are tagged automatically: merging a new `package.json` version into `main` runs the
+  release checks, then tags the commit `vX.Y.Z` and publishes from that tag
+  ([Releasing](docs/DEVELOPMENT.md#releasing)).
+
 ## [3.3.1] - 2026-10-30
 
 ### Changed

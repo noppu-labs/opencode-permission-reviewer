@@ -46,5 +46,8 @@ or `npm ci` (npm 8.15.0 or later), run this in the installing project:
 npm audit signatures
 ```
 
+The provenance of every release records the `vX.Y.Z` tag ref (`refs/tags/vX.Y.Z`) and the
+`release.yml` workflow, so a verifier that pins the source ref should pin the tag.
+
 [docs/SUPPLY-CHAIN.md](SUPPLY-CHAIN.md) describes what the package ships and the known
 residual exposure in its dependency tree.
