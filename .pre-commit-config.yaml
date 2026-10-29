@@ -136,7 +136,7 @@ repos:
         # A regex, not types: identify gives .jsonc files no json tag.
         files: \.([cm]?[jt]sx?|jsonc?)$
         pass_filenames: false
-      # Fails on any advisory except the three the package.json "audit" script ignores.
+      # Fails on any advisory except the ones the package.json "audit" script ignores.
       # See docs/DEVELOPMENT.md, "Ignored audit advisories".
       - id: bun-audit
         name: bun audit (bun.lock; ignored advisories in package.json "audit")
