@@ -1,8 +1,14 @@
 name: release
 
-# Pushing a `v*` tag builds and publishes the package with provenance, then
-# creates checksums, an SBOM, and a GitHub Release. Manual dispatch retries an
-# existing tag without moving it.
+# Three entry points. Every push to `main` reads the version from package.json
+# and stops there if `v<version>` already exists. Otherwise it checks the
+# commit (`quality`, `build`), then `tag` creates `v<version>` and dispatches
+# this workflow at it; nothing is published in that run. A pushed
+# `v*` tag builds and publishes the package with provenance, then creates
+# checksums, an SBOM, and a GitHub Release. Manual dispatch retries an
+# existing tag without moving it; always dispatch at the tag so provenance
+# records it:
+#   gh workflow run release.yml --ref vX.Y.Z -f tag=vX.Y.Z
 #
 # The workflow is split so the job that installs dependencies and builds
 # never holds write permissions: `build` only reads (and uploads the artifact
@@ -18,19 +24,23 @@ name: release
 #   - Actions → General → "Workflow permissions" allows id-token writes
 #     (required for OIDC publishing and npm --provenance).
 #
-# PENDING ADMINISTRATIVE STEP (not satisfiable by any change to this file):
-#   protect the `v*` tags with a repository ruleset restricting tag
-#   creation/update/deletion to maintainers (Rules → Rulesets → New branch
-#   ruleset applied to `refs/tags/v*`, or:
-#     gh api -X POST /repos/noppu-labs/opencode-permission-reviewer/rulesets -f ...
-#   with restrictions=push for refs/tags/v*). A tag-triggered workflow can
-#   never be its own root of trust: whoever controls the tagged commit
-#   controls these guards, so tag protection must live outside the repo.
+# Administrative prerequisites (outside this repository, see "Releasing" in
+# docs/DEVELOPMENT.md for the commands):
+#   - `main` is protected: a pull request with a required review and the
+#     required `ci` check.
+#   - A tag ruleset on `refs/tags/v*` restricts creation, update, and
+#     deletion, with repository admins and the GitHub Actions app
+#     (integration 15368) as bypass actors. Without the app, the `tag` job
+#     cannot create the tag.
+# A tag-triggered workflow can never be its own root of trust: whoever can
+# merge to `main` or push a `v*` tag controls these guards, so the
+# protection must live outside the repo.
 #
 # Prereleases use next; legacy maintenance uses v1 without moving latest.
 
 on:
   push:
+    branches: [main]
     tags:
       - "v*"
   workflow_dispatch:
@@ -43,11 +53,47 @@ on:
 permissions: {}
 
 jobs:
+  # On a push to main: is package.json's version untagged? Reads through the API, so no
+  # repository code runs here.
+  pending:
+    name: pending version
+    if: github.event_name == 'push' && github.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      tag: ${{ steps.check.outputs.tag }}
+      due: ${{ steps.check.outputs.due }}
+    steps:
+      - name: Find an untagged package.json version
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(gh api "repos/$GITHUB_REPOSITORY/contents/package.json?ref=$GITHUB_SHA" --jq .content | base64 -d | jq -r .version)
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::package.json version '$version' is not semver"
+            exit 1
+          fi
+          tag="v$version"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" --silent 2>/dev/null; then
+            echo "$tag already exists; nothing to release."
+            echo "due=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          fi
+
   # Every pre-commit hook on every file plus the gitleaks-tree scan, as in the CI quality job.
   # Hook repos install mutable tags and unpinned transitive dependencies, so they run here, apart
   # from `build`, with a read-only token.
   quality:
     name: quality
+    needs: pending
+    # Tag push and dispatch skip `pending`; a push to main runs only when a release is due.
+    if: ${{ !cancelled() && (needs.pending.result == 'skipped' || needs.pending.outputs.due == 'true') }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -57,17 +103,37 @@ jobs:
         with:
           # Full history for the tag ancestry check.
           fetch-depth: 0
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || needs.pending.outputs.tag && github.sha || github.ref }}
           persist-credentials: false
 
       # The same tag check as `build`, run here because this job executes dependency and hook code first.
       - name: Verify tag (pre-install gate)
+        if: ${{ !needs.pending.outputs.tag }}
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           [ "$(git rev-parse "refs/tags/$RELEASE_TAG^{}")" = "$(git rev-parse HEAD)" ]
           git merge-base --is-ancestor HEAD origin/main
+          pkg_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
+          if [ "$RELEASE_TAG" != "v$pkg_version" ]; then
+            echo "Tag $RELEASE_TAG is not v + package.json version $pkg_version"
+            exit 1
+          fi
+
+      # Push to main: the tag does not exist yet, so check the commit and version instead.
+      - name: Verify untagged main commit (pre-install gate)
+        if: ${{ needs.pending.outputs.tag }}
+        env:
+          RELEASE_TAG: ${{ needs.pending.outputs.tag }}
+        run: |
+          set -euo pipefail
+          [ "$(git rev-parse HEAD)" = "$GITHUB_SHA" ]
+          git merge-base --is-ancestor HEAD origin/main
+          if git rev-parse -q --verify "refs/tags/$RELEASE_TAG" >/dev/null; then
+            echo "$RELEASE_TAG already exists"
+            exit 1
+          fi
           pkg_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
           if [ "$RELEASE_TAG" != "v$pkg_version" ]; then
             echo "Tag $RELEASE_TAG is not v + package.json version $pkg_version"
@@ -92,7 +158,8 @@ jobs:
       - run: uv run --frozen --no-build pre-commit run --hook-stage manual gitleaks-tree --all-files
 
   build:
-    needs: quality
+    needs: [pending, quality]
+    if: ${{ !cancelled() && needs.quality.result == 'success' }}
     name: build and verify
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -108,7 +175,7 @@ jobs:
         with:
           # Full history for tag ancestry checks and release notes.
           fetch-depth: 0
-          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || github.ref }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || needs.pending.outputs.tag && github.sha || github.ref }}
           persist-credentials: false
 
       # Guard against mistags BEFORE any toolchain or dependency code runs:
@@ -117,12 +184,32 @@ jobs:
       # no node) so an invalid tag fails without executing anything from the
       # dependency tree.
       - name: Verify tag (pre-install gate)
+        if: ${{ !needs.pending.outputs.tag }}
         env:
           RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           set -euo pipefail
           [ "$(git rev-parse "refs/tags/$RELEASE_TAG^{}")" = "$(git rev-parse HEAD)" ]
           git merge-base --is-ancestor HEAD origin/main
+          pkg_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
+          if [ "$RELEASE_TAG" != "v$pkg_version" ]; then
+            echo "Tag $RELEASE_TAG is not v + package.json version $pkg_version"
+            exit 1
+          fi
+
+      # Push to main: the tag does not exist yet, so check the commit and version instead.
+      - name: Verify untagged main commit (pre-install gate)
+        if: ${{ needs.pending.outputs.tag }}
+        env:
+          RELEASE_TAG: ${{ needs.pending.outputs.tag }}
+        run: |
+          set -euo pipefail
+          [ "$(git rev-parse HEAD)" = "$GITHUB_SHA" ]
+          git merge-base --is-ancestor HEAD origin/main
+          if git rev-parse -q --verify "refs/tags/$RELEASE_TAG" >/dev/null; then
+            echo "$RELEASE_TAG already exists"
+            exit 1
+          fi
           pkg_version=$(sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' package.json | head -1)
           if [ "$RELEASE_TAG" != "v$pkg_version" ]; then
             echo "Tag $RELEASE_TAG is not v + package.json version $pkg_version"
@@ -138,7 +225,7 @@ jobs:
       - name: Read tag metadata
         id: meta
         env:
-          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          RELEASE_TAG: ${{ inputs.tag || needs.pending.outputs.tag || github.ref_name }}
         run: GITHUB_REF_NAME="$RELEASE_TAG" bun scripts/release-metadata.ts
 
       # This job holds the artifact, so it runs only what bun.lock pins; the pre-commit hooks run in `quality`.
@@ -173,9 +260,54 @@ jobs:
           path: artifacts/
           if-no-files-found: error
 
+  # Tags the pre-checked commit and starts the publishing run at the tag, so provenance records
+  # refs/tags/v<version>. A GITHUB_TOKEN dispatch starts a run; a GITHUB_TOKEN tag push would not.
+  tag:
+    name: tag and dispatch release
+    needs: [pending, build]
+    if: ${{ !cancelled() && needs.build.result == 'success' && needs.pending.outputs.due == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Create v<version> and dispatch release.yml at it
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.pending.outputs.tag }}
+        run: |
+          set -euo pipefail
+          repo="repos/$GITHUB_REPOSITORY"
+          if gh api "$repo/git/ref/tags/$TAG" --silent 2>/dev/null; then
+            tagged=$(gh api "$repo/commits/$TAG" --jq .sha)
+            if [ "$tagged" != "$GITHUB_SHA" ]; then
+              echo "::error::$TAG already points at $tagged, not $GITHUB_SHA"
+              exit 1
+            fi
+            if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+              echo "$TAG is already released."
+              exit 0
+            fi
+            active=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml --branch "$TAG" --event workflow_dispatch \
+              --json status --jq '[.[] | select(.status != "completed")] | length')
+            if [ "$active" != "0" ]; then
+              echo "A release run for $TAG is already in progress."
+              exit 0
+            fi
+          else
+            object=$(gh api "$repo/git/tags" -f tag="$TAG" -f message="$TAG" \
+              -f object="$GITHUB_SHA" -f type=commit --jq .sha)
+            gh api "$repo/git/refs" -f ref="refs/tags/$TAG" -f sha="$object" --silent
+          fi
+          gh workflow run release.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG"
+          echo "Dispatched release.yml at $TAG."
+
   publish:
     name: publish
     needs: build
+    # The push to main only pre-checks; the run it dispatches at the tag publishes.
+    if: ${{ !cancelled() && needs.build.result == 'success' && !(github.event_name == 'push' && github.ref_type == 'branch') }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

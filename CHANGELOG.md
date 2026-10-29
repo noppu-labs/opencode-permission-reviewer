@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Releases are tagged automatically: every push to `main` reads the `package.json` version and, if
+  it is not tagged yet, runs the release checks, then tags the commit `vX.Y.Z` and publishes from
+  that tag ([Releasing](docs/DEVELOPMENT.md#releasing)).
 - New npm package description that more accurately represents what the plugin does.
 - Bumped the dev dependencies `@opencode-ai/plugin` and `@opencode-ai/sdk` to 1.19.5, with
   `bun.lock` synchronized (dependency bumps only; no behavior change). The `@opencode-ai/plugin`
