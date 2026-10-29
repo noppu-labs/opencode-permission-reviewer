@@ -18,9 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The TUI fits long commands by terminal columns, so CJK text, emoji, flags and accented letters
-  no longer overflow the row or lose the end of the command, and a cut never splits a character
-  ([#45](https://github.com/noppu-labs/opencode-permission-reviewer/issues/45)).
+- The TUI fits long commands by terminal columns, so CJK text and emoji no longer overflow the row
+  or lose the end of the command, combining accents no longer cut it short, and a cut never splits
+  a flag, an emoji or an accented letter ([#45](https://github.com/noppu-labs/opencode-permission-reviewer/issues/45)).
 
 ### Security
 
