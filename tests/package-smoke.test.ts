@@ -539,8 +539,8 @@ describe("npm install dedupe shape", () => {
 
     // seroval reaches the consumer tree through solid-js, which
     // @opentui/solid peer-pins EXACTLY (1.9.12 through 0.7.0).
-    // GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (seroval fromJSON
-    // deserialization) are residual and DOCUMENTED, not fixed: seroval is only
+    // The seroval fromJSON deserialization advisories below are residual and
+    // DOCUMENTED, not fixed (tracked in issue #112): seroval is only
     // imported by the SSR renderer solid-js/web, which neither our TUI nor
     // OpenTUI loads. When @opentui/solid moves its pin, this assertion forces
     // the conscious version bump and doc update.
@@ -561,6 +561,9 @@ describe("npm install dedupe shape", () => {
     const residualAdvisories = new Set([
       "GHSA-p6vx-979v-rg4c",
       "GHSA-jp82-f5mq-hwhp",
+      "GHSA-97r2-qh9m-474h",
+      "GHSA-wp97-x4hv-qvhp",
+      "GHSA-7rv5-mrxv-xcr9",
     ]);
 
     // npm audit over the CONSUMER tree (registry reachability required; the

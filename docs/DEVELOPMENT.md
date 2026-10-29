@@ -214,13 +214,12 @@ the finding, or suppress it on the line with a reason.
 
 ### Ignored audit advisories
 
-`bun audit` currently reports three advisories that the `audit` script ignores by ID, so the hook
-still fails on anything new:
+`bun audit` currently reports advisories that the `audit` script ignores by ID, so the hook still
+fails on anything new:
 
-- `GHSA-p6vx-979v-rg4c` and `GHSA-jp82-f5mq-hwhp`: `seroval`, reached through `solid-js`, which is
-  exact-pinned together with the `@opentui` peer set.
-- `GHSA-ch52-4w7c-c8xp`: `http-cache-semantics`, reached through the dev dependency
-  `@opencode/plugin`.
+- `GHSA-p6vx-979v-rg4c`, `GHSA-jp82-f5mq-hwhp`, `GHSA-97r2-qh9m-474h`, `GHSA-wp97-x4hv-qvhp`,
+  `GHSA-7rv5-mrxv-xcr9` and `GHSA-9wx9-5pv9-3349`: `seroval`, reached through `solid-js`, which is
+  exact-pinned together with the `@opentui` peer set. Issue #112 tracks the upgrade.
 
 Resolving them is a dependency decision; remove the matching `--ignore` flag when it is made.
 `bun audit` needs network access. As a hook it runs only when `bun.lock` or `package.json`

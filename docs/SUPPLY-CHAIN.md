@@ -51,11 +51,13 @@ are tests against the installed tree itself.
 These advisories remain unfixed in the consumer install tree.
 
 `@opentui/solid` peer-pins `solid-js@1.9.12` exactly. Its `seroval` dependency carries
-GHSA-p6vx-979v-rg4c and GHSA-jp82-f5mq-hwhp (unsafe `fromJSON` deserialization, fixed in
-`solid-js` 1.9.16). Only the SSR renderer `solid-js/web` imports `seroval`, and neither this
-package nor OpenTUI loads it, so the vulnerable code is unreachable at runtime. The consumer
-surveillance test pins `solid-js`, asserts that nothing imports `solid-js/web`, and admits only
-those two advisories.
+GHSA-p6vx-979v-rg4c, GHSA-jp82-f5mq-hwhp, GHSA-97r2-qh9m-474h, GHSA-wp97-x4hv-qvhp,
+GHSA-7rv5-mrxv-xcr9 and the moderate GHSA-9wx9-5pv9-3349 (unsafe `fromJSON` deserialization and
+serialization, fixed in `solid-js` 1.9.16). Only the SSR renderer `solid-js/web` imports `seroval`,
+and neither this package nor OpenTUI loads it, so the vulnerable code is unreachable at runtime.
+The consumer surveillance test pins `solid-js`, asserts that nothing imports `solid-js/web`, and
+admits only those high and critical advisories. Issue #112 tracks the upgrade, which waits on
+`@opencode/plugin` allowing `@opentui/solid` 0.8.0.
 
 The build toolchain (tsdown, Rolldown and its native bindings) is a dev dependency and is never
 shipped. The consumer surveillance test also asserts that no `esbuild` reaches a consumer tree.
