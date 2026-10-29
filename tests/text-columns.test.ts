@@ -31,4 +31,25 @@ describe("columnUnits", () => {
   test("returns no units for empty text", () => {
     expect(columnUnits("")).toEqual([]);
   });
+
+  test("splits ASCII and the fit's markers exactly as grapheme segmentation does", () => {
+    const segmenter = new Intl.Segmenter(undefined, {
+      granularity: "grapheme",
+    });
+    const alphabet = [
+      ...Array.from({ length: 0x5f }, (_, i) => String.fromCharCode(0x20 + i)),
+      "⋯",
+      "⏎",
+    ];
+    const text = alphabet.join("").repeat(3);
+    const units = columnUnits(text);
+    expect(units.map((unit) => unit.text)).toEqual(
+      Array.from(segmenter.segment(text), (entry) => entry.segment),
+    );
+    expect(units.every((unit) => unit.columns === 1)).toBe(true);
+  });
+
+  test("leaves a combining mark after a marker to grapheme segmentation", () => {
+    expect(columnUnits("⋯\u0301 a")).toHaveLength(3);
+  });
 });
