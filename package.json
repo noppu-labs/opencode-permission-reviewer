@@ -1,6 +1,6 @@
 {
   "name": "@noppu-labs/opencode-permission-reviewer",
-  "version": "3.3.1",
+  "version": "3.3.2",
   "description": "Let OpenCode run unattended, securely: a System One or LLM reviewer answers permission prompts and asks you only when it should.",
   "type": "module",
   "main": "./dist/index.js",

@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.2] - 2026-10-30
+
+### Changed
+
+- Bumped the runtime dependency `@opencode/client` to 2.2.2.
+- Bumped the dev dependencies `@opencode/plugin` to 2.2.2, `get-east-asian-width` to 1.7.0 and
+  `string-width` to 8.3.0, with `bun.lock` synchronized. The `@opentui/*` pins stay at 0.7.0
+  because `@opencode/plugin` 2.2.2 still pins them, so the `seroval` residual exposure tracked in
+  [#112](https://github.com/noppu-labs/opencode-permission-reviewer/issues/112) is unchanged.
+
+### Fixed
+
+- The TUI's East Asian Wide table is regenerated from `get-east-asian-width` 1.7.0, so characters
+  added as wide in Unicode 18 take two terminal columns when long commands are fitted.
+
 ## [3.3.1] - 2026-10-30
 
 ### Changed
