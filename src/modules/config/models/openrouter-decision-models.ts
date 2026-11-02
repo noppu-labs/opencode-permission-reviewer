@@ -7,6 +7,9 @@ export interface OpenRouterDecisionModels {
 // biome-ignore lint/nursery/useExplicitType: `as const satisfies` keeps the literal ids; an annotation would widen them
 export const OPENROUTER_DECISION_MODELS = {
   models: {
+    "baseten/elephant-1": { benchmarked: false },
+    "baseten/joey-1": { benchmarked: false },
+    "baseten/mammoth-1": { benchmarked: false },
     "cloudflare/clef": { benchmarked: false },
     "cloudflare/clef-flash": { benchmarked: false },
     "cloudflare/clef-omni": { benchmarked: false },
