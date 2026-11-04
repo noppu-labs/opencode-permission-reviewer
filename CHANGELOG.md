@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-04
+
+### Changed
+
+- **Breaking:** the TUI runtime dependencies move from OpenTUI 0.7 to 0.8. `@opentui/core` and
+  `@opentui/solid` are pinned at 0.8.2 and `solid-js` at 1.9.18, matching the `@opentui/* >=0.8.0`
+  that `@opencode/plugin` peers from 2.2.3. Installs that pin `@opentui/*` or `solid-js`
+  themselves, or that run the plugin beside another that expects OpenTUI 0.7, must move with it to
+  keep a single Solid runtime. The supported host ranges are unchanged: the real-host matrix
+  renders the TUI on every pinned V1 host and on V2 2.0.22 through 2.2.5.
+- Bumped the runtime dependency `@opencode/client` and the dev dependency `@opencode/plugin` to
+  2.2.5, with `bun.lock` synchronized.
+- The real-host matrix adds OpenCode 2.2.5, the first verified V2 host on OpenTUI 0.8.
+- The OpenRouter decision model list adds `baseten/elephant-1`, `baseten/joey-1` and
+  `baseten/mammoth-1`. They are unbenchmarked, so selecting one raises a config notice
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
+
+### Security
+
+- `solid-js` 1.9.18 resolves `seroval` 1.6.12, which fixes GHSA-p6vx-979v-rg4c,
+  GHSA-jp82-f5mq-hwhp, GHSA-97r2-qh9m-474h, GHSA-wp97-x4hv-qvhp, GHSA-7rv5-mrxv-xcr9 and
+  GHSA-9wx9-5pv9-3349. The audit no longer ignores any advisory, and the consumer `npm audit`
+  gate no longer admits a residual
+  ([#112](https://github.com/noppu-labs/opencode-permission-reviewer/issues/112)).
+- GHSA-3g3m-2fjr-6pw4 (`glob`) and GHSA-g3hv-75wg-m249 (`minimatch`), both moderate, are fixed
+  only in new majors that upstream doesn't allow yet. Root `overrides` to `glob` 14.0.3 and
+  `minimatch` 11.0.4 clear them from this repository's tree. The consumer tree keeps them through
+  `@opentui/solid`'s `babel-plugin-module-resolver`, which never calls the vulnerable code here, and
+  they are documented as residual exposure
+  ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure),
+  [#128](https://github.com/noppu-labs/opencode-permission-reviewer/issues/128)).
+
 ## [3.3.2] - 2026-10-30
 
 ### Changed

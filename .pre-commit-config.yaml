@@ -139,7 +139,7 @@ repos:
       # Fails on any advisory except the ones the package.json "audit" script ignores.
       # See docs/DEVELOPMENT.md, "Ignored audit advisories".
       - id: bun-audit
-        name: bun audit (bun.lock; ignored advisories in package.json "audit")
+        name: bun audit (bun.lock; overrides in package.json)
         entry: bun run audit
         language: unsupported
         files: ^(bun\.lock|package\.json)$

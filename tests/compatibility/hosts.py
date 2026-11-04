@@ -10,7 +10,9 @@ V1_VERSIONS = (
 )
 
 V2_VERSIONS = (
-    [os.environ["V2_HOST_VERSION"]] if os.environ.get("V2_HOST_VERSION") else ["2.0.22", "2.0.26", "2.1.2", "2.2.0"]
+    [os.environ["V2_HOST_VERSION"]]
+    if os.environ.get("V2_HOST_VERSION")
+    else ["2.0.22", "2.0.26", "2.1.2", "2.2.0", "2.2.5"]
 )
 
 SYNTHETIC_PASSWORD = "synthetic-local-host-password"  # nosec B105 # synthetic test password
