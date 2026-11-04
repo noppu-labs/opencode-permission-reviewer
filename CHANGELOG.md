@@ -13,7 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@opentui/solid` are pinned at 0.8.2 and `solid-js` at 1.9.18, matching the `@opentui/* >=0.8.0`
   that `@opencode/plugin` peers from 2.2.3. Installs that pin `@opentui/*` or `solid-js`
   themselves, or that run the plugin beside another that expects OpenTUI 0.7, must move with it to
-  keep a single Solid runtime.
+  keep a single Solid runtime. The supported host ranges are unchanged: the real-host matrix
+  renders the TUI on every pinned V1 host and on V2 2.0.22 through 2.2.5.
 - Bumped the runtime dependency `@opencode/client` and the dev dependency `@opencode/plugin` to
   2.2.5, with `bun.lock` synchronized.
 - The real-host matrix adds OpenCode 2.2.5, the first verified V2 host on OpenTUI 0.8.
