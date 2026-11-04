@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bumped the runtime dependency `@opencode/client` and the dev dependency `@opencode/plugin` to
   2.2.5, with `bun.lock` synchronized.
 - The real-host matrix adds OpenCode 2.2.5, the first verified V2 host on OpenTUI 0.8.
+- The OpenRouter decision model list adds `baseten/elephant-1`, `baseten/joey-1` and
+  `baseten/mammoth-1`. They are unbenchmarked, so selecting one raises a config notice
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
 
 ### Security
 

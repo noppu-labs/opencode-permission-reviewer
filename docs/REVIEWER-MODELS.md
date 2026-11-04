@@ -95,8 +95,9 @@ plugin never sends a key that is not shaped like one. Prefix the OpenRouter mode
 Four OpenRouter models are benchmarked today: `typesafe/jev-1.13`, `typesafe/jev-1.14`,
 `liquid/d1` and `liquid/d1-ultra`. "Benchmarked" means upstream or this project measured the
 model as a reviewer. It does not mean recommended; read [Choosing a decision
-model](#choosing-a-decision-model) for how the results differ. For Baseten, use the direct
-`baseten/` provider above, since Baseten is no longer on OpenRouter.
+model](#choosing-a-decision-model) for how the results differ. Baseten's OpenRouter models
+(`baseten/elephant-1`, `baseten/joey-1` and `baseten/mammoth-1`) are unbenchmarked. The Baseten
+results above come from the direct `baseten/` provider.
 
 Any other OpenRouter decision model works at your discretion. The plugin accepts it and shows a
 config notice that the model has not been benchmarked as a reviewer.
