@@ -40,9 +40,9 @@ actually gets:
 - the platform-specific packages under `@opentui` (rendering only)
 - the optional `@msgpackr-extract` accelerators
 - the exact `@babel/core` version `@opentui/solid` pins (7.29.7, past GHSA-4x5r-pxfx-6jf8), and the
-  exact `solid-js` version described in [Known residual exposure](#known-residual-exposure)
-- an `npm audit` gate that fails on any high or critical advisory other than the documented
-  `seroval` residuals
+  exact `solid-js` version (1.9.18, whose `seroval` is past every advisory that 1.9.12 carried),
+  with nothing importing the SSR renderer `solid-js/web`
+- an `npm audit` gate that fails on any high or critical advisory
 
 The root `overrides` in this repository protect the development tree only. npm never applies a
 dependency's overrides to the installing application, which is why the consumer-side guarantees
@@ -52,14 +52,13 @@ are tests against the installed tree itself.
 
 These advisories remain unfixed in the consumer install tree.
 
-`@opentui/solid` peer-pins `solid-js@1.9.12` exactly. Its `seroval` dependency carries
-GHSA-p6vx-979v-rg4c, GHSA-jp82-f5mq-hwhp, GHSA-97r2-qh9m-474h, GHSA-wp97-x4hv-qvhp,
-GHSA-7rv5-mrxv-xcr9 and the moderate GHSA-9wx9-5pv9-3349 (unsafe `fromJSON` deserialization and
-serialization, fixed in `solid-js` 1.9.16). Only the SSR renderer `solid-js/web` imports `seroval`,
-and neither this package nor OpenTUI loads it, so the vulnerable code is unreachable at runtime.
-The consumer surveillance test pins `solid-js`, asserts that nothing imports `solid-js/web`, and
-admits only those high and critical advisories. Issue #112 tracks the upgrade, which waits on
-`@opencode/plugin` allowing `@opentui/solid` 0.8.0.
+`@opentui/solid` pins `babel-plugin-module-resolver` 5.0.2 exactly, which brings `glob` 9.3.5 and
+`minimatch` 8.0.7 into the consumer tree. They carry the moderate GHSA-3g3m-2fjr-6pw4 (AbortSignal
+cancellation bypass, fixed in `glob` 14.0.2) and GHSA-g3hv-75wg-m249 (pattern-expansion denial of
+service, fixed in `minimatch` 11.0.1). Neither fix exists for an older major. The resolver calls
+`glob` only to expand a `root` option, and `@opentui/solid` passes none, so this package never
+reaches the vulnerable code. The root `overrides` that keep `bun audit` clean in this repository
+don't follow the tarball. Issue #128 tracks removing them once upstream moves.
 
 The build toolchain (tsdown, Rolldown and its native bindings) is a dev dependency and is never
 shipped. The consumer surveillance test also asserts that no `esbuild` reaches a consumer tree.

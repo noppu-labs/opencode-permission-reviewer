@@ -212,20 +212,23 @@ The ratchet is empty: no per-file exemption exists in `biome.jsonc` or `fta.json
 directories are covered as a whole, see "Test files"). Don't add one to get a change through: fix
 the finding, or suppress it on the line with a reason.
 
-### Ignored audit advisories
+### Audit advisories
 
-`bun audit` currently reports advisories that the `audit` script ignores by ID, so the hook still
-fails on anything new:
+The `audit` script runs `bun audit` with no ignored advisories. Two root `overrides` exist only to
+keep it passing:
 
-- `GHSA-p6vx-979v-rg4c`, `GHSA-jp82-f5mq-hwhp`, `GHSA-97r2-qh9m-474h`, `GHSA-wp97-x4hv-qvhp`,
-  `GHSA-7rv5-mrxv-xcr9` and `GHSA-9wx9-5pv9-3349`: `seroval`, reached through `solid-js`, which is
-  exact-pinned together with the `@opentui` peer set. Issue #112 tracks the upgrade.
+- `glob` 14.0.3 and `minimatch` 11.0.4: GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249 are fixed only
+  in those majors, and `@opencode/util` and `@opentui/solid`'s `babel-plugin-module-resolver`
+  still pin older ones. Issue #128 tracks removing the overrides once upstream allows the fixed
+  versions.
 
-Resolving them is a dependency decision; remove the matching `--ignore` flag when it is made.
+Overrides apply to this repository's tree only, so the consumer install keeps these advisories as
+documented residual exposure ([Supply chain](SUPPLY-CHAIN.md#known-residual-exposure)).
+
 `bun audit` needs network access. As a hook it runs only when `bun.lock` or `package.json`
 changes, but `pre-commit run --all-files` (and so `bun run check` and the CI `quality` job) always
 runs it, so a new advisory fails the next push. The release workflow's `quality` job runs it as
-well, so an advisory that is not on the ignore list blocks a release.
+well, so any new advisory blocks a release until it is resolved.
 
 ## Live testing
 
