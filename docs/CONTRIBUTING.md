@@ -65,6 +65,8 @@ Your pull request should also meet these rules:
 - User-facing strings are in English. The policy and reviewer prompts are English, and runtime
   and UI messages should match.
 - User-visible changes get a `CHANGELOG.md` entry under `[Unreleased]`.
+- A change to features, install steps or requirements also updates `docs/toolkit-page.yaml`, the
+  plugin's page on toolkit.noppu.com.
 
 ## Areas that need care
 

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/toolkit-page.yaml`, the plugin's page on toolkit.noppu.com.
+
 ## [3.4.0] - 2026-11-04
 
 ### Changed
