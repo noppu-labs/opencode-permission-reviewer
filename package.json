@@ -109,7 +109,7 @@
     "@types/semver": "7.8.0",
     "fta-cli": "3.1.0",
     "get-east-asian-width": "1.7.0",
-    "knip": "6.44.0",
+    "knip": "6.44.1",
     "string-width": "8.3.0",
     "tsdown": "0.23.4",
     "typescript": "7.0.2"
@@ -142,7 +142,7 @@
     "@typesafe-ai/sdk": "0.6.0",
     "@opencode/client": "2.2.5",
     "jsonc-parser": "3.3.1",
-    "semver": "7.8.5",
+    "semver": "7.8.6",
     "@opentui/core": "0.8.2",
     "@opentui/solid": "0.8.2",
     "solid-js": "1.9.18",
