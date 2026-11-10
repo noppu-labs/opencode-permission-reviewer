@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.2] - 2026-11-11
+
+### Changed
+
+- The OpenRouter decision model list adds `cloudflare/clairic`, `morph/reflex` and
+  `parallel/decisions-fast:free`. They are unbenchmarked, so selecting one raises a config notice
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
+- The list drops `inception/mercury-decide`, which OpenRouter no longer serves. A config that
+  names `openrouter/inception/mercury-decide` is no longer treated as a System One model.
+- Bumped the runtime dependencies `@opencode/client` to 2.2.6 and `semver` to 7.8.6, and the dev
+  dependency `@opencode/plugin` to 2.2.6, with `bun.lock` synchronized.
+- Bumped the dev dependencies `@biomejs/biome` to 2.6.4, `knip` to 6.44.1 and `tsdown` to 0.23.4,
+  and the CodeQL actions to 4.39.3.
+
 ## [3.4.1] - 2026-11-06
 
 This release changes no runtime code.
