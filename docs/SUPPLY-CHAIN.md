@@ -69,3 +69,8 @@ For OpenCode V1 hosts, `@opencode-ai/plugin` resolves `effect@4.0.0-beta.83` fro
 dependency chain. It is externalized from the bundles and is neither shipped nor vendored by this
 package. It is not pinned or overridden to a different version, because forcing
 another version could fork the runtime that the V1 host shares with every other plugin.
+
+That version carries the moderate GHSA-chp3-j5qr-2vfr (cookie attribute injection through
+`makeCookie()`, fixed in `effect` 4.0.0-beta.103). This package imports nothing from `effect` and
+sets no cookies, and the copy that runs is the host's own, so the fix has to come from OpenCode.
+The `audit` script ignores the advisory by ID until `@opencode-ai/plugin` moves past it.
