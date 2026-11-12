@@ -214,8 +214,15 @@ the finding, or suppress it on the line with a reason.
 
 ### Audit advisories
 
-The `audit` script runs `bun audit` with no ignored advisories. Two root `overrides` exist only to
-keep it passing:
+The `audit` script ignores one advisory by ID, so the hook still fails on anything new:
+
+- `GHSA-chp3-j5qr-2vfr` (moderate): cookie attribute injection in `effect` before 4.0.0-beta.103.
+  The dev dependency `@opencode-ai/plugin` pins `effect` 4.0.0-beta.83 exactly, up to its latest
+  release (1.19.5), and an override would fork the runtime the V1 host shares
+  ([Supply chain](SUPPLY-CHAIN.md#the-effect-runtime)). Remove the ignore once
+  `@opencode-ai/plugin` ships a fixed `effect`.
+
+Two root `overrides` exist only to keep the audit passing:
 
 - `glob` 14.0.3 and `minimatch` 11.0.4: GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249 are fixed only
   in those majors, and `@opencode/util` and `@opentui/solid`'s `babel-plugin-module-resolver`

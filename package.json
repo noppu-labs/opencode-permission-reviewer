@@ -129,7 +129,7 @@
     "typecheck": "tsc --noEmit",
     "fta": "fta .",
     "knip": "knip",
-    "audit": "bun audit",
+    "audit": "bun audit --ignore GHSA-chp3-j5qr-2vfr",
     "build": "rm -rf dist && tsdown && bun scripts/copy-tui.ts",
     "test": "bun test",
     "test:stress": "bun test tests/stress.test.ts --timeout 30000",

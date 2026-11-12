@@ -21,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Bumped the dev dependencies `@biomejs/biome` to 2.6.4, `knip` to 6.44.1 and `tsdown` to 0.23.4,
   and the CodeQL actions to 4.39.3.
 
+### Security
+
+- GHSA-chp3-j5qr-2vfr (`effect` before 4.0.0-beta.103, moderate) is documented as residual
+  exposure and ignored by ID in the audit. `@opencode-ai/plugin` pins `effect` 4.0.0-beta.83
+  exactly and has no release with the fix; the V1 host supplies that runtime, and this package
+  neither ships it nor imports from it ([Supply chain](docs/SUPPLY-CHAIN.md#the-effect-runtime)).
+
 ## [3.4.1] - 2026-11-06
 
 This release changes no runtime code.
