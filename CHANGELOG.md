@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `homepage` in `package.json` is the plugin's page on toolkit.noppu.com instead of the GitHub
+  repository, so npm and jsDelivr link to it. The README links to that page and to noppu.com.
+
 ## [3.4.2] - 2026-11-11
 
 ### Changed

@@ -47,7 +47,7 @@
   ],
   "license": "MIT AND Apache-2.0",
   "author": "cris005",
-  "homepage": "https://github.com/noppu-labs/opencode-permission-reviewer",
+  "homepage": "https://toolkit.noppu.com/opencode/opencode-permission-reviewer",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/noppu-labs/opencode-permission-reviewer.git"
