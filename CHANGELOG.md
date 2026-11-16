@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.3] - 2026-11-16
+
+### Changed
+
+- `homepage` in `package.json` is the plugin's page on toolkit.noppu.com instead of the GitHub
+  repository, so npm and jsDelivr link to it. The README links to that page and to noppu.com.
+- Bumped the runtime dependency `@opencode/client` to 2.2.7 and the dev dependency
+  `@opencode/plugin` to 2.2.7, with `bun.lock` synchronized.
+- Bumped the dev dependencies `@biomejs/biome` to 2.6.5 and `tsdown` to 0.23.5.
+
 ## [3.4.2] - 2026-11-11
 
 ### Changed
