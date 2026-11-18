@@ -125,7 +125,9 @@ function commandReason(
  *  readings, even without a `$'` in the text: a command string the wrappers
  *  re-lex can get one from escapes. The rescan reading keeps the brake at
  *  least as strict as the release before the substitution step, and the
- *  undecoded reading as strict as the previous release, on every input. */
+ *  undecoded reading as strict as the previous release, on every input. The
+ *  zsh reading, which decodes `$'…'` escapes the way zsh does, runs only when
+ *  the text has a backslash. */
 function readingsReason(
   command: string,
   bodies: BodyCommands,

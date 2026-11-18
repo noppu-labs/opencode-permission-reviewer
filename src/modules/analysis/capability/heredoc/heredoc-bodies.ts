@@ -30,6 +30,9 @@ export interface PendingLine {
   unterminated: boolean;
   /** Set when a delimiter word could not be resolved. */
   delimiterUnresolved: boolean;
+  /** Set when a delimiter word has a `$'…'` part bash and zsh read
+   *  differently. */
+  delimiterShellDependent: boolean;
   pending: PendingStart[];
   pieces: Array<{ text: string } | { pendingIndex: number }>;
   /** Where the commands the unquoted bodies run are kept; a scan that does
@@ -66,7 +69,7 @@ export function consumeBodies(
     const read = readBody(scan.command, position, start, bound);
     position = read.position;
     if (read.unterminated) scan.unterminated = true;
-    if (!start.resolved) scan.delimiterUnresolved = true;
+    noteDelimiter(scan, start);
     const record = bodyRecord(scan.command, start, read, lineEnd, targets);
     if (record.dynamic) scan.hasDynamicConstructs = true;
     keepBody(scan.bodies, start, read, record.sha256);
@@ -80,6 +83,12 @@ export function consumeBodies(
   scan.pending.length = 0;
   scan.pieces = [];
   return position;
+}
+
+/** Records on the scan what a delimiter word could not give. */
+function noteDelimiter(scan: PendingLine, start: PendingStart): void {
+  if (!start.resolved) scan.delimiterUnresolved = true;
+  if (start.shellDependent) scan.delimiterShellDependent = true;
 }
 
 /** Keeps what one read body gives the collector: the commands its

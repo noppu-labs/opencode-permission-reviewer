@@ -73,10 +73,12 @@ function parse(rawCommand: string): ParsedCommand {
     analysisTruncated: walked.truncated,
     heads: walked.heads,
     segmentRedirections: walked.parts.map((part) => part.segmentRedirections),
-    shellDependentQuoting: [
-      ...walked.segments.flatMap((segment) => segment.tokens),
-      ...walked.effective.flat(),
-    ].some((token) => hasShellDependentWord(token.raw)),
+    shellDependentQuoting:
+      extraction.delimiterShellDependent ||
+      [
+        ...walked.segments.flatMap((segment) => segment.tokens),
+        ...walked.effective.flat(),
+      ].some((token) => hasShellDependentWord(token.raw)),
     ...(walked.remote.length > 0 && { remoteCommands: walked.remote }),
     ...(walked.stdinCode && { stdinCode: true }),
   };

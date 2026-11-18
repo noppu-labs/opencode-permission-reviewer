@@ -81,7 +81,7 @@ export const PINNED_BLOBS = {
   "src/modules/review/services/review-result-gates.ts":
     "183cce730bdc30be3ab0e7478dbea44acbbb01f3",
   "src/modules/analysis/brake/emergency-brake.ts":
-    "7ea0f53c5d40d35963dec5fd0371e62626842a31",
+    "b01d76baed25f559909dd7e5bb24f7173bbc8b41",
   "src/modules/analysis/brake/brake-body-commands.ts":
     "13e05c5003872bb6d0d4bfa977592b7e88427983",
   "src/modules/analysis/brake/brake-heredoc-texts.ts":
@@ -124,7 +124,7 @@ export const PINNED_BLOBS = {
     "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
   "src/utils/redact.ts": "46b9d6ed1c42f8ea0b99e94d5f75a557481d3588",
   "src/modules/analysis/capability/command-parser.ts":
-    "ca7468a9aa28979f78e48552041c4eb8e26ade9e",
+    "f37bc622e92dea8f0ae85dcca5cb8eef74de4309",
   "src/modules/analysis/capability/bash-analyzer.ts":
     "1d8813dcf86953f84ea30a65e894ae1d0eae74b7",
   "src/modules/analysis/capability/bash-command-tables.ts":
@@ -157,7 +157,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/shell/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
   "src/modules/analysis/shell/shell-lex-state.ts":
-    "47dac7d9f8240f945073ab5380ee2ae3f7f685ba",
+    "e97f27417cd44dff5eeaf1f98fdf6239496da889",
   "src/modules/analysis/shell/shell-quote-scan.ts":
     "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/modules/analysis/shell/shell-scanner.ts":
@@ -193,7 +193,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/walk/watch-command.ts":
     "5091cdd9eefd7b2a5a5256f74dcc1220ca7c0959",
   "src/modules/analysis/capability/heredoc/heredoc-extractor.ts":
-    "975d18ed5d37f0d2bc01363a4837aed30d630512",
+    "9e426cad7d3230c48e6306a0f4510ceb24eadd33",
   "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
     "7f28c2b734ca0a6565701f844311df6a716246b2",
   "src/modules/reviewer/services/review.ts":
@@ -239,27 +239,31 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/git/git-global-options.ts":
     "e03c7a37d23795e84f55407aab35eda5ecada332",
   "src/modules/analysis/capability/heredoc/heredoc-delimiter.ts":
-    "d7dcc391adf2e9ae4605bfd7a25086eeceb2f858",
+    "0ae43a8e24254092f59cb7df7d8052f1fc90d966",
   "src/modules/analysis/capability/heredoc/heredoc-word-quotes.ts":
-    "08564e79390aadbde38e2bcf6da43445174745f8",
+    "c3c10293eb1c6755c14618fefe1d983398d00fd3",
   "src/modules/analysis/capability/heredoc/ansi-c-quoting.ts":
-    "334dd7887f99deaf778b0723f645bba3d9dd7e8d",
+    "c690d23321fd21e857b77a5e410ddd70a5e90df4",
+  "src/modules/analysis/capability/heredoc/ansi-c-zsh.ts":
+    "e814a8cfcc60fbce28970d8387cfbc06235c9c54",
+  "src/modules/analysis/capability/heredoc/shell-dependent-word.ts":
+    "e695c3e2b1d1d82879e2b27e9fb84aa59068b590",
   "src/modules/analysis/capability/heredoc/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/modules/analysis/capability/heredoc/heredoc-bodies.ts":
-    "376eeb107c49a2269b55b051a854aab1f6a62e84",
+    "56af850f2d6941d9f2736bb0fe77f36a2b858049",
   "src/modules/analysis/capability/heredoc/heredoc-body-records.ts":
-    "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
+    "e6235b4375c621250c3bfcac987784ad17b03853",
   "src/modules/analysis/capability/heredoc/heredoc-frame-bounds.ts":
     "d0437e9529f655f03b6c5b2b91ad056cf22c6b81",
   "src/modules/analysis/capability/heredoc/heredoc-legacy.ts":
-    "43b8128cc3e78ac04aa5dbf560f861997934e960",
+    "464ae7420f12d0bbd70218509d0ecad7b6014016",
   "src/modules/analysis/capability/heredoc/heredoc-frame-links.ts":
     "ff27ca905447be7b9f36c446badd4dee6f4ac5d8",
   "src/modules/analysis/capability/heredoc/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
   "src/modules/analysis/capability/heredoc/heredoc-operator-scan.ts":
-    "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
+    "575f60cec3ceac759dcbf84741a4707bfae9efb3",
   "src/modules/analysis/capability/command-walk.ts":
     "96cc65baf66fc3b794f8ea3f7d7a82b6be1f7e07",
   "src/modules/analysis/capability/heredoc/heredoc-body-commands.ts":

@@ -39,7 +39,9 @@ export type ShellQuoting =
  *  the emergency brake also checks. */
 export type SubstitutionScan = "bash" | "previous";
 
-/** Whether the reading decodes quotes the way bash does. */
+/** Whether the reading has bash's quote structure: `$'…'` strings and the
+ *  quote spans that follow from it. `zsh` differs from `bash` only in how an
+ *  escape decodes. */
 function readsBashQuotes(quoting: ShellQuoting = "bash"): boolean {
   return (
     quoting === "bash" ||
@@ -49,9 +51,10 @@ function readsBashQuotes(quoting: ShellQuoting = "bash"): boolean {
   );
 }
 
-/** The substitution scan a reading uses. Only `bash`, `finder` and `zsh` end a body
- *  where the shell does, and their outer scan then jumps past the body; every
- *  other reading ends it where the previous release did and walks it again. */
+/** The substitution scan a reading uses. Only `bash`, `finder` and `zsh` end
+ *  a body where the shell does, and their outer scan then jumps past the body;
+ *  every other reading ends it where the previous release did and walks it
+ *  again. */
 export function substitutionScanOf(
   quoting: ShellQuoting = "bash",
 ): SubstitutionScan {

@@ -201,6 +201,12 @@ describe("heredoc delimiters bash and zsh end differently", () => {
       ANALYSIS_LIMIT_REASON,
     ],
     ["inside $(…)", "x=$(cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n)", blocked],
+    ["a \\u escape", "cat <<$'\\u0041'\nA\nrm -rf /\nA\n", blocked],
+    [
+      "an unterminated quoted delimiter inside $(…) in double quotes",
+      'echo "$(cat <<\'EOF\nrm -rf /\n)"',
+      ANALYSIS_LIMIT_REASON,
+    ],
   ])("%s: blocked", (_, command, reason) => {
     expect(
       emergencyBrakeReason(

@@ -54,6 +54,7 @@ export function scanHeredocOperator(scan: HeredocScan): void {
     rawWord: command.slice(j, word.wordEnd),
     quoted: word.quoted,
     resolved: word.resolved,
+    shellDependent: word.shellDependent,
     opStart: i,
     wordEnd: word.wordEnd,
     lineStart: scan.lineStart,

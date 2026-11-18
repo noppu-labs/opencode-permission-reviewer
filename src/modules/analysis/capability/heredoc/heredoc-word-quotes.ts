@@ -9,6 +9,8 @@ export interface WordScan {
   delimiter: string;
   quoted: boolean;
   resolved: boolean;
+  /** Whether a `$'…'` part is one bash and zsh read differently. */
+  shellDependent: boolean;
   sawAny: boolean;
 }
 
@@ -25,9 +27,10 @@ export function scanSingleQuoted(command: string, scan: WordScan): boolean {
   return true;
 }
 
-/** `$'...'` is unescaped here; one that bash and zsh read differently leaves
- *  the word unresolved, as no line is the terminator in both. For `$"..."` only the `$` is consumed, and
- *  the double-quoted part follows. */
+/** `$'...'` is unescaped here. A part with an escape bash and zsh read
+ *  differently, or a `\u` or `\U` escape (no shell gives the decoded value
+ *  as the terminator), leaves the word unresolved and shell-dependent. For
+ *  `$"..."` only the `$` is consumed, and the double-quoted part follows. */
 export function scanDollarQuoted(command: string, scan: WordScan): boolean {
   scan.quoted = true;
   scan.sawAny = true;
@@ -40,11 +43,20 @@ export function scanDollarQuoted(command: string, scan: WordScan): boolean {
     scan.resolved = false;
     return false;
   }
-  if (ansiCShellDependent(command.slice(scan.index + 2, parsed.end - 1)))
+  const inner = command.slice(scan.index + 2, parsed.end - 1);
+  if (ansiCShellDependent(inner) || hasUnicodeEscape(inner)) {
     scan.resolved = false;
+    scan.shellDependent = true;
+  }
   scan.delimiter += parsed.text;
   scan.index = parsed.end;
   return true;
+}
+
+/** Whether `inner` has a `\u` or `\U` escape: a backslash pair is read as a
+ *  unit, so `\\u` doesn't count. */
+function hasUnicodeEscape(inner: string): boolean {
+  return /^(?:[^\\]|\\[^uU])*\\[uU]/.test(inner);
 }
 
 /** An unterminated double quote leaves `scan.index` at the end of the

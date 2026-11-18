@@ -14,7 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `-delete`, while the analysis read them as bash does, and bash ends `<<$'E\[F'` at `E\[F` while
   the analysis ended it at `E[F`. The brake now also reads such words the way zsh does, a heredoc
   with such a delimiter is treated as never terminating, and the capability report gives the
-  command the `unknown` action class with a warning.
+  command the `unknown` action class with a warning. A `\u` or `\U` escape in a `$'…'` heredoc
+  delimiter is treated the same way, since no shell gives the decoded value as the terminator, and
+  the capability report also gives `unknown` to a heredoc whose delimiter bash and zsh end at
+  different lines, rather than judging it by the text left once its body is removed.
 - GHSA-fc5q-39xc-vjpf (`picomatch` through 4.0.7, high) is ignored by ID in the audit. No patched
   `picomatch` release exists yet. It reaches this repository only through the dev dependencies
   `knip`, `tsdown` and `@opencode/plugin`, and this package neither ships it nor imports from it.

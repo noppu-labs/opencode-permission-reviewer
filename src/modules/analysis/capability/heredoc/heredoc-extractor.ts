@@ -61,6 +61,9 @@ export interface HeredocExtraction {
   /** Whether a heredoc's delimiter word could not be resolved, so no line is
    *  known to end its body. */
   delimiterUnresolved: boolean;
+  /** Whether a delimiter word has a `$'…'` part bash and zsh read
+   *  differently, so the shells may end the body at different lines. */
+  delimiterShellDependent: boolean;
   /** Command with heredoc bodies replaced by placeholder tokens. */
   sanitizedCommand: string;
   /** Structured heredoc records. */
@@ -108,6 +111,7 @@ export function extractHeredocs(
     unterminated: false,
     framed: false,
     delimiterUnresolved: false,
+    delimiterShellDependent: false,
     out: "",
     cursor: 0,
     i: 0,
@@ -131,6 +135,7 @@ export function extractHeredocs(
     unterminated: scan.unterminated,
     framed: scan.framed,
     delimiterUnresolved: scan.delimiterUnresolved,
+    delimiterShellDependent: scan.delimiterShellDependent,
     sanitizedCommand: scan.out,
     heredocs: scan.heredocs,
     hasDynamicConstructs: scan.hasDynamicConstructs,
@@ -145,6 +150,7 @@ function unchanged(command: string): HeredocExtraction {
     unterminated: false,
     framed: false,
     delimiterUnresolved: false,
+    delimiterShellDependent: false,
     sanitizedCommand: command,
     heredocs: [],
     hasDynamicConstructs: false,

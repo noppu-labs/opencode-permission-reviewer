@@ -27,6 +27,7 @@ export function legacySanitizedCommand(command: string): string {
     unterminated: false,
     framed: false,
     delimiterUnresolved: false,
+    delimiterShellDependent: false,
     out: "",
     cursor: 0,
     i: 0,

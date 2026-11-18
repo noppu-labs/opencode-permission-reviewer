@@ -42,6 +42,9 @@ interface DelimiterWord {
   /** False when the word depends on shell expansion, so the terminator line
    *  is statically unknowable. */
   resolved: boolean;
+  /** Whether a `$'…'` part makes the terminator depend on the shell: the
+   *  word is then unresolved. */
+  shellDependent: boolean;
 }
 
 /** Parse the delimiter word after a `<<` operator. Bash applies ONLY quote
@@ -61,8 +64,9 @@ interface DelimiterWord {
  *  the operator's word. A bare carriage return ends the word when
  *  `stopAtCarriageReturn` is set, as the previous release read it.
  *  The word is `resolved: false` when its quoting never terminates, the word
- *  is empty, or a `$'...'` part has an escape bash and zsh read differently:
- *  then no line can be proven to be the terminator. */
+ *  is empty, or a `$'...'` part has an escape bash and zsh read differently
+ *  or a `\u` or `\U` escape: then no line can be proven to be the
+ *  terminator. */
 export function parseDelimiterWord(
   command: string,
   start: number,
@@ -73,6 +77,7 @@ export function parseDelimiterWord(
     delimiter: "",
     quoted: false,
     resolved: true,
+    shellDependent: false,
     sawAny: false,
   };
   while (scan.index < command.length) {
@@ -82,12 +87,19 @@ export function parseDelimiterWord(
     if (!scanDelimiterPart(command, scan)) break;
   }
   if (!scan.sawAny)
-    return { wordEnd: start, delimiter: "", quoted: false, resolved: false };
+    return {
+      wordEnd: start,
+      delimiter: "",
+      quoted: false,
+      resolved: false,
+      shellDependent: false,
+    };
   return {
     wordEnd: scan.index,
     delimiter: scan.delimiter,
     quoted: scan.quoted,
     resolved: scan.resolved,
+    shellDependent: scan.shellDependent,
   };
 }
 
