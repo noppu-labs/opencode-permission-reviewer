@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+
+- GHSA-fc5q-39xc-vjpf (`picomatch` through 4.0.7, high) is ignored by ID in the audit. No patched
+  `picomatch` release exists yet. It reaches this repository only through the dev dependencies
+  `knip`, `tsdown` and `@opencode/plugin`, and this package neither ships it nor imports from it.
+  Issue #154 tracks removing the ignore.
+
 ## [3.4.3] - 2026-11-16
 
 ### Changed
