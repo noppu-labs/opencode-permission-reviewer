@@ -47,6 +47,11 @@ function analysisWarnings(
       "command structure exceeded the static analysis depth or expansion budget",
     );
   }
+  if (parsed.shellDependentQuoting) {
+    warnings.push(
+      "command contains a $'…' escape that bash and zsh decode differently",
+    );
+  }
   return warnings;
 }
 
@@ -60,13 +65,17 @@ function parserCompleteness(
       ? "opaque"
       : "partial";
   }
-  return parsed.analysisTruncated || heredocTruncated
+  return parsed.analysisTruncated ||
+    heredocTruncated ||
+    parsed.shellDependentQuoting
     ? "partial"
     : "complete-for-supported-form";
 }
 
-function summaryOf(facts: CapabilityFacts): string {
-  const summaryParts: string[] = [facts.dominantClass];
+function summaryOf(facts: CapabilityFacts, classUnknown: boolean): string {
+  const summaryParts: string[] = [
+    classUnknown ? "unknown" : facts.dominantClass,
+  ];
   if (facts.createsAdHocCode) summaryParts.push("ad-hoc code");
   if (facts.executesRepositoryCode) summaryParts.push("repository code");
   if (facts.invokesPackageLifecycle)
@@ -86,12 +95,14 @@ export function assessmentFrom(
   const warnings = analysisWarnings(parsed, heredocTruncated);
   const networkPossible = facts.networkObserved || facts.networkPossible;
   return {
-    actionClass: {
-      value: facts.dominantClass,
-      source: "static-analysis",
-      confidence: facts.classConfidence,
-    },
-    summary: summaryOf(facts),
+    actionClass: parsed.shellDependentQuoting
+      ? { value: "unknown", source: "static-analysis", confidence: "low" }
+      : {
+          value: facts.dominantClass,
+          source: "static-analysis",
+          confidence: facts.classConfidence,
+        },
+    summary: summaryOf(facts, parsed.shellDependentQuoting),
     executesCode: staticFlag(facts.executesCode),
     executesRepositoryCode: staticFlag(facts.executesRepositoryCode),
     createsAdHocCode: staticFlag(facts.createsAdHocCode),

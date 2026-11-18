@@ -45,6 +45,38 @@ describe("everyday escaped words keep their action class", () => {
   });
 });
 
+const SHELL_DEPENDENT_WARNING =
+  "command contains a $'…' escape that bash and zsh decode differently";
+
+describe("words bash and zsh decode differently", () => {
+  test.each([
+    "find . -name x $'\\-delete'",
+    "$'r\\m' -rf ./build",
+    "bash -c \"find . -name x \\$'\\\\-delete'\"",
+    "ls $'\\q'",
+  ])("%s is unknown and partial", (command) => {
+    const capability = analyze(command).capability;
+    expect(capability?.actionClass).toEqual({
+      value: "unknown",
+      source: "static-analysis",
+      confidence: "low",
+    });
+    expect(capability?.summary.startsWith("unknown")).toBe(true);
+    expect(capability?.parserCompleteness).toBe("partial");
+    expect(capability?.analysisWarnings).toContain(SHELL_DEPENDENT_WARNING);
+  });
+  test.each([
+    ["printf $'a\\tb\\n'", "read-only"],
+    ["read -d $'\\0' x", "read-only"],
+    ["printf $'\\033[1m'", "read-only"],
+    ["echo \"$'\\q'\"", "read-only"],
+  ] as const)("%s keeps its class %s", (command, actionClass) => {
+    const capability = analyze(command).capability;
+    expect(capability?.actionClass.value).toBe(actionClass);
+    expect(capability?.analysisWarnings).not.toContain(SHELL_DEPENDENT_WARNING);
+  });
+});
+
 describe("dollar-quoted words and dynamic constructs", () => {
   test.each([
     ['echo $"$HOME"', true],

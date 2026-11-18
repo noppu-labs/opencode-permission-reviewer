@@ -120,6 +120,7 @@ describe("analyzeCapability credential operands", () => {
       analysisTruncated: false,
       heads: [],
       segmentRedirections: [],
+      shellDependentQuoting: false,
     };
     expect(capabilityProfile(parsed)).toBe("unknown/low | unknown | ");
   });

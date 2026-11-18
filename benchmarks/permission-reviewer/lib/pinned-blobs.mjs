@@ -124,7 +124,7 @@ export const PINNED_BLOBS = {
     "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
   "src/utils/redact.ts": "46b9d6ed1c42f8ea0b99e94d5f75a557481d3588",
   "src/modules/analysis/capability/command-parser.ts":
-    "e393f9d546c14794285d8aa83d5776c2c1731903",
+    "ca7468a9aa28979f78e48552041c4eb8e26ade9e",
   "src/modules/analysis/capability/bash-analyzer.ts":
     "1d8813dcf86953f84ea30a65e894ae1d0eae74b7",
   "src/modules/analysis/capability/bash-command-tables.ts":
@@ -211,7 +211,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/capability-facts.ts":
     "1df5af1b01e96b26de9763f313496baea819f78a",
   "src/modules/analysis/capability/capability-report.ts":
-    "bfd7fd9a58edb6705beba05a7a1e3d61f3be4a52",
+    "fe98d868b886982afa770283540c717d1fcbf40e",
   "src/modules/analysis/capability/segment-heads.ts":
     "9b513db95b058fd30e88e55c65eea0428eb4615a",
   "src/modules/analysis/capability/action-class.ts":
