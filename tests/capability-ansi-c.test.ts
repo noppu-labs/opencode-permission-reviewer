@@ -48,6 +48,24 @@ describe("everyday escaped words keep their action class", () => {
 const SHELL_DEPENDENT_WARNING =
   "command contains a $'…' escape that bash and zsh decode differently";
 
+function expectShellDependent(
+  command: string,
+): ReturnType<typeof analyzeBashCommand>["capability"] {
+  const capability = analyze(command).capability;
+  expect(capability?.actionClass.value).toBe("unknown");
+  expect(capability?.analysisWarnings).toContain(SHELL_DEPENDENT_WARNING);
+  return capability;
+}
+
+function expectKeepsClass(
+  command: string,
+  actionClass: CapabilityActionClass,
+): void {
+  const capability = analyze(command).capability;
+  expect(capability?.actionClass.value).toBe(actionClass);
+  expect(capability?.analysisWarnings).not.toContain(SHELL_DEPENDENT_WARNING);
+}
+
 describe("words bash and zsh decode differently", () => {
   test.each([
     "find . -name x $'\\-delete'",
@@ -55,7 +73,7 @@ describe("words bash and zsh decode differently", () => {
     "bash -c \"find . -name x \\$'\\\\-delete'\"",
     "ls $'\\q'",
   ])("%s is unknown and partial", (command) => {
-    const capability = analyze(command).capability;
+    const capability = expectShellDependent(command);
     expect(capability?.actionClass).toEqual({
       value: "unknown",
       source: "static-analysis",
@@ -63,18 +81,13 @@ describe("words bash and zsh decode differently", () => {
     });
     expect(capability?.summary.startsWith("unknown")).toBe(true);
     expect(capability?.parserCompleteness).toBe("partial");
-    expect(capability?.analysisWarnings).toContain(SHELL_DEPENDENT_WARNING);
   });
   test.each([
     ["printf $'a\\tb\\n'", "read-only"],
     ["read -d $'\\0' x", "read-only"],
     ["printf $'\\033[1m'", "read-only"],
     ["echo \"$'\\q'\"", "read-only"],
-  ] as const)("%s keeps its class %s", (command, actionClass) => {
-    const capability = analyze(command).capability;
-    expect(capability?.actionClass.value).toBe(actionClass);
-    expect(capability?.analysisWarnings).not.toContain(SHELL_DEPENDENT_WARNING);
-  });
+  ] as const)("%s keeps its class %s", expectKeepsClass);
 });
 
 describe("a heredoc only one shell terminates", () => {
@@ -88,18 +101,12 @@ describe("a heredoc only one shell terminates", () => {
     "cat <<$'\\u0041'\nA\nrm -rf ./build\nA\n",
     "cat <<$'\\U00000041'\nA\nrm -rf ./build\nA\n",
   ])("%j is unknown with the warning", (command) => {
-    const capability = analyze(command).capability;
-    expect(capability?.actionClass.value).toBe("unknown");
-    expect(capability?.analysisWarnings).toContain(SHELL_DEPENDENT_WARNING);
+    expectShellDependent(command);
   });
   test.each([
     ["cat <<'EOF'\nhi\nEOF\n", "read-only"],
     ["cat <<$'E\\tF'\nhi\nE\tF\n", "read-only"],
-  ] as const)("%j keeps its class", (command, actionClass) => {
-    const capability = analyze(command).capability;
-    expect(capability?.actionClass.value).toBe(actionClass);
-    expect(capability?.analysisWarnings).not.toContain(SHELL_DEPENDENT_WARNING);
-  });
+  ] as const)("%j keeps its class", expectKeepsClass);
 });
 
 describe("dollar-quoted words and dynamic constructs", () => {
