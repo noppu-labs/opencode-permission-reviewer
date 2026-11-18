@@ -81,7 +81,7 @@ export const PINNED_BLOBS = {
   "src/modules/review/services/review-result-gates.ts":
     "183cce730bdc30be3ab0e7478dbea44acbbb01f3",
   "src/modules/analysis/brake/emergency-brake.ts":
-    "15101a06561a737fe862465884eacce3cc9dec88",
+    "7ea0f53c5d40d35963dec5fd0371e62626842a31",
   "src/modules/analysis/brake/brake-body-commands.ts":
     "13e05c5003872bb6d0d4bfa977592b7e88427983",
   "src/modules/analysis/brake/brake-heredoc-texts.ts":
@@ -157,7 +157,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/shell/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
   "src/modules/analysis/shell/shell-lex-state.ts":
-    "4fc578f21c686a53f97793c37e5cc50cffb3ed1f",
+    "47dac7d9f8240f945073ab5380ee2ae3f7f685ba",
   "src/modules/analysis/shell/shell-quote-scan.ts":
     "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/modules/analysis/shell/shell-scanner.ts":
@@ -185,7 +185,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/shell/shell-substitution-pairs.ts":
     "0680bc2448e940ae0660dce3640bfde59461322b",
   "src/modules/analysis/shell/shell-substitution-trust.ts":
-    "004bf2986c2606da3d240e72caadce506e665c2b",
+    "858e83dfd4564e785ca62b7e9275fd43bd46bee4",
   "src/modules/analysis/shell/shell-pair-text.ts":
     "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/modules/analysis/ssh/ssh-value-options.ts":

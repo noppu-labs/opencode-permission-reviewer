@@ -209,3 +209,28 @@ describe("heredoc delimiters bash and zsh end differently", () => {
     ).toBe(reason);
   });
 });
+
+describe("words zsh decodes differently", () => {
+  for (const body of ["$'r\\m' -rf /", "rm $'\\-rf' /", "rm -rf $'\\/'"])
+    test.each(wrappers(body))(`%s: ${body} is blocked`, (_, command) => {
+      expect(
+        emergencyBrakeReason(
+          request({ metadata: { command }, patterns: [command] }),
+        ),
+      ).toBe(blocked);
+    });
+  // `\r` is a carriage return in both shells, so the zsh reading must not
+  // make it `r`.
+  test.each([
+    "printf $'\\033\\[?1049h'",
+    "echo $'\\q'",
+    "printf $'a\\tb\\n'",
+    "$'\\r\\m' -rf /",
+  ])("%s is not blocked", (command) => {
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBeUndefined();
+  });
+});

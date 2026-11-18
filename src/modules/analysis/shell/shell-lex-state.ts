@@ -24,13 +24,15 @@ export type HeredocReading = "default" | "legacy";
  *  `finder` reads as `bash` does, except that it keeps every substitution
  *  end the end-finder gives where `bash` reads a heredoc in a double
  *  parenthesis the previous way; the emergency brake checks it in place of
- *  `bash`. */
+ *  `bash`. `zsh` reads as `finder` does, except that a `$'…'` word has the
+ *  value zsh gives it, which differs from bash's for some escapes. */
 export type ShellQuoting =
   | "bash"
   | "rescan"
   | "undecoded"
   | "previous"
-  | "finder";
+  | "finder"
+  | "zsh";
 
 /** Which end the scan gives a command substitution's body: where the shell
  *  ends it (`bash`), or where the previous release did (`previous`), which
@@ -39,16 +41,23 @@ export type SubstitutionScan = "bash" | "previous";
 
 /** Whether the reading decodes quotes the way bash does. */
 function readsBashQuotes(quoting: ShellQuoting = "bash"): boolean {
-  return quoting === "bash" || quoting === "rescan" || quoting === "finder";
+  return (
+    quoting === "bash" ||
+    quoting === "rescan" ||
+    quoting === "finder" ||
+    quoting === "zsh"
+  );
 }
 
-/** The substitution scan a reading uses. Only `bash` and `finder` end a body
+/** The substitution scan a reading uses. Only `bash`, `finder` and `zsh` end a body
  *  where the shell does, and their outer scan then jumps past the body; every
  *  other reading ends it where the previous release did and walks it again. */
 export function substitutionScanOf(
   quoting: ShellQuoting = "bash",
 ): SubstitutionScan {
-  return quoting === "bash" || quoting === "finder" ? "bash" : "previous";
+  return quoting === "bash" || quoting === "finder" || quoting === "zsh"
+    ? "bash"
+    : "previous";
 }
 
 /** What the substitution end-finder keeps for the whole command it reads:
@@ -180,7 +189,14 @@ export function lastValueChar(lex: LexState): string {
  *  joins the value as quoted text. Nothing was collected under the
  *  `undecoded` reading, which appends the text as it scans. */
 export function closeAnsiC(lex: LexState): void {
-  appendValue(lex, decodeAnsiCWord(lex.ansiCText), true);
+  appendValue(
+    lex,
+    decodeAnsiCWord(
+      lex.ansiCText,
+      lex.budget.quoting === "zsh" ? "zsh" : "bash",
+    ),
+    true,
+  );
   lex.ansiCText = "";
   lex.ansiC = false;
 }

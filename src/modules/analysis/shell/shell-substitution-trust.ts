@@ -46,7 +46,8 @@ export function uncertainRegion(
     nextMark(marks, 4, open, () => closingComment(text, open)) < to
   )
     return true;
-  if (lex.budget.quoting === "finder") return false;
+  if (lex.budget.quoting === "finder" || lex.budget.quoting === "zsh")
+    return false;
   if (nextMark(marks, 5, from, () => find(text, "<<", from)) >= to)
     return false;
   return nextMark(marks, 7, from, () => heredocGroupFrom(lex, from)) < to;
