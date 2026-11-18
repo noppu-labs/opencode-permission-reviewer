@@ -18,7 +18,7 @@ export function sanitizedText(text: string): SanitizedText {
   return {
     text: extraction.sanitizedCommand,
     bodyCommands: extraction.bodyCommands,
-    bodyUnresolved: extraction.bodyUnresolved,
+    bodyUnresolved: extraction.bodyUnresolved || extraction.delimiterUnresolved,
     scripts: extraction.scripts,
   };
 }

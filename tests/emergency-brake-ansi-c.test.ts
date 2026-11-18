@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { brakeReadingsReason } from "../src/modules/analysis/brake/brake-readings.ts";
+import {
+  ANALYSIS_LIMIT_REASON,
+  brakeReadingsReason,
+} from "../src/modules/analysis/brake/brake-readings.ts";
 import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
 import { request } from "./helpers.ts";
 
@@ -184,5 +187,25 @@ describe("a word only the undecoded reading blocks", () => {
     expect(brakeReadingsReason(command, "bash")).toBeUndefined();
     expect(brakeReadingsReason(command, "previous")).toBeUndefined();
     expect(brakeReadingsReason(command, "undecoded")).toBe(blocked);
+  });
+});
+
+describe("heredoc delimiters bash and zsh end differently", () => {
+  test.each([
+    ["bash ends at E\\[F", "cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n", blocked],
+    ["zsh ends at E[F", "cat <<$'E\\[F'\nE[F\nrm -rf /\nE\\[F\n", blocked],
+    [
+      // The shell may end the body there; the scan cannot tell where.
+      "inside $(…) in double quotes",
+      "echo \"$(cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n)\"",
+      ANALYSIS_LIMIT_REASON,
+    ],
+    ["inside $(…)", "x=$(cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n)", blocked],
+  ])("%s: blocked", (_, command, reason) => {
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBe(reason);
   });
 });

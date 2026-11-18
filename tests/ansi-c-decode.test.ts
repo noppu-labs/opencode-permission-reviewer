@@ -96,6 +96,10 @@ describe("decodeAnsiCWord zsh", () => {
     ["\\101", "A"],
     ["\\u00e9", "é"],
     ["\\t", "\t"],
+    ["a\\c\\\\z", "ac\\z"],
+    ["a\\C\\\\z", "a\u001cz"],
+    ["a\\M\\\\z", "aÜz"],
+    ["a\\C-\\\\z", "a\u001cz"],
   ])("decodes %j to zsh's value %j", (inner, value) => {
     expect(decodeAnsiCWord(inner, "zsh")).toBe(value);
   });

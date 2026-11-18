@@ -7,7 +7,8 @@ import { decodeZshOther } from "./ansi-c-zsh.ts";
 /** Unescape an ANSI-C quoted region (`$'...'`), the subset bash defines for
  *  here-document delimiter words: standard escapes, `\xHH` hex, and up to
  *  three octal digits. Unknown escapes drop the backslash, the way zsh reads
- *  them; bash keeps it. Task 2's caller stops relying on that. A
+ *  them; bash keeps it, so a caller must reject a shell-dependent part
+ *  first, as `scanDollarQuoted` does. A
  *  delimiter containing a newline can never match a body line; it stays
  *  resolved and the body scan reports the heredoc as unterminated. */
 export function unescapeAnsiC(

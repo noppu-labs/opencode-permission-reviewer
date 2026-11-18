@@ -28,6 +28,8 @@ export interface PendingLine {
   /** Set when a body read reaches the end of input without its terminator
    *  line, or its delimiter word cannot be known. */
   unterminated: boolean;
+  /** Set when a delimiter word could not be resolved. */
+  delimiterUnresolved: boolean;
   pending: PendingStart[];
   pieces: Array<{ text: string } | { pendingIndex: number }>;
   /** Where the commands the unquoted bodies run are kept; a scan that does
@@ -64,6 +66,7 @@ export function consumeBodies(
     const read = readBody(scan.command, position, start, bound);
     position = read.position;
     if (read.unterminated) scan.unterminated = true;
+    if (!start.resolved) scan.delimiterUnresolved = true;
     const record = bodyRecord(scan.command, start, read, lineEnd, targets);
     if (record.dynamic) scan.hasDynamicConstructs = true;
     keepBody(scan.bodies, start, read, record.sha256);

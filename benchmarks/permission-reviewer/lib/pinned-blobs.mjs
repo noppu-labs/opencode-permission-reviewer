@@ -193,7 +193,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/walk/watch-command.ts":
     "5091cdd9eefd7b2a5a5256f74dcc1220ca7c0959",
   "src/modules/analysis/capability/heredoc/heredoc-extractor.ts":
-    "81f8a38b8ec5f1763c0800808ab0ca3834dbfe06",
+    "975d18ed5d37f0d2bc01363a4837aed30d630512",
   "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
     "7f28c2b734ca0a6565701f844311df6a716246b2",
   "src/modules/reviewer/services/review.ts":
@@ -239,21 +239,21 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/git/git-global-options.ts":
     "e03c7a37d23795e84f55407aab35eda5ecada332",
   "src/modules/analysis/capability/heredoc/heredoc-delimiter.ts":
-    "9d562f06e93e87b42ad6af008e5c77b057d477bd",
+    "d7dcc391adf2e9ae4605bfd7a25086eeceb2f858",
   "src/modules/analysis/capability/heredoc/heredoc-word-quotes.ts":
-    "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
+    "08564e79390aadbde38e2bcf6da43445174745f8",
   "src/modules/analysis/capability/heredoc/ansi-c-quoting.ts":
-    "0937a1b33f1a3a12885daae58a9a639809f07d63",
+    "334dd7887f99deaf778b0723f645bba3d9dd7e8d",
   "src/modules/analysis/capability/heredoc/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/modules/analysis/capability/heredoc/heredoc-bodies.ts":
-    "4b32c562a91080a533551d05ae2bb8e0eccf7d8e",
+    "376eeb107c49a2269b55b051a854aab1f6a62e84",
   "src/modules/analysis/capability/heredoc/heredoc-body-records.ts":
     "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
   "src/modules/analysis/capability/heredoc/heredoc-frame-bounds.ts":
     "d0437e9529f655f03b6c5b2b91ad056cf22c6b81",
   "src/modules/analysis/capability/heredoc/heredoc-legacy.ts":
-    "58c8cdea02051628ec911524f2a8a7f26e2e0d2b",
+    "43b8128cc3e78ac04aa5dbf560f861997934e960",
   "src/modules/analysis/capability/heredoc/heredoc-frame-links.ts":
     "ff27ca905447be7b9f36c446badd4dee6f4ac5d8",
   "src/modules/analysis/capability/heredoc/heredoc-body-text.ts":
@@ -265,7 +265,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/heredoc/heredoc-body-commands.ts":
     "1c892c8555a65bd89aa1a1bfe72c6cf86458c6bc",
   "src/modules/analysis/capability/heredoc/heredoc-sanitized.ts":
-    "ffc33dd404eadd7200a0582ef36f7cb5c8b9e7eb",
+    "2ea948823aab5fed73ed7baee6e6b32497a5b222",
   "src/modules/analysis/capability/heredoc/heredoc-body-reading.ts":
     "8751228781d6b60002a01900b4b3a07488b6bad0",
   "src/modules/analysis/capability/heredoc/delimited-substitution-end.ts":

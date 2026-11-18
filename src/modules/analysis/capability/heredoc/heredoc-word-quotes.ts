@@ -1,6 +1,6 @@
 // The quoted parts of a heredoc delimiter word: '...', $'...', $"..." and "...".
 
-import { unescapeAnsiC } from "./ansi-c-quoting.ts";
+import { ansiCShellDependent, unescapeAnsiC } from "./ansi-c-quoting.ts";
 
 /** The delimiter word parsed so far; `sawAny` records whether any part of
  *  it has been consumed. */
@@ -25,7 +25,8 @@ export function scanSingleQuoted(command: string, scan: WordScan): boolean {
   return true;
 }
 
-/** `$'...'` is unescaped here; for `$"..."` only the `$` is consumed, and
+/** `$'...'` is unescaped here; one that bash and zsh read differently leaves
+ *  the word unresolved, as no line is the terminator in both. For `$"..."` only the `$` is consumed, and
  *  the double-quoted part follows. */
 export function scanDollarQuoted(command: string, scan: WordScan): boolean {
   scan.quoted = true;
@@ -39,6 +40,8 @@ export function scanDollarQuoted(command: string, scan: WordScan): boolean {
     scan.resolved = false;
     return false;
   }
+  if (ansiCShellDependent(command.slice(scan.index + 2, parsed.end - 1)))
+    scan.resolved = false;
   scan.delimiter += parsed.text;
   scan.index = parsed.end;
   return true;

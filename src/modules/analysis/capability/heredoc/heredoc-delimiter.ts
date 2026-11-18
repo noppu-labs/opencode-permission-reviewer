@@ -60,8 +60,9 @@ interface DelimiterWord {
  *  inside a backtick substitution, which the shell cuts out before it reads
  *  the operator's word. A bare carriage return ends the word when
  *  `stopAtCarriageReturn` is set, as the previous release read it.
- *  The word is `resolved: false` only when its quoting never terminates or
- *  the word is empty: then no line can be proven to be the terminator. */
+ *  The word is `resolved: false` when its quoting never terminates, the word
+ *  is empty, or a `$'...'` part has an escape bash and zsh read differently:
+ *  then no line can be proven to be the terminator. */
 export function parseDelimiterWord(
   command: string,
   start: number,
