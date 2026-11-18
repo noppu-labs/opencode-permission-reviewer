@@ -243,7 +243,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/heredoc/heredoc-word-quotes.ts":
     "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
   "src/modules/analysis/capability/heredoc/ansi-c-quoting.ts":
-    "9f405200753239393876658e6b2e668a8a417ea8",
+    "0937a1b33f1a3a12885daae58a9a639809f07d63",
   "src/modules/analysis/capability/heredoc/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/modules/analysis/capability/heredoc/heredoc-bodies.ts":

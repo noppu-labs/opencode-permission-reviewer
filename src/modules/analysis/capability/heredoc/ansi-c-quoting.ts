@@ -1,10 +1,13 @@
-// ANSI-C quoting (`$'...'`) as bash unescapes it in a heredoc delimiter word.
+// ANSI-C quoting (`$'...'`): the value of a word in bash or zsh, the zsh-style
+// reading of a heredoc delimiter, and which escapes the two shells disagree on.
 
 import { invariant } from "../../../../utils/invariant.ts";
+import { decodeZshOther } from "./ansi-c-zsh.ts";
 
 /** Unescape an ANSI-C quoted region (`$'...'`), the subset bash defines for
  *  here-document delimiter words: standard escapes, `\xHH` hex, and up to
- *  three octal digits. Unknown escapes drop the backslash, like bash. A
+ *  three octal digits. Unknown escapes drop the backslash, the way zsh reads
+ *  them; bash keeps it. Task 2's caller stops relying on that. A
  *  delimiter containing a newline can never match a body line; it stays
  *  resolved and the body scan reports the heredoc as unterminated. */
 export function unescapeAnsiC(
@@ -72,10 +75,34 @@ function ansiCEscape(
   return { text: ANSI_C_SIMPLE_ESCAPES[escaped] ?? escaped, end: index + 2 };
 }
 
-/** The value bash gives a `$'...'` word whose text between the quotes is
- *  `inner`, as written: escapes decoded, cut at the first NUL. Unknown
- *  escapes and a bare `\x`, `\u` or `\U` keep their backslash. */
-export function decodeAnsiCWord(inner: string): string {
+export type AnsiCDialect = "bash" | "zsh";
+
+/** Whether an escape in `inner` (the text between `$'` and the closing `'`, as
+ *  written) is read differently by bash and zsh: anything but a simple escape,
+ *  an octal escape, or `\x`, `\u` or `\U` with a hex digit. `\c` always
+ *  counts. `\u` and `\U` with digits don't: bash 3.2 keeps them literal, but
+ *  that can't be more dangerous than the decoded value. */
+export function ansiCShellDependent(inner: string): boolean {
+  let index = 0;
+  while (index < inner.length) {
+    if (inner.charAt(index) !== "\\") {
+      index += 1;
+      continue;
+    }
+    const bash = decodeAnsiCEscape(inner, index, "bash");
+    if (bash.text !== decodeAnsiCEscape(inner, index, "zsh").text) return true;
+    index = bash.end;
+  }
+  return false;
+}
+
+/** The value a `$'...'` word whose text between the quotes is `inner`, as
+ *  written, has in `dialect`: escapes decoded, cut at the first NUL. In bash,
+ *  unknown escapes and a bare `\x`, `\u` or `\U` keep their backslash. */
+export function decodeAnsiCWord(
+  inner: string,
+  dialect: AnsiCDialect = "bash",
+): string {
   let value = "";
   let index = 0;
   while (index < inner.length) {
@@ -84,12 +111,11 @@ export function decodeAnsiCWord(inner: string): string {
       index += 1;
       continue;
     }
-    const decoded = decodeAnsiCEscape(inner, index);
+    const decoded = decodeAnsiCEscape(inner, index, dialect);
     value += decoded.text;
     index = decoded.end;
   }
-  const nul = value.indexOf("\0");
-  return nul === -1 ? value : value.slice(0, nul);
+  return value.split("\0", 1).join("");
 }
 
 const HEX_DIGITS = new Map<string, RegExp>([
@@ -104,32 +130,35 @@ const OCTAL_DIGITS = /[0-7]{1,3}/y;
 function decodeAnsiCEscape(
   inner: string,
   index: number,
+  dialect: AnsiCDialect,
 ): { text: string; end: number } {
   const escaped = inner.charAt(index + 1);
   const simple = ANSI_C_SIMPLE_ESCAPES[escaped];
   if (simple !== undefined) return { text: simple, end: index + 2 };
   if (/^[0-7]$/.test(escaped)) {
     const digits = digitsAt(inner, index + 1, OCTAL_DIGITS);
-    const value = Number.parseInt(digits, 8) & 0xff;
-    return {
-      text: String.fromCharCode(value),
-      end: index + 1 + digits.length,
-    };
+    const text = String.fromCharCode(Number.parseInt(digits, 8) & 0xff);
+    return { text, end: index + 1 + digits.length };
   }
-  if (escaped === "c") return decodeAnsiCControl(inner, index);
+  if (escaped === "c" && dialect === "bash") {
+    return decodeAnsiCControl(inner, index);
+  }
   const hex = HEX_DIGITS.get(escaped);
-  if (hex !== undefined) return decodeAnsiCHex(inner, index, escaped, hex);
+  const decoded = hex && decodeAnsiCHex(inner, index, escaped, hex);
+  if (decoded) return decoded;
+  if (dialect === "zsh") return decodeZshOther(inner, index, escaped);
   return { text: `\\${escaped}`, end: index + 2 };
 }
 
+/** The `\x`, `\u` or `\U` escape at `index`; undefined without a hex digit. */
 function decodeAnsiCHex(
   inner: string,
   index: number,
   letter: string,
   pattern: RegExp,
-): { text: string; end: number } {
+): { text: string; end: number } | undefined {
   const digits = digitsAt(inner, index + 2, pattern);
-  if (digits === "") return { text: `\\${letter}`, end: index + 2 };
+  if (digits === "") return undefined;
   const end = index + 2 + digits.length;
   const value = Number.parseInt(digits, 16);
   if (letter === "x") return { text: String.fromCharCode(value), end };
