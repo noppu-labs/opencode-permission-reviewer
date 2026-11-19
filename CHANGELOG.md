@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-11-19
+
+### Changed
+
+- The OpenRouter decision model list adds `google/gemini-decision-1`, `heygen/heygen-decision-1`,
+  `heygen/heygen-decision-1-turbo`, `nace-ai/drex-max-finance`,
+  `perplexity/pplx-decider-flash-v1.3:free` and `perplexity/pplx-decider-v1.3:free`. They are
+  unbenchmarked, so selecting one raises a config notice
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
+- The list names `parallel/decisions-fast` instead of `parallel/decisions-fast:free`, following
+  OpenRouter's listing. A config that names either is still read as a System One model.
+- Bumped the runtime dependency `@opencode/client` to 2.3.0 and the dev dependencies
+  `@opencode/plugin` to 2.3.0 and `@opencode-ai/plugin` and `@opencode-ai/sdk` to 1.19.6, with
+  `bun.lock` synchronized.
+- Bumped the dev dependencies `@biomejs/biome` to 2.6.6, `knip` to 6.44.2 and `tsdown` to 0.23.7.
+
 ### Security
 
 - A `$'…'` word with an escape that bash, bash 3.2 and zsh decode differently could hide a command
