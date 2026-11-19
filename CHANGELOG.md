@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Answers to agent ask dialogs reach the reviewer with a full UTC timestamp
+  (`[2026-09-01T12:01:03Z]`) instead of the time of day only, so answers given on different days of
+  a long session no longer look alike.
+
+### Fixed
+
+- The V1 entrypoint refuses to load on a host that reports an OpenCode V2 version, and logs why
+  even without `debug`. Its reviewer isolation is a single-file plugin, which V2 does not load, so
+  every review used to fail closed with no visible cause. The message points at the V2 `"plugins"`
+  key.
+
 ### Security
 
 - Tools that usually only read are no longer labeled read-only when the command writes a file or

@@ -5,6 +5,7 @@ import type {
   PluginOptions,
 } from "@opencode-ai/plugin";
 import { extractPermissionRequest } from "./adapters/opencode/event-normalizer.ts";
+import { v1HostVersionRefusal } from "./adapters/opencode/host-guard.ts";
 import { probeHostVersion } from "./adapters/opencode/host-version.ts";
 import type { RuntimeContext } from "./adapters/opencode/types.ts";
 import { V1ReviewCoordinator as ApprovalReviewerRuntime } from "./adapters/opencode/v1/review-host.ts";
@@ -37,6 +38,12 @@ export const server: Plugin = async (
   );
   const probe = probeHostVersion(input.client);
   const hostVersion = probe === undefined ? undefined : await probe;
+  const refusal = v1HostVersionRefusal(hostVersion);
+  if (refusal !== undefined) {
+    // Logged even without debug: the host may record only a generic load failure.
+    debugLogger(refusal);
+    throw new Error(refusal);
+  }
   const ctx: RuntimeContext = {
     ...(hostVersion ? { hostVersion } : {}),
     ...createV1Adapter(
