@@ -4,6 +4,7 @@ import { walkBodyCommands } from "./body-command-walk.ts";
 import { newWalked, walkSegments } from "./command-walk.ts";
 import { extractHeredocs } from "./heredoc/heredoc-extractor.ts";
 import { withScanBudget } from "./heredoc/heredoc-scan-budget.ts";
+import { hasShellDependentWord } from "./heredoc/shell-dependent-word.ts";
 import type { ParsedCommand } from "./models/capability-types.ts";
 import { mainFeeds } from "./walk-feeds.ts";
 
@@ -72,6 +73,14 @@ function parse(rawCommand: string): ParsedCommand {
     analysisTruncated: walked.truncated,
     heads: walked.heads,
     segmentRedirections: walked.parts.map((part) => part.segmentRedirections),
+    shellDependentQuoting:
+      extraction.delimiterShellDependent ||
+      lex.delimiterShellDependent ||
+      walked.delimiterShellDependent ||
+      [
+        ...walked.segments.flatMap((segment) => segment.tokens),
+        ...walked.effective.flat(),
+      ].some((token) => hasShellDependentWord(token.raw)),
     ...(walked.remote.length > 0 && { remoteCommands: walked.remote }),
     ...(walked.stdinCode && { stdinCode: true }),
   };

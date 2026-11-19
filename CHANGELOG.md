@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Security
 
+- A `$'…'` word with an escape that bash, bash 3.2 and zsh decode differently could hide a command
+  from the emergency brake or make it look read-only. zsh reads `$'r\m'` as `rm`, `$'\-delete'` as
+  `-delete` and `$'\C-\x4a'` as a newline, bash 3.2 keeps `\u0027` as written where later shells
+  read a quote, and bash ends `<<$'E\[F'` at `E\[F` where zsh ends it at `E[F`. The analysis read
+  them all as bash 4.4 and later do. The brake now also reads such words the way zsh and bash 3.2
+  do. A heredoc delimiter with such an escape, or with a NUL, is treated as never terminating,
+  including inside a substitution or a command string. The capability report warns about such a
+  command and lowers its class confidence; a `read-only` class becomes `unknown`, and any other
+  class is kept, so policy rules that match it still apply.
 - GHSA-fc5q-39xc-vjpf (`picomatch` through 4.0.7, high) is ignored by ID in the audit. No patched
   `picomatch` release exists yet. It reaches this repository only through the dev dependencies
   `knip`, `tsdown` and `@opencode/plugin`, and this package neither ships it nor imports from it.

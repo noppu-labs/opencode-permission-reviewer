@@ -81,7 +81,7 @@ export const PINNED_BLOBS = {
   "src/modules/review/services/review-result-gates.ts":
     "183cce730bdc30be3ab0e7478dbea44acbbb01f3",
   "src/modules/analysis/brake/emergency-brake.ts":
-    "15101a06561a737fe862465884eacce3cc9dec88",
+    "91727448daf1534e208a983228c2537d30eaa011",
   "src/modules/analysis/brake/brake-body-commands.ts":
     "13e05c5003872bb6d0d4bfa977592b7e88427983",
   "src/modules/analysis/brake/brake-heredoc-texts.ts":
@@ -124,7 +124,7 @@ export const PINNED_BLOBS = {
     "1f476b7a4e329b0096eaaf07ee6079ea4be280ec",
   "src/utils/redact.ts": "46b9d6ed1c42f8ea0b99e94d5f75a557481d3588",
   "src/modules/analysis/capability/command-parser.ts":
-    "e393f9d546c14794285d8aa83d5776c2c1731903",
+    "f3b0d5f1aa67b655bbb3f6c277df7664e63d5ce8",
   "src/modules/analysis/capability/bash-analyzer.ts":
     "1d8813dcf86953f84ea30a65e894ae1d0eae74b7",
   "src/modules/analysis/capability/bash-command-tables.ts":
@@ -146,7 +146,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/ssh/ssh-remote-command.ts":
     "ea7dbf3f8ef00362424ec04a06836bd32385c58a",
   "src/modules/analysis/shell/shell-lexer.ts":
-    "ebc1a6be46c2cfb5826323361f34d371bd7473ff",
+    "53ff7d2ff8920f8043827fdaa3fef9a35c946b62",
   "src/utils/element-at.ts": "592422429eaad69ccdfa77a80d61ac4e0ea05453",
   "src/modules/analysis/shell/shell-lexer-tables.ts":
     "8bd5f261d6d1ad58765a02987afb79ab368225a3",
@@ -157,13 +157,13 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/shell/shell-redirection-operators.ts":
     "545337ac0023100e74c1d405f31971098c471090",
   "src/modules/analysis/shell/shell-lex-state.ts":
-    "4fc578f21c686a53f97793c37e5cc50cffb3ed1f",
+    "c3568110094ff2f83ae8f657c028692e50e529b9",
   "src/modules/analysis/shell/shell-quote-scan.ts":
     "bd183f9cb0de8fd2179daa6b7dfdc3aa6458a2fd",
   "src/modules/analysis/shell/shell-scanner.ts":
     "76f037e46c2a8cefbb09f9e80576c863d3594373",
   "src/modules/analysis/shell/shell-substitution.ts":
-    "bf971f9fc6bcb59f5df9e5b63cc7e8ac353906f3",
+    "dbf8dbfdb821ac5168cf7ea7ff289b6fa2691bf7",
   "src/modules/analysis/shell/shell-substitution-end.ts":
     "4a81c02737fe461c24e10516b0da96f19035bbfa",
   "src/modules/analysis/shell/shell-substitution-brace.ts":
@@ -179,13 +179,13 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/shell/shell-substitution-frames.ts":
     "821a5ebd99243275446315a17ea58b1e38125537",
   "src/modules/analysis/shell/shell-substitution-lex.ts":
-    "ccd83847366e1a08045fabd982c0b8a0c3e86a76",
+    "3e5635c51c9603f5deebb7523092540c54f9eb33",
   "src/modules/analysis/shell/shell-substitution-heredoc.ts":
     "937578f6d5839cda6d8e08f35337a0e7591131be",
   "src/modules/analysis/shell/shell-substitution-pairs.ts":
     "0680bc2448e940ae0660dce3640bfde59461322b",
   "src/modules/analysis/shell/shell-substitution-trust.ts":
-    "004bf2986c2606da3d240e72caadce506e665c2b",
+    "0befb3f81d5d50e6d7999cee7c3196e6db8e0ff3",
   "src/modules/analysis/shell/shell-pair-text.ts":
     "30c850d6ac27dea8955cb5ac31e1539fd32d1400",
   "src/modules/analysis/ssh/ssh-value-options.ts":
@@ -193,7 +193,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/walk/watch-command.ts":
     "5091cdd9eefd7b2a5a5256f74dcc1220ca7c0959",
   "src/modules/analysis/capability/heredoc/heredoc-extractor.ts":
-    "81f8a38b8ec5f1763c0800808ab0ca3834dbfe06",
+    "31cd904e936166f3ed5091a479660f6828ed472c",
   "src/modules/analysis/capability/heredoc/heredoc-frame-starts.ts":
     "7f28c2b734ca0a6565701f844311df6a716246b2",
   "src/modules/reviewer/services/review.ts":
@@ -211,7 +211,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/capability-facts.ts":
     "1df5af1b01e96b26de9763f313496baea819f78a",
   "src/modules/analysis/capability/capability-report.ts":
-    "bfd7fd9a58edb6705beba05a7a1e3d61f3be4a52",
+    "af5c6ddf1ee9e541ec9a83f60805f6d5514d4c81",
   "src/modules/analysis/capability/segment-heads.ts":
     "9b513db95b058fd30e88e55c65eea0428eb4615a",
   "src/modules/analysis/capability/action-class.ts":
@@ -239,33 +239,39 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/git/git-global-options.ts":
     "e03c7a37d23795e84f55407aab35eda5ecada332",
   "src/modules/analysis/capability/heredoc/heredoc-delimiter.ts":
-    "9d562f06e93e87b42ad6af008e5c77b057d477bd",
+    "0336ec5e461a269a44fc798019b97b535fcf7bf3",
   "src/modules/analysis/capability/heredoc/heredoc-word-quotes.ts":
-    "b9e1c43faf29d302d48f967ec740a2b9eb7c230c",
+    "e2cfcb67138914708c0c67adf46a6d6ae3e57523",
   "src/modules/analysis/capability/heredoc/ansi-c-quoting.ts":
-    "9f405200753239393876658e6b2e668a8a417ea8",
+    "4dc35bfef7bd7a0a68617fe706d430a0d611a4f7",
+  "src/modules/analysis/capability/heredoc/ansi-c-numeric.ts":
+    "63f1d97f0790857f7b864ada9f14af3a9827ca83",
+  "src/modules/analysis/capability/heredoc/ansi-c-zsh.ts":
+    "593eabfd361af26fb41dce81c4cf0ff85d98cdb1",
+  "src/modules/analysis/capability/heredoc/shell-dependent-word.ts":
+    "40b5650e44d3ed47817cbc690edc267766745e7e",
   "src/modules/analysis/capability/heredoc/heredoc-scan-context.ts":
     "f3c7ba6033325b58ddd1182209ec1540253890d3",
   "src/modules/analysis/capability/heredoc/heredoc-bodies.ts":
-    "4b32c562a91080a533551d05ae2bb8e0eccf7d8e",
+    "339705ad803e5a8c4c10da9648d239d50ab7d645",
   "src/modules/analysis/capability/heredoc/heredoc-body-records.ts":
-    "5a92240f8e7234c411ffe365e1e7c96bddd972b3",
+    "e6235b4375c621250c3bfcac987784ad17b03853",
   "src/modules/analysis/capability/heredoc/heredoc-frame-bounds.ts":
     "d0437e9529f655f03b6c5b2b91ad056cf22c6b81",
   "src/modules/analysis/capability/heredoc/heredoc-legacy.ts":
-    "58c8cdea02051628ec911524f2a8a7f26e2e0d2b",
+    "464ae7420f12d0bbd70218509d0ecad7b6014016",
   "src/modules/analysis/capability/heredoc/heredoc-frame-links.ts":
     "ff27ca905447be7b9f36c446badd4dee6f4ac5d8",
   "src/modules/analysis/capability/heredoc/heredoc-body-text.ts":
     "c5b8ff4dbe0d2be98f9e1aa219e03cb234045ed2",
   "src/modules/analysis/capability/heredoc/heredoc-operator-scan.ts":
-    "306b3bf1ea1bd8081cbd6bd1528037fe8db9a4fe",
+    "575f60cec3ceac759dcbf84741a4707bfae9efb3",
   "src/modules/analysis/capability/command-walk.ts":
-    "96cc65baf66fc3b794f8ea3f7d7a82b6be1f7e07",
+    "f73358820bae9545bb60600c51af7d66622b1f8a",
   "src/modules/analysis/capability/heredoc/heredoc-body-commands.ts":
-    "1c892c8555a65bd89aa1a1bfe72c6cf86458c6bc",
+    "9dd3b6796daabab97c397e5b8ab53c56c4f79b16",
   "src/modules/analysis/capability/heredoc/heredoc-sanitized.ts":
-    "ffc33dd404eadd7200a0582ef36f7cb5c8b9e7eb",
+    "9e547a38ea9a3cb15cc19695aa252cb651fd482a",
   "src/modules/analysis/capability/heredoc/heredoc-body-reading.ts":
     "8751228781d6b60002a01900b4b3a07488b6bad0",
   "src/modules/analysis/capability/heredoc/delimited-substitution-end.ts":
@@ -279,7 +285,7 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/brake/brake-find-walk.ts":
     "089ca5939ad3244de5f027ae94573402bba4e853",
   "src/modules/analysis/capability/heredoc/heredoc-string-bodies.ts":
-    "e436d6566237ded3188250020a7dc8c22512e6a4",
+    "d9f59e88cb2e70259a7a819c603943c66dd190ab",
   "src/modules/analysis/walk/command-segments.ts":
     "5b172206b06d7b35dca9665d661fefaaecc72fc1",
   "src/modules/analysis/shell/shell-substitution-arithmetic.ts":
@@ -311,5 +317,5 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/walk/interpreter-stdin.ts":
     "880b67e3a46da4792ca707726c7baa714522fe89",
   "src/modules/analysis/capability/heredoc/heredoc-body-collector.ts":
-    "408e8a660a7172722d12e548ba943d1fd973c071",
+    "db31cc860c995be55b8dd1a79e4e66c63afc5c0a",
 };

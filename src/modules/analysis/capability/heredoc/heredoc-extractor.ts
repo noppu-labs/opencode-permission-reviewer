@@ -58,6 +58,12 @@ export interface HeredocExtraction {
   unterminated: boolean;
   /** Whether a heredoc opened inside a substitution or backticks. */
   framed: boolean;
+  /** Whether a heredoc's delimiter word could not be resolved, so no line is
+   *  known to end its body. */
+  delimiterUnresolved: boolean;
+  /** Whether a delimiter word is shell-dependent (see
+   *  `DelimiterWord.shellDependent`). */
+  delimiterShellDependent: boolean;
   /** Command with heredoc bodies replaced by placeholder tokens. */
   sanitizedCommand: string;
   /** Structured heredoc records. */
@@ -104,6 +110,8 @@ export function extractHeredocs(
     hasDynamicConstructs: false,
     unterminated: false,
     framed: false,
+    delimiterUnresolved: false,
+    delimiterShellDependent: false,
     out: "",
     cursor: 0,
     i: 0,
@@ -126,6 +134,8 @@ export function extractHeredocs(
   return {
     unterminated: scan.unterminated,
     framed: scan.framed,
+    delimiterUnresolved: scan.delimiterUnresolved,
+    delimiterShellDependent: scan.delimiterShellDependent,
     sanitizedCommand: scan.out,
     heredocs: scan.heredocs,
     hasDynamicConstructs: scan.hasDynamicConstructs,
@@ -139,6 +149,8 @@ function unchanged(command: string): HeredocExtraction {
   return {
     unterminated: false,
     framed: false,
+    delimiterUnresolved: false,
+    delimiterShellDependent: false,
     sanitizedCommand: command,
     heredocs: [],
     hasDynamicConstructs: false,

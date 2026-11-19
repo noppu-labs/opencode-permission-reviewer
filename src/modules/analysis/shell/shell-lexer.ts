@@ -78,6 +78,8 @@ export interface LexAnalysis {
    *  lexed. Empty under the previous release's heredoc reading. */
   bodyCommands: string[];
   bodyUnresolved: boolean;
+  /** See `HeredocExtraction.delimiterShellDependent`. */
+  delimiterShellDependent: boolean;
   /** The text each of those heredoc bodies gives the command that reads it,
    *  by placeholder. */
   scripts: ReadonlyMap<string, readonly string[]>;
@@ -94,6 +96,7 @@ export function lexSegmentsBounded(
       truncated: true,
       bodyCommands: [],
       bodyUnresolved: false,
+      delimiterShellDependent: false,
       scripts: NO_SCRIPTS,
     };
   const bodies: BodyCommands = { commands: [], unresolved: false };
@@ -111,6 +114,7 @@ export function lexSegmentsBounded(
     truncated: state.tokensRemaining <= 0,
     bodyCommands: bodies.commands,
     bodyUnresolved: bodies.unresolved,
+    delimiterShellDependent: bodies.shellDependent === true,
     scripts: bodies.scripts ?? NO_SCRIPTS,
   };
 }

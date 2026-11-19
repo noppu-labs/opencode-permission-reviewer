@@ -42,6 +42,7 @@ export function walkBodyCommands(
 ): void {
   const strings = takeBodies(budget);
   into.truncated = into.truncated || unresolved || strings.unresolved;
+  into.delimiterShellDependent ||= strings.shellDependent === true;
   const queue: Queued[] = [
     ...[...commands, ...strings.commands].map((command) => ({
       command,
@@ -65,6 +66,8 @@ export function walkBodyCommands(
     if (next.remote) into.remote.push(...into.effective.slice(first.effective));
     const deeper = takeBodies(budget);
     into.truncated = into.truncated || lex.bodyUnresolved || deeper.unresolved;
+    into.delimiterShellDependent ||=
+      lex.delimiterShellDependent || deeper.shellDependent === true;
     if (lex.truncated || stopped) {
       into.truncated = true;
       return;
@@ -88,8 +91,10 @@ function takeBodies(budget: AnalysisBudget): BodyCommands {
   const taken = {
     commands: bodies.commands.splice(0),
     unresolved: bodies.unresolved,
+    shellDependent: bodies.shellDependent === true,
   };
   bodies.unresolved = false;
+  bodies.shellDependent = false;
   return taken;
 }
 
