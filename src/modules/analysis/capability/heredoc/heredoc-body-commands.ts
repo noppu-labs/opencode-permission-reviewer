@@ -22,6 +22,9 @@ export interface BodyCommands {
   commands: string[];
   /** The body has a `$(` or backtick with no end, or nests past the depth. */
   unresolved: boolean;
+  /** A heredoc delimiter among them is shell-dependent (see
+   *  `DelimiterWord.shellDependent`). */
+  shellDependent?: boolean;
   /** The texts the collapsed bodies give the command that reads them, by
    *  placeholder, each distinct reading apart (heredoc-scripts.ts). Set by the
    *  first one recorded. */

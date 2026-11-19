@@ -8,6 +8,8 @@ export interface SanitizedText {
    *  could not be read to its end. */
   bodyCommands: string[];
   bodyUnresolved: boolean;
+  /** See `HeredocExtraction.delimiterShellDependent`. */
+  delimiterShellDependent: boolean;
   /** The text each collapsed body gives the command that reads it. */
   scripts: ReadonlyMap<string, readonly string[]>;
 }
@@ -18,7 +20,8 @@ export function sanitizedText(text: string): SanitizedText {
   return {
     text: extraction.sanitizedCommand,
     bodyCommands: extraction.bodyCommands,
-    bodyUnresolved: extraction.bodyUnresolved,
+    bodyUnresolved: extraction.bodyUnresolved || extraction.delimiterUnresolved,
+    delimiterShellDependent: extraction.delimiterShellDependent,
     scripts: extraction.scripts,
   };
 }

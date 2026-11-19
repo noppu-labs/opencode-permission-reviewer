@@ -49,7 +49,7 @@ import {
  * only unanalyzable within bounds, and downstream gates must not confuse the
  * two.
  *
- * The checks in brake-readings.ts run under four quote readings. The first
+ * The checks in brake-readings.ts run under six quote readings. The first
  * is the lexer's own bash reading in its finder form: it decodes `$'…'` and
  * `$"…"` words to the values the shell gives them, and steps over a
  * substitution body as one unit, keeping the end the end-finder gives even
@@ -59,8 +59,10 @@ import {
  * body's text in place, as the release before that step did. The undecoded
  * reading keeps those words as written, as the default reading did before
  * this change. The previous release's quote reading ends a `$'…'` string at
- * its first `'`. The brake runs each heredoc reading under all four, so a
- * command any of them blocks stays blocked.
+ * its first `'`. The brake runs each heredoc reading under all six (the
+ * last two only when the text has a backslash), so a command any of them
+ * blocks stays blocked. The last two read as the first does but decode
+ * `$'…'` words the way zsh and bash 3.2 do.
  */
 
 export function emergencyBrakeReason(
@@ -133,6 +135,11 @@ function readingsReason(
     brakeReadingsReason(command, "finder", bodies) ??
     brakeReadingsReason(command, "rescan", bodies) ??
     brakeReadingsReason(command, "undecoded", bodies) ??
-    brakeReadingsReason(command, "previous", bodies)
+    brakeReadingsReason(command, "previous", bodies) ??
+    // Every shell-dependent escape needs a backslash in the source text.
+    (command.includes("\\")
+      ? (brakeReadingsReason(command, "zsh", bodies) ??
+        brakeReadingsReason(command, "bash32", bodies))
+      : undefined)
   );
 }

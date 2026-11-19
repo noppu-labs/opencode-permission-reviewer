@@ -90,12 +90,25 @@ describe("extractHeredocs scanner states", () => {
   });
 });
 
+// An escape bash and zsh read differently leaves no line known to end the
+// body: it runs to the end of the text.
+describe("extractHeredocs shell-dependent delimiter words", () => {
+  test.each(["cat <<$'\\xZ'\nbody\nxZ\nls", "cat <<$'\\q'\nbody\nq\nls"])(
+    "%p is unresolved",
+    (command) => {
+      const { heredocs, dynamic } = extraction(command);
+      expect(heredocs).toHaveLength(1);
+      expect(heredocs[0]).toMatchObject({ truncated: true });
+      expect(dynamic).toBe(true);
+    },
+  );
+});
+
 describe("extractHeredocs delimiter words", () => {
   test.each([
     ["cat <<\"it's\"\nbody\nit's\nls", "cat <<'it'\\''s' <#>\nls", "it's"],
     ["cat <<$'A\\x4G'\nbody\nA\x04G\nls", "cat <<'A\x04G' <#>\nls", "A\x04G"],
     ["cat <<$'\\x41'\nbody\nA\nls", "cat <<A <#>\nls", "A"],
-    ["cat <<$'\\xZ'\nbody\nxZ\nls", "cat <<xZ <#>\nls", "xZ"],
     ["cat <<$'\\101'\nbody\nA\nls", "cat <<A <#>\nls", "A"],
     ["cat <<$'\\18'\nbody\n\x018\nls", "cat <<'\x018' <#>\nls", "\x018"],
     ["cat <<$'\\60'\nbody\n0\nls", "cat <<0 <#>\nls", "0"],
@@ -103,7 +116,6 @@ describe("extractHeredocs delimiter words", () => {
     ["cat <<$'E\\'F'\nbody\nE'F\nls", "cat <<'E'\\''F' <#>\nls", "E'F"],
     ["cat <<$'E\\\\F'\nbody\nE\\F\nls", "cat <<'E\\F' <#>\nls", "E\\F"],
     ["cat <<$'a\\tb'\nbody\na\tb\nls", "cat <<'a\tb' <#>\nls", "a\tb"],
-    ["cat <<$'\\q'\nbody\nq\nls", "cat <<q <#>\nls", "q"],
     ['cat <<"E\\$F"\nbody\nE$F\nls', "cat <<'E$F' <#>\nls", "E$F"],
     ['cat <<"E\\"F"\nbody\nE"F\nls', "cat <<'E\"F' <#>\nls", 'E"F'],
     ['cat <<"E\\nF"\nbody\nE\\nF\nls', "cat <<'E\\nF' <#>\nls", "E\\nF"],

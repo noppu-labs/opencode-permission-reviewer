@@ -16,6 +16,7 @@ export interface PendingStart {
   rawWord: string;
   quoted: boolean;
   resolved: boolean;
+  shellDependent: boolean;
   opStart: number;
   wordEnd: number;
   lineStart: number;

@@ -80,6 +80,10 @@ export interface ParsedCommand {
   /** An interpreter among the commands runs code from a heredoc or
    *  here-string. */
   stdinCode?: boolean;
+  /** A word or heredoc delimiter, in the command, a command string or a
+   *  substitution, has a `$'…'` escape whose value depends on the shell
+   *  (`ansiCShellDependent`). */
+  shellDependentQuoting: boolean;
 }
 
 /** What the action can do, what it appears to do, and analysis confidence. */

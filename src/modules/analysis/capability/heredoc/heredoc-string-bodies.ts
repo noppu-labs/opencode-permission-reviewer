@@ -18,7 +18,12 @@ export function keepStringBodies(
 ): void {
   if (bodies === undefined || !text.includes("<<")) return;
   const read = sanitizedText(text);
-  keepBodyCommands(bodies, read.bodyCommands, read.bodyUnresolved);
+  keepBodyCommands(
+    bodies,
+    read.bodyCommands,
+    read.bodyUnresolved,
+    read.delimiterShellDependent,
+  );
   keepBodyScripts(bodies, read.scripts);
   if (read.scripts.size > 0 && SCRIPT_READER.test(read.text))
     feedsOf(bodies).commands.push(text);

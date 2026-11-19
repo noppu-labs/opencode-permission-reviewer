@@ -1,5 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { brakeReadingsReason } from "../src/modules/analysis/brake/brake-readings.ts";
+import {
+  ANALYSIS_LIMIT_REASON,
+  brakeReadingsReason,
+} from "../src/modules/analysis/brake/brake-readings.ts";
 import { emergencyBrakeReason } from "../src/modules/analysis/brake/emergency-brake.ts";
 import { request } from "./helpers.ts";
 
@@ -184,5 +187,85 @@ describe("a word only the undecoded reading blocks", () => {
     expect(brakeReadingsReason(command, "bash")).toBeUndefined();
     expect(brakeReadingsReason(command, "previous")).toBeUndefined();
     expect(brakeReadingsReason(command, "undecoded")).toBe(blocked);
+  });
+});
+
+describe("words bash 3.2 decodes differently", () => {
+  // bash 3.2 keeps `\u0027` literally, so no quote hides the `rm`.
+  test("a \\u escape that only later shells read as a quote", () => {
+    const command = "sh -c $'echo \\u0027; r\\x6d -rf /; echo \\u0027'";
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBe(blocked);
+  });
+  test("a \\u escape on its own is not blocked", () => {
+    const command = "echo $'\\u0041'";
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBeUndefined();
+  });
+});
+
+describe("heredoc delimiters bash and zsh end differently", () => {
+  test.each([
+    ["bash ends at E\\[F", "cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n", blocked],
+    ["zsh ends at E[F", "cat <<$'E\\[F'\nE[F\nrm -rf /\nE\\[F\n", blocked],
+    [
+      // The shell may end the body there; the scan cannot tell where.
+      "inside $(…) in double quotes",
+      "echo \"$(cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n)\"",
+      ANALYSIS_LIMIT_REASON,
+    ],
+    ["inside $(…)", "x=$(cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n)", blocked],
+    ["a \\u escape", "cat <<$'\\u0041'\nA\nrm -rf /\nA\n", blocked],
+    ["a NUL", "cat <<$'\\0'\nbody\n\nrm -rf /\n", blocked],
+    [
+      "an unterminated quoted delimiter inside $(…) in double quotes",
+      'echo "$(cat <<\'EOF\nrm -rf /\n)"',
+      ANALYSIS_LIMIT_REASON,
+    ],
+  ])("%s: blocked", (_, command, reason) => {
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBe(reason);
+  });
+});
+
+describe("words zsh decodes differently", () => {
+  for (const body of [
+    "$'r\\m' -rf /",
+    "rm $'\\-rf' /",
+    "rm -rf $'\\/'",
+    // zsh reads `\C-\x4a` as a newline.
+    "sh -c $'echo hi\\C-\\x4arm -rf /'",
+    // zsh runs `rm`: a command name ends at the NUL.
+    "$'r\\m\\0x' -rf /",
+  ])
+    test.each(wrappers(body))(`%s: ${body} is blocked`, (_, command) => {
+      expect(
+        emergencyBrakeReason(
+          request({ metadata: { command }, patterns: [command] }),
+        ),
+      ).toBe(blocked);
+    });
+  // `\r` is a carriage return in both shells, so the zsh reading must not
+  // make it `r`.
+  test.each([
+    "printf $'\\033\\[?1049h'",
+    "echo $'\\q'",
+    "printf $'a\\tb\\n'",
+    "$'\\r\\m' -rf /",
+  ])("%s is not blocked", (command) => {
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBeUndefined();
   });
 });

@@ -1,6 +1,6 @@
 // The quoted parts of a heredoc delimiter word: '...', $'...', $"..." and "...".
 
-import { unescapeAnsiC } from "./ansi-c-quoting.ts";
+import { ansiCShellDependent, unescapeAnsiC } from "./ansi-c-quoting.ts";
 
 /** The delimiter word parsed so far; `sawAny` records whether any part of
  *  it has been consumed. */
@@ -9,6 +9,8 @@ export interface WordScan {
   delimiter: string;
   quoted: boolean;
   resolved: boolean;
+  /** See `DelimiterWord.shellDependent`. */
+  shellDependent: boolean;
   sawAny: boolean;
 }
 
@@ -25,8 +27,10 @@ export function scanSingleQuoted(command: string, scan: WordScan): boolean {
   return true;
 }
 
-/** `$'...'` is unescaped here; for `$"..."` only the `$` is consumed, and
- *  the double-quoted part follows. */
+/** `$'...'` is unescaped here. A part with an escape the shells read
+ *  differently, or with a NUL (bash ends the delimiter there, zsh keeps it),
+ *  leaves the word unresolved and shell-dependent. For `$"..."` only the `$`
+ *  is consumed, and the double-quoted part follows. */
 export function scanDollarQuoted(command: string, scan: WordScan): boolean {
   scan.quoted = true;
   scan.sawAny = true;
@@ -38,6 +42,11 @@ export function scanDollarQuoted(command: string, scan: WordScan): boolean {
   if (!parsed.closed) {
     scan.resolved = false;
     return false;
+  }
+  const inner = command.slice(scan.index + 2, parsed.end - 1);
+  if (ansiCShellDependent(inner) || parsed.text.includes("\0")) {
+    scan.resolved = false;
+    scan.shellDependent = true;
   }
   scan.delimiter += parsed.text;
   scan.index = parsed.end;

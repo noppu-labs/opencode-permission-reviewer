@@ -15,6 +15,9 @@ export interface Walked {
   effective: ShellToken[][];
   redirections: Redirection[][];
   truncated: boolean;
+  /** A heredoc delimiter in a command string or body the walk lexed is
+   *  shell-dependent (see `DelimiterWord.shellDependent`). */
+  delimiterShellDependent: boolean;
   /** What the walk gave for each segment, as the script feeds read it. */
   parts: SegmentFeedParts[];
   /** The effective commands that run on the far side of an ssh with no
@@ -33,6 +36,7 @@ export function newWalked(): Walked {
     effective: [],
     redirections: [],
     truncated: false,
+    delimiterShellDependent: false,
     parts: [],
     remote: [],
     stdinCode: false,

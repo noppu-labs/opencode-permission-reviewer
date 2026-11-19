@@ -1,6 +1,10 @@
 // Whether the text a substitution spans holds something whose end the shell's reading cannot be sure of.
 
-import type { LexState, ProbeCache } from "./shell-lex-state.ts";
+import {
+  type LexState,
+  type ProbeCache,
+  readsAsFinder,
+} from "./shell-lex-state.ts";
 import {
   closesAsArithmetic,
   groupCloseFrom,
@@ -46,7 +50,7 @@ export function uncertainRegion(
     nextMark(marks, 4, open, () => closingComment(text, open)) < to
   )
     return true;
-  if (lex.budget.quoting === "finder") return false;
+  if (readsAsFinder(lex.budget.quoting)) return false;
   if (nextMark(marks, 5, from, () => find(text, "<<", from)) >= to)
     return false;
   return nextMark(marks, 7, from, () => heredocGroupFrom(lex, from)) < to;

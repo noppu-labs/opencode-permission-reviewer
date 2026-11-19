@@ -1,12 +1,21 @@
-// ANSI-C quoting (`$'...'`) as bash unescapes it in a heredoc delimiter word.
+// ANSI-C quoting (`$'...'`): the value of a word in bash, bash 3.2 or zsh, the
+// zsh-style reading of a heredoc delimiter, and which escapes the shells
+// disagree on.
 
 import { invariant } from "../../../../utils/invariant.ts";
+import {
+  decodeAnsiCControl,
+  decodeAnsiCHex,
+  decodeAnsiCOctal,
+} from "./ansi-c-numeric.ts";
+import { type DecodedEscape, decodeZshOther } from "./ansi-c-zsh.ts";
 
-/** Unescape an ANSI-C quoted region (`$'...'`), the subset bash defines for
- *  here-document delimiter words: standard escapes, `\xHH` hex, and up to
- *  three octal digits. Unknown escapes drop the backslash, like bash. A
- *  delimiter containing a newline can never match a body line; it stays
- *  resolved and the body scan reports the heredoc as unterminated. */
+/** Unescape the `$'...'` region of a here-document delimiter word. Unknown
+ *  escapes drop the backslash as zsh does, so the text is right for every
+ *  shell only when `ansiCShellDependent` accepts the part; `scanDollarQuoted`
+ *  marks the word unresolved otherwise. A delimiter containing a newline can
+ *  never match a body line; it stays resolved and the body scan reports the
+ *  heredoc as unterminated. */
 export function unescapeAnsiC(
   command: string,
   start: number,
@@ -72,10 +81,50 @@ function ansiCEscape(
   return { text: ANSI_C_SIMPLE_ESCAPES[escaped] ?? escaped, end: index + 2 };
 }
 
-/** The value bash gives a `$'...'` word whose text between the quotes is
- *  `inner`, as written: escapes decoded, cut at the first NUL. Unknown
- *  escapes and a bare `\x`, `\u` or `\U` keep their backslash. */
-export function decodeAnsiCWord(inner: string): string {
+/** `bash32` is bash 3.2, which keeps `\u` and `\U` literally. */
+export type AnsiCDialect = "bash" | "bash32" | "zsh";
+
+/** Whether an escape in `inner` (the text between `$'` and the closing `'`, as
+ *  written) is read differently by bash, bash 3.2 and zsh: anything but a
+ *  simple escape, an octal escape, or `\x` with a hex digit. `\c`, `\u` and
+ *  `\U` always count, and so does a NUL with text after it, where bash ends
+ *  the word and zsh keeps the rest. A NUL that ends the word gives the same
+ *  argument in both; a heredoc delimiter checks for one itself. */
+export function ansiCShellDependent(inner: string): boolean {
+  let index = 0;
+  while (index < inner.length) {
+    if (inner.charAt(index) !== "\\") {
+      index += 1;
+      continue;
+    }
+    const bash = decodeAnsiCEscape(inner, index, "bash");
+    if (
+      textAfterNul(bash.text, inner.slice(bash.end)) ||
+      bash.text !== decodeAnsiCEscape(inner, index, "zsh").text ||
+      bash.text !== decodeAnsiCEscape(inner, index, "bash32").text
+    )
+      return true;
+    index = bash.end;
+  }
+  return false;
+}
+
+/** Whether an escape's `text` has a NUL with more text after it, in the
+ *  escape or in the `rest` of the word. */
+function textAfterNul(text: string, rest: string): boolean {
+  const nul = text.indexOf("\0");
+  return nul !== -1 && (nul < text.length - 1 || rest !== "");
+}
+
+/** The value a `$'...'` word whose text between the quotes is `inner`, as
+ *  written, has in `dialect` as a command's argument: escapes decoded, cut
+ *  at the first NUL. In bash, unknown escapes and a bare `\x`, `\u` or `\U`
+ *  keep their backslash, and bash 3.2 also keeps it for every `\u` and
+ *  `\U`. */
+export function decodeAnsiCWord(
+  inner: string,
+  dialect: AnsiCDialect = "bash",
+): string {
   let value = "";
   let index = 0;
   while (index < inner.length) {
@@ -84,85 +133,32 @@ export function decodeAnsiCWord(inner: string): string {
       index += 1;
       continue;
     }
-    const decoded = decodeAnsiCEscape(inner, index);
+    const decoded = decodeAnsiCEscape(inner, index, dialect);
     value += decoded.text;
     index = decoded.end;
   }
-  const nul = value.indexOf("\0");
-  return nul === -1 ? value : value.slice(0, nul);
+  return value.split("\0", 1).join("");
 }
-
-const HEX_DIGITS = new Map<string, RegExp>([
-  ["x", /[0-9a-f]{1,2}/iy],
-  ["u", /[0-9a-f]{1,4}/iy],
-  ["U", /[0-9a-f]{1,8}/iy],
-]);
-
-const OCTAL_DIGITS = /[0-7]{1,3}/y;
 
 /** The decoded escape whose backslash is at `index`, and the index just past it. */
 function decodeAnsiCEscape(
   inner: string,
   index: number,
-): { text: string; end: number } {
+  dialect: AnsiCDialect,
+): DecodedEscape {
   const escaped = inner.charAt(index + 1);
   const simple = ANSI_C_SIMPLE_ESCAPES[escaped];
   if (simple !== undefined) return { text: simple, end: index + 2 };
-  if (/^[0-7]$/.test(escaped)) {
-    const digits = digitsAt(inner, index + 1, OCTAL_DIGITS);
-    const value = Number.parseInt(digits, 8) & 0xff;
-    return {
-      text: String.fromCharCode(value),
-      end: index + 1 + digits.length,
-    };
-  }
-  if (escaped === "c") return decodeAnsiCControl(inner, index);
-  const hex = HEX_DIGITS.get(escaped);
-  if (hex !== undefined) return decodeAnsiCHex(inner, index, escaped, hex);
+  if (/^[0-7]$/.test(escaped)) return decodeAnsiCOctal(inner, index);
+  if (escaped === "c" && dialect !== "zsh")
+    return decodeAnsiCControl(inner, index, dialect);
+  const decoded =
+    (dialect !== "bash32" || escaped === "x") &&
+    decodeAnsiCHex(inner, index, escaped);
+  if (decoded) return decoded;
+  if (dialect === "zsh")
+    return decodeZshOther(inner, index, escaped, (text, at) =>
+      decodeAnsiCEscape(text, at, "zsh"),
+    );
   return { text: `\\${escaped}`, end: index + 2 };
-}
-
-function decodeAnsiCHex(
-  inner: string,
-  index: number,
-  letter: string,
-  pattern: RegExp,
-): { text: string; end: number } {
-  const digits = digitsAt(inner, index + 2, pattern);
-  if (digits === "") return { text: `\\${letter}`, end: index + 2 };
-  const end = index + 2 + digits.length;
-  const value = Number.parseInt(digits, 16);
-  if (letter === "x") return { text: String.fromCharCode(value), end };
-  return { text: codePointText(value), end };
-}
-
-/** The text bash gives a `\u` or `\U` code point. Values above 0x7fffffff
- *  are dropped; surrogates and values past U+10FFFF are not JavaScript code
- *  points and become U+FFFD. */
-function codePointText(value: number): string {
-  if (value > 0x7fffffff) return "";
-  if ((value >= 0xd800 && value <= 0xdfff) || value > 0x10ffff) return "\ufffd";
-  return String.fromCodePoint(value);
-}
-
-/** `\cX` is the control character of X, `\c?` is DEL, and `\c\\` is the
- *  control character of a backslash. */
-function decodeAnsiCControl(
-  inner: string,
-  index: number,
-): { text: string; end: number } {
-  const target = inner.charAt(index + 2);
-  if (target === "") return { text: "\\c", end: index + 2 };
-  if (target === "\\") {
-    const end = inner.charAt(index + 3) === "\\" ? index + 4 : index + 3;
-    return { text: "\x1c", end };
-  }
-  const code = target === "?" ? 0x7f : target.charCodeAt(0) & 0x1f;
-  return { text: String.fromCharCode(code), end: index + 3 };
-}
-
-/** The digits matched by the sticky `pattern` at `start`. */
-function digitsAt(text: string, start: number, pattern: RegExp): string {
-  pattern.lastIndex = start;
-  return pattern.exec(text)?.[0] ?? "";
 }
