@@ -26,7 +26,7 @@ export const PINNED_BLOBS = {
   "src/modules/context/services/prompt/context.ts":
     "d0e3077d17634fc712b7f1e5539bb641e3ccf0d0",
   "src/modules/context/services/evidence-sections.ts":
-    "233251f24eaf2d63c493d1485fdcd0ea7d72ee26",
+    "906a71d21492be9d141dd0fa0fa70c9a3cc71caa",
   "src/modules/context/services/prompt-budget.ts":
     "5c2b3aff99e9e4d8ca0822387b76f4aff6d91c51",
   "src/modules/context/services/actor-sections.ts":
@@ -233,7 +233,19 @@ export const PINNED_BLOBS = {
   "src/modules/analysis/capability/mutation-operands.ts":
     "9b2d1e58e90bd962c261ae21d3c449f0df5e37cf",
   "src/modules/analysis/capability/read-only-tool-mutations.ts":
-    "d294f341527939ea34a9b072cdb4597faeb751e8",
+    "991d07269d0a2e900a70945e1c553afac0f70093",
+  "src/modules/analysis/capability/models/read-only-tool-mutation.ts":
+    "fd063de67a2ce3e4bc144156266d70ea94d26f15",
+  "src/modules/analysis/capability/getopt-long-option.ts":
+    "a19401281d538dc0566b1b7ce23141311b79a090",
+  "src/modules/analysis/capability/sort-mutation.ts":
+    "1f5b2c9b8b05a0d9b3e1e4c337e300dc21345b0c",
+  "src/modules/analysis/capability/output-operand-mutations.ts":
+    "2d536754fbad55e22d2524d75fe019d35292f35a",
+  "src/modules/analysis/capability/tree-mutation.ts":
+    "5e1397c7ae8f809bd6bf2eb7728ccea8e523e1ec",
+  "src/modules/analysis/capability/yq-mutation.ts":
+    "72fdb0af0996cfef351a8b34ec8e1192dd403b94",
   "src/modules/analysis/capability/git-subcommand-forms.ts":
     "1f9d6c9486ffe0b939b8b82aaf33cfee3639f941",
   "src/modules/analysis/git/git-global-options.ts":

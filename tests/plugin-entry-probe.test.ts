@@ -116,6 +116,36 @@ describe("V1 plugin entry host version probe", () => {
     expect(record.hostVersion).toBe("unknown");
   });
 
+  test("refuses to load, and logs why, on a host that reports a V2 version", async () => {
+    const logged: unknown[][] = [];
+    const original = console.error;
+    console.error = (...args: unknown[]): void => {
+      logged.push(args);
+    };
+    try {
+      const load = server(
+        {
+          client: {
+            _client: {
+              get: (): Promise<unknown> =>
+                Promise.resolve({ data: { version: "2.3.2" } }),
+              post: (): Promise<unknown> => Promise.resolve({ data: true }),
+            },
+          },
+          directory: "/workspace/project",
+          worktree: "/workspace/project",
+        } as never,
+        {},
+      );
+      await expect(load).rejects.toThrow(
+        "OpenCode 2.3.2 loaded the V1 entrypoint",
+      );
+    } finally {
+      console.error = original;
+    }
+    expect(String(logged[0]?.[0])).toContain("loaded the V1 entrypoint");
+  });
+
   test("gives up on a probe that never answers after 2 s", async () => {
     const started = Date.now();
     const { record } = await review({

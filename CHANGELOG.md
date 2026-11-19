@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-11-19
+
+### Changed
+
+- Answers to agent ask dialogs reach the reviewer with a full UTC timestamp
+  (`[2026-09-01T12:01:03Z]`) instead of the time of day only, so answers given on different days of
+  a long session no longer look alike.
+
+### Fixed
+
+- The V1 entrypoint refuses to load on a host that reports an OpenCode V2 version, and logs why
+  even without `debug`. Its reviewer isolation is a single-file plugin, which V2 does not load, so
+  every review used to fail closed with no visible cause. The message points at the V2 `"plugins"`
+  key.
+
+### Security
+
+- Tools that usually only read are no longer labeled read-only when the command writes a file or
+  runs a program. Before, a policy rule on workspace writes or code execution did not match these
+  forms, and the reviewer was told the command only read.
+  - `sort` reads `-o` inside a short-option cluster (`sort -uo FILE`, `-nruoFILE`) and as an
+    abbreviated long option (`--out=FILE`). `--compress-program` counts as code execution.
+  - `uniq` and `xxd` report their second operand as a write.
+  - `tree` reports `-o FILE`, including after an attached level (`-L2 -o FILE`), and `-R`, which
+    writes a listing into each directory it visits.
+  - `yq` reports `-i` inside a flag cluster (`-iP`) or with a value (`--inplace=true`), and
+    `-s`/`--split-exp`, which writes a file per result. With `--security-allow-write-any-path`,
+    the write can land outside the workspace.
+
 ## [3.5.0] - 2026-11-19
 
 ### Changed
