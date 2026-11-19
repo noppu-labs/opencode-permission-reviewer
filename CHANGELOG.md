@@ -18,10 +18,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
 - The list names `parallel/decisions-fast` instead of `parallel/decisions-fast:free`, following
   OpenRouter's listing. A config that names either is still read as a System One model.
-- Bumped the runtime dependency `@opencode/client` to 2.3.0 and the dev dependencies
-  `@opencode/plugin` to 2.3.0 and `@opencode-ai/plugin` and `@opencode-ai/sdk` to 1.19.6, with
+- Bumped the runtime dependency `@opencode/client` to 2.3.2 and the dev dependencies
+  `@opencode/plugin` to 2.3.2 and `@opencode-ai/plugin` and `@opencode-ai/sdk` to 1.19.6, with
   `bun.lock` synchronized.
-- Bumped the dev dependencies `@biomejs/biome` to 2.6.6, `knip` to 6.44.2 and `tsdown` to 0.23.7.
+- Bumped the dev dependencies `@biomejs/biome` to 2.6.7, `knip` to 6.45.1, `string-width` to 9.0.0
+  and `tsdown` to 0.23.7.
 
 ### Security
 
