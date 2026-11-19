@@ -43,6 +43,6 @@ export function v1HostVersionRefusal(
   return (
     `OpenCode ${parsed.version} loaded the V1 entrypoint of opencode-permission-reviewer, ` +
     "whose reviewer isolation V2 does not load. Register the plugin under the V2 " +
-    '"plugins" key (README, "Install" > "OpenCode V2") so the host uses its setup entrypoint.'
+    '"plugins" key (see "Configure" in the README) so the host uses its setup entrypoint.'
   );
 }
