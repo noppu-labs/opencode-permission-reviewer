@@ -101,7 +101,7 @@
     }
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.6",
+    "@biomejs/biome": "2.6.7",
     "@opencode-ai/plugin": "1.19.6",
     "@opencode-ai/sdk": "1.19.6",
     "@opencode/plugin": "2.3.2",
@@ -109,7 +109,7 @@
     "@types/semver": "7.8.0",
     "fta-cli": "3.1.0",
     "get-east-asian-width": "1.7.0",
-    "knip": "6.44.2",
+    "knip": "6.45.1",
     "string-width": "9.0.0",
     "tsdown": "0.23.7",
     "typescript": "7.0.2"
