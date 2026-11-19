@@ -1,21 +1,16 @@
-// Mutating forms (delete, write, execute) of the find, sort and yq tools the analyzer otherwise treats as read-only.
+// Mutating forms (delete, write, execute) of tools the analyzer otherwise treats as read-only.
 
 import { elementAt } from "../../../utils/element-at.ts";
 import type { ShellToken } from "../shell/shell-token.ts";
-
-/** Mutating forms of executables that are otherwise treated as read-only.
- *  "This executable usually only reads" must never become "this invocation
- *  only reads": find/sort/yq all have flags that delete, write, or execute. */
-interface ReadOnlyToolMutation {
-  deletion?: boolean;
-  executesCode?: boolean;
-  /** Paths written or (for -delete) destroyed, classified like any write. */
-  writeTargets: string[];
-}
-
-/** Placeholder target when a mutating form names no operand: conservatively
- *  treated as a workspace write (the current directory). */
-const directoryFallback = ".";
+import type { ReadOnlyToolMutation } from "./models/read-only-tool-mutation.ts";
+import {
+  outputOperandMutation,
+  UNIQ_OPTIONS,
+  XXD_OPTIONS,
+} from "./output-operand-mutations.ts";
+import { sortMutation } from "./sort-mutation.ts";
+import { treeMutation } from "./tree-mutation.ts";
+import { yqMutation } from "./yq-mutation.ts";
 
 export function readOnlyToolMutation(
   cmd: ShellToken[],
@@ -23,6 +18,9 @@ export function readOnlyToolMutation(
 ): ReadOnlyToolMutation | undefined {
   if (base === "find") return findMutation(cmd);
   if (base === "sort") return sortMutation(cmd);
+  if (base === "uniq") return outputOperandMutation(cmd, UNIQ_OPTIONS);
+  if (base === "xxd") return outputOperandMutation(cmd, XXD_OPTIONS);
+  if (base === "tree") return treeMutation(cmd);
   if (base === "yq") return yqMutation(cmd);
   return undefined;
 }
@@ -103,32 +101,4 @@ function pushOptionValue(
 ): void {
   const target = cmd[index + 1]?.value;
   if (target !== undefined && !target.startsWith("-")) targets.push(target);
-}
-
-function sortMutation(cmd: ShellToken[]): ReadOnlyToolMutation | undefined {
-  const result: ReadOnlyToolMutation = { writeTargets: [] };
-  for (let index = 1; index < cmd.length; index += 1) {
-    const value = elementAt(cmd, index, "cmd").value;
-    if (value === "-o" || value === "--output") {
-      pushOptionValue(cmd, index, result.writeTargets);
-    } else if (value.startsWith("--output=")) {
-      result.writeTargets.push(value.slice("--output=".length));
-    } else if (value.startsWith("-o") && value.length > 2) {
-      result.writeTargets.push(value.slice(2));
-    }
-  }
-  return result.writeTargets.length > 0 ? result : undefined;
-}
-
-/** In-place edit: every non-option operand, the expression included, is recorded as a write target. */
-function yqMutation(cmd: ShellToken[]): ReadOnlyToolMutation | undefined {
-  if (!cmd.some((token) => token.value === "-i" || token.value === "--inplace"))
-    return undefined;
-  const targets = cmd
-    .slice(1)
-    .map((token) => token.value)
-    .filter((value) => !value.startsWith("-"));
-  return targets.length > 0
-    ? { writeTargets: targets }
-    : { writeTargets: [directoryFallback] };
 }
