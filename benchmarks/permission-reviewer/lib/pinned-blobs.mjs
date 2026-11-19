@@ -26,7 +26,7 @@ export const PINNED_BLOBS = {
   "src/modules/context/services/prompt/context.ts":
     "d0e3077d17634fc712b7f1e5539bb641e3ccf0d0",
   "src/modules/context/services/evidence-sections.ts":
-    "233251f24eaf2d63c493d1485fdcd0ea7d72ee26",
+    "906a71d21492be9d141dd0fa0fa70c9a3cc71caa",
   "src/modules/context/services/prompt-budget.ts":
     "5c2b3aff99e9e4d8ca0822387b76f4aff6d91c51",
   "src/modules/context/services/actor-sections.ts":
