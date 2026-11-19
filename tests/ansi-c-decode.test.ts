@@ -36,16 +36,16 @@ describe("ansiCShellDependent", () => {
     "\\'",
     '\\"',
     "\\?",
-    "\\0",
     "\\101",
     "\\777",
     "\\x41",
     "\\x4",
-    "\\u0072",
-    "\\U0001F600",
+    // A NUL that ends the word gives the same argument in both.
+    "\\0",
+    "a\\x00",
     "plain",
     "",
-  ])("reads %j the same in bash and zsh", (inner) => {
+  ])("reads %j the same in bash, bash 3.2 and zsh", (inner) => {
     expect(ansiCShellDependent(inner)).toBe(false);
   });
   test.each([
@@ -66,7 +66,14 @@ describe("ansiCShellDependent", () => {
     "\\M-a",
     "\\033\\[?1049h",
     "a\\",
-  ])("reads %j differently in bash and zsh", (inner) => {
+    // bash 3.2 keeps `\u` and `\U` literally.
+    "\\u0072",
+    "\\U0001F600",
+    // bash ends the word at a NUL; zsh keeps the rest.
+    "a\\x00b",
+    "\\0;",
+    "\\0\\0",
+  ])("reads %j differently in bash, bash 3.2 or zsh", (inner) => {
     expect(ansiCShellDependent(inner)).toBe(true);
   });
 
@@ -100,11 +107,43 @@ describe("decodeAnsiCWord zsh", () => {
     ["a\\C\\\\z", "a\u001cz"],
     ["a\\M\\\\z", "aÜz"],
     ["a\\C-\\\\z", "a\u001cz"],
+    // A modifier applies to the escape after it, innermost first.
+    ["\\M-\\C-a", "\x81"],
+    ["\\C-\\M-a", "\x81"],
+    ["\\C-?", "\x7f"],
+    ["\\C-\\M-?", "\x9f"],
+    ["\\M-\\C-?", "\xff"],
+    ["\\C-\\C-a", "\x01"],
+    ["\\C-\\x4a", "\n"],
+    ["\\C-\\101", "\x01"],
+    ["\\C-\\q", "\x11"],
+    ["\\C--", "\r"],
+    ["a\\C-", "a"],
+    ["a\\M", "a"],
+    ["echo hi\\0; rm", "echo hi"],
+    ["a\\C-\\xz", "a"],
   ])("decodes %j to zsh's value %j", (inner, value) => {
     expect(decodeAnsiCWord(inner, "zsh")).toBe(value);
   });
+
+  test("runs in linear time on a long modifier run", () => {
+    expect(decodeAnsiCWord(`${"\\C-".repeat(40000)}a`, "zsh")).toBe("\x01");
+  });
   test.each(rows)("keeps bash's value of %j by default", (inner, decoded) => {
     expect(decodeAnsiCWord(inner, "bash")).toBe(decoded);
+  });
+});
+
+describe("decodeAnsiCWord bash 3.2", () => {
+  test.each([
+    ["\\u0027", "\\u0027"],
+    ["\\U00000041", "\\U00000041"],
+    ["\\x41", "A"],
+    ["\\c?", "\x1f"],
+    ["\\c\\\\a", "\x1c\x07"],
+    ["a\\0b", "a"],
+  ])("decodes %j to bash 3.2's value %j", (inner, value) => {
+    expect(decodeAnsiCWord(inner, "bash32")).toBe(value);
   });
 });
 

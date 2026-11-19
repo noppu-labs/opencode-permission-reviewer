@@ -23,6 +23,8 @@ export type SubstitutionBody =
        *  one of their bodies could not be read to the end. */
       bodyCommands: string[];
       bodyUnresolved: boolean;
+      /** See `HeredocExtraction.delimiterShellDependent`. */
+      delimiterShellDependent: boolean;
       /** The text each of those heredoc bodies gives the command that reads
        *  it. */
       scripts: ReadonlyMap<string, readonly string[]>;
@@ -74,6 +76,7 @@ function commandBody(
       text: sanitize ? legacySanitizedCommand(text) : text,
       bodyCommands: [],
       bodyUnresolved: false,
+      delimiterShellDependent: false,
       scripts: NO_SCRIPTS,
       end,
     };
@@ -83,6 +86,7 @@ function commandBody(
     text: read.text,
     bodyCommands: read.bodyCommands,
     bodyUnresolved: read.bodyUnresolved,
+    delimiterShellDependent: read.delimiterShellDependent,
     scripts: read.scripts,
     end,
   };

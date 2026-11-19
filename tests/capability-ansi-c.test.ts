@@ -46,7 +46,7 @@ describe("everyday escaped words keep their action class", () => {
 });
 
 const SHELL_DEPENDENT_WARNING =
-  "command contains a $'…' escape that bash and zsh decode differently";
+  "command contains a $'…' escape whose value depends on the shell";
 
 function expectShellDependent(
   command: string,
@@ -88,6 +88,46 @@ describe("words bash and zsh decode differently", () => {
     ["printf $'\\033[1m'", "read-only"],
     ["echo \"$'\\q'\"", "read-only"],
   ] as const)("%s keeps its class %s", expectKeepsClass);
+});
+
+describe("a shell-dependent word keeps any class but read-only", () => {
+  test.each([
+    ["rm -rf ./build; echo $'\\q'", "destruction"],
+    ["git push origin main; echo $'\\q'", "git-mutation"],
+    ["echo hi > $'\\q'", "workspace-write"],
+  ] as const)("%s stays %s, with low confidence", (command, value) => {
+    const capability = analyze(command).capability;
+    expect(capability?.actionClass).toEqual({
+      value,
+      source: "static-analysis",
+      confidence: "low",
+    });
+    expect(capability?.summary.startsWith(value)).toBe(true);
+    expect(capability?.analysisWarnings).toContain(SHELL_DEPENDENT_WARNING);
+    expect(capability?.parserCompleteness).toBe("partial");
+  });
+});
+
+describe("words bash 3.2 reads differently", () => {
+  test.each([
+    "echo $'\\u0041'",
+    "sh -c $'echo \\u0027; r\\x6d -rf /; echo \\u0027'",
+    "printf $'a\\0b'",
+  ])("%s is unknown with the warning", (command) => {
+    expectShellDependent(command);
+  });
+});
+
+describe("a shell-dependent heredoc delimiter in a substitution or command string", () => {
+  test.each([
+    "echo \"$(cat <<$'E\\[F'\nx\nE[F\nrm -rf ./build\n)\"",
+    "echo `cat <<$'E\\[F'\nx\nE[F\nrm -rf ./build\n`",
+    "bash -c \"cat <<\\$'E\\\\[F'\nx\nE[F\nrm -rf ./build\n\"",
+  ])("%j has the warning and is not read-only", (command) => {
+    const capability = analyze(command).capability;
+    expect(capability?.analysisWarnings).toContain(SHELL_DEPENDENT_WARNING);
+    expect(capability?.actionClass.value).not.toBe("read-only");
+  });
 });
 
 describe("a heredoc only one shell terminates", () => {

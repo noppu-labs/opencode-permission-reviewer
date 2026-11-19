@@ -27,7 +27,12 @@ function lexBody(
   body: CommandBody,
 ): void {
   const { text, end } = body;
-  keepBodyCommands(budget.bodies, body.bodyCommands, body.bodyUnresolved);
+  keepBodyCommands(
+    budget.bodies,
+    body.bodyCommands,
+    body.bodyUnresolved,
+    body.delimiterShellDependent,
+  );
   keepBodyScripts(budget.bodies, body.scripts);
   lex.substitutionEnd = end;
   budget.substitutionCharsRemaining -= text.length;

@@ -38,9 +38,9 @@ function step(raw: string, i: number): number {
   return i + 1;
 }
 
-/** Whether a word has an unquoted `$'…'` part whose escapes bash and zsh
- *  decode differently. One left-to-right pass: `'…'`, `"…"` and backslash
- *  pairs are skipped, so `"$'\q'"` doesn't count. */
+/** Whether a word has an unquoted `$'…'` part whose escapes the shells
+ *  decode differently (`ansiCShellDependent`). One left-to-right pass: `'…'`,
+ *  `"…"` and backslash pairs are skipped, so `"$'\q'"` doesn't count. */
 export function hasShellDependentWord(raw: string): boolean {
   if (!raw.includes("\\")) return false;
   let i = 0;

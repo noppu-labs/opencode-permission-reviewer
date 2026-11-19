@@ -75,6 +75,8 @@ function parse(rawCommand: string): ParsedCommand {
     segmentRedirections: walked.parts.map((part) => part.segmentRedirections),
     shellDependentQuoting:
       extraction.delimiterShellDependent ||
+      lex.delimiterShellDependent ||
+      walked.delimiterShellDependent ||
       [
         ...walked.segments.flatMap((segment) => segment.tokens),
         ...walked.effective.flat(),

@@ -6,16 +6,19 @@ import {
 } from "./heredoc-body-commands.ts";
 import { keepBodyScripts, NO_SCRIPTS } from "./heredoc-scripts.ts";
 
-/** Adds commands to `into`, with whether their bodies were unresolved. A
- *  collector that is not there is a reading that keeps none. */
+/** Adds commands to `into`, with whether their bodies were unresolved and
+ *  whether a delimiter of theirs was shell-dependent. A collector that is not
+ *  there is a reading that keeps none. */
 export function keepBodyCommands(
   into: BodyCommands | undefined,
   commands: string[],
   unresolved: boolean,
+  shellDependent = false,
 ): void {
   if (into === undefined || (commands.length === 0 && !unresolved)) return;
   for (const command of commands) into.commands.push(command);
   into.unresolved ||= unresolved;
+  if (shellDependent) into.shellDependent = true;
 }
 
 /** Adds the commands of one unquoted body to `into`, with the scripts of the

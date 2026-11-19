@@ -190,6 +190,26 @@ describe("a word only the undecoded reading blocks", () => {
   });
 });
 
+describe("words bash 3.2 decodes differently", () => {
+  // bash 3.2 keeps `\u0027` literally, so no quote hides the `rm`.
+  test("a \\u escape that only later shells read as a quote", () => {
+    const command = "sh -c $'echo \\u0027; r\\x6d -rf /; echo \\u0027'";
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBe(blocked);
+  });
+  test("a \\u escape on its own is not blocked", () => {
+    const command = "echo $'\\u0041'";
+    expect(
+      emergencyBrakeReason(
+        request({ metadata: { command }, patterns: [command] }),
+      ),
+    ).toBeUndefined();
+  });
+});
+
 describe("heredoc delimiters bash and zsh end differently", () => {
   test.each([
     ["bash ends at E\\[F", "cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n", blocked],
@@ -202,6 +222,7 @@ describe("heredoc delimiters bash and zsh end differently", () => {
     ],
     ["inside $(…)", "x=$(cat <<$'E\\[F'\nE\\[F\nrm -rf /\nE[F\n)", blocked],
     ["a \\u escape", "cat <<$'\\u0041'\nA\nrm -rf /\nA\n", blocked],
+    ["a NUL", "cat <<$'\\0'\nbody\n\nrm -rf /\n", blocked],
     [
       "an unterminated quoted delimiter inside $(…) in double quotes",
       'echo "$(cat <<\'EOF\nrm -rf /\n)"',
@@ -217,7 +238,15 @@ describe("heredoc delimiters bash and zsh end differently", () => {
 });
 
 describe("words zsh decodes differently", () => {
-  for (const body of ["$'r\\m' -rf /", "rm $'\\-rf' /", "rm -rf $'\\/'"])
+  for (const body of [
+    "$'r\\m' -rf /",
+    "rm $'\\-rf' /",
+    "rm -rf $'\\/'",
+    // zsh reads `\C-\x4a` as a newline.
+    "sh -c $'echo hi\\C-\\x4arm -rf /'",
+    // zsh runs `rm`: a command name ends at the NUL.
+    "$'r\\m\\0x' -rf /",
+  ])
     test.each(wrappers(body))(`%s: ${body} is blocked`, (_, command) => {
       expect(
         emergencyBrakeReason(

@@ -203,6 +203,7 @@ describe("nested bodies", () => {
         truncated: false,
         bodyCommands: calls < MAX_BODY_DEPTH ? ["x"] : [],
         bodyUnresolved: false,
+        delimiterShellDependent: false,
         scripts: new Map(),
       };
     });
@@ -225,6 +226,7 @@ describe("nested bodies", () => {
         truncated: false,
         bodyCommands: ["x"],
         bodyUnresolved: false,
+        delimiterShellDependent: false,
         scripts: new Map(),
       };
     });

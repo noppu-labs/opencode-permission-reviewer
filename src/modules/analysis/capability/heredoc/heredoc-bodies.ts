@@ -28,10 +28,8 @@ export interface PendingLine {
   /** Set when a body read reaches the end of input without its terminator
    *  line, or its delimiter word cannot be known. */
   unterminated: boolean;
-  /** Set when a delimiter word could not be resolved. */
   delimiterUnresolved: boolean;
-  /** Set when a delimiter word has a `$'…'` part bash and zsh read
-   *  differently. */
+  /** See `DelimiterWord.shellDependent`. */
   delimiterShellDependent: boolean;
   pending: PendingStart[];
   pieces: Array<{ text: string } | { pendingIndex: number }>;
@@ -85,7 +83,6 @@ export function consumeBodies(
   return position;
 }
 
-/** Records on the scan what a delimiter word could not give. */
 function noteDelimiter(scan: PendingLine, start: PendingStart): void {
   if (!start.resolved) scan.delimiterUnresolved = true;
   if (start.shellDependent) scan.delimiterShellDependent = true;

@@ -12,7 +12,17 @@ test("a delimiter bash and zsh read differently is unresolved", () => {
 });
 
 test.each(["$'\\u0041'", "$'\\U00000041'", "$'\\u'"])(
-  "%s is unresolved: no shell gives the decoded value",
+  "%s is unresolved: bash 3.2 keeps the escape and zsh decodes it",
+  (word) => {
+    expect(parseDelimiterWord(word, 0)).toMatchObject({
+      resolved: false,
+      shellDependent: true,
+    });
+  },
+);
+
+test.each(["$'\\0'", "$'E\\x00'"])(
+  "%s is unresolved: bash ends the delimiter at the NUL and zsh keeps it",
   (word) => {
     expect(parseDelimiterWord(word, 0)).toMatchObject({
       resolved: false,

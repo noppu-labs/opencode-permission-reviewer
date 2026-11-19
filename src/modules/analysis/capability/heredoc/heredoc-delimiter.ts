@@ -42,8 +42,9 @@ interface DelimiterWord {
   /** False when the word depends on shell expansion, so the terminator line
    *  is statically unknowable. */
   resolved: boolean;
-  /** Whether a `$'…'` part makes the terminator depend on the shell: the
-   *  word is then unresolved. */
+  /** Whether a `$'…'` part has an escape that bash, bash 3.2 and zsh read
+   *  differently (`ansiCShellDependent`), so the shells may end the body at
+   *  different lines; the word is then unresolved. */
   shellDependent: boolean;
 }
 
@@ -64,9 +65,8 @@ interface DelimiterWord {
  *  the operator's word. A bare carriage return ends the word when
  *  `stopAtCarriageReturn` is set, as the previous release read it.
  *  The word is `resolved: false` when its quoting never terminates, the word
- *  is empty, or a `$'...'` part has an escape bash and zsh read differently
- *  or a `\u` or `\U` escape: then no line can be proven to be the
- *  terminator. */
+ *  is empty, or a `$'...'` part is shell-dependent: then no line can be
+ *  proven to be the terminator. */
 export function parseDelimiterWord(
   command: string,
   start: number,

@@ -1,6 +1,7 @@
 // Builds the CapabilityAssessment from the analyzer's accumulated facts: provenanced facts, summary, completeness and warnings.
 
 import type { Provenanced } from "../../../kernel/actor-context-types.ts";
+import type { CapabilityActionClass } from "../../../kernel/reviewer-config.ts";
 import {
   hasCommandSubstitution,
   heuristicFact,
@@ -49,7 +50,7 @@ function analysisWarnings(
   }
   if (parsed.shellDependentQuoting) {
     warnings.push(
-      "command contains a $'…' escape that bash and zsh decode differently",
+      "command contains a $'…' escape whose value depends on the shell",
     );
   }
   return warnings;
@@ -72,10 +73,11 @@ function parserCompleteness(
     : "complete-for-supported-form";
 }
 
-function summaryOf(facts: CapabilityFacts, classUnknown: boolean): string {
-  const summaryParts: string[] = [
-    classUnknown ? "unknown" : facts.dominantClass,
-  ];
+function summaryOf(
+  facts: CapabilityFacts,
+  actionClass: CapabilityActionClass,
+): string {
+  const summaryParts: string[] = [actionClass];
   if (facts.createsAdHocCode) summaryParts.push("ad-hoc code");
   if (facts.executesRepositoryCode) summaryParts.push("repository code");
   if (facts.invokesPackageLifecycle)
@@ -87,22 +89,33 @@ function summaryOf(facts: CapabilityFacts, classUnknown: boolean): string {
   return summaryParts.join(", ");
 }
 
+/** The class the facts give. A shell-dependent word can hide an effect the
+ *  facts missed, so it turns `read-only` into `unknown`; any other class
+ *  stays, so a rule that matches it still does. */
+function actionClassOf(
+  parsed: ParsedCommand,
+  facts: CapabilityFacts,
+): CapabilityActionClass {
+  return parsed.shellDependentQuoting && facts.dominantClass === "read-only"
+    ? "unknown"
+    : facts.dominantClass;
+}
+
 export function assessmentFrom(
   parsed: ParsedCommand,
   facts: CapabilityFacts,
 ): CapabilityAssessment {
+  const actionClass = actionClassOf(parsed, facts);
   const heredocTruncated = parsed.heredocs.some((h) => h.truncated);
   const warnings = analysisWarnings(parsed, heredocTruncated);
   const networkPossible = facts.networkObserved || facts.networkPossible;
   return {
-    actionClass: parsed.shellDependentQuoting
-      ? { value: "unknown", source: "static-analysis", confidence: "low" }
-      : {
-          value: facts.dominantClass,
-          source: "static-analysis",
-          confidence: facts.classConfidence,
-        },
-    summary: summaryOf(facts, parsed.shellDependentQuoting),
+    actionClass: {
+      value: actionClass,
+      source: "static-analysis",
+      confidence: parsed.shellDependentQuoting ? "low" : facts.classConfidence,
+    },
+    summary: summaryOf(facts, actionClass),
     executesCode: staticFlag(facts.executesCode),
     executesRepositoryCode: staticFlag(facts.executesRepositoryCode),
     createsAdHocCode: staticFlag(facts.createsAdHocCode),

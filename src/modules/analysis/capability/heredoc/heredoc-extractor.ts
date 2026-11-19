@@ -61,8 +61,8 @@ export interface HeredocExtraction {
   /** Whether a heredoc's delimiter word could not be resolved, so no line is
    *  known to end its body. */
   delimiterUnresolved: boolean;
-  /** Whether a delimiter word has a `$'…'` part bash and zsh read
-   *  differently, so the shells may end the body at different lines. */
+  /** Whether a delimiter word is shell-dependent (see
+   *  `DelimiterWord.shellDependent`). */
   delimiterShellDependent: boolean;
   /** Command with heredoc bodies replaced by placeholder tokens. */
   sanitizedCommand: string;
