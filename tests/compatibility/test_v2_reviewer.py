@@ -55,6 +55,16 @@ for line in sys.stdin:
 """
 
 
+def wait_for_start(host, starts, message):
+    """The start lines once one is complete: the fixture creates the file before its line reaches it."""
+    deadline = time.monotonic() + 10
+    while not (starts.exists() and starts.read_text().endswith("\n")):
+        assert time.monotonic() < deadline, message
+        mcp_servers(host, host["project"])
+        time.sleep(0.05)
+    return starts.read_text().splitlines()
+
+
 def reviewer_provider(model_server):
     return {
         "providers": {
@@ -393,12 +403,7 @@ def test_v2_reuses_mcp_free_reviewer_location(launch_host, activate_host, model_
     )
     activate_host(host, "v2")
 
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline and not starts.exists():
-        mcp_servers(host, host["project"])
-        time.sleep(0.05)
-    assert starts.exists(), "Operational MCP did not start"
-    assert len(starts.read_text().splitlines()) == 1
+    assert len(wait_for_start(host, starts, "Operational MCP did not start")) == 1
 
     def review(index):
         session = request(
@@ -519,12 +524,7 @@ def test_v2_strips_plugin_added_mcp_from_reviewer_location(
     )
     activate_host(host, "v2")
 
-    deadline = time.monotonic() + 10
-    while time.monotonic() < deadline and not starts.exists():
-        mcp_servers(host, host["project"])
-        time.sleep(0.05)
-    assert starts.exists(), "Plugin-added operational MCP did not start"
-    assert len(starts.read_text().splitlines()) == 1
+    assert len(wait_for_start(host, starts, "Plugin-added operational MCP did not start")) == 1
 
     reviewer_ids = []
     reviewer_directories = []
