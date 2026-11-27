@@ -251,9 +251,9 @@ Linux x64 host binaries only, so this recipe runs on Linux x64:
 
 ```bash
 HOST_GENERATION=v1 bun tests/compatibility/install-hosts.ts
-# Note the printed OPENCODE_V1_1_18_31 path, then serve with a known password:
+# Note the printed OPENCODE_V1_1_18_35 path, then serve with a known password:
 OPENCODE_SERVER_PASSWORD=synthetic-local-host-password \
-  "$OPENCODE_V1_1_18_31" serve --hostname 127.0.0.1 --port 41973 &
+  "$OPENCODE_V1_1_18_35" serve --hostname 127.0.0.1 --port 41973 &
 REVIEWER_LIVE_PASSWORD=synthetic-local-host-password \
   bun run tests/live-harness.ts http://127.0.0.1:41973 --smoke
 ```
@@ -270,7 +270,7 @@ synthetic MCP tool, and a local deterministic provider. It checks the actual pro
 after host filtering, plus the regression cases, without paid inference. It complements the live
 model smoke.
 
-It resolves the server binary from `OPENCODE_V1_1_18_32` (printed by the installer above) and
+It resolves the server binary from `OPENCODE_V1_1_18_35` (printed by the installer above) and
 falls back to `opencode` on `PATH`. It authenticates with `REVIEWER_LIVE_PASSWORD` (default
 `synthetic-local-host-password`), so no manual `serve` is needed.
 

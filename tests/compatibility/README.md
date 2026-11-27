@@ -5,15 +5,10 @@ and set these executable paths:
 
 ```bash
 export OPENCODE_V1_1_18_29=/absolute/path/to/opencode-1.18.29
-export OPENCODE_V1_1_18_30=/absolute/path/to/opencode-1.18.30
-export OPENCODE_V1_1_18_31=/absolute/path/to/opencode-1.18.31
-export OPENCODE_V1_1_18_32=/absolute/path/to/opencode-1.18.32
 export OPENCODE_V1_1_18_35=/absolute/path/to/opencode-1.18.35
 export OPENCODE_V1_1_19_6=/absolute/path/to/opencode-1.19.6
 export OPENCODE_V2_2_0_22=/absolute/path/to/opencode-2.0.22
 export OPENCODE_V2_2_0_26=/absolute/path/to/opencode-2.0.26
-export OPENCODE_V2_2_1_2=/absolute/path/to/opencode-2.1.2
-export OPENCODE_V2_2_2_0=/absolute/path/to/opencode-2.2.0
 export OPENCODE_V2_2_2_5=/absolute/path/to/opencode-2.2.5
 export OPENCODE_V2_2_4_2=/absolute/path/to/opencode-2.4.2
 uv run pytest tests/compatibility -q
@@ -25,8 +20,8 @@ print the required variables. They never replace an existing installation or
 edit shell aliases. CI receives these paths through `GITHUB_ENV`.
 
 The V2 server and TUI compile against the minimum supported plugin SDK while
-the real-host matrix exercises the minimum, reference, and recently verified
-host binaries.
+the real-host matrix exercises the minimum, reference, and latest host
+binaries. V2 also keeps 2.2.5, the one pinned host on OpenTUI 0.8.
 
 To verify every pinned stable V2 release locally without making CI install the
 full compatibility window, run the sequential window harness. It installs one
@@ -38,8 +33,9 @@ PYTHON="$PWD/.venv/bin/python" \
   bun tests/compatibility/verify-v2-window.ts
 ```
 
-The default command and CI cover the minimum, reference, and recently verified
-V2 hosts. The optional window verifies the intermediate releases on demand.
+The default command and CI cover the minimum, reference, 2.2.5 and latest V2
+hosts. The optional window adds the intermediate releases 2.1.2 and 2.2.0 on
+demand. V1 has no optional window.
 
 `tests/live-v2-smoke.ts` is the paid-provider smoke for a fresh V2 host. Its
 fixture uses a placeholder plugin path that must point at the checkout before
