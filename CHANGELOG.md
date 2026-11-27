@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `@opentui/solid` 0.9.9 peers. Installs that pin `@opentui/*` themselves, or that run the plugin
   beside another that expects OpenTUI 0.8, must move with it to keep a single Solid runtime. The
   supported host ranges and the minimum Bun (1.3.14) are unchanged.
+- The real-host matrix adds OpenCode 1.19.6 and 2.4.2, the latest V1 and V2 releases. 1.19.6 is
+  the first verified host on the 1.19 line.
 
 ### Security
 
