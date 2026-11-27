@@ -15,9 +15,9 @@ and fixes for common problems.
 | TUI overlay           | OpenCode V1 and V2 | Separate host adapters, shared raw TSX presentation               |
 | OS                    | Linux, macOS arm64 | CI on Linux; macOS checked on real hosts locally; others untested |
 
-The real-host matrix in CI runs the minimum, the reference and the latest release of each line:
-V1 1.18.29, 1.18.35 and 1.19.6, and V2 2.0.22, 2.0.26 and 2.4.2. V2 also runs 2.2.5, the pinned
-host on OpenTUI 0.8. The pinned versions and their package integrities are in
+The real-host matrix in CI runs the minimum and the latest release of each line: V1 1.18.29 and
+1.19.6, and V2 2.0.22 and 2.4.2. V2 also runs 2.2.5, the pinned host on OpenTUI 0.8. The pinned
+versions and their package integrities are in
 [`tests/compatibility/host-contracts.json`](../tests/compatibility/host-contracts.json).
 
 Run `opencode-permission-reviewer doctor` to compare the installed versions against these

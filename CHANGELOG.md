@@ -16,10 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   supported host ranges and the minimum Bun (1.3.14) are unchanged.
 - The real-host matrix adds OpenCode 1.19.6 and 2.4.2, the latest V1 and V2 releases. 1.19.6 is
   the first verified host on the 1.19 line.
-- The real-host matrix in CI now runs the minimum, the reference and the latest release of each
-  line, plus V2 2.2.5 for OpenTUI 0.8. V1 1.18.30 through 1.18.32 leave the matrix. V2 2.1.2 and
-  2.2.0 move to the on-demand window (`tests/compatibility/verify-v2-window.ts`). The supported
-  ranges are unchanged.
+- The real-host matrix in CI now runs the minimum and the latest release of each line, plus V2
+  2.2.5 for OpenTUI 0.8. V1 1.18.30 through 1.18.32 and 1.18.35 leave the matrix. V2 2.0.26, 2.1.2
+  and 2.2.0 move to the on-demand window (`tests/compatibility/verify-v2-window.ts`). The verified
+  references are now 1.19.6 and 2.4.2. The supported ranges are unchanged.
 - Bumped the runtime dependency `@opencode/client` and the dev dependency `@opencode/plugin` to
   2.4.2, with `bun.lock` synchronized.
 - The OpenRouter decision model list adds `baseten/bison-1`, `baseten/groundhog-1`, `liquid/d1.2`,

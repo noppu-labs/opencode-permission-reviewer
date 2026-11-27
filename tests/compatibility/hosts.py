@@ -3,11 +3,9 @@
 import os
 import subprocess
 
-V1_VERSIONS = [os.environ["V1_HOST_VERSION"]] if os.environ.get("V1_HOST_VERSION") else ["1.18.29", "1.18.35", "1.19.6"]
+V1_VERSIONS = [os.environ["V1_HOST_VERSION"]] if os.environ.get("V1_HOST_VERSION") else ["1.18.29", "1.19.6"]
 
-V2_VERSIONS = (
-    [os.environ["V2_HOST_VERSION"]] if os.environ.get("V2_HOST_VERSION") else ["2.0.22", "2.0.26", "2.2.5", "2.4.2"]
-)
+V2_VERSIONS = [os.environ["V2_HOST_VERSION"]] if os.environ.get("V2_HOST_VERSION") else ["2.0.22", "2.2.5", "2.4.2"]
 
 SYNTHETIC_PASSWORD = "synthetic-local-host-password"  # nosec B105 # synthetic test password
 
