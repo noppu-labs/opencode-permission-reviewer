@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Breaking:** the TUI runtime dependencies move from OpenTUI 0.8 to 0.9. `@opentui/core` and
+  `@opentui/solid` are pinned at 0.9.9. `solid-js` stays at 1.9.18, inside the `^1.9.12` that
+  `@opentui/solid` 0.9.9 peers. Installs that pin `@opentui/*` themselves, or that run the plugin
+  beside another that expects OpenTUI 0.8, must move with it to keep a single Solid runtime. The
+  supported host ranges and the minimum Bun (1.3.14) are unchanged.
+
+### Security
+
+- Consumer installs no longer carry `glob` 9.3.5 and `minimatch` 8.0.7, which had the moderate
+  GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249. They came in through `@opentui/solid`'s
+  `babel-plugin-module-resolver`, which `@opentui/solid` dropped in 0.9.8. `npm audit` over a
+  consumer install of the tarball reports no advisory. The root `overrides` stay for the dev
+  dependency `@opencode/plugin`
+  ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure),
+  [#128](https://github.com/noppu-labs/opencode-permission-reviewer/issues/128)).
+
 ## [3.6.0] - 2026-11-19
 
 ### Changed

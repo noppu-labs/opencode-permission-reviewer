@@ -230,12 +230,13 @@ The `audit` script ignores two advisories by ID, so the hook still fails on anyt
 Two root `overrides` exist only to keep the audit passing:
 
 - `glob` 14.0.3 and `minimatch` 11.0.4: GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249 are fixed only
-  in those majors, and `@opencode/util` and `@opentui/solid`'s `babel-plugin-module-resolver`
-  still pin older ones. Issue #128 tracks removing the overrides once upstream allows the fixed
+  in those majors, and `@opencode/util`, which the dev dependency `@opencode/plugin` brings in,
+  still pins older ones. Issue #128 tracks removing the overrides once upstream allows the fixed
   versions.
 
-Overrides apply to this repository's tree only, so the consumer install keeps these advisories as
-documented residual exposure ([Supply chain](SUPPLY-CHAIN.md#known-residual-exposure)).
+Overrides apply to this repository's tree only. A consumer install doesn't pull in
+`@opencode/plugin`, so neither package reaches it
+([Supply chain](SUPPLY-CHAIN.md#known-residual-exposure)).
 
 `bun audit` needs network access. As a hook it runs only when `bun.lock` or `package.json`
 changes, but `pre-commit run --all-files` (and so `bun run check` and the CI `quality` job) always

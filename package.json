@@ -143,8 +143,8 @@
     "@opencode/client": "2.4.2",
     "jsonc-parser": "3.3.1",
     "semver": "7.8.6",
-    "@opentui/core": "0.8.2",
-    "@opentui/solid": "0.8.2",
+    "@opentui/core": "0.9.9",
+    "@opentui/solid": "0.9.9",
     "solid-js": "1.9.18",
     "zod": "4.6.7"
   }
