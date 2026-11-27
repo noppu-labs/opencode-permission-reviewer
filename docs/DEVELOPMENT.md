@@ -259,8 +259,8 @@ against `develop`, which go through the same CI and review as any other change:
   commit SHA, and Dependabot moves the SHA and its version comment.
 
 Dependabot security updates are also on. Dependabot only moves the versions of existing
-dependencies. Adding one is a contributor's change, and the package smoke test fails until its allowlist is updated
-([Supply chain](SUPPLY-CHAIN.md#frozen-runtime-dependencies)).
+dependencies. Adding one is a contributor's change, and the package smoke test fails until its
+allowlist is updated ([Supply chain](SUPPLY-CHAIN.md#frozen-runtime-dependencies)).
 
 ## Live testing
 
@@ -348,7 +348,7 @@ that file changes, the job force-pushes `chore/openrouter-models` and opens or u
 request against `develop`.
 
 - A pull request opened with `GITHUB_TOKEN` does not start CI by itself. So far every CI run on
-  this branch was started by hand: close and reopen the pull request, or push an empty commit
+  `chore/openrouter-models` was started by hand: close and reopen the pull request, or push an empty commit
   from a personal account. GitHub's documentation now says such a pull request gets runs waiting
   for approval ("Approve workflows to run" in the merge box); if they appear, approving them works
   too. Each weekly refresh of an open pull request force-pushes the branch, so CI needs the same
@@ -469,7 +469,7 @@ The workflow cannot protect itself, so three repository rulesets do, read from
   and the last push must be approved by someone other than the person who pushed it. Review
   threads need not be resolved. Only the merge-commit and squash methods are allowed; rebase
   merges are not.
-- Copilot reviews each new push to a pull request, but not drafts.
+- The rulesets request a Copilot review of each new push to a pull request, except drafts.
 - The `ci` check, reported by GitHub Actions, must pass, and the branch must be up to date with
   its base before merging.
 

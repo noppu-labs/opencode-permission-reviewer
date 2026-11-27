@@ -15,8 +15,8 @@ the invariants, [Safety](SAFETY.md).
 | Primary agent | The agent whose tool call needs permission | Never talks to the plugin. It gets the host's normal tool result on approval and a short reason on denial ([Reply](HOW-IT-WORKS.md#6-reply)) |
 | Plugin server part | `dist/index.js`, loaded into the OpenCode server process | Runs the brake, gathers evidence, calls the reviewer, enforces the invariants, replies, writes the audit log |
 | Reviewer: OpenCode model | A model configured in OpenCode, in an auxiliary session | Runs in an isolated location with every operational tool denied ([Reviewer backend](HOW-IT-WORKS.md#4-reviewer-backend)). Provider credentials stay inside OpenCode. |
-| Reviewer: System One provider | A decision model served over HTTPS (OpenCode Zen, TypeSafe, Command Code, Liquid AI, Baseten, OpenRouter) | One typed request per review, with the provider's API key from the server's environment ([Network endpoints](#network-endpoints)) |
-| TUI part | `dist/tui/tui.tsx`, loaded into the OpenCode TUI process | Shows review progress and results. On V2 it reads them over the RPC protocol; it has no way to approve anything ([TUI guide](TUI.md)) |
+| Reviewer: System One provider | A decision model served over HTTPS (OpenCode Zen, TypeSafe, Command Code, Liquid AI, Baseten, OpenRouter); `TYPESAFE_BASE_URL` can point the TypeSafe one elsewhere | One typed request per review, with the provider's API key from the server's environment ([Network endpoints](#network-endpoints)) |
+| TUI part | `dist/tui/tui.tsx`, loaded into the OpenCode TUI process | Shows review progress and results. On V2 it reads them over the RPC protocol; on V1 the server publishes them through the host's `/tui/publish` route. It has no way to approve anything ([TUI guide](TUI.md)) |
 | CLI | The `opencode-permission-reviewer` command | Run by the user; see [CLI](#cli) |
 | Audit log | A JSONL file | The server part appends one record per review ([Audit log](CONFIGURATION.md#audit-log)) |
 | Configuration files | The reviewer's own JSONC files and OpenCode's config files | Read at startup; `init` writes OpenCode's ([Configuration files](#configuration-files)) |
@@ -36,7 +36,7 @@ the invariants, [Safety](SAFETY.md).
 | Create the isolated reviewer location | Server part | [Files the plugin writes](#files-the-plugin-writes) |
 | Call a System One provider | Server part | [Network endpoints](#network-endpoints) |
 | Append an audit record | Server part | [Audit log](CONFIGURATION.md#audit-log) |
-| Publish review status | Server part (V2 RPC), read by the TUI part | [RPC protocol](#rpc-protocol) |
+| Publish review status | Server part (V2 RPC, V1 `/tui/publish`), read by the TUI part | [RPC protocol](#rpc-protocol), [Network endpoints](#network-endpoints) |
 
 ### From the command line
 
@@ -229,10 +229,11 @@ plugin removes them after the review ([Structured output, retention, and budget]
 
 ### Network endpoints
 
-The plugin calls these and no other endpoint named in its code:
+The plugin's code names these endpoints and no others:
 
 | Endpoint | When | What goes in and out |
 | --- | --- | --- |
+| The OpenCode V1 server the plugin runs in, through the SDK client the host passes it | Every review on V1 | The reply (`POST /permission/{requestID}/reply` with `once` or `reject` and an optional message), each review status as a `tui.command.execute` event on `/tui/publish`, and the reviewer session calls |
 | The System One provider of the configured model: `https://opencode.ai/zen` (`opencode/…`), `TYPESAFE_BASE_URL` or `https://api.typesafe.ai` (`typesafe-ai/…`), `https://api.commandcode.ai/provider` (`commandcode/…`), `https://api.liquid.ai/decisions` (`liquid-ai/…`), `https://inference.baseten.co` (`baseten/…`), `https://openrouter.ai/api` (`openrouter/…`) | Each review with a System One model | A `POST /v1/systemone` through the TypeSafe SDK with the API key, the reviewer policy and the tenant `policy` (redacted), the rendered evidence (redacted as described in [Evidence](HOW-IT-WORKS.md#3-evidence)) and fixed questions; a decision comes back. Bounded by `timeoutMs`, retried at most twice on HTTP 503. |
 | The OpenCode server named by `OPENCODE_PERMISSION_REVIEWER_HOST_URL` | V2, when the variable is set | The `identity` RPC call, then the reviewer sessions |
 | The OpenCode server given to `doctor --endpoint` | That command | One `status` RPC call |
@@ -255,6 +256,6 @@ event can approve, deny or change a review.
 | `review.updated` | event | `generation`, `revision`, `directory` and one review `status` |
 
 Review statuses are encoded by `src/modules/status/models/ui-protocol.ts`. The server keeps at
-most 256 of them and drops the oldest finished one past that. Publishing an event is not awaited past one
-second and a failed publication is ignored, so the TUI can miss an update until it reconnects
-and reads a new snapshot.
+most 256 of them and drops the oldest finished one past that. Publishing an event is not awaited
+past one second and a failed publication is ignored, so the TUI can miss an update until it
+reconnects and reads a new snapshot.

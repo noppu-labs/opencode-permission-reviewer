@@ -14,7 +14,7 @@ organization on GitHub (`noppu-labs`).
 | --- | --- | --- |
 | Maintainer | `@cris005` | Reviewing and merging pull requests, code owner of every path (`.github/CODEOWNERS`), promoting `develop` to `main` (which releases), answering security reports, repository and organization administration |
 | Contributor | Anyone with a GitHub account | Opening issues and pull requests against `develop`, following [CONTRIBUTING](CONTRIBUTING.md) |
-| Automation | Dependabot, the `openrouter-models` workflow, Copilot code review | Proposing dependency and model-list updates as pull requests, and reviewing pull requests. No ruleset lets them bypass, so their pull requests need the maintainer's approval like an outside contribution. |
+| Automation | Dependabot, the `openrouter-models` workflow, Copilot code review | Proposing dependency and model-list updates as pull requests; the rulesets request a Copilot review on each push. No ruleset lets them bypass, so their pull requests need the maintainer's approval like an outside contribution. |
 
 There is no written process for adding maintainers and no decision process beyond the
 maintainer's review of each pull request. With one maintainer, the maintainer's own pull requests
