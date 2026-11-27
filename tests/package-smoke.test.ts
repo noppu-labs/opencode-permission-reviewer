@@ -563,8 +563,7 @@ describe("npm install dedupe shape", () => {
 
     // npm audit over the CONSUMER tree (registry reachability required; the
     // repository's own overrides never apply here). No high or critical
-    // advisories. The moderate glob and minimatch residuals documented in
-    // docs/SUPPLY-CHAIN.md stay below this gate.
+    // advisories.
     const audit = Bun.spawnSync({
       cmd: ["npm", "audit", "--prefix", installDir, "--json"],
       cwd: installDir,

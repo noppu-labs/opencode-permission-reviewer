@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-11-27
+
+### Changed
+
+- **Breaking:** the TUI runtime dependencies move from OpenTUI 0.8 to 0.9. `@opentui/core` and
+  `@opentui/solid` are pinned at 0.9.9. `solid-js` stays at 1.9.18, inside the `^1.9.12` that
+  `@opentui/solid` 0.9.9 peers. Installs that pin `@opentui/*` themselves, or that run the plugin
+  beside another that expects OpenTUI 0.8, must move with it to keep a single Solid runtime. The
+  supported host ranges and the minimum Bun (1.3.14) are unchanged.
+- The real-host matrix adds OpenCode 1.19.6 and 2.4.2, the latest V1 and V2 releases. 1.19.6 is
+  the first verified host on the 1.19 line.
+- The real-host matrix in CI now runs the minimum and the latest release of each line, plus V2
+  2.2.5 for OpenTUI 0.8. V1 1.18.30 through 1.18.32 and 1.18.35 leave the matrix. V2 2.0.26, 2.1.2
+  and 2.2.0 move to the on-demand window (`tests/compatibility/verify-v2-window.ts`). The verified
+  references are now 1.19.6 and 2.4.2. The supported ranges are unchanged.
+- Bumped the runtime dependency `@opencode/client` and the dev dependency `@opencode/plugin` to
+  2.4.2, with `bun.lock` synchronized.
+- The OpenRouter decision model list adds `baseten/bison-1`, `baseten/groundhog-1`, `liquid/d1.2`,
+  `liquid/d1.2-ultra` and `microsoft/microsoft-decision-1.1`, and drops `liquid/d1`. The new
+  models are unbenchmarked, so selecting one raises a config notice
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
+
+### Security
+
+- Consumer installs no longer carry `glob` 9.3.5 and `minimatch` 8.0.7, which had the moderate
+  GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249. They came in through `@opentui/solid`'s
+  `babel-plugin-module-resolver`, which `@opentui/solid` dropped in 0.9.8. `npm audit` over a
+  consumer install of the tarball reports no advisory. The root `overrides` stay for the dev
+  dependency `@opencode/plugin`
+  ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure),
+  [#128](https://github.com/noppu-labs/opencode-permission-reviewer/issues/128)).
+- The audit no longer ignores GHSA-fc5q-39xc-vjpf (`picomatch`), which GitHub withdrew
+  ([#154](https://github.com/noppu-labs/opencode-permission-reviewer/issues/154)).
+
 ## [3.6.0] - 2026-11-19
 
 ### Changed

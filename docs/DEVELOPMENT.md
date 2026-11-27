@@ -214,28 +214,24 @@ the finding, or suppress it on the line with a reason.
 
 ### Audit advisories
 
-The `audit` script ignores two advisories by ID, so the hook still fails on anything new:
+The `audit` script ignores one advisory by ID, so the hook still fails on anything new:
 
 - `GHSA-chp3-j5qr-2vfr` (moderate): cookie attribute injection in `effect` before 4.0.0-beta.103.
   The dev dependency `@opencode-ai/plugin` pins `effect` 4.0.0-beta.83 exactly, up to its latest
-  release (1.19.5), and an override would fork the runtime the V1 host shares
+  release (1.19.6), and an override would fork the runtime the V1 host shares
   ([Supply chain](SUPPLY-CHAIN.md#the-effect-runtime)). Remove the ignore once
   `@opencode-ai/plugin` ships a fixed `effect`.
-- `GHSA-fc5q-39xc-vjpf` (high): regular expression denial of service in `picomatch` through 4.0.7
-  on crafted extglob patterns. 4.0.7 is the latest release and no patched version exists, so an
-  override has nothing to point at. `picomatch` comes in only through the dev dependencies `knip`,
-  `tsdown` and `@opencode/plugin`, and nothing under `src/` imports it. Issue #154 tracks removing
-  the ignore once `picomatch` ships a fixed release.
 
 Two root `overrides` exist only to keep the audit passing:
 
 - `glob` 14.0.3 and `minimatch` 11.0.4: GHSA-3g3m-2fjr-6pw4 and GHSA-g3hv-75wg-m249 are fixed only
-  in those majors, and `@opencode/util` and `@opentui/solid`'s `babel-plugin-module-resolver`
-  still pin older ones. Issue #128 tracks removing the overrides once upstream allows the fixed
+  in those majors, and `@opencode/util`, which the dev dependency `@opencode/plugin` brings in,
+  still pins older ones. Issue #128 tracks removing the overrides once upstream allows the fixed
   versions.
 
-Overrides apply to this repository's tree only, so the consumer install keeps these advisories as
-documented residual exposure ([Supply chain](SUPPLY-CHAIN.md#known-residual-exposure)).
+Overrides apply to this repository's tree only. A consumer install doesn't pull in
+`@opencode/plugin`, so neither package reaches it
+([Supply chain](SUPPLY-CHAIN.md#known-residual-exposure)).
 
 `bun audit` needs network access. As a hook it runs only when `bun.lock` or `package.json`
 changes, but `pre-commit run --all-files` (and so `bun run check` and the CI `quality` job) always
@@ -255,9 +251,9 @@ Linux x64 host binaries only, so this recipe runs on Linux x64:
 
 ```bash
 HOST_GENERATION=v1 bun tests/compatibility/install-hosts.ts
-# Note the printed OPENCODE_V1_1_18_31 path, then serve with a known password:
+# Note the printed OPENCODE_V1_1_19_6 path, then serve with a known password:
 OPENCODE_SERVER_PASSWORD=synthetic-local-host-password \
-  "$OPENCODE_V1_1_18_31" serve --hostname 127.0.0.1 --port 41973 &
+  "$OPENCODE_V1_1_19_6" serve --hostname 127.0.0.1 --port 41973 &
 REVIEWER_LIVE_PASSWORD=synthetic-local-host-password \
   bun run tests/live-harness.ts http://127.0.0.1:41973 --smoke
 ```
@@ -274,7 +270,7 @@ synthetic MCP tool, and a local deterministic provider. It checks the actual pro
 after host filtering, plus the regression cases, without paid inference. It complements the live
 model smoke.
 
-It resolves the server binary from `OPENCODE_V1_1_18_32` (printed by the installer above) and
+It resolves the server binary from `OPENCODE_V1_1_19_6` (printed by the installer above) and
 falls back to `opencode` on `PATH`. It authenticates with `REVIEWER_LIVE_PASSWORD` (default
 `synthetic-local-host-password`), so no manual `serve` is needed.
 

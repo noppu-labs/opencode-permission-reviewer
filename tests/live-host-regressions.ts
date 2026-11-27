@@ -137,7 +137,7 @@ portReservation.stop(true);
 // Resolve the host the same way the compatibility matrix does: a pinned
 // opencode-ai binary, falling back to PATH. The
 // desktop runtime on PATH serves only the web SPA and cannot run this file.
-const hostBinary: string = process.env.OPENCODE_V1_1_18_32 ?? "opencode";
+const hostBinary: string = process.env.OPENCODE_V1_1_19_6 ?? "opencode";
 // The pinned host honors a known server password; the client sends it back as
 // Basic auth on every request, including the readiness poll below.
 const hostPassword: string =

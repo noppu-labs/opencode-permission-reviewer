@@ -50,15 +50,14 @@ are tests against the installed tree itself.
 
 ## Known residual exposure
 
-These advisories remain unfixed in the consumer install tree.
+`npm audit` over a consumer install of the tarball reports no advisory.
 
-`@opentui/solid` pins `babel-plugin-module-resolver` 5.0.2 exactly, which brings `glob` 9.3.5 and
-`minimatch` 8.0.7 into the consumer tree. They carry the moderate GHSA-3g3m-2fjr-6pw4 (AbortSignal
-cancellation bypass, fixed in `glob` 14.0.2) and GHSA-g3hv-75wg-m249 (pattern-expansion denial of
-service, fixed in `minimatch` 11.0.1). Neither fix exists for an older major. The resolver calls
-`glob` only to expand a `root` option, and `@opentui/solid` passes none, so this package never
-reaches the vulnerable code. The root `overrides` that keep `bun audit` clean in this repository
-don't follow the tarball. Issue #128 tracks removing them once upstream moves.
+Through 3.6.0, `@opentui/solid` brought `glob` 9.3.5 and `minimatch` 8.0.7 into the consumer tree
+by way of `babel-plugin-module-resolver`, with the moderate GHSA-3g3m-2fjr-6pw4 and
+GHSA-g3hv-75wg-m249. `@opentui/solid` dropped that dependency in 0.9.8, and neither package
+reaches a consumer install now. The root `overrides` for `glob` and `minimatch` remain for the dev
+dependency `@opencode/plugin`, which a consumer install doesn't pull in. Issue #128 tracks
+removing them.
 
 The build toolchain (tsdown, Rolldown and its native bindings) is a dev dependency and is never
 shipped. The consumer surveillance test also asserts that no `esbuild` reaches a consumer tree.

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { execFile } from "node:child_process";
+import { execFile, spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -47,6 +47,73 @@ afterEach(async () => {
 
 function digest(content: string): string {
   return createHash("sha256").update(content).digest("hex");
+}
+
+/** The `ps` rows of `root` and its descendants, and their pids. */
+function processTree(root: number): { pids: number[]; listing: string } {
+  const ps = spawnSync("ps", ["-A", "-o", "pid=,ppid=,stat=,etime=,args="], {
+    encoding: "utf8",
+  });
+  const rows = (ps.stdout ?? "")
+    .split("\n")
+    .map((line) => line.trim().split(/\s+/))
+    .filter((fields) => fields.length >= 2)
+    .map((fields) => ({
+      pid: Number(fields[0]),
+      ppid: Number(fields[1]),
+      line: fields.join(" "),
+    }));
+  const pids = [root];
+  for (let index = 0; index < pids.length; index += 1)
+    for (const row of rows)
+      if (row.ppid === pids[index] && !pids.includes(row.pid))
+        pids.push(row.pid);
+  const listing = rows
+    .filter((row) => pids.includes(row.pid))
+    .map((row) => row.line)
+    .join("\n");
+  return { pids, listing };
+}
+
+/** Run `command` under sh with no stdin and resolve its exit status. It waits
+ *  for sh to exit rather than for its pipes to close, and a run that outlives
+ *  `deadlineMs` fails with the process table, so a hang names what was stuck
+ *  instead of timing the test out. */
+async function runShell(
+  command: string,
+  label: string,
+  deadlineMs = 3000,
+): Promise<number> {
+  const started = performance.now();
+  const child = spawn("sh", ["-c", command], {
+    stdio: ["ignore", "ignore", "pipe"],
+  });
+  let stderr = "";
+  child.stderr.on("data", (chunk: Buffer) => {
+    stderr += chunk.toString();
+  });
+  const exited = new Promise<number>((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code) => resolve(code ?? -1));
+  });
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const deadline = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      const tree = processTree(child.pid ?? -1);
+      for (const pid of tree.pids) process.kill(pid, "SIGKILL");
+      reject(
+        new Error(
+          `${label}: sh (pid ${child.pid}) still running after ${Math.round(performance.now() - started)} ms\n` +
+            `stderr: ${stderr}\n${tree.listing}`,
+        ),
+      );
+    }, deadlineMs);
+  });
+  try {
+    return await Promise.race([exited, deadline]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 describe("verified SSH script protocol", () => {
@@ -231,33 +298,24 @@ describe("verified SSH script protocol", () => {
     const path = join(directory, "deploy.sh");
     const blockedMarker = join(directory, "blocked");
     const approvedMarker = join(directory, "executed");
+    const sshMarker = join(directory, "ssh-ran");
     const original = `printf done > ${approvedMarker}\n`;
     await writeFile(path, original);
-    const fakeSsh = join(directory, "ssh");
-    await writeFile(
-      fakeSsh,
-      '#!/bin/sh\nfor arg do remote=$arg; done\nexec sh -c "$remote"\n',
-      {
-        mode: 0o700,
-      },
-    );
     const command = renderVerifiedSshScriptCommand({
       path,
       destination: "host.invalid",
       sha256: digest(original),
       shell: "bash",
     });
-    const env = {
-      ...process.env,
-      PATH: `${directory}:${process.env.PATH ?? ""}`,
-    };
+    // A shell function stands in for ssh, so nothing freshly written is
+    // executed and no PATH lookup can reach a real ssh.
+    const fakeSsh = `ssh() { : > ${sshMarker}; for arg do remote=$arg; done; sh -c "$remote"; }; `;
     await writeFile(path, `printf changed > ${blockedMarker}\n`);
-    await expect(
-      execFileAsync("sh", ["-c", command], { env }),
-    ).rejects.toThrow();
+    expect(await runShell(fakeSsh + command, "changed script")).toBe(1);
+    await stat(sshMarker);
     await expect(stat(blockedMarker)).rejects.toThrow();
     await writeFile(path, original);
-    await execFileAsync("sh", ["-c", command], { env });
+    expect(await runShell(fakeSsh + command, "original script")).toBe(0);
     expect(await readFile(approvedMarker, "utf8")).toBe("done");
   });
 

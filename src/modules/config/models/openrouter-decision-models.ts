@@ -7,7 +7,9 @@ export interface OpenRouterDecisionModels {
 // biome-ignore lint/nursery/useExplicitType: `as const satisfies` keeps the literal ids; an annotation would widen them
 export const OPENROUTER_DECISION_MODELS = {
   models: {
+    "baseten/bison-1": { benchmarked: false },
     "baseten/elephant-1": { benchmarked: false },
+    "baseten/groundhog-1": { benchmarked: false },
     "baseten/joey-1": { benchmarked: false },
     "baseten/mammoth-1": { benchmarked: false },
     "cloudflare/clairic": { benchmarked: false },
@@ -18,10 +20,12 @@ export const OPENROUTER_DECISION_MODELS = {
     "heygen/heygen-decision-1": { benchmarked: false },
     "heygen/heygen-decision-1-turbo": { benchmarked: false },
     "jaredpalmer/kev-4b": { benchmarked: false },
-    "liquid/d1": { benchmarked: true },
     "liquid/d1-ultra": { benchmarked: true },
     "liquid/d1.1": { benchmarked: false },
+    "liquid/d1.2": { benchmarked: false },
+    "liquid/d1.2-ultra": { benchmarked: false },
     "microsoft/microsoft-decision-1": { benchmarked: false },
+    "microsoft/microsoft-decision-1.1": { benchmarked: false },
     "morph/reflex": { benchmarked: false },
     "nace-ai/drex-max": { benchmarked: false },
     "nace-ai/drex-max-finance": { benchmarked: false },
