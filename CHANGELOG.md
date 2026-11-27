@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dependency `@opencode/plugin`
   ([Supply chain](docs/SUPPLY-CHAIN.md#known-residual-exposure),
   [#128](https://github.com/noppu-labs/opencode-permission-reviewer/issues/128)).
+- The audit no longer ignores GHSA-fc5q-39xc-vjpf (`picomatch`), which GitHub withdrew
+  ([#154](https://github.com/noppu-labs/opencode-permission-reviewer/issues/154)).
 
 ## [3.6.0] - 2026-11-19
 

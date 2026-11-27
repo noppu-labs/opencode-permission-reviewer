@@ -214,18 +214,13 @@ the finding, or suppress it on the line with a reason.
 
 ### Audit advisories
 
-The `audit` script ignores two advisories by ID, so the hook still fails on anything new:
+The `audit` script ignores one advisory by ID, so the hook still fails on anything new:
 
 - `GHSA-chp3-j5qr-2vfr` (moderate): cookie attribute injection in `effect` before 4.0.0-beta.103.
   The dev dependency `@opencode-ai/plugin` pins `effect` 4.0.0-beta.83 exactly, up to its latest
-  release (1.19.5), and an override would fork the runtime the V1 host shares
+  release (1.19.6), and an override would fork the runtime the V1 host shares
   ([Supply chain](SUPPLY-CHAIN.md#the-effect-runtime)). Remove the ignore once
   `@opencode-ai/plugin` ships a fixed `effect`.
-- `GHSA-fc5q-39xc-vjpf` (high): regular expression denial of service in `picomatch` through 4.0.7
-  on crafted extglob patterns. 4.0.7 is the latest release and no patched version exists, so an
-  override has nothing to point at. `picomatch` comes in only through the dev dependencies `knip`,
-  `tsdown` and `@opencode/plugin`, and nothing under `src/` imports it. Issue #154 tracks removing
-  the ignore once `picomatch` ships a fixed release.
 
 Two root `overrides` exist only to keep the audit passing:
 
