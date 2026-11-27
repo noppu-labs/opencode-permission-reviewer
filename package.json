@@ -129,7 +129,7 @@
     "typecheck": "tsc --noEmit",
     "fta": "fta .",
     "knip": "knip",
-    "audit": "bun audit --ignore GHSA-chp3-j5qr-2vfr --ignore GHSA-fc5q-39xc-vjpf",
+    "audit": "bun audit --ignore GHSA-chp3-j5qr-2vfr",
     "build": "rm -rf dist && tsdown && bun scripts/copy-tui.ts",
     "test": "bun test",
     "test:stress": "bun test tests/stress.test.ts --timeout 30000",
@@ -143,8 +143,8 @@
     "@opencode/client": "2.4.2",
     "jsonc-parser": "3.3.1",
     "semver": "7.8.6",
-    "@opentui/core": "0.8.2",
-    "@opentui/solid": "0.8.2",
+    "@opentui/core": "0.9.9",
+    "@opentui/solid": "0.9.9",
     "solid-js": "1.9.18",
     "zod": "4.6.7"
   }

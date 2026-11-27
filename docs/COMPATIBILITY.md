@@ -7,16 +7,17 @@ and fixes for common problems.
 
 | Component             | Supported          | Notes                                                             |
 | --------------------- | ------------------ | ----------------------------------------------------------------- |
-| OpenCode V1           | `>=1.18.29 <2`     | Dual object entrypoint; verified with 1.18.35                     |
-| OpenCode V2           | `>=2.0.22 <3`      | Compatibility layer; verified with 2.0.26                         |
+| OpenCode V1           | `>=1.18.29 <2`     | Dual object entrypoint; verified up to 1.19.6                     |
+| OpenCode V2           | `>=2.0.22 <3`      | Compatibility layer; verified up to 2.4.2                         |
 | `@opencode-ai/plugin` | `>=1.18.29 <2`     | Optional V1 peer dependency                                       |
 | `@opencode/plugin`    | `>=2.0.22 <3`      | Optional V2 peer dependency                                       |
-| Bun                   | `>=1.3.14`         | Declared in `engines.bun` (OpenTUI 0.8 floor); CI runs 1.3.14     |
+| Bun                   | `>=1.3.14`         | Declared in `engines.bun` (OpenTUI 0.9 floor); CI runs 1.3.14     |
 | TUI overlay           | OpenCode V1 and V2 | Separate host adapters, shared raw TSX presentation               |
 | OS                    | Linux, macOS arm64 | CI on Linux; macOS checked on real hosts locally; others untested |
 
-The real-host matrix in CI runs V1 1.18.29 through 1.18.32 and 1.18.35, and V2 2.0.22,
-2.0.26, 2.1.2, 2.2.0 and 2.2.5. The pinned versions and their package integrities are in
+The real-host matrix in CI runs the minimum and the latest release of each line: V1 1.18.29 and
+1.19.6, and V2 2.0.22 and 2.4.2. V2 also runs 2.2.5, the pinned host on OpenTUI 0.8. The pinned
+versions and their package integrities are in
 [`tests/compatibility/host-contracts.json`](../tests/compatibility/host-contracts.json).
 
 Run `opencode-permission-reviewer doctor` to compare the installed versions against these
