@@ -16,6 +16,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   supported host ranges and the minimum Bun (1.3.14) are unchanged.
 - The real-host matrix adds OpenCode 1.19.6 and 2.4.2, the latest V1 and V2 releases. 1.19.6 is
   the first verified host on the 1.19 line.
+- Bumped the runtime dependency `@opencode/client` and the dev dependency `@opencode/plugin` to
+  2.4.2, with `bun.lock` synchronized.
+- The OpenRouter decision model list adds `baseten/bison-1`, `baseten/groundhog-1`, `liquid/d1.2`,
+  `liquid/d1.2-ultra` and `microsoft/microsoft-decision-1.1`, and drops `liquid/d1`. The new
+  models are unbenchmarked, so selecting one raises a config notice
+  ([Reviewer models](docs/REVIEWER-MODELS.md#openrouter)).
 
 ### Security
 
