@@ -114,14 +114,16 @@ the compatibility matrix, and the model benchmark.
 By opening a pull request, you state that you have the right to submit your change under this
 repository's license, as
 [section D.6 of GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#6-contributions-under-repository-license)
-provides. Changes made in this fork are licensed under the MIT License, and code from the
-upstream project stays under the Apache License 2.0 ([NOTICE](NOTICE)).
+provides. Changes made in this fork are licensed under the MIT License ([LICENSE](../LICENSE)),
+and code from the upstream project stays under the Apache License 2.0
+([LICENSES/Apache-2.0.txt](../LICENSES/Apache-2.0.txt)); [NOTICE](NOTICE) says which is which.
 
 ## Conventions
 
 - Commit messages follow the conventional-commit style in the history (`fix(v2):`, `feat:`,
   `docs:`, `ci(release):`, `chore(deps):`, ...).
 - Documentation lives in `docs/`, including this guide, the security policy and `NOTICE`. The
-  repository root keeps only README, LICENSE and CHANGELOG.
+  repository root keeps only README, LICENSE (MIT), CHANGELOG and `LICENSES/`, which holds the
+  Apache License 2.0 text as `LICENSES/Apache-2.0.txt`.
 - Report security issues as described in [SECURITY.md](SECURITY.md), not in public issues.
 - Participation is covered by the [code of conduct](CODE_OF_CONDUCT.md).

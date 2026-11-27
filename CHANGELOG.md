@@ -27,6 +27,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   updates.
 - CI and the release build install dependencies with `--ignore-scripts`, and every workflow job
   declares its own token permissions.
+- The Apache License 2.0 text moves from `docs/LICENSE-APACHE` to `LICENSES/Apache-2.0.txt`, in
+  the repository and in the npm package, so it sits in a standard license location. Its content is
+  unchanged, and `docs/NOTICE` points to the new path. Anything that reads the old path from an
+  installed package must use the new one.
 
 ## [3.7.0] - 2026-11-27
 
