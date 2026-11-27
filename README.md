@@ -6,6 +6,8 @@
 [![OpenCode](https://img.shields.io/badge/OpenCode-%E2%89%A51.18.29-6E56CF)](https://opencode.ai)
 [![Bun](https://img.shields.io/badge/Bun-%E2%89%A51.3.14-000000)](https://bun.sh)
 [![license](https://img.shields.io/badge/license-MIT%20%2B%20Apache--2.0-blue)](docs/NOTICE)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/17186/badge)](https://www.bestpractices.dev/projects/17186)
+[![OpenSSF Baseline](https://www.bestpractices.dev/projects/17186/baseline)](https://www.bestpractices.dev/projects/17186/baseline-2)
 
 ![OpenCode Permission Reviewer: an AI reviewer for every permission prompt. A request from the agent goes to the reviewer, which weighs the task, the policy and the evidence, then allows it, denies it or asks you.](https://raw.githubusercontent.com/noppu-labs/opencode-permission-reviewer/main/docs/images/social-preview.png)
 

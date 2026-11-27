@@ -23,10 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The README and the contributing guide say where bug reports and feature requests go. The guide
   adds that new functionality and bug fixes come with tests, and that a pull request is
   contributed under the repository's license (GitHub's Terms of Service, section D.6).
+- The README shows the OpenSSF Best Practices and OpenSSF Baseline badges.
 - The development guide describes the repository rulesets as they are and what Dependabot
   updates.
-- CI and the release build install dependencies with `--ignore-scripts`, and every workflow job
-  declares its own token permissions.
+- CI and the release build install dependencies with `--ignore-scripts`. The CI and CodeQL
+  workflows now set token permissions on every job, as the release and OpenRouter model workflows
+  already did. The two advisory workflows keep a single read-only token for the whole workflow.
 - The Apache License 2.0 text moves from `docs/LICENSE-APACHE` to `LICENSES/Apache-2.0.txt`, in
   the repository and in the npm package, so it sits in a standard license location. Its content is
   unchanged, and `docs/NOTICE` points to the new path. Anything that reads the old path from an
