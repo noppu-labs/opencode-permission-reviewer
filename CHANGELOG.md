@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-11-27
+
 ### Changed
 
 - **Breaking:** the TUI runtime dependencies move from OpenTUI 0.8 to 0.9. `@opentui/core` and
