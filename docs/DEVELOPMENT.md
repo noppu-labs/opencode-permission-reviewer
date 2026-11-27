@@ -129,8 +129,11 @@ pytest are in the `dev` group of `pyproject.toml`, locked in `uv.lock`. The rema
 complexipy, vulture) are pinned by `rev` in `.pre-commit-config.yaml`. The ruff `rev` must match
 the ruff version in `uv.lock`. The hooks that use the lockfile pins run through `bun run` and
 `uv run --frozen`, never `bunx`, which could fetch an unrelated package of the same name when
-`bun install` has not run. CI installs the same lockfiles with `bun install --frozen-lockfile`
-and `uv sync --locked`.
+`bun install` has not run. CI installs the same lockfiles with
+`bun install --frozen-lockfile --ignore-scripts` and `uv sync --locked`. No dependency's install
+script runs in CI or in a release build. The one dependency that has an install script today,
+`msgpackr-extract`, is on Bun's default trusted list, so the flag is what skips it; its prebuilt
+binaries come as optional platform packages, which need no script.
 
 ### FTA
 
@@ -238,6 +241,27 @@ changes, but `pre-commit run --all-files` (and so `bun run check` and the CI `qu
 runs it, so a new advisory fails the next push. The release workflow's `quality` job runs it as
 well, so any new advisory blocks a release until it is resolved.
 
+### Dependency updates
+
+Dependabot proposes the version updates (`.github/dependabot.yml`), always as pull requests
+against `develop`, which go through the same CI and review as any other change:
+
+- Bun dependencies are checked daily, at most five open pull requests at a time. Minor and patch
+  updates are grouped: OpenCode V1 packages (`@opencode-ai/*`), OpenCode V2 packages
+  (`@opencode/*`), and everything else. Packages outside OpenCode wait 7 days after a release
+  before they are proposed.
+- Major updates of the OpenCode packages are ignored, because a new major is a new host
+  generation and needs a deliberate migration. `@opentui/core`, `@opentui/solid` and `solid-js`
+  are ignored too and moved together by hand, so installs keep a single Solid runtime.
+  `@typesafe-ai/sdk` 0.7.0 is skipped (it breaks every System One call under Bun); later releases
+  are still proposed.
+- GitHub Actions are checked weekly on Mondays, in one grouped pull request. Actions are pinned by
+  commit SHA, and Dependabot moves the SHA and its version comment.
+
+Dependabot security updates are also on. Dependabot only moves the versions of existing
+dependencies. Adding one is a contributor's change, and the package smoke test fails until its allowlist is updated
+([Supply chain](SUPPLY-CHAIN.md#frozen-runtime-dependencies)).
+
 ## Live testing
 
 The live tests run against real OpenCode hosts and are not part of `bun test`.
@@ -323,10 +347,13 @@ before that, start it by hand. It runs
 that file changes, the job force-pushes `chore/openrouter-models` and opens or updates a pull
 request against `develop`.
 
-- A pull request opened with `GITHUB_TOKEN` does not start CI, and GitHub creates no run to
-  approve. Close and reopen the pull request, or push an empty commit from a personal account.
-  Each weekly refresh of an open pull request force-pushes the branch, so CI needs the same nudge
-  again.
+- A pull request opened with `GITHUB_TOKEN` does not start CI by itself. So far every CI run on
+  this branch was started by hand: close and reopen the pull request, or push an empty commit
+  from a personal account. GitHub's documentation now says such a pull request gets runs waiting
+  for approval ("Approve workflows to run" in the merge box); if they appear, approving them works
+  too. Each weekly refresh of an open pull request force-pushes the branch, so CI needs the same
+  nudge again. `ci` is a required check, so the pull request cannot merge without a green run or
+  the admin bypass ([Rulesets](#rulesets)).
 - Make hand edits on `develop` after the pull request merges, not on `chore/openrouter-models`:
   the next weekly run rebuilds that branch from `develop` and discards them.
 - The repository setting "Allow GitHub Actions to create and approve pull requests" must be on, or
@@ -428,49 +455,43 @@ git tag -s vX.Y.Z <sha> -m vX.Y.Z && git push origin vX.Y.Z
 
 Tags created by the workflow are annotated and unsigned.
 
-### One-time admin setup
+### Rulesets
 
-The workflow cannot protect itself, so a repository admin configures two rulesets once. The first
-protects `main` with a required review and the required `ci` check:
+The workflow cannot protect itself, so three repository rulesets do, read from
+`gh api repos/noppu-labs/opencode-permission-reviewer/rulesets`. All three are active.
 
-```sh
-gh api -X POST repos/noppu-labs/opencode-permission-reviewer/rulesets --input - <<'EOF'
-{
-  "name": "main",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["~DEFAULT_BRANCH"], "exclude": [] } },
-  "bypass_actors": [{ "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "pull_request" }],
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "pull_request", "parameters": {
-        "required_approving_review_count": 1, "dismiss_stale_reviews_on_push": true,
-        "require_code_owner_review": false, "require_last_push_approval": false,
-        "required_review_thread_resolution": false } },
-    { "type": "required_status_checks", "parameters": {
-        "strict_required_status_checks_policy": false,
-        "required_status_checks": [{ "context": "ci", "integration_id": 15368 }] } }
-  ]
-}
-EOF
-```
+`main` (the default branch) and `develop` have rulesets with the same rules:
 
-The second restricts who can create, move, or delete `v*` tags. The GitHub Actions app
-(integration 15368) must be a bypass actor, or the `tag` job's tag creation is rejected:
+- No deletion and no force push.
+- Every commit must be signed.
+- Changes arrive through a pull request with one approving review, including a code owner's
+  (`.github/CODEOWNERS` names `@cris005` for every path). A new push dismisses earlier approvals,
+  and the last push must be approved by someone other than the person who pushed it. Review
+  threads need not be resolved. Only the merge-commit and squash methods are allowed; rebase
+  merges are not.
+- Copilot reviews each new push to a pull request, but not drafts.
+- The `ci` check, reported by GitHub Actions, must pass, and the branch must be up to date with
+  its base before merging.
 
-```sh
-gh api -X POST repos/noppu-labs/opencode-permission-reviewer/rulesets --input - <<'EOF'
-{
-  "name": "release tags",
-  "target": "tag",
-  "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["refs/tags/v*"], "exclude": [] } },
-  "bypass_actors": [
-    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" },
-    { "actor_id": 15368, "actor_type": "Integration", "bypass_mode": "always" }
-  ],
-  "rules": [{ "type": "creation" }, { "type": "update" }, { "type": "deletion" }]
-}
-EOF
-```
+Organization admins can bypass these rules, but only when merging a pull request: a direct push
+to either branch is refused for everyone.
+
+The `release tags` ruleset covers `refs/tags/v*`. It forbids moving (update and force-push) or
+deleting a release tag, and organization admins can always bypass it. It has no creation rule, so
+the `tag` job in `release.yml` can create a tag with the workflow token, and so can anyone with
+write access who pushes one by hand.
+
+What follows for this repository's flow:
+
+- There is one maintainer, who is the only code owner, and GitHub does not count an author's
+  approval of their own pull request. A pull request the maintainer opens therefore merges through
+  the organization-admin bypass.
+- A promotion pull request from `develop` to `main` can never be up to date with `main`, because
+  the merge commits of earlier promotions are on `main` and not on `develop`. Every promotion
+  merges through the bypass.
+- The weekly `chore/openrouter-models` pull request carries an unsigned commit by
+  `github-actions[bot]`. Merge it by squash, which creates a commit GitHub signs, or through the
+  bypass. The merge-commit method would put the unsigned commit on `develop`, which the signature
+  rule refuses.
+- Its CI also needs a nudge (see [OpenRouter decision models](#openrouter-decision-models)), and
+  `ci` is required, so it cannot merge without the bypass until it has a green run.

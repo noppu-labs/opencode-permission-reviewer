@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `docs/ARCHITECTURE.md`: the actors, the actions, and every external interface of the package
+  (entry points, each CLI subcommand, configuration files, environment variables, the files the
+  plugin writes, network endpoints and the RPC protocol).
+- `docs/GOVERNANCE.md`: the roles, and who holds access to the repository, security advisories,
+  npm, release publishing and SonarCloud.
+
+### Changed
+
+- The security policy (`docs/SECURITY.md`, which ships in the package) promises an initial
+  response within a week and adds a disclosure policy: fixed vulnerabilities are published as
+  GitHub security advisories.
+- The README and the contributing guide say where bug reports and feature requests go. The guide
+  adds that new functionality and bug fixes come with tests, and that a pull request is
+  contributed under the repository's license (GitHub's Terms of Service, section D.6).
+- The development guide describes the repository rulesets as they are and what Dependabot
+  updates.
+- CI and the release build install dependencies with `--ignore-scripts`, and every workflow job
+  declares its own token permissions.
+
 ## [3.7.0] - 2026-11-27
 
 ### Changed

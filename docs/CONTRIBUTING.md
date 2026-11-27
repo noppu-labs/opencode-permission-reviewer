@@ -4,6 +4,15 @@ This plugin approves and denies AI-agent actions automatically, so changes need 
 and tested. The safety-critical code is the decision, policy, and emergency-brake logic in `src/`;
 most of the rest supports OpenCode V1 and V2 hosts, the TUI overlay, and the CLI.
 
+## Bug reports and feature requests
+
+Report bugs and request features in
+[GitHub issues](https://github.com/noppu-labs/opencode-permission-reviewer/issues/new/choose).
+Blank issues are turned off, so pick the bug report or the feature request template. The bug
+report asks for the plugin, OpenCode and Bun versions and the `doctor` output, which are needed
+to reproduce the problem. Report security issues privately as described in
+[SECURITY.md](SECURITY.md), not in a public issue.
+
 ## Prerequisites
 
 - [Bun](https://bun.sh) >= 1.3.14
@@ -52,6 +61,8 @@ covers the other tools' conventions.
 
 Your pull request should also meet these rules:
 
+- New functionality and bug fixes come with tests in the automated suite: a test that shows the
+  new behavior, or one that fails without the fix.
 - No secrets or personal data in code or tests. Use obviously synthetic fixtures: tokens like
   `sk-syntheticcredential...`, documentation IP ranges (`192.0.2.x`, `198.51.100.x`,
   `203.0.113.x`), and `*.invalid` hostnames. Never commit real tokens, keys, personal filesystem
@@ -97,6 +108,14 @@ Your pull request should also meet these rules:
 
 The [development guide](DEVELOPMENT.md) covers the build output, live end-to-end testing,
 the compatibility matrix, and the model benchmark.
+
+## License of contributions
+
+By opening a pull request, you state that you have the right to submit your change under this
+repository's license, as
+[section D.6 of GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#6-contributions-under-repository-license)
+provides. Changes made in this fork are licensed under the MIT License, and code from the
+upstream project stays under the Apache License 2.0 ([NOTICE](NOTICE)).
 
 ## Conventions
 
