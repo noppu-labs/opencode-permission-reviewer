@@ -10,7 +10,15 @@ please don't open a public issue. Include as much of this as you can:
 - the plugin version (`version` in `package.json`) and the OpenCode version you run
 - the safety outcome you expected and the one you got
 
-We acknowledge reports within a few days and coordinate the fix and disclosure with you.
+You can expect an initial response within a week.
+
+## Disclosure policy
+
+The project follows coordinated disclosure. A report stays private while it is assessed and fixed.
+Once a fixed version is released, the project publishes the vulnerability as a
+[GitHub security advisory](https://github.com/noppu-labs/opencode-permission-reviewer/security/advisories)
+on this repository, with the affected versions, how to tell whether you are affected, and the
+version that fixes it.
 
 ## Scope
 
@@ -31,9 +39,10 @@ vulnerability on its own. The plugin checks a decision's consistency, not its se
 correctness. Other plugins loaded into the same OpenCode host can also override its decisions.
 [docs/SAFETY.md](SAFETY.md) covers the threat model.
 
-This project is a fork of
-[warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer).
-If an issue also affects the upstream project, report it there as well.
+This project began as a fork of
+[warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer)
+and is now developed independently. If an issue also affects that project, report it there as
+well.
 
 ## Verifying releases
 

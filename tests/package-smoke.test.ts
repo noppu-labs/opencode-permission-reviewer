@@ -222,7 +222,7 @@ describe("npm pack ship set", () => {
       "README.md",
       "CHANGELOG.md",
       "LICENSE",
-      "docs/LICENSE-APACHE",
+      "LICENSES/Apache-2.0.txt",
       "docs/NOTICE",
       "docs/SECURITY.md",
       "dist/index.js",
@@ -263,6 +263,7 @@ describe("npm pack ship set", () => {
         f === "AGENTS.md" ||
         f === "docs/CONTRIBUTING.md" ||
         f === "docs/CODE_OF_CONDUCT.md" ||
+        f === "docs/LICENSE-APACHE" ||
         f === "tsdown.config.ts" ||
         f === "tsconfig.json" ||
         f === "tsconfig.hook.json" ||

@@ -40,6 +40,8 @@ jobs:
   check:
     name: check (bun ${{ matrix.bun }})
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -51,7 +53,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: ${{ matrix.bun }}
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run build
       - run: bun run typecheck
       - run: bun test
@@ -59,13 +61,15 @@ jobs:
   coverage:
     name: coverage
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           # Coverage numbers are reported against the pinned current version.
           bun-version: "1.3.14"
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run test:coverage
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
@@ -77,6 +81,8 @@ jobs:
   benchmark:
     name: benchmark
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -85,7 +91,7 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
         with:
           bun-version: "1.3.14"
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - working-directory: benchmarks/permission-reviewer
         run: |
           node cli.mjs validate
@@ -96,6 +102,8 @@ jobs:
     name: hosts (${{ matrix.host }}, ${{ matrix.package-manager }})
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     strategy:
       fail-fast: false
       matrix:
@@ -109,7 +117,7 @@ jobs:
       - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
         with:
           enable-cache: true
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
       - run: bun run build
       # pytest comes from uv.lock, the same pin the quality job installs. The matrix has run on
       # Python 3.13, so keep it rather than the runner's default.
@@ -156,6 +164,7 @@ jobs:
     if: always()
     needs: [quality, check, coverage, hosts, benchmark]
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: All CI checks green
         run: |
