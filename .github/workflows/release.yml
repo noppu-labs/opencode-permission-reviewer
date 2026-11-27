@@ -24,14 +24,14 @@ name: release
 #   - Actions → General → "Workflow permissions" allows id-token writes
 #     (required for OIDC publishing and npm --provenance).
 #
-# Administrative prerequisites (outside this repository, see "Releasing" in
-# docs/DEVELOPMENT.md for the commands):
-#   - `main` is protected: a pull request with a required review and the
-#     required `ci` check.
-#   - A tag ruleset on `refs/tags/v*` restricts creation, update, and
-#     deletion, with repository admins and the GitHub Actions app
-#     (integration 15368) as bypass actors. Without the app, the `tag` job
-#     cannot create the tag.
+# Repository rulesets (see "Rulesets" in docs/DEVELOPMENT.md):
+#   - `main` and `develop`: changes arrive by pull request with a code owner's
+#     approval, signed commits and the required `ci` check on an up-to-date
+#     branch; no deletion or force push. Organization admins can bypass only
+#     when merging a pull request.
+#   - `release tags` on `refs/tags/v*`: a tag cannot be moved or deleted
+#     (organization admins can bypass). There is no creation rule, so the
+#     `tag` job can create the tag with the workflow token.
 # A tag-triggered workflow can never be its own root of trust: whoever can
 # merge to `main` or push a `v*` tag controls these guards, so the
 # protection must live outside the repo.
@@ -220,7 +220,7 @@ jobs:
         with:
           bun-version: "1.3.14"
 
-      - run: bun install --frozen-lockfile
+      - run: bun install --frozen-lockfile --ignore-scripts
 
       - name: Read tag metadata
         id: meta

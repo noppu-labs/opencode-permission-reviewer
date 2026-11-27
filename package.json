@@ -42,7 +42,7 @@
     "CHANGELOG.md",
     "docs/NOTICE",
     "LICENSE",
-    "docs/LICENSE-APACHE",
+    "LICENSES/Apache-2.0.txt",
     "docs/SECURITY.md"
   ],
   "license": "MIT AND Apache-2.0",
