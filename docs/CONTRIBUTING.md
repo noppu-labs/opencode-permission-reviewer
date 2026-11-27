@@ -114,9 +114,10 @@ the compatibility matrix, and the model benchmark.
 By opening a pull request, you state that you have the right to submit your change under this
 repository's license, as
 [section D.6 of GitHub's Terms of Service](https://docs.github.com/en/site-policy/github-terms/github-terms-of-service#6-contributions-under-repository-license)
-provides. Changes made in this fork are licensed under the MIT License ([LICENSE](../LICENSE)),
-and code from the upstream project stays under the Apache License 2.0
-([LICENSES/Apache-2.0.txt](../LICENSES/Apache-2.0.txt)); [NOTICE](NOTICE) says which is which.
+provides. Changes made in this project are licensed under the MIT License ([LICENSE](../LICENSE)),
+and code from warc0s/opencode-permission-reviewer, which this project began as a fork of, stays
+under the Apache License 2.0 ([LICENSES/Apache-2.0.txt](../LICENSES/Apache-2.0.txt));
+[NOTICE](NOTICE) says which is which.
 
 ## Conventions
 

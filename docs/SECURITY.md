@@ -39,9 +39,10 @@ vulnerability on its own. The plugin checks a decision's consistency, not its se
 correctness. Other plugins loaded into the same OpenCode host can also override its decisions.
 [docs/SAFETY.md](SAFETY.md) covers the threat model.
 
-This project is a fork of
-[warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer).
-If an issue also affects the upstream project, report it there as well.
+This project began as a fork of
+[warc0s/opencode-permission-reviewer](https://github.com/warc0s/opencode-permission-reviewer)
+and is now developed independently. If an issue also affects that project, report it there as
+well.
 
 ## Verifying releases
 

@@ -63,9 +63,10 @@ failure settings instead. The error message never contains the key.
 
 ### Choosing a decision model
 
-These notes come from upstream's benchmark of the decision models on its synthetic PRB-600 corpus
-(upstream 2.5.0). They are upstream's results, not measurements of this fork, and your own corpus
-may differ.
+These notes come from a benchmark of the decision models that
+warc0s/opencode-permission-reviewer, which this project began as a fork of, ran on its synthetic
+PRB-600 corpus (its 2.5.0 release). They are that project's results, not measurements of this
+one, and your own corpus may differ.
 
 - `baseten/decision-models/baseten-mammoth-27b-latest` scored highest, alone or with a reasoning
   reviewer, with the default thresholds.
@@ -92,9 +93,9 @@ plugin never sends a key that is not shaped like one. Prefix the OpenRouter mode
 }
 ```
 
-Four OpenRouter models are benchmarked today: `typesafe/jev-1.13`, `typesafe/jev-1.14`,
-`liquid/d1` and `liquid/d1-ultra`. "Benchmarked" means upstream or this project measured the
-model as a reviewer. It does not mean recommended; read [Choosing a decision
+Four OpenRouter models are benchmarked today: `typesafe/jev-1.13`, `typesafe/jev-1.14`, `liquid/d1`
+and `liquid/d1-ultra`. "Benchmarked" means warc0s/opencode-permission-reviewer or this project
+measured the model as a reviewer. It does not mean recommended; read [Choosing a decision
 model](#choosing-a-decision-model) for how the results differ. Baseten's OpenRouter models
 (`baseten/elephant-1`, `baseten/joey-1` and `baseten/mammoth-1`) are unbenchmarked. The Baseten
 results above come from the direct `baseten/` provider.

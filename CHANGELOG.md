@@ -31,6 +31,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the repository and in the npm package, so it sits in a standard license location. Its content is
   unchanged, and `docs/NOTICE` points to the new path. Anything that reads the old path from an
   installed package must use the new one.
+- `docs/NOTICE`, the security policy, the contributing guide and the reviewer models guide say
+  the project began as a fork of `warc0s/opencode-permission-reviewer` and is now developed
+  independently. The attribution and the licenses are unchanged.
 
 ## [3.7.0] - 2026-11-27
 
